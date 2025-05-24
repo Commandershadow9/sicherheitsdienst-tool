@@ -25,8 +25,8 @@ app.use(express.urlencoded({ extended: true }));
 
 // Basic health check route
 app.get('/api/health', (req, res) => {
-  res.json({ 
-    status: 'OK', 
+  res.json({
+    status: 'OK',
     message: 'Sicherheitsdienst-Tool Backend is running',
     timestamp: new Date().toISOString()
   });
@@ -40,16 +40,16 @@ app.get('/api/health', (req, res) => {
 // Error handling middleware
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
   console.error(err.stack);
-  res.status(500).json({ 
+  res.status(500).json({
     message: 'Something went wrong!',
     ...(process.env.NODE_ENV === 'development' && { error: err.message })
   });
 });
 
 // 404 handler
-app.use('*', (req, res) => {
-  res.status(404).json({ message: 'Route not found' });
-});
+// app.use('*', (req, res) => {
+//   res.status(404).json({ message: 'Route not found' });
+// });
 
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
