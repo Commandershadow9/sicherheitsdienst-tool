@@ -1,0 +1,170 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Benutzer/Mitarbeiter
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  firstName String
+  lastName  String
+  phone     String?
+  role      UserRole @default(EMPLOYEE)
+  isActive  Boolean  @default(true)
+  
+  // Arbeitsbezogene Informationen
+  employeeId     String?  @unique
+  hireDate       DateTime?
+  qualifications String[] // Array von Qualifikationen
+  
+  // Zeitstempel
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Beziehungen
+  shifts        ShiftAssignment[]
+  timeEntries   TimeEntry[]
+  incidents     Incident[]
+  
+  @@map("users")
+}
+
+// Benutzerrollen
+enum UserRole {
+  ADMIN
+  MANAGER
+  DISPATCHER
+  EMPLOYEE
+}
+
+// Schichten/Dienste
+model Shift {
+  id          String    @id @default(cuid())
+  title       String
+  description String?
+  location    String
+  startTime   DateTime
+  endTime     DateTime
+  
+  // Anforderungen
+  requiredEmployees Int      @default(1)
+  requiredQualifications String[]
+  
+  // Status
+  status      ShiftStatus @default(PLANNED)
+  
+  // Zeitstempel
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Beziehungen
+  assignments ShiftAssignment[]
+  
+  @@map("shifts")
+}
+
+enum ShiftStatus {
+  PLANNED
+  ACTIVE
+  COMPLETED
+  CANCELLED
+}
+
+// Zuweisungen von Mitarbeitern zu Schichten
+model ShiftAssignment {
+  id     String @id @default(cuid())
+  
+  // Beziehungen
+  userId  String
+  shiftId String
+  user    User   @relation(fields: [userId], references: [id])
+  shift   Shift  @relation(fields: [shiftId], references: [id])
+  
+  // Status
+  status AssignmentStatus @default(ASSIGNED)
+  
+  // Zeitstempel
+  assignedAt DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  
+  @@unique([userId, shiftId])
+  @@map("shift_assignments")
+}
+
+enum AssignmentStatus {
+  ASSIGNED
+  CONFIRMED
+  STARTED
+  COMPLETED
+  CANCELLED
+}
+
+// Zeiterfassung
+model TimeEntry {
+  id String @id @default(cuid())
+  
+  // Beziehung
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+  
+  // Zeitdaten
+  startTime DateTime
+  endTime   DateTime?
+  breakTime Int?      // Pause in Minuten
+  
+  // Location (Optional für GPS)
+  startLocation String?
+  endLocation   String?
+  
+  // Notizen
+  notes String?
+  
+  // Zeitstempel
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@map("time_entries")
+}
+
+// Vorfälle
+model Incident {
+  id          String   @id @default(cuid())
+  title       String
+  description String
+  severity    IncidentSeverity
+  status      IncidentStatus @default(OPEN)
+  
+  // Ort und Zeit
+  location  String
+  occurredAt DateTime
+  
+  // Beziehung
+  reportedBy String
+  user       User   @relation(fields: [reportedBy], references: [id])
+  
+  // Zeitstempel
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@map("incidents")
+}
+
+enum IncidentSeverity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum IncidentStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+}
