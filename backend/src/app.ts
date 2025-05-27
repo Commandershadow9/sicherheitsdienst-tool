@@ -3,9 +3,16 @@ import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
 import dotenv from 'dotenv';
+import { PrismaClient } from '@prisma/client';
+
+// Import routes
+import userRoutes from './routes/userRoutes';
 
 // Load environment variables
 dotenv.config();
+
+// Initialize Prisma Client
+const prisma = new PrismaClient();
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -32,28 +39,43 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// Routes will be added here
-// app.use('/api/auth', authRoutes);
-// app.use('/api/employees', employeeRoutes);
-// app.use('/api/shifts', shiftRoutes);
+// API Routes
+app.use('/api/users', userRoutes);
 
-// Error handling middleware
+// Future routes will be added here
+// app.use('/api/auth', authRoutes);
+// app.use('/api/shifts', shiftRoutes);
+// app.use('/api/time-entries', timeEntryRoutes);
+// app.use('/api/incidents', incidentRoutes);
+
+// 404 handler for unmatched routes - this should come after all defined routes
+app.use((req, res, next) => {
+  res.status(404).json({ 
+    success: false,
+    message: 'Die angeforderte Ressource wurde nicht gefunden.' 
+  });
+});
+
+// Error handling middleware - catches errors from routes if next(err) is called
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
   console.error(err.stack);
   res.status(500).json({
+    success: false,
     message: 'Something went wrong!',
     ...(process.env.NODE_ENV === 'development' && { error: err.message })
   });
 });
 
-// 404 handler
-// app.use('*', (req, res) => {
-//   res.status(404).json({ message: 'Route not found' });
-// });
+// Graceful shutdown
+process.on('beforeExit', async () => {
+  await prisma.$disconnect();
+  console.log('👋 Prisma disconnected');
+});
 
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
   console.log(`📍 Health check: http://localhost:${PORT}/api/health`);
+  console.log(`👥 Users API: http://localhost:${PORT}/api/users`);
 });
 
 export default app;
