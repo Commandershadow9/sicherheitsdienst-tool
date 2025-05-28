@@ -28,16 +28,47 @@ app.use(morgan('combined'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Basic health check route
-app.get('/api/health', (req, res) => {
+// Welcome Route
+app.get('/', (req, res) => {
   res.json({
-    status: 'OK',
-    message: 'Sicherheitsdienst-Tool Backend is running',
+    message: '🛡️ Sicherheitsdienst-Tool Backend API',
+    version: '1.0.0',
+    status: 'Running',
+    endpoints: {
+      health: '/api/health',
+      users: '/api/users',
+      shifts: '/api/shifts'
+    },
     timestamp: new Date().toISOString()
   });
 });
 
-// USER ROUTES - ECHTE DATENBANK-OPERATIONEN
+// HEALTH CHECK
+app.get('/api/health', async (req, res) => {
+  try {
+    // Datenbankverbindung testen
+    await prisma.$queryRaw`SELECT 1`;
+    
+    res.json({
+      status: 'OK',
+      message: 'Sicherheitsdienst-Tool Backend is running',
+      timestamp: new Date().toISOString(),
+      database: 'Connected',
+      version: '1.0.0',
+      environment: process.env.NODE_ENV || 'development'
+    });
+  } catch (error) {
+    console.error('Health check failed:', error);
+    res.status(503).json({
+      status: 'ERROR',
+      message: 'Database connection failed',
+      timestamp: new Date().toISOString(),
+      database: 'Disconnected'
+    });
+  }
+});
+
+// USER ROUTES - INLINE (WORKING SOLUTION)
 
 // GET /api/users - Alle Mitarbeiter aus der Datenbank abrufen
 app.get('/api/users', async (req, res) => {
@@ -268,32 +299,81 @@ app.get('/api/shifts', async (req, res) => {
 app.use((req, res, next) => {
   res.status(404).json({ 
     success: false,
-    message: 'Die angeforderte Ressource wurde nicht gefunden.' 
+    message: `Die angeforderte Ressource '${req.originalUrl}' wurde nicht gefunden.`,
+    availableEndpoints: [
+      'GET /api/health',
+      'GET /api/users',
+      'POST /api/users',
+      'GET /api/users/:id',
+      'GET /api/shifts'
+    ]
   });
 });
 
-// Error handling middleware
+// Global Error Handler
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
-  console.error('Server Error:', err.stack);
-  res.status(500).json({
+  console.error('🚨 Server Error:', err.stack);
+  
+  // Prisma Error Handling
+  if (err.code?.startsWith('P')) {
+    return res.status(400).json({
+      success: false,
+      message: 'Datenbankfehler',
+      error: process.env.NODE_ENV === 'development' ? err.message : 'Ein Datenbankfehler ist aufgetreten'
+    });
+  }
+
+  // Validation Error
+  if (err.name === 'ValidationError') {
+    return res.status(400).json({
+      success: false,
+      message: 'Validierungsfehler',
+      error: process.env.NODE_ENV === 'development' ? err.message : 'Ungültige Eingabedaten'
+    });
+  }
+
+  // Default Error
+  res.status(err.status || 500).json({
     success: false,
-    message: 'Interner Serverfehler',
-    ...(process.env.NODE_ENV === 'development' && { error: err.message })
+    message: err.message || 'Interner Serverfehler',
+    ...(process.env.NODE_ENV === 'development' && { 
+      stack: err.stack,
+      details: err 
+    })
   });
 });
 
-// Graceful shutdown
-process.on('beforeExit', async () => {
+// Graceful Shutdown
+const gracefulShutdown = async () => {
+  console.log('🛑 Shutting down gracefully...');
   await prisma.$disconnect();
   console.log('👋 Prisma disconnected');
+  process.exit(0);
+};
+
+process.on('SIGTERM', gracefulShutdown);
+process.on('SIGINT', gracefulShutdown);
+process.on('beforeExit', async () => {
+  await prisma.$disconnect();
 });
 
+// Start Server
 app.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
-  console.log(`📍 Health check: http://localhost:${PORT}/api/health`);
-  console.log(`👥 Users API: http://localhost:${PORT}/api/users`);
-  console.log(`📅 Shifts API: http://localhost:${PORT}/api/shifts`);
-  console.log(`🎯 Prisma Studio: http://localhost:5555`);
+  console.log('🚀 ================================');
+  console.log(`🛡️  Sicherheitsdienst-Tool Backend`);
+  console.log('🚀 ================================');
+  console.log(`📡 Server running on port ${PORT}`);
+  console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
+  console.log('');
+  console.log('📍 Available Endpoints:');
+  console.log(`   ├─ Health Check: http://localhost:${PORT}/api/health`);
+  console.log(`   ├─ Users API:    http://localhost:${PORT}/api/users`);
+  console.log(`   └─ Shifts API:   http://localhost:${PORT}/api/shifts`);
+  console.log('');
+  console.log('🛠️  Development Tools:');
+  console.log(`   ├─ Prisma Studio: http://localhost:5555`);
+  console.log(`   └─ pgAdmin:       http://localhost:8080`);
+  console.log('🚀 ================================');
 });
 
 export default app;

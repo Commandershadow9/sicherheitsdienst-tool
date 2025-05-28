@@ -1,99 +1,293 @@
 import { Request, Response, NextFunction } from 'express';
-// Ggf. Prisma Client importieren, falls hier direkte DB-Aufrufe erfolgen sollen
-// import { PrismaClient } from '@prisma/client';
-// const prisma = new PrismaClient(); // Instanz erstellen, wenn Prisma hier verwendet wird
+import { PrismaClient } from '@prisma/client';
+import bcrypt from 'bcryptjs';
+
+const prisma = new PrismaClient();
 
 // GET /api/users - Alle Mitarbeiter abrufen
-export const getAllUsers = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+export const getAllUsers = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    // Beispiel für eine asynchrone Operation (ersetze dies mit deiner echten Logik, z.B. Prisma-Aufruf)
-    // const users = await prisma.user.findMany();
-
-    // Aktuelle Test-Antwort
+    const users = await prisma.user.findMany({
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        phone: true,
+        role: true,
+        employeeId: true,
+        isActive: true,
+        hireDate: true,
+        qualifications: true,
+        createdAt: true
+        // password excluded for security
+      },
+      orderBy: {
+        firstName: 'asc'
+      }
+    });
+    
     res.json({
       success: true,
-      message: 'API funktioniert! (async)',
-      data: [
-        {
-          id: '1',
-          firstName: 'Test',
-          lastName: 'User',
-          email: 'test@example.com'
-        }
-      ],
-      count: 1
-      // data: users, // Wenn du echte Daten von Prisma holst
-      // count: users.length // Wenn du echte Daten von Prisma holst
+      message: `${users.length} Mitarbeiter aus Datenbank geladen`,
+      data: users,
+      count: users.length
     });
   } catch (error) {
-    // Fehler an die zentrale Fehlerbehandlung in app.ts weiterleiten
+    console.error('Error fetching users from database:', error);
     next(error);
   }
 };
 
 // POST /api/users - Neuen Mitarbeiter erstellen
-export const createUser = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+export const createUser = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { firstName, lastName, email } = req.body;
-    
-    // Beispiel für eine asynchrone Operation (ersetze dies mit deiner echten Logik, z.B. Prisma-Aufruf)
-    // Beachte: Für das Erstellen eines Benutzers benötigst du normalerweise mehr Felder,
-    // insbesondere ein gehashtes Passwort.
-    // const newUser = await prisma.user.create({
-    //   data: {
-    //     firstName,
-    //     lastName,
-    //     email,
-    //     password: 'ein_sicher_gehashtes_passwort', // Beispiel!
-    //     // weitere benötigte Felder gemäß deinem Prisma Schema
-    //   },
-    // });
+    const {
+      email,
+      password,
+      firstName,
+      lastName,
+      phone,
+      role = 'EMPLOYEE',
+      employeeId,
+      hireDate,
+      qualifications = []
+    } = req.body;
 
-    // Aktuelle Test-Antwort
-    res.status(201).json({
-      success: true,
-      message: 'Test: Mitarbeiter würde erstellt werden (async)',
+    // Validation
+    if (!email || !password || !firstName || !lastName) {
+      res.status(400).json({
+        success: false,
+        message: 'Email, Passwort, Vorname und Nachname sind erforderlich'
+      });
+      return;
+    }
+
+    // Password hashen
+    const hashedPassword = await bcrypt.hash(password, 12);
+
+    const user = await prisma.user.create({
       data: {
-        id: '2', // Dies würde normalerweise von der Datenbank generiert
+        email,
+        password: hashedPassword,
         firstName,
         lastName,
-        email
-        // ...newUser // Gib hier die Daten des neu erstellten Benutzers zurück
+        phone,
+        role: role as any, // TypeScript-Fix für Enum
+        employeeId,
+        hireDate: hireDate ? new Date(hireDate) : null,
+        qualifications: Array.isArray(qualifications) ? qualifications : []
+      },
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        phone: true,
+        role: true,
+        employeeId: true,
+        isActive: true,
+        hireDate: true,
+        qualifications: true,
+        createdAt: true
       }
     });
-  } catch (error) {
+
+    res.status(201).json({
+      success: true,
+      message: 'Mitarbeiter erfolgreich in Datenbank erstellt',
+      data: user
+    });
+  } catch (error: any) {
+    console.error('Error creating user in database:', error);
+    
+    // Prisma unique constraint error
+    if (error.code === 'P2002') {
+      res.status(400).json({
+        success: false,
+        message: 'E-Mail oder Mitarbeiter-ID bereits in Datenbank vergeben'
+      });
+      return;
+    }
+
     next(error);
   }
 };
 
 // GET /api/users/:id - Einzelnen Mitarbeiter abrufen
-export const getUserById = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+export const getUserById = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { id } = req.params;
+    
+    const user = await prisma.user.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        phone: true,
+        role: true,
+        employeeId: true,
+        isActive: true,
+        hireDate: true,
+        qualifications: true,
+        createdAt: true,
+        shifts: {
+          include: {
+            shift: {
+              select: {
+                id: true,
+                title: true,
+                startTime: true,
+                endTime: true,
+                location: true,
+                status: true
+              }
+            }
+          }
+        },
+        timeEntries: {
+          select: {
+            id: true,
+            startTime: true,
+            endTime: true,
+            breakTime: true,
+            notes: true
+          },
+          orderBy: {
+            startTime: 'desc'
+          },
+          take: 10 // Letzte 10 Einträge
+        }
+      }
+    });
+
+    if (!user) {
+      res.status(404).json({
+        success: false,
+        message: 'Mitarbeiter nicht in Datenbank gefunden'
+      });
+      return;
+    }
+
+    res.json({
+      success: true,
+      message: `Mitarbeiter ${user.firstName} ${user.lastName} aus Datenbank geladen`,
+      data: user
+    });
+  } catch (error) {
+    console.error('Error fetching user from database:', error);
+    next(error);
+  }
+};
+
+// PUT /api/users/:id - Mitarbeiter aktualisieren
+export const updateUser = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { id } = req.params;
+    const {
+      email,
+      firstName,
+      lastName,
+      phone,
+      role,
+      employeeId,
+      hireDate,
+      qualifications,
+      isActive
+    } = req.body;
+
+    const updatedUser = await prisma.user.update({
+      where: { id },
+      data: {
+        ...(email && { email }),
+        ...(firstName && { firstName }),
+        ...(lastName && { lastName }),
+        ...(phone !== undefined && { phone }),
+        ...(role && { role: role as any }),
+        ...(employeeId !== undefined && { employeeId }),
+        ...(hireDate && { hireDate: new Date(hireDate) }),
+        ...(qualifications && { qualifications: Array.isArray(qualifications) ? qualifications : [] }),
+        ...(isActive !== undefined && { isActive })
+      },
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        phone: true,
+        role: true,
+        employeeId: true,
+        isActive: true,
+        hireDate: true,
+        qualifications: true,
+        createdAt: true,
+        updatedAt: true
+      }
+    });
+
+    res.json({
+      success: true,
+      message: 'Mitarbeiter erfolgreich aktualisiert',
+      data: updatedUser
+    });
+  } catch (error: any) {
+    console.error('Error updating user in database:', error);
+    
+    if (error.code === 'P2002') {
+      res.status(400).json({
+        success: false,
+        message: 'E-Mail oder Mitarbeiter-ID bereits vergeben'
+      });
+      return;
+    }
+
+    if (error.code === 'P2025') {
+      res.status(404).json({
+        success: false,
+        message: 'Mitarbeiter nicht gefunden'
+      });
+      return;
+    }
+
+    next(error);
+  }
+};
+
+// DELETE /api/users/:id - Mitarbeiter deaktivieren (soft delete)
+export const deactivateUser = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
 
-    // Beispiel für eine asynchrone Operation (ersetze dies mit deiner echten Logik, z.B. Prisma-Aufruf)
-    // const user = await prisma.user.findUnique({
-    //   where: { id },
-    // });
-
-    // if (!user) {
-    //   res.status(404).json({ success: false, message: `Mitarbeiter mit ID ${id} nicht gefunden.` });
-    //   return; // Wichtig: Beende die Funktion hier, da die Antwort gesendet wurde.
-    // }
-
-    // Aktuelle Test-Antwort
-    res.json({
-      success: true,
-      message: `Test: Mitarbeiter ${id} gefunden (async)`,
-      data: {
-        id, // Behalte die ID aus den Parametern für die Test-Antwort
-        firstName: 'Test',
-        lastName: 'User',
-        email: 'test@example.com'
-        // ...user // Gib hier die Daten des gefundenen Benutzers zurück
+    const deactivatedUser = await prisma.user.update({
+      where: { id },
+      data: { isActive: false },
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        email: true,
+        isActive: true
       }
     });
-  } catch (error) {
+
+    res.json({
+      success: true,
+      message: 'Mitarbeiter erfolgreich deaktiviert',
+      data: deactivatedUser
+    });
+  } catch (error: any) {
+    console.error('Error deactivating user:', error);
+    
+    if (error.code === 'P2025') {
+      res.status(404).json({
+        success: false,
+        message: 'Mitarbeiter nicht gefunden'
+      });
+      return;
+    }
+
     next(error);
   }
 };
