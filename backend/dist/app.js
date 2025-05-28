@@ -10,13 +10,10 @@ const morgan_1 = __importDefault(require("morgan"));
 const dotenv_1 = __importDefault(require("dotenv"));
 const client_1 = require("@prisma/client");
 const bcryptjs_1 = __importDefault(require("bcryptjs"));
-// Load environment variables
 dotenv_1.default.config();
-// Initialize Prisma Client
 const prisma = new client_1.PrismaClient();
 const app = (0, express_1.default)();
 const PORT = process.env.PORT || 3001;
-// Middleware
 app.use((0, helmet_1.default)());
 app.use((0, cors_1.default)({
     origin: [
@@ -28,7 +25,6 @@ app.use((0, cors_1.default)({
 app.use((0, morgan_1.default)('combined'));
 app.use(express_1.default.json());
 app.use(express_1.default.urlencoded({ extended: true }));
-// Welcome Route
 app.get('/', (req, res) => {
     res.json({
         message: '🛡️ Sicherheitsdienst-Tool Backend API',
@@ -42,10 +38,8 @@ app.get('/', (req, res) => {
         timestamp: new Date().toISOString()
     });
 });
-// HEALTH CHECK
 app.get('/api/health', async (req, res) => {
     try {
-        // Datenbankverbindung testen
         await prisma.$queryRaw `SELECT 1`;
         res.json({
             status: 'OK',
@@ -66,8 +60,6 @@ app.get('/api/health', async (req, res) => {
         });
     }
 });
-// USER ROUTES - INLINE (WORKING SOLUTION)
-// GET /api/users - Alle Mitarbeiter aus der Datenbank abrufen
 app.get('/api/users', async (req, res) => {
     try {
         const users = await prisma.user.findMany({
@@ -83,7 +75,6 @@ app.get('/api/users', async (req, res) => {
                 hireDate: true,
                 qualifications: true,
                 createdAt: true
-                // password excluded for security
             },
             orderBy: {
                 firstName: 'asc'
@@ -105,18 +96,16 @@ app.get('/api/users', async (req, res) => {
         });
     }
 });
-// POST /api/users - Neuen Mitarbeiter in die Datenbank erstellen
 app.post('/api/users', async (req, res) => {
     try {
         const { email, password, firstName, lastName, phone, role = 'EMPLOYEE', employeeId, hireDate, qualifications = [] } = req.body;
-        // Validation
         if (!email || !password || !firstName || !lastName) {
-            return res.status(400).json({
+            res.status(400).json({
                 success: false,
                 message: 'Email, Passwort, Vorname und Nachname sind erforderlich'
             });
+            return;
         }
-        // Password hashen
         const hashedPassword = await bcryptjs_1.default.hash(password, 12);
         const user = await prisma.user.create({
             data: {
@@ -125,7 +114,7 @@ app.post('/api/users', async (req, res) => {
                 firstName,
                 lastName,
                 phone,
-                role: role, // TypeScript-Fix für Enum
+                role: role,
                 employeeId,
                 hireDate: hireDate ? new Date(hireDate) : null,
                 qualifications: Array.isArray(qualifications) ? qualifications : []
@@ -152,12 +141,12 @@ app.post('/api/users', async (req, res) => {
     }
     catch (error) {
         console.error('Error creating user in database:', error);
-        // Prisma unique constraint error
         if (error.code === 'P2002') {
-            return res.status(400).json({
+            res.status(400).json({
                 success: false,
                 message: 'E-Mail oder Mitarbeiter-ID bereits in Datenbank vergeben'
             });
+            return;
         }
         res.status(500).json({
             success: false,
@@ -166,7 +155,6 @@ app.post('/api/users', async (req, res) => {
         });
     }
 });
-// GET /api/users/:id - Einzelnen Mitarbeiter aus der Datenbank abrufen
 app.get('/api/users/:id', async (req, res) => {
     try {
         const { id } = req.params;
@@ -209,15 +197,16 @@ app.get('/api/users/:id', async (req, res) => {
                     orderBy: {
                         startTime: 'desc'
                     },
-                    take: 10 // Letzte 10 Einträge
+                    take: 10
                 }
             }
         });
         if (!user) {
-            return res.status(404).json({
+            res.status(404).json({
                 success: false,
                 message: 'Mitarbeiter nicht in Datenbank gefunden'
             });
+            return;
         }
         res.json({
             success: true,
@@ -234,7 +223,6 @@ app.get('/api/users/:id', async (req, res) => {
         });
     }
 });
-// GET /api/shifts - Alle Schichten aus der Datenbank
 app.get('/api/shifts', async (req, res) => {
     try {
         const shifts = await prisma.shift.findMany({
@@ -271,8 +259,7 @@ app.get('/api/shifts', async (req, res) => {
         });
     }
 });
-// 404 handler for unmatched routes
-app.use((req, res, next) => {
+app.use((req, res) => {
     res.status(404).json({
         success: false,
         message: `Die angeforderte Ressource '${req.originalUrl}' wurde nicht gefunden.`,
@@ -285,26 +272,24 @@ app.use((req, res, next) => {
         ]
     });
 });
-// Global Error Handler
 app.use((err, req, res, next) => {
     console.error('🚨 Server Error:', err.stack);
-    // Prisma Error Handling
     if (err.code?.startsWith('P')) {
-        return res.status(400).json({
+        res.status(400).json({
             success: false,
             message: 'Datenbankfehler',
             error: process.env.NODE_ENV === 'development' ? err.message : 'Ein Datenbankfehler ist aufgetreten'
         });
+        return;
     }
-    // Validation Error
     if (err.name === 'ValidationError') {
-        return res.status(400).json({
+        res.status(400).json({
             success: false,
             message: 'Validierungsfehler',
             error: process.env.NODE_ENV === 'development' ? err.message : 'Ungültige Eingabedaten'
         });
+        return;
     }
-    // Default Error
     res.status(err.status || 500).json({
         success: false,
         message: err.message || 'Interner Serverfehler',
@@ -314,7 +299,6 @@ app.use((err, req, res, next) => {
         })
     });
 });
-// Graceful Shutdown
 const gracefulShutdown = async () => {
     console.log('🛑 Shutting down gracefully...');
     await prisma.$disconnect();
@@ -326,7 +310,6 @@ process.on('SIGINT', gracefulShutdown);
 process.on('beforeExit', async () => {
     await prisma.$disconnect();
 });
-// Start Server
 app.listen(PORT, () => {
     console.log('🚀 ================================');
     console.log(`🛡️  Sicherheitsdienst-Tool Backend`);

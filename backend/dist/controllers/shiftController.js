@@ -3,7 +3,6 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.assignUserToShift = exports.deleteShift = exports.updateShift = exports.getShiftById = exports.createShift = exports.getAllShifts = void 0;
 const client_1 = require("@prisma/client");
 const prisma = new client_1.PrismaClient();
-// GET /api/shifts - Alle Schichten abrufen
 const getAllShifts = async (req, res, next) => {
     try {
         const shifts = await prisma.shift.findMany({
@@ -40,11 +39,9 @@ const getAllShifts = async (req, res, next) => {
     }
 };
 exports.getAllShifts = getAllShifts;
-// POST /api/shifts - Neue Schicht erstellen
 const createShift = async (req, res, next) => {
     try {
         const { title, description, location, startTime, endTime, requiredEmployees = 1, requiredQualifications = [] } = req.body;
-        // Validation
         if (!title || !location || !startTime || !endTime) {
             res.status(400).json({
                 success: false,
@@ -52,7 +49,6 @@ const createShift = async (req, res, next) => {
             });
             return;
         }
-        // Zeitvalidierung
         const start = new Date(startTime);
         const end = new Date(endTime);
         if (start >= end) {
@@ -99,7 +95,6 @@ const createShift = async (req, res, next) => {
     }
 };
 exports.createShift = createShift;
-// GET /api/shifts/:id - Einzelne Schicht abrufen
 const getShiftById = async (req, res, next) => {
     try {
         const { id } = req.params;
@@ -142,12 +137,10 @@ const getShiftById = async (req, res, next) => {
     }
 };
 exports.getShiftById = getShiftById;
-// PUT /api/shifts/:id - Schicht aktualisieren
 const updateShift = async (req, res, next) => {
     try {
         const { id } = req.params;
         const { title, description, location, startTime, endTime, requiredEmployees, requiredQualifications, status } = req.body;
-        // Zeitvalidierung falls beide Zeiten angegeben werden
         if (startTime && endTime) {
             const start = new Date(startTime);
             const end = new Date(endTime);
@@ -207,15 +200,12 @@ const updateShift = async (req, res, next) => {
     }
 };
 exports.updateShift = updateShift;
-// DELETE /api/shifts/:id - Schicht löschen
 const deleteShift = async (req, res, next) => {
     try {
         const { id } = req.params;
-        // Erst alle Zuweisungen löschen
         await prisma.shiftAssignment.deleteMany({
             where: { shiftId: id }
         });
-        // Dann die Schicht löschen
         const deletedShift = await prisma.shift.delete({
             where: { id }
         });
@@ -238,7 +228,6 @@ const deleteShift = async (req, res, next) => {
     }
 };
 exports.deleteShift = deleteShift;
-// POST /api/shifts/:id/assign - Mitarbeiter zur Schicht zuweisen
 const assignUserToShift = async (req, res, next) => {
     try {
         const { id: shiftId } = req.params;
@@ -250,7 +239,6 @@ const assignUserToShift = async (req, res, next) => {
             });
             return;
         }
-        // Prüfen ob Schicht existiert
         const shift = await prisma.shift.findUnique({
             where: { id: shiftId },
             include: { assignments: true }
@@ -262,7 +250,6 @@ const assignUserToShift = async (req, res, next) => {
             });
             return;
         }
-        // Prüfen ob bereits zugewiesen
         const existingAssignment = await prisma.shiftAssignment.findUnique({
             where: {
                 userId_shiftId: {
@@ -278,7 +265,6 @@ const assignUserToShift = async (req, res, next) => {
             });
             return;
         }
-        // Zuweisung erstellen
         const assignment = await prisma.shiftAssignment.create({
             data: {
                 userId,

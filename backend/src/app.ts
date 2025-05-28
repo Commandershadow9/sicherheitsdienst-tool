@@ -126,10 +126,11 @@ app.post('/api/users', async (req, res) => {
 
     // Validation
     if (!email || !password || !firstName || !lastName) {
-      return res.status(400).json({
+      res.status(400).json({
         success: false,
         message: 'Email, Passwort, Vorname und Nachname sind erforderlich'
       });
+      return;
     }
 
     // Password hashen
@@ -172,10 +173,11 @@ app.post('/api/users', async (req, res) => {
     
     // Prisma unique constraint error
     if (error.code === 'P2002') {
-      return res.status(400).json({
+      res.status(400).json({
         success: false,
         message: 'E-Mail oder Mitarbeiter-ID bereits in Datenbank vergeben'
       });
+      return;
     }
 
     res.status(500).json({
@@ -236,10 +238,11 @@ app.get('/api/users/:id', async (req, res) => {
     });
 
     if (!user) {
-      return res.status(404).json({
+      res.status(404).json({
         success: false,
         message: 'Mitarbeiter nicht in Datenbank gefunden'
       });
+      return;
     }
 
     res.json({
@@ -296,7 +299,7 @@ app.get('/api/shifts', async (req, res) => {
 });
 
 // 404 handler for unmatched routes
-app.use((req, res, next) => {
+app.use((req, res) => {
   res.status(404).json({ 
     success: false,
     message: `Die angeforderte Ressource '${req.originalUrl}' wurde nicht gefunden.`,
@@ -310,26 +313,28 @@ app.use((req, res, next) => {
   });
 });
 
-// Global Error Handler
+// Global Error Handler - Fixed TypeScript signature
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
   console.error('🚨 Server Error:', err.stack);
   
   // Prisma Error Handling
   if (err.code?.startsWith('P')) {
-    return res.status(400).json({
+    res.status(400).json({
       success: false,
       message: 'Datenbankfehler',
       error: process.env.NODE_ENV === 'development' ? err.message : 'Ein Datenbankfehler ist aufgetreten'
     });
+    return;
   }
 
   // Validation Error
   if (err.name === 'ValidationError') {
-    return res.status(400).json({
+    res.status(400).json({
       success: false,
       message: 'Validierungsfehler',
       error: process.env.NODE_ENV === 'development' ? err.message : 'Ungültige Eingabedaten'
     });
+    return;
   }
 
   // Default Error

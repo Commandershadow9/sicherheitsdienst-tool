@@ -1,6 +1,4 @@
 "use strict";
-// Routes Export Index
-// Vereinfacht die Imports in der app.ts
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };

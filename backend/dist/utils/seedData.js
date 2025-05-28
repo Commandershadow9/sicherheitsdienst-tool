@@ -9,16 +9,13 @@ const prisma = new client_1.PrismaClient();
 async function main() {
     console.log('🌱 Erstelle Test-Daten für Sicherheitsdienst-Tool...');
     try {
-        // Erst alle bestehenden Daten löschen (für sauberen Start)
         await prisma.shiftAssignment.deleteMany();
         await prisma.incident.deleteMany();
         await prisma.timeEntry.deleteMany();
         await prisma.shift.deleteMany();
         await prisma.user.deleteMany();
         console.log('🗑️ Alte Daten gelöscht');
-        // Test-Mitarbeiter erstellen
         const hashedPassword = await bcryptjs_1.default.hash('password123', 12);
-        // 1. Admin erstellen
         const admin = await prisma.user.create({
             data: {
                 email: 'admin@sicherheitsdienst.de',
@@ -33,7 +30,6 @@ async function main() {
                 isActive: true
             }
         });
-        // 2. Dispatcher/Manager erstellen
         const dispatcher = await prisma.user.create({
             data: {
                 email: 'dispatcher@sicherheitsdienst.de',
@@ -48,7 +44,6 @@ async function main() {
                 isActive: true
             }
         });
-        // 3. Sicherheitsmitarbeiter erstellen
         const employee1 = await prisma.user.create({
             data: {
                 email: 'thomas.mueller@sicherheitsdienst.de',
@@ -92,8 +87,6 @@ async function main() {
             }
         });
         console.log('👥 Mitarbeiter erstellt');
-        // Test-Schichten erstellen
-        // 1. Objektschutz - Tagschicht
         const morningShift = await prisma.shift.create({
             data: {
                 title: 'Objektschutz Bürogebäude - Tagschicht',
@@ -106,7 +99,6 @@ async function main() {
                 status: 'PLANNED'
             }
         });
-        // 2. Objektschutz - Nachtschicht
         const nightShift = await prisma.shift.create({
             data: {
                 title: 'Objektschutz Bürogebäude - Nachtschicht',
@@ -119,7 +111,6 @@ async function main() {
                 status: 'PLANNED'
             }
         });
-        // 3. Veranstaltungsschutz
         const eventShift = await prisma.shift.create({
             data: {
                 title: 'Veranstaltungsschutz - Stadtfest',
@@ -132,7 +123,6 @@ async function main() {
                 status: 'PLANNED'
             }
         });
-        // 4. Baustellenüberwachung
         const constructionShift = await prisma.shift.create({
             data: {
                 title: 'Baustellenüberwachung - Bahnhofsprojekt',
@@ -146,7 +136,6 @@ async function main() {
             }
         });
         console.log('📅 Schichten erstellt');
-        // Schicht-Zuweisungen erstellen
         await prisma.shiftAssignment.create({
             data: {
                 userId: employee1.id,
@@ -183,19 +172,17 @@ async function main() {
             }
         });
         console.log('✅ Schicht-Zuweisungen erstellt');
-        // Beispiel Zeiterfassung
         await prisma.timeEntry.create({
             data: {
                 userId: employee1.id,
                 startTime: new Date('2025-05-26T06:00:00Z'),
                 endTime: new Date('2025-05-26T14:00:00Z'),
-                breakTime: 30, // 30 Minuten Pause
+                breakTime: 30,
                 startLocation: 'Business Center Eingang',
                 endLocation: 'Business Center Ausgang',
                 notes: 'Routinedienst, keine besonderen Vorkommnisse'
             }
         });
-        // Beispiel Vorfall
         await prisma.incident.create({
             data: {
                 title: 'Unberechtigter Zutrittsversuch',

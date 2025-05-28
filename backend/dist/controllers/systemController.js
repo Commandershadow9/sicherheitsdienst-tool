@@ -3,10 +3,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.getSystemStats = exports.healthCheck = void 0;
 const client_1 = require("@prisma/client");
 const prisma = new client_1.PrismaClient();
-// GET /api/health - System Health Check
 const healthCheck = async (req, res, next) => {
     try {
-        // Datenbankverbindung testen
         await prisma.$queryRaw `SELECT 1`;
         res.json({
             status: 'OK',
@@ -28,10 +26,8 @@ const healthCheck = async (req, res, next) => {
     }
 };
 exports.healthCheck = healthCheck;
-// GET /api/stats - System Statistics
 const getSystemStats = async (req, res, next) => {
     try {
-        // Parallele Datenbankabfragen für bessere Performance
         const [totalUsers, activeUsers, totalShifts, upcomingShifts, openIncidents, totalTimeEntries] = await Promise.all([
             prisma.user.count(),
             prisma.user.count({ where: { isActive: true } }),

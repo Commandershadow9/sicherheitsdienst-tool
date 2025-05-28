@@ -7,7 +7,6 @@ exports.deactivateUser = exports.updateUser = exports.getUserById = exports.crea
 const client_1 = require("@prisma/client");
 const bcryptjs_1 = __importDefault(require("bcryptjs"));
 const prisma = new client_1.PrismaClient();
-// GET /api/users - Alle Mitarbeiter abrufen
 const getAllUsers = async (req, res, next) => {
     try {
         const users = await prisma.user.findMany({
@@ -23,7 +22,6 @@ const getAllUsers = async (req, res, next) => {
                 hireDate: true,
                 qualifications: true,
                 createdAt: true
-                // password excluded for security
             },
             orderBy: {
                 firstName: 'asc'
@@ -42,11 +40,9 @@ const getAllUsers = async (req, res, next) => {
     }
 };
 exports.getAllUsers = getAllUsers;
-// POST /api/users - Neuen Mitarbeiter erstellen
 const createUser = async (req, res, next) => {
     try {
         const { email, password, firstName, lastName, phone, role = 'EMPLOYEE', employeeId, hireDate, qualifications = [] } = req.body;
-        // Validation
         if (!email || !password || !firstName || !lastName) {
             res.status(400).json({
                 success: false,
@@ -54,7 +50,6 @@ const createUser = async (req, res, next) => {
             });
             return;
         }
-        // Password hashen
         const hashedPassword = await bcryptjs_1.default.hash(password, 12);
         const user = await prisma.user.create({
             data: {
@@ -63,7 +58,7 @@ const createUser = async (req, res, next) => {
                 firstName,
                 lastName,
                 phone,
-                role: role, // TypeScript-Fix für Enum
+                role: role,
                 employeeId,
                 hireDate: hireDate ? new Date(hireDate) : null,
                 qualifications: Array.isArray(qualifications) ? qualifications : []
@@ -90,7 +85,6 @@ const createUser = async (req, res, next) => {
     }
     catch (error) {
         console.error('Error creating user in database:', error);
-        // Prisma unique constraint error
         if (error.code === 'P2002') {
             res.status(400).json({
                 success: false,
@@ -102,7 +96,6 @@ const createUser = async (req, res, next) => {
     }
 };
 exports.createUser = createUser;
-// GET /api/users/:id - Einzelnen Mitarbeiter abrufen
 const getUserById = async (req, res, next) => {
     try {
         const { id } = req.params;
@@ -145,7 +138,7 @@ const getUserById = async (req, res, next) => {
                     orderBy: {
                         startTime: 'desc'
                     },
-                    take: 10 // Letzte 10 Einträge
+                    take: 10
                 }
             }
         });
@@ -168,7 +161,6 @@ const getUserById = async (req, res, next) => {
     }
 };
 exports.getUserById = getUserById;
-// PUT /api/users/:id - Mitarbeiter aktualisieren
 const updateUser = async (req, res, next) => {
     try {
         const { id } = req.params;
@@ -227,7 +219,6 @@ const updateUser = async (req, res, next) => {
     }
 };
 exports.updateUser = updateUser;
-// DELETE /api/users/:id - Mitarbeiter deaktivieren (soft delete)
 const deactivateUser = async (req, res, next) => {
     try {
         const { id } = req.params;
