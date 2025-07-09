@@ -1,16 +1,19 @@
-import express from 'express';
+import express, { Request, Response, NextFunction, ErrorRequestHandler } from 'express'; // ErrorRequestHandler importiert
 import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
 import dotenv from 'dotenv';
 import { PrismaClient } from '@prisma/client';
-import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
 
 // Load environment variables
 dotenv.config();
 
 // Initialize Prisma Client
 const prisma = new PrismaClient();
+
+// Import all routes
+import { systemRoutes, userRoutes, shiftRoutes, authRoutes } from './routes';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -29,13 +32,16 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Welcome Route
-app.get('/', (req, res) => {
+app.get('/', (req: Request, res: Response) => {
   res.json({
     message: '🛡️ Sicherheitsdienst-Tool Backend API',
-    version: '1.0.0',
+    version: process.env.npm_package_version || '1.0.0',
     status: 'Running',
+    documentation: `/api-docs`,
     endpoints: {
       health: '/api/health',
+      stats: '/api/stats',
+      auth: '/api/auth',
       users: '/api/users',
       shifts: '/api/shifts'
     },
@@ -43,324 +49,96 @@ app.get('/', (req, res) => {
   });
 });
 
-// HEALTH CHECK
-app.get('/api/health', async (req, res) => {
-  try {
-    // Datenbankverbindung testen
-    await prisma.$queryRaw`SELECT 1`;
-    
-    res.json({
-      status: 'OK',
-      message: 'Sicherheitsdienst-Tool Backend is running',
-      timestamp: new Date().toISOString(),
-      database: 'Connected',
-      version: '1.0.0',
-      environment: process.env.NODE_ENV || 'development'
-    });
-  } catch (error) {
-    console.error('Health check failed:', error);
-    res.status(503).json({
-      status: 'ERROR',
-      message: 'Database connection failed',
-      timestamp: new Date().toISOString(),
-      database: 'Disconnected'
-    });
-  }
-});
-
-// USER ROUTES - INLINE (WORKING SOLUTION)
-
-// GET /api/users - Alle Mitarbeiter aus der Datenbank abrufen
-app.get('/api/users', async (req, res) => {
-  try {
-    const users = await prisma.user.findMany({
-      select: {
-        id: true,
-        email: true,
-        firstName: true,
-        lastName: true,
-        phone: true,
-        role: true,
-        employeeId: true,
-        isActive: true,
-        hireDate: true,
-        qualifications: true,
-        createdAt: true
-        // password excluded for security
-      },
-      orderBy: {
-        firstName: 'asc'
-      }
-    });
-    
-    res.json({
-      success: true,
-      message: `${users.length} Mitarbeiter aus Datenbank geladen`,
-      data: users,
-      count: users.length
-    });
-  } catch (error) {
-    console.error('Error fetching users from database:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Fehler beim Abrufen der Mitarbeiter aus der Datenbank',
-      error: process.env.NODE_ENV === 'development' ? error : undefined
-    });
-  }
-});
-
-// POST /api/users - Neuen Mitarbeiter in die Datenbank erstellen
-app.post('/api/users', async (req, res) => {
-  try {
-    const {
-      email,
-      password,
-      firstName,
-      lastName,
-      phone,
-      role = 'EMPLOYEE',
-      employeeId,
-      hireDate,
-      qualifications = []
-    } = req.body;
-
-    // Validation
-    if (!email || !password || !firstName || !lastName) {
-      res.status(400).json({
-        success: false,
-        message: 'Email, Passwort, Vorname und Nachname sind erforderlich'
-      });
-      return;
-    }
-
-    // Password hashen
-    const hashedPassword = await bcrypt.hash(password, 12);
-
-    const user = await prisma.user.create({
-      data: {
-        email,
-        password: hashedPassword,
-        firstName,
-        lastName,
-        phone,
-        role: role as any, // TypeScript-Fix für Enum
-        employeeId,
-        hireDate: hireDate ? new Date(hireDate) : null,
-        qualifications: Array.isArray(qualifications) ? qualifications : []
-      },
-      select: {
-        id: true,
-        email: true,
-        firstName: true,
-        lastName: true,
-        phone: true,
-        role: true,
-        employeeId: true,
-        isActive: true,
-        hireDate: true,
-        qualifications: true,
-        createdAt: true
-      }
-    });
-
-    res.status(201).json({
-      success: true,
-      message: 'Mitarbeiter erfolgreich in Datenbank erstellt',
-      data: user
-    });
-  } catch (error: any) {
-    console.error('Error creating user in database:', error);
-    
-    // Prisma unique constraint error
-    if (error.code === 'P2002') {
-      res.status(400).json({
-        success: false,
-        message: 'E-Mail oder Mitarbeiter-ID bereits in Datenbank vergeben'
-      });
-      return;
-    }
-
-    res.status(500).json({
-      success: false,
-      message: 'Fehler beim Erstellen des Mitarbeiters in der Datenbank',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined
-    });
-  }
-});
-
-// GET /api/users/:id - Einzelnen Mitarbeiter aus der Datenbank abrufen
-app.get('/api/users/:id', async (req, res) => {
-  try {
-    const { id } = req.params;
-    
-    const user = await prisma.user.findUnique({
-      where: { id },
-      select: {
-        id: true,
-        email: true,
-        firstName: true,
-        lastName: true,
-        phone: true,
-        role: true,
-        employeeId: true,
-        isActive: true,
-        hireDate: true,
-        qualifications: true,
-        createdAt: true,
-        shifts: {
-          include: {
-            shift: {
-              select: {
-                id: true,
-                title: true,
-                startTime: true,
-                endTime: true,
-                location: true,
-                status: true
-              }
-            }
-          }
-        },
-        timeEntries: {
-          select: {
-            id: true,
-            startTime: true,
-            endTime: true,
-            breakTime: true,
-            notes: true
-          },
-          orderBy: {
-            startTime: 'desc'
-          },
-          take: 10 // Letzte 10 Einträge
-        }
-      }
-    });
-
-    if (!user) {
-      res.status(404).json({
-        success: false,
-        message: 'Mitarbeiter nicht in Datenbank gefunden'
-      });
-      return;
-    }
-
-    res.json({
-      success: true,
-      message: `Mitarbeiter ${user.firstName} ${user.lastName} aus Datenbank geladen`,
-      data: user
-    });
-  } catch (error) {
-    console.error('Error fetching user from database:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Fehler beim Abrufen des Mitarbeiters aus der Datenbank',
-      error: process.env.NODE_ENV === 'development' ? error : undefined
-    });
-  }
-});
-
-// GET /api/shifts - Alle Schichten aus der Datenbank
-app.get('/api/shifts', async (req, res) => {
-  try {
-    const shifts = await prisma.shift.findMany({
-      include: {
-        assignments: {
-          include: {
-            user: {
-              select: {
-                id: true,
-                firstName: true,
-                lastName: true,
-                employeeId: true
-              }
-            }
-          }
-        }
-      },
-      orderBy: {
-        startTime: 'asc'
-      }
-    });
-
-    res.json({
-      success: true,
-      message: `${shifts.length} Schichten aus Datenbank geladen`,
-      data: shifts,
-      count: shifts.length
-    });
-  } catch (error) {
-    console.error('Error fetching shifts from database:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Fehler beim Abrufen der Schichten aus der Datenbank'
-    });
-  }
-});
+// API Routes
+app.use('/api', systemRoutes);
+app.use('/api/auth', authRoutes);
+app.use('/api/users', userRoutes);
+app.use('/api/shifts', shiftRoutes);
 
 // 404 handler for unmatched routes
-app.use((req, res) => {
-  res.status(404).json({ 
+app.use((req: Request, res: Response) => {
+  res.status(404).json({
     success: false,
     message: `Die angeforderte Ressource '${req.originalUrl}' wurde nicht gefunden.`,
-    availableEndpoints: [
-      'GET /api/health',
-      'GET /api/users',
-      'POST /api/users',
-      'GET /api/users/:id',
-      'GET /api/shifts'
-    ]
   });
 });
 
-// Global Error Handler - Fixed TypeScript signature
-app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
-  console.error('🚨 Server Error:', err.stack);
-  
-  // Prisma Error Handling
+// Global Error Handler - Explicitly typed with ErrorRequestHandler
+const globalErrorHandler: ErrorRequestHandler = (err, req, res, next) => {
+  console.error('🚨 Global Error Handler:', err);
+
+  let statusCode = err.status || err.statusCode || 500;
+  let message = err.message || 'Interner Serverfehler.';
+  let errorsArray;
+
   if (err.code?.startsWith('P')) {
-    res.status(400).json({
-      success: false,
-      message: 'Datenbankfehler',
-      error: process.env.NODE_ENV === 'development' ? err.message : 'Ein Datenbankfehler ist aufgetreten'
-    });
-    return;
+    switch (err.code) {
+      case 'P2002':
+        statusCode = 409;
+        const target = err.meta?.target;
+        message = `Ein Eintrag mit diesen Daten existiert bereits (${Array.isArray(target) ? target.join(', ') : target}).`;
+        break;
+      case 'P2025':
+        statusCode = 404;
+        message = 'Die angeforderte Ressource wurde nicht gefunden.';
+        break;
+      default:
+        statusCode = 400;
+        message = 'Ein Datenbankfehler ist aufgetreten.';
+        break;
+    }
   }
 
-  // Validation Error
-  if (err.name === 'ValidationError') {
-    res.status(400).json({
-      success: false,
-      message: 'Validierungsfehler',
-      error: process.env.NODE_ENV === 'development' ? err.message : 'Ungültige Eingabedaten'
-    });
-    return;
+  if (err.name === 'ZodError' && err.errors) {
+    statusCode = 400;
+    message = 'Validierungsfehler.';
+    errorsArray = err.errors;
   }
 
-  // Default Error
-  res.status(err.status || 500).json({
+  if (err instanceof jwt.JsonWebTokenError || err instanceof jwt.TokenExpiredError) {
+    statusCode = 401;
+    message = 'Ungültiger oder abgelaufener Token.';
+  }
+
+  const errorResponse: { success: boolean; message: string; errors?: any; errorDetails?: string; stack?: string; code?: string } = {
     success: false,
-    message: err.message || 'Interner Serverfehler',
-    ...(process.env.NODE_ENV === 'development' && { 
-      stack: err.stack,
-      details: err 
-    })
-  });
-});
+    message,
+  };
+
+  if (errorsArray) {
+    errorResponse.errors = errorsArray;
+  }
+
+  if (process.env.NODE_ENV === 'development') {
+    errorResponse.errorDetails = err.message;
+    errorResponse.stack = err.stack;
+    if(err.code) errorResponse.code = err.code;
+  }
+
+  // Wichtig: Sicherstellen, dass eine Antwort gesendet wird.
+  // Wenn bereits Header gesendet wurden (selten im Error Handler, aber möglich), nicht erneut senden.
+  if (res.headersSent) {
+    return next(err); // Weiterleiten, falls schon gesendet wurde (Fallback)
+  }
+  res.status(statusCode).json(errorResponse);
+};
+
+app.use(globalErrorHandler); // Error Handler hier registrieren
 
 // Graceful Shutdown
 const gracefulShutdown = async () => {
   console.log('🛑 Shutting down gracefully...');
-  await prisma.$disconnect();
-  console.log('👋 Prisma disconnected');
+  try {
+    await prisma.$disconnect();
+    console.log('👋 Prisma disconnected');
+  } catch (e) {
+    console.error('Error during Prisma disconnect:', e);
+  }
   process.exit(0);
 };
 
 process.on('SIGTERM', gracefulShutdown);
 process.on('SIGINT', gracefulShutdown);
-process.on('beforeExit', async () => {
-  await prisma.$disconnect();
-});
 
 // Start Server
 app.listen(PORT, () => {
@@ -371,13 +149,15 @@ app.listen(PORT, () => {
   console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
   console.log('');
   console.log('📍 Available Endpoints:');
-  console.log(`   ├─ Health Check: http://localhost:${PORT}/api/health`);
-  console.log(`   ├─ Users API:    http://localhost:${PORT}/api/users`);
-  console.log(`   └─ Shifts API:   http://localhost:${PORT}/api/shifts`);
+  console.log(`   ├─ Welcome:        http://localhost:${PORT}/`);
+  console.log(`   ├─ Health Check:   http://localhost:${PORT}/api/health`);
+  console.log(`   ├─ System Stats:   http://localhost:${PORT}/api/stats`);
+  console.log(`   ├─ Auth API:       http://localhost:${PORT}/api/auth`);
+  console.log(`   ├─ Users API:      http://localhost:${PORT}/api/users`);
+  console.log(`   └─ Shifts API:     http://localhost:${PORT}/api/shifts`);
   console.log('');
   console.log('🛠️  Development Tools:');
   console.log(`   ├─ Prisma Studio: http://localhost:5555`);
-  console.log(`   └─ pgAdmin:       http://localhost:8080`);
   console.log('🚀 ================================');
 });
 
