@@ -19,8 +19,8 @@ Your immediate task is to work through the items on the following roadmap, start
 ### Roadmap
 
 **Priority 1: Complete API Security**
-1.  **Task**: Secure all routes in `src/routes/shiftRoutes.ts` by adding the `authenticate` middleware from `src/middleware/auth.ts`.
-2.  **Task**: Implement role-based permissions for all relevant endpoints (Users and Shifts) using the `authorize` middleware from `src/middleware/auth.ts`. Start by revising `userRoutes.ts` and then add permissions to `shiftRoutes.ts`.
+1.  **Task**: Secure all routes in `src/routes/shiftRoutes.ts` by adding the `authenticate` middleware from `src/middleware/auth.ts`. **(done)**
+2.  **Task**: Implement role-based permissions for all relevant endpoints (Users and Shifts) using the `authorize` middleware from `src/middleware/auth.ts`. Start by revising `userRoutes.ts` and then add permissions to `shiftRoutes.ts`. **(done)**
     * `GET /api/users`: `ADMIN`, `DISPATCHER` only.
     * `POST /api/users`: `ADMIN` only.
     * `DELETE /api/users/:id`: `ADMIN` only.
@@ -28,14 +28,14 @@ Your immediate task is to work through the items on the following roadmap, start
     * `POST /api/shifts`: `ADMIN`, `DISPATCHER` only.
     * `PUT /api/shifts/:id`: `ADMIN`, `DISPATCHER` only.
     * `DELETE /api/shifts/:id`: `ADMIN` only.
-3.  **Task**: Implement input validation with Zod.
+3.  **Task**: Implement input validation with Zod. **(done)**
     * Create `src/validations/userValidation.ts` and `src/validations/shiftValidation.ts`.
     * Define Zod schemas for creating and updating users and shifts.
     * Create a `src/middleware/validate.ts` file that exports a validation middleware.
     * Integrate this middleware into the appropriate `POST` and `PUT` routes.
 
 **Priority 2: Stability & Quality Assurance**
-4.  **Task**: Set up structured logging with Winston. Create a `src/utils/logger.ts` and integrate the logger into the global error handler in `app.ts`.
+4.  **Task**: Set up structured logging with Winston. Create a `src/utils/logger.ts` and integrate the logger into the global error handler in `app.ts`. **(done)**
 
 ## Guidelines for Collaboration
 - **One Task at a Time**: Focus on one task from the roadmap at a time.
