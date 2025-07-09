@@ -19,7 +19,7 @@ Your immediate task is to work through the items on the following roadmap, start
 ### Roadmap
 
 **Priority 1: Complete API Security**
-1.  **Task**: Secure all routes in `src/routes/shiftRoutes.ts` by adding the `authenticate` middleware from `src/middleware/auth.ts`.
+1.  **Task**: Secure all routes in `src/routes/shiftRoutes.ts` by adding the `authenticate` middleware from `src/middleware/auth.ts`. **(done)**
 2.  **Task**: Implement role-based permissions for all relevant endpoints (Users and Shifts) using the `authorize` middleware from `src/middleware/auth.ts`. Start by revising `userRoutes.ts` and then add permissions to `shiftRoutes.ts`.
     * `GET /api/users`: `ADMIN`, `DISPATCHER` only.
     * `POST /api/users`: `ADMIN` only.
