@@ -27,5 +27,4 @@ export const validate = (schema: AnyZodObject) => {
         message: "Ein unerwarteter Fehler ist im Validierungs-Middleware aufgetreten."
       });
     }
-  };
-};
+  };};

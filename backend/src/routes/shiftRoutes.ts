@@ -21,5 +21,4 @@ router.delete('/:id', asyncHandler(shiftController.deleteShift));
 
 // POST /api/shifts/:id/assign - Mitarbeiter zur Schicht zuweisen
 router.post('/:id/assign', asyncHandler(shiftController.assignUserToShift));
-
 export default router;

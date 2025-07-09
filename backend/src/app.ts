@@ -160,5 +160,4 @@ app.listen(PORT, () => {
   console.log(`   ├─ Prisma Studio: http://localhost:5555`);
   console.log('🚀 ================================');
 });
-
 export default app;

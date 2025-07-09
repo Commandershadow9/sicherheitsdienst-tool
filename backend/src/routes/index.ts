@@ -3,5 +3,4 @@
 
 export { default as systemRoutes } from './systemRoutes';
 export { default as userRoutes } from './userRoutes';
-export { default as shiftRoutes } from './shiftRoutes';
-export { default as authRoutes } from './authRoutes'; // NEU HINZUGEFÜGT
+export { default as shiftRoutes } from './shiftRoutes';export { default as authRoutes } from './authRoutes'; // NEU HINZUGEFÜGT

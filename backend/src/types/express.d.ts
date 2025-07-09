@@ -5,5 +5,4 @@ declare global {
     interface Request {
       user?: User; // Hier deklarieren wir, dass das Request-Objekt optional einen User haben kann
     }
-  }
-}
+  }}

@@ -84,5 +84,4 @@ export const login = async (req: Request, res: Response): Promise<Response> => {
       success: false,
       message: 'Ein interner Serverfehler ist beim Login aufgetreten.'
     });
-  }
-};
+  }};
