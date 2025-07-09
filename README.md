@@ -83,10 +83,10 @@ Based on the original plan, here are the next recommended steps to advance the p
 
 ### Phase 1: Finalize Core API and Security
 
-* [ ] **Secure `shiftRoutes.ts`**: Add the `authenticate` middleware to all routes in `src/routes/shiftRoutes.ts` to ensure only authenticated users can access shift data.
-* [ ] **Implement Role-Based Permissions (`authorize`)**: Utilize the existing `authorize` middleware from `src/middleware/auth.ts` to secure API endpoints with granular control.
+* [x] **Secure `shiftRoutes.ts`**: Add the `authenticate` middleware to all routes in `src/routes/shiftRoutes.ts` to ensure only authenticated users can access shift data.
+* [x] **Implement Role-Based Permissions (`authorize`)**: Utilize the existing `authorize` middleware from `src/middleware/auth.ts` to secure API endpoints with granular control.
     * **Examples**: Only `ADMIN` and `DISPATCHER` can create new shifts. Only `ADMIN` can delete users.
-* [ ] **Implement Input Validation (Zod)**: Create validation schemas in the `src/validations/` folder for all `POST` and `PUT` requests. Integrate the `validate` middleware into the corresponding routes to ensure data integrity.
+* [x] **Implement Input Validation (Zod)**: Create validation schemas in the `src/validations/` folder for all `POST` and `PUT` requests. Integrate the `validate` middleware into the corresponding routes to ensure data integrity.
 
 ### Phase 2: Stability & Quality Assurance
 
