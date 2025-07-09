@@ -86,5 +86,4 @@ export const getSystemStats = async (req: Request, res: Response, next: NextFunc
   } catch (error) {
     console.error('Error fetching system stats:', error);
     next(error);
-  }
-};
+  }};

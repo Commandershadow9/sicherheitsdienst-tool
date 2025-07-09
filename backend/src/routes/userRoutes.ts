@@ -32,5 +32,4 @@ router.put('/:id', authenticate, asyncHandler(userController.updateUser));
 // Beispiel: Nur Admins dürfen User deaktivieren
 // router.delete('/:id', authenticate, authorize('ADMIN'), asyncHandler(userController.deactivateUser));
 router.delete('/:id', authenticate, asyncHandler(userController.deactivateUser)); // Vorerst nur Authentifizierung
-
 export default router;

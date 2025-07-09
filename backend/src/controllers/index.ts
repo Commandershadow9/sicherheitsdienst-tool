@@ -2,5 +2,4 @@
 // Vereinfacht die Imports in den Router-Dateien
 
 export * from './userController';
-export * from './shiftController';
-export * from './systemController';
+export * from './shiftController';export * from './systemController';

@@ -60,5 +60,4 @@ export const authorize = (...roles: string[]) => {
       return next(createError(403, 'Keine Berechtigung für diese Aktion.'));
     }
     next();
-  };
-};
+  };};

@@ -289,5 +289,4 @@ export const deactivateUser = async (req: Request, res: Response, next: NextFunc
     }
 
     next(error);
-  }
-};
+  }};
