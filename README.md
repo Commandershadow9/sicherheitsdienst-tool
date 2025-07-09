@@ -1,101 +1,101 @@
 # Sicherheitsdienst-Tool Backend
 
-Dies ist das Backend für ein vollumfängliches Verwaltungstool für Sicherheitsdienste. Es stellt eine REST-API zur Verfügung, um Mitarbeiter, Schichten, Zeiterfassung und andere betriebliche Daten zu verwalten. Das Projekt ist mit Node.js, Express, TypeScript und Prisma gebaut und verwendet eine PostgreSQL-Datenbank.
+This is the backend for a comprehensive management tool for security services. It provides a REST API to manage employees, shifts, time tracking, and other operational data. The project is built with Node.js, Express, TypeScript, and Prisma, using a PostgreSQL database.
 
-## Aktueller Projektstatus
+## Current Project Status
 
-Das Projekt befindet sich in einem stabilen Entwicklungsstadium. Die grundlegende API-Struktur ist etabliert, und ein **vollständiges Authentifizierungssystem auf Basis von JSON Web Tokens (JWT) wurde erfolgreich implementiert und getestet.**
+The project is in a stable development stage. The basic API structure is established, and a **complete authentication system based on JSON Web Tokens (JWT) has been successfully implemented and tested.**
 
-- **Grundfunktionen:** CRUD-Operationen für `Users` (Mitarbeiter) und `Shifts` (Schichten) sind angelegt.
-- **Authentifizierung:** Benutzer können sich über `POST /api/auth/login` anmelden und erhalten einen gültigen Token.
-- **Sicherheit:** Die Benutzer-Routen (`/api/users`) sind bereits durch eine Middleware geschützt und erfordern eine Authentifizierung per JWT.
+* **Core Functions**: CRUD operations for `Users` and `Shifts` are in place.
+* **Authentication**: Users can log in via `POST /api/auth/login` to receive a valid JWT.
+* **Security**: User routes (`/api/users`) are protected by middleware and require authentication.
 
-## Technologie-Stack
+## Technology Stack
 
-- **Laufzeitumgebung:** Node.js
-- **Framework:** Express.js
-- **Sprache:** TypeScript
-- **Datenbank-ORM:** Prisma
-- **Datenbank:** PostgreSQL (kann über Docker ausgeführt werden)
-- **Authentifizierung:** JSON Web Tokens (JWT) mit `bcryptjs` zum Hashen von Passwörtern.
-- **Entwicklungsumgebung:** `ts-node` und `nodemon` für Live-Reloading.
+* **Runtime Environment**: Node.js
+* **Framework**: Express.js
+* **Language**: TypeScript
+* **Database ORM**: Prisma
+* **Database**: PostgreSQL (can be run via Docker)
+* **Authentication**: JSON Web Tokens (JWT) with `bcryptjs` for password hashing.
+* **Development Environment**: `ts-node` and `nodemon` for live-reloading.
 
 ---
 
-## Setup & Installation (Für Entwickler)
+## Setup & Installation (For Developers)
 
-Folge diesen Schritten, um das Projekt lokal aufzusetzen und zu starten:
+Follow these steps to set up and run the project locally:
 
-1.  **Voraussetzungen:**
-    - Node.js (v18 oder höher)
-    - Docker und Docker Compose (für die PostgreSQL-Datenbank)
+1.  **Prerequisites**:
+    * Node.js (v18 or higher)
+    * Docker and Docker Compose (for the PostgreSQL database)
 
-2.  **Repository klonen & installieren:**
+2.  **Clone & Install Repository**:
     ```bash
-    git clone <deine-repository-url>
+    git clone <your-repository-url>
     cd backend
     npm install
     ```
 
-3.  **Datenbank starten:**
-    - Starte den PostgreSQL-Container mit Docker Compose. Das Docker-Setup ist bereits in deiner `package.json` vorbereitet.
+3.  **Start Database**:
+    * Start the PostgreSQL container using Docker Compose. The Docker setup is pre-configured in your `package.json`.
         ```bash
         npm run docker:up
         ```
 
-4.  **Umgebungsvariablen konfigurieren:**
-    - Kopiere die Vorlagedatei `.env.example` und erstelle daraus eine `.env`-Datei im `backend`-Hauptverzeichnis.
-    - Passe die `DATABASE_URL` in der `.env`-Datei an deine lokalen PostgreSQL-Einstellungen an. Ersetze `username` und `password` mit den korrekten Zugangsdaten:
+4.  **Configure Environment Variables**:
+    * Copy the template file `.env.example` to create a `.env` file in the `backend` main directory.
+    * Adjust the `DATABASE_URL` in the `.env` file to match your local PostgreSQL settings. Replace `your_password` with the correct password:
         ```env
-        DATABASE_URL="postgresql://username:password@localhost:5432/sicherheitsdienst_db?schema=public"
+        DATABASE_URL="postgresql://your_postgres_user:your_password@localhost:5432/sicherheitsdienst_db?schema=public"
         ```
-    - Generiere einen sicheren `JWT_SECRET` (mindestens 32 zufällige Zeichen).
+    * Generate a secure `JWT_SECRET` (at least 32 random characters).
 
-5.  **Datenbank migrieren und Seeden:**
-    - Wende alle Prisma-Migrationen an, um die Datenbanktabellen zu erstellen, und fülle die Datenbank mit initialen Testdaten:
+5.  **Migrate and Seed Database**:
+    * Apply all Prisma migrations to create the database tables and populate the database with initial test data:
         ```bash
         npx prisma migrate dev
         npm run db:seed
         ```
-    - Falls du die Datenbank zurücksetzen musst, kannst du `npm run db:reset` verwenden.
+    * To reset the database, you can use `npm run db:reset`.
 
-6.  **Server starten:**
-    - Starte den Entwicklungsserver:
+6.  **Start Server**:
+    * Start the development server:
         ```bash
         npm run dev
         ```
-    - Der Server sollte nun auf `http://localhost:3001` laufen.
+    * The server should now be running at `http://localhost:3001`.
 
-### Verfügbare NPM-Skripte
+### Available NPM Scripts
 
-- `npm run dev`: Startet den Server im Entwicklungsmodus mit Live-Reload.
-- `npm run build`: Kompiliert den TypeScript-Code nach `./dist`.
-- `npm run start`: Startet die kompilierte Anwendung aus dem `./dist`-Ordner.
-- `npm run db:migrate`: Wendet Datenbank-Migrationen an.
-- `npm run db:seed`: Füllt die Datenbank mit Testdaten aus `src/utils/seedData.ts`.
-- `npm run db:studio`: Öffnet das Prisma Studio zur einfachen Datenbankverwaltung im Browser.
+* `npm run dev`: Starts the server in development mode with live-reloading.
+* `npm run build`: Compiles the TypeScript code to the `./dist` folder.
+* `npm run start`: Starts the compiled application from the `./dist` folder.
+* `npm run db:migrate`: Applies database migrations.
+* `npm run db:seed`: Populates the database with test data from `src/utils/seedData.ts`.
+* `npm run db:studio`: Opens Prisma Studio for easy database management in the browser.
 
 ---
 
-## Weiterer Entwicklungsplan (Roadmap)
+## Further Development Plan (Roadmap)
 
-Basierend auf dem ursprünglichen Plan sind dies die nächsten empfohlenen Schritte, um das Projekt weiterzuentwickeln.
+Based on the original plan, here are the next recommended steps to advance the project.
 
-### Phase 1: Kern-API fertigstellen und absichern
+### Phase 1: Finalize Core API and Security
 
--   [ ] **`shiftRoutes.ts` absichern:** Die `authenticate`-Middleware zu allen Routen in `src/routes/shiftRoutes.ts` hinzufügen, um sicherzustellen, dass nur authentifizierte Benutzer auf Schichtdaten zugreifen können.
--   [ ] **Rollenbasierte Berechtigungen (`authorize`) implementieren:** Die bestehende `authorize`-Middleware aus `src/middleware/auth.ts` nutzen, um die API-Endpunkte granular abzusichern.
-    -   **Beispiele:** Nur `ADMIN` und `DISPATCHER` dürfen neue Schichten erstellen. Nur `ADMIN` darf Benutzer löschen.
--   [ ] **Input-Validierung (Zod) implementieren:** Validierungsschemas im Ordner `src/validations/` erstellen und die `validate`-Middleware in den Routen einbinden, um die Datenintegrität sicherzustellen.
+* [ ] **Secure `shiftRoutes.ts`**: Add the `authenticate` middleware to all routes in `src/routes/shiftRoutes.ts` to ensure only authenticated users can access shift data.
+* [ ] **Implement Role-Based Permissions (`authorize`)**: Utilize the existing `authorize` middleware from `src/middleware/auth.ts` to secure API endpoints with granular control.
+    * **Examples**: Only `ADMIN` and `DISPATCHER` can create new shifts. Only `ADMIN` can delete users.
+* [ ] **Implement Input Validation (Zod)**: Create validation schemas in the `src/validations/` folder for all `POST` and `PUT` requests. Integrate the `validate` middleware into the corresponding routes to ensure data integrity.
 
-### Phase 2: Stabilität & Qualitätssicherung
+### Phase 2: Stability & Quality Assurance
 
--   [ ] **Strukturiertes Logging (Winston):** Eine `src/utils/logger.ts` erstellen, um Anfragen und Fehler strukturiert in Log-Dateien zu protokollieren.
--   [ ] **Tests schreiben (Jest):** Unit- und Integration-Tests für Controller und Services im `src/__tests__`-Verzeichnis erstellen.
+* [ ] **Structured Logging (Winston)**: Create a `src/utils/logger.ts` to set up a central logging system. Integrate the logger into the global error handler and key controllers to log requests, errors, and system events.
+* [ ] **Write Tests (Jest)**: Set up Jest and Supertest (already in `devDependencies`) to write unit and integration tests for controllers and business logic in the `src/__tests__` directory.
 
-### Phase 3: Neue Features & Dokumentation
+### Phase 3: New Features & Documentation
 
--   [ ] **API-Dokumentation (Swagger):** `swagger-jsdoc` und `swagger-ui-express` implementieren, um eine interaktive API-Dokumentation unter einem `/api-docs`-Endpunkt bereitzustellen.
--   [ ] **Kernfeatures ausbauen:**
-    -   **Zeiterfassung:** API für das Ein- und Ausstempeln (`TimeEntry`).
-    -   **Vorfallmeldungen:** API für das Melden von Vorfällen (`Incident Reporting`).
+* [ ] **API Documentation (Swagger)**: Implement `swagger-jsdoc` and `swagger-ui-express` to generate interactive API documentation at an `/api-docs` endpoint. Annotate routes with JSDoc comments for Swagger to recognize them.
+* [ ] **Expand Core Features**:
+    * **Time Tracking**: Create models, controllers, and routes for employee clock-in/out (`TimeEntry`).
+    * **Incident Reporting**: Implement an API for reporting and managing incidents.
