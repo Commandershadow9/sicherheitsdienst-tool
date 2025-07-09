@@ -9,6 +9,7 @@ The project is in a stable development stage. The basic API structure is establi
 * **Core Functions**: CRUD operations for `Users` and `Shifts` are in place.
 * **Authentication**: Users can log in via `POST /api/auth/login` to receive a valid JWT.
 * **Security**: User routes (`/api/users`) are protected by middleware and require authentication.
+* **Logging**: Structured application logs are written using Winston.
 
 ## Technology Stack
 
@@ -90,7 +91,7 @@ Based on the original plan, here are the next recommended steps to advance the p
 
 ### Phase 2: Stability & Quality Assurance
 
-* [ ] **Structured Logging (Winston)**: Create a `src/utils/logger.ts` to set up a central logging system. Integrate the logger into the global error handler and key controllers to log requests, errors, and system events.
+* [x] **Structured Logging (Winston)**: Create a `src/utils/logger.ts` to set up a central logging system. Integrate the logger into the global error handler and key controllers to log requests, errors, and system events.
 * [ ] **Write Tests (Jest)**: Set up Jest and Supertest (already in `devDependencies`) to write unit and integration tests for controllers and business logic in the `src/__tests__` directory.
 
 ### Phase 3: New Features & Documentation

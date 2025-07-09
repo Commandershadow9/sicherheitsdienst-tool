@@ -35,7 +35,7 @@ Your immediate task is to work through the items on the following roadmap, start
     * Integrate this middleware into the appropriate `POST` and `PUT` routes.
 
 **Priority 2: Stability & Quality Assurance**
-4.  **Task**: Set up structured logging with Winston. Create a `src/utils/logger.ts` and integrate the logger into the global error handler in `app.ts`.
+4.  **Task**: Set up structured logging with Winston. Create a `src/utils/logger.ts` and integrate the logger into the global error handler in `app.ts`. **(done)**
 
 ## Guidelines for Collaboration
 - **One Task at a Time**: Focus on one task from the roadmap at a time.
