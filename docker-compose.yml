@@ -2,40 +2,76 @@ version: '3.8'
 
 services:
   # PostgreSQL Database
-  postgres:
+  db:
     image: postgres:15
-    container_name: sicherheitsdienst_db
+    container_name: sicherheitsdienst-db
     restart: always
     environment:
-      POSTGRES_DB: sicherheitsdienst_db
-      POSTGRES_USER: admin
-      POSTGRES_PASSWORD: admin123
-      POSTGRES_HOST_AUTH_METHOD: trust
+      POSTGRES_DB: ${POSTGRES_DB:-sicherheitsdienst_db}
+      POSTGRES_USER: ${POSTGRES_USER:-admin}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-admin123}
     ports:
       - "5432:5432"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - db-data:/var/lib/postgresql/data
     networks:
-      - sicherheitsdienst_network
+      - sicherheitsdienst-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-admin} -d ${POSTGRES_DB:-sicherheitsdienst_db}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Backend API (Node.js)
+  api:
+    build:
+      context: ./backend
+    container_name: sicherheitsdienst-api
+    environment:
+      NODE_ENV: production
+      PORT: 3001
+      # Adjust to your DB credentials or override via environment
+      DATABASE_URL: ${DATABASE_URL:-postgresql://${POSTGRES_USER:-admin}:${POSTGRES_PASSWORD:-admin123}@db:5432/${POSTGRES_DB:-sicherheitsdienst_db}?schema=public}
+      JWT_SECRET: ${JWT_SECRET:-changeme-in-env}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
+      MOBILE_APP_URL: ${MOBILE_APP_URL:-http://localhost:19000}
+    ports:
+      - "3001:3001"
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - sicherheitsdienst-network
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3001/api/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
 
   # pgAdmin (Datenbank-Verwaltung)
   pgadmin:
     image: dpage/pgadmin4:latest
-    container_name: sicherheitsdienst_pgadmin
+    container_name: sicherheitsdienst-pgadmin
     restart: always
     environment:
-      PGADMIN_DEFAULT_EMAIL: admin@admin.com
-      PGADMIN_DEFAULT_PASSWORD: admin123
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL:-admin@admin.com}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD:-admin123}
     ports:
       - "8080:80"
     depends_on:
-      - postgres
+      db:
+        condition: service_healthy
     networks:
-      - sicherheitsdienst_network
+      - sicherheitsdienst-network
+    healthcheck:
+      test: ["CMD-SHELL", "wget --spider -q http://localhost:80 || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
 
 volumes:
-  postgres_data:
+  db-data:
 
 networks:
-  sicherheitsdienst_network:
+  sicherheitsdienst-network:
     driver: bridge

@@ -1,31 +1,26 @@
-import { Request, Response, NextFunction } from 'express';
-import { AnyZodObject, ZodError } from 'zod'; // ZodError importieren
+import type { RequestHandler } from 'express';
+import { AnyZodObject, ZodError } from 'zod';
 
-// Kein logger Import hier
-
-export const validate = (schema: AnyZodObject) => {
-  return async (req: Request, res: Response, next: NextFunction): Promise<void | Response> => { // Expliziter Rückgabetyp
+export const validate = (schema: AnyZodObject): RequestHandler => {
+  return async (req, res, next) => {
     try {
       await schema.parseAsync({
         body: req.body,
         query: req.query,
-        params: req.params
+        params: req.params,
       });
       next();
-    } catch (error: any) {
-      if (error instanceof ZodError) { // Prüfen ob es ein ZodError ist
-        return res.status(400).json({ // Rückgabe hier
+    } catch (error: unknown) {
+      if (error instanceof ZodError) {
+        res.status(400).json({
           success: false,
           message: 'Validierungsfehler',
-          errors: error.errors
+          errors: error.errors,
         });
+        return;
       }
-      // Für andere Fehler, die hier unerwartet auftreten könnten
-      console.error("Error in validation middleware:", error);
-      return res.status(500).json({ // Rückgabe hier
-        success: false,
-        message: "Ein unerwarteter Fehler ist im Validierungs-Middleware aufgetreten."
-      });
+      // Unerwartete Fehler dem globalen Error-Handler übergeben
+      next(error as any);
     }
   };
 };

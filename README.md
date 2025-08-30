@@ -1,6 +1,7 @@
 # Sicherheitsdienst-Tool Backend
 
 This is the backend for a comprehensive management tool for security services. It provides a REST API to manage employees, shifts, time tracking, and other operational data. The project is built with Node.js, Express, TypeScript, and Prisma, using a PostgreSQL database.
+It follows consistent coding standards (EditorConfig, Prettier, ESLint v9) and includes smoke tests.
 
 ## Current Project Status
 
@@ -10,6 +11,8 @@ The project is in a stable development stage. The basic API structure is establi
 * **Authentication**: Users can log in via `POST /api/auth/login` to receive a valid JWT.
 * **Security**: User routes (`/api/users`) are protected by middleware and require authentication.
 * **Logging**: Structured application logs are written using Winston.
+* **Validation**: Zod-based request validation via middleware.
+* **RBAC**: Route-level authorization with roles (e.g. ADMIN, DISPATCHER).
 
 ## Technology Stack
 
@@ -30,6 +33,8 @@ Follow these steps to set up and run the project locally:
 1.  **Prerequisites**:
     * Node.js (v18 or higher)
     * Docker and Docker Compose (for the PostgreSQL database)
+    * PostgreSQL client tools (optional)
+    * A `.env` file (see `.env.example`)
 
 2.  **Clone & Install Repository**:
     ```bash
@@ -46,7 +51,7 @@ Follow these steps to set up and run the project locally:
 
 4.  **Configure Environment Variables**:
     * Copy the template file `.env.example` to create a `.env` file in the `backend` main directory.
-    * Adjust the `DATABASE_URL` in the `.env` file to match your local PostgreSQL settings. Replace `your_password` with the correct password:
+    * Adjust the `DATABASE_URL` in the `.env` file to match your local PostgreSQL settings. Replace placeholders with correct values:
         ```env
         DATABASE_URL="postgresql://your_postgres_user:your_password@localhost:5432/sicherheitsdienst_db?schema=public"
         ```
@@ -77,6 +82,43 @@ Follow these steps to set up and run the project locally:
 * `npm run db:studio`: Opens Prisma Studio for easy database management in the browser.
 
 ---
+
+## Development Standards
+
+- EditorConfig: see `.editorconfig` (LF, UTF-8, 2 spaces, trim EOL).
+- Prettier: see root `.prettierrc.json` and `.prettierignore`.
+- ESLint v9: see `backend/eslint.config.mjs` (TypeScript rules, strict parser options).
+- TypeScript: strict config in `backend/tsconfig.json`.
+
+## Scripts (Backend)
+
+From within `backend/`:
+
+- `dev`: Runs the server with `ts-node` via `src/server.ts` and watches `src/**`.
+- `build`: Compiles TypeScript into `dist/`.
+- `start`: Launches compiled app `dist/server.js`.
+- `test`: Runs Jest tests (unit + smoke).
+- `test:watch`: Runs tests once (no watch-mode).
+- `typecheck`: Type-only compilation (`--noEmit`).
+- `lint` / `lint:fix`: ESLint check/fix.
+- `format` / `format:write`: Prettier check/write.
+- `db:*`: Prisma helpers (generate, migrate, seed, studio, reset).
+
+## Testing
+
+- Tests are written with Jest and avoid port-binding. Controller and middleware smoke tests simulate Express `req/res/next`.
+- Health and stats controllers handle lack of DB (503), tests pass in both cases (connected/disconnected).
+
+## Docker Compose
+
+- See `docker-compose.yml` for Postgres (`db`) and pgAdmin (`pgadmin`) with healthchecks.
+- Customize env vars with `.env` or environment overrides (`POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD`, etc.).
+- If you want an API service in Compose, add a `Dockerfile` for `backend` and a service `api` depending on `db: service_healthy`.
+
+## Server Bootstrap
+
+- `src/app.ts` exports the Express app with routes and middleware.
+- `src/server.ts` is the runtime entry (listens on `PORT`, handles graceful shutdown with Prisma).
 
 ## Further Development Plan (Roadmap)
 

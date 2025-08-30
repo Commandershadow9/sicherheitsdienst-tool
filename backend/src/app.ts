@@ -3,15 +3,11 @@ import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
 import dotenv from 'dotenv';
-import { PrismaClient } from '@prisma/client';
 import jwt from 'jsonwebtoken';
 import logger from './utils/logger';
 
 // Load environment variables
 dotenv.config();
-
-// Initialize Prisma Client
-const prisma = new PrismaClient();
 
 // Import all routes
 import { systemRoutes, userRoutes, shiftRoutes, authRoutes } from './routes';
@@ -131,40 +127,4 @@ const globalErrorHandler: ErrorRequestHandler = (err, req, res, next) => {
 };
 
 app.use(globalErrorHandler); // Error Handler hier registrieren
-
-// Graceful Shutdown
-const gracefulShutdown = async () => {
-  logger.info('🛑 Shutting down gracefully...');
-  try {
-    await prisma.$disconnect();
-    logger.info('👋 Prisma disconnected');
-  } catch (e) {
-    logger.error('Error during Prisma disconnect: %o', e);
-  }
-  process.exit(0);
-};
-
-process.on('SIGTERM', gracefulShutdown);
-process.on('SIGINT', gracefulShutdown);
-
-// Start Server
-app.listen(PORT, () => {
-  logger.info('🚀 ================================');
-  logger.info(`🛡️  Sicherheitsdienst-Tool Backend`);
-  logger.info('🚀 ================================');
-  logger.info(`📡 Server running on port ${PORT}`);
-  logger.info(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
-  logger.info('');
-  logger.info('📍 Available Endpoints:');
-  logger.info(`   ├─ Welcome:        http://localhost:${PORT}/`);
-  logger.info(`   ├─ Health Check:   http://localhost:${PORT}/api/health`);
-  logger.info(`   ├─ System Stats:   http://localhost:${PORT}/api/stats`);
-  logger.info(`   ├─ Auth API:       http://localhost:${PORT}/api/auth`);
-  logger.info(`   ├─ Users API:      http://localhost:${PORT}/api/users`);
-  logger.info(`   └─ Shifts API:     http://localhost:${PORT}/api/shifts`);
-  logger.info('');
-  logger.info('🛠️  Development Tools:');
-  logger.info(`   ├─ Prisma Studio: http://localhost:5555`);
-  logger.info('🚀 ================================');
-});
 export default app;

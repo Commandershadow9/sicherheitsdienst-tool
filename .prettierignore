@@ -1,0 +1,13 @@
+node_modules
+dist
+coverage
+build
+.cache
+.next
+.nuxt
+backend/logs
+backend/coverage
+backend/src/generated/prisma
+*.min.js
+*.min.css
+

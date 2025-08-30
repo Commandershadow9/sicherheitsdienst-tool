@@ -14,7 +14,12 @@ export default [
     plugins: {
       '@typescript-eslint': tsPlugin,
     },
-    rules: {},
+    rules: {
+      '@typescript-eslint/no-unused-vars': [
+        'warn',
+        { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }
+      ]
+    },
   },
   {
     ignores: ['dist/**', 'src/__tests__/**', 'jest.config.ts'],
