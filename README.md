@@ -9,6 +9,7 @@ The project is in a stable development stage. The basic API structure is establi
 * **Core Functions**: CRUD operations for `Users` and `Shifts` are in place.
 * **Authentication**: Users can log in via `POST /api/auth/login` to receive a valid JWT.
 * **Security**: User routes (`/api/users`) are protected by middleware and require authentication.
+* **Logging**: Structured application logs are written using Winston.
 
 ## Technology Stack
 
@@ -84,13 +85,13 @@ Based on the original plan, here are the next recommended steps to advance the p
 ### Phase 1: Finalize Core API and Security
 
 * [x] **Secure `shiftRoutes.ts`**: Add the `authenticate` middleware to all routes in `src/routes/shiftRoutes.ts` to ensure only authenticated users can access shift data.
-* [ ] **Implement Role-Based Permissions (`authorize`)**: Utilize the existing `authorize` middleware from `src/middleware/auth.ts` to secure API endpoints with granular control.
+* [x] **Implement Role-Based Permissions (`authorize`)**: Utilize the existing `authorize` middleware from `src/middleware/auth.ts` to secure API endpoints with granular control.
     * **Examples**: Only `ADMIN` and `DISPATCHER` can create new shifts. Only `ADMIN` can delete users.
-* [ ] **Implement Input Validation (Zod)**: Create validation schemas in the `src/validations/` folder for all `POST` and `PUT` requests. Integrate the `validate` middleware into the corresponding routes to ensure data integrity.
+* [x] **Implement Input Validation (Zod)**: Create validation schemas in the `src/validations/` folder for all `POST` and `PUT` requests. Integrate the `validate` middleware into the corresponding routes to ensure data integrity.
 
 ### Phase 2: Stability & Quality Assurance
 
-* [ ] **Structured Logging (Winston)**: Create a `src/utils/logger.ts` to set up a central logging system. Integrate the logger into the global error handler and key controllers to log requests, errors, and system events.
+* [x] **Structured Logging (Winston)**: Create a `src/utils/logger.ts` to set up a central logging system. Integrate the logger into the global error handler and key controllers to log requests, errors, and system events.
 * [ ] **Write Tests (Jest)**: Set up Jest and Supertest (already in `devDependencies`) to write unit and integration tests for controllers and business logic in the `src/__tests__` directory.
 
 ### Phase 3: New Features & Documentation
