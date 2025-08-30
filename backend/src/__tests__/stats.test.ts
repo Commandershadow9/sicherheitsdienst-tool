@@ -38,4 +38,3 @@ describe('System controllers', () => {
     }
   });
 });
-

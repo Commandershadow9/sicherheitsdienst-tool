@@ -17,22 +17,22 @@ export const getAllShifts = async (req: Request, res: Response, next: NextFuncti
                 lastName: true,
                 employeeId: true,
                 phone: true,
-                qualifications: true
-              }
-            }
-          }
-        }
+                qualifications: true,
+              },
+            },
+          },
+        },
       },
       orderBy: {
-        startTime: 'asc'
-      }
+        startTime: 'asc',
+      },
     });
 
     res.json({
       success: true,
       message: `${shifts.length} Schichten aus Datenbank geladen`,
       data: shifts,
-      count: shifts.length
+      count: shifts.length,
     });
   } catch (error) {
     console.error('Error fetching shifts from database:', error);
@@ -50,14 +50,14 @@ export const createShift = async (req: Request, res: Response, next: NextFunctio
       startTime,
       endTime,
       requiredEmployees = 1,
-      requiredQualifications = []
+      requiredQualifications = [],
     } = req.body;
 
     // Validation
     if (!title || !location || !startTime || !endTime) {
       res.status(400).json({
         success: false,
-        message: 'Titel, Ort, Start- und Endzeit sind erforderlich'
+        message: 'Titel, Ort, Start- und Endzeit sind erforderlich',
       });
       return;
     }
@@ -65,11 +65,11 @@ export const createShift = async (req: Request, res: Response, next: NextFunctio
     // Zeitvalidierung
     const start = new Date(startTime);
     const end = new Date(endTime);
-    
+
     if (start >= end) {
       res.status(400).json({
         success: false,
-        message: 'Startzeit muss vor der Endzeit liegen'
+        message: 'Startzeit muss vor der Endzeit liegen',
       });
       return;
     }
@@ -82,7 +82,7 @@ export const createShift = async (req: Request, res: Response, next: NextFunctio
         startTime: start,
         endTime: end,
         requiredEmployees: parseInt(requiredEmployees),
-        requiredQualifications: Array.isArray(requiredQualifications) ? requiredQualifications : []
+        requiredQualifications: Array.isArray(requiredQualifications) ? requiredQualifications : [],
       },
       include: {
         assignments: {
@@ -92,18 +92,18 @@ export const createShift = async (req: Request, res: Response, next: NextFunctio
                 id: true,
                 firstName: true,
                 lastName: true,
-                employeeId: true
-              }
-            }
-          }
-        }
-      }
+                employeeId: true,
+              },
+            },
+          },
+        },
+      },
     });
 
     res.status(201).json({
       success: true,
       message: 'Schicht erfolgreich erstellt',
-      data: shift
+      data: shift,
     });
   } catch (error) {
     console.error('Error creating shift:', error);
@@ -129,18 +129,18 @@ export const getShiftById = async (req: Request, res: Response, next: NextFuncti
                 employeeId: true,
                 phone: true,
                 qualifications: true,
-                role: true
-              }
-            }
-          }
-        }
-      }
+                role: true,
+              },
+            },
+          },
+        },
+      },
     });
 
     if (!shift) {
       res.status(404).json({
         success: false,
-        message: 'Schicht nicht gefunden'
+        message: 'Schicht nicht gefunden',
       });
       return;
     }
@@ -148,7 +148,7 @@ export const getShiftById = async (req: Request, res: Response, next: NextFuncti
     res.json({
       success: true,
       message: `Schicht "${shift.title}" geladen`,
-      data: shift
+      data: shift,
     });
   } catch (error) {
     console.error('Error fetching shift:', error);
@@ -168,18 +168,18 @@ export const updateShift = async (req: Request, res: Response, next: NextFunctio
       endTime,
       requiredEmployees,
       requiredQualifications,
-      status
+      status,
     } = req.body;
 
     // Zeitvalidierung falls beide Zeiten angegeben werden
     if (startTime && endTime) {
       const start = new Date(startTime);
       const end = new Date(endTime);
-      
+
       if (start >= end) {
         res.status(400).json({
           success: false,
-          message: 'Startzeit muss vor der Endzeit liegen'
+          message: 'Startzeit muss vor der Endzeit liegen',
         });
         return;
       }
@@ -194,10 +194,12 @@ export const updateShift = async (req: Request, res: Response, next: NextFunctio
         ...(startTime && { startTime: new Date(startTime) }),
         ...(endTime && { endTime: new Date(endTime) }),
         ...(requiredEmployees && { requiredEmployees: parseInt(requiredEmployees) }),
-        ...(requiredQualifications && { 
-          requiredQualifications: Array.isArray(requiredQualifications) ? requiredQualifications : [] 
+        ...(requiredQualifications && {
+          requiredQualifications: Array.isArray(requiredQualifications)
+            ? requiredQualifications
+            : [],
         }),
-        ...(status && { status: status as any })
+        ...(status && { status: status as any }),
       },
       include: {
         assignments: {
@@ -207,26 +209,26 @@ export const updateShift = async (req: Request, res: Response, next: NextFunctio
                 id: true,
                 firstName: true,
                 lastName: true,
-                employeeId: true
-              }
-            }
-          }
-        }
-      }
+                employeeId: true,
+              },
+            },
+          },
+        },
+      },
     });
 
     res.json({
       success: true,
       message: 'Schicht erfolgreich aktualisiert',
-      data: updatedShift
+      data: updatedShift,
     });
   } catch (error: any) {
     console.error('Error updating shift:', error);
-    
+
     if (error.code === 'P2025') {
       res.status(404).json({
         success: false,
-        message: 'Schicht nicht gefunden'
+        message: 'Schicht nicht gefunden',
       });
       return;
     }
@@ -242,26 +244,26 @@ export const deleteShift = async (req: Request, res: Response, next: NextFunctio
 
     // Erst alle Zuweisungen löschen
     await prisma.shiftAssignment.deleteMany({
-      where: { shiftId: id }
+      where: { shiftId: id },
     });
 
     // Dann die Schicht löschen
     const deletedShift = await prisma.shift.delete({
-      where: { id }
+      where: { id },
     });
 
     res.json({
       success: true,
       message: 'Schicht erfolgreich gelöscht',
-      data: { id: deletedShift.id, title: deletedShift.title }
+      data: { id: deletedShift.id, title: deletedShift.title },
     });
   } catch (error: any) {
     console.error('Error deleting shift:', error);
-    
+
     if (error.code === 'P2025') {
       res.status(404).json({
         success: false,
-        message: 'Schicht nicht gefunden'
+        message: 'Schicht nicht gefunden',
       });
       return;
     }
@@ -279,7 +281,7 @@ export const assignUserToShift = async (req: Request, res: Response, next: NextF
     if (!userId) {
       res.status(400).json({
         success: false,
-        message: 'Benutzer-ID ist erforderlich'
+        message: 'Benutzer-ID ist erforderlich',
       });
       return;
     }
@@ -287,13 +289,13 @@ export const assignUserToShift = async (req: Request, res: Response, next: NextF
     // Prüfen ob Schicht existiert
     const shift = await prisma.shift.findUnique({
       where: { id: shiftId },
-      include: { assignments: true }
+      include: { assignments: true },
     });
 
     if (!shift) {
       res.status(404).json({
         success: false,
-        message: 'Schicht nicht gefunden'
+        message: 'Schicht nicht gefunden',
       });
       return;
     }
@@ -303,15 +305,15 @@ export const assignUserToShift = async (req: Request, res: Response, next: NextF
       where: {
         userId_shiftId: {
           userId,
-          shiftId
-        }
-      }
+          shiftId,
+        },
+      },
     });
 
     if (existingAssignment) {
       res.status(400).json({
         success: false,
-        message: 'Mitarbeiter ist bereits dieser Schicht zugewiesen'
+        message: 'Mitarbeiter ist bereits dieser Schicht zugewiesen',
       });
       return;
     }
@@ -321,7 +323,7 @@ export const assignUserToShift = async (req: Request, res: Response, next: NextF
       data: {
         userId,
         shiftId,
-        status: 'ASSIGNED'
+        status: 'ASSIGNED',
       },
       include: {
         user: {
@@ -329,32 +331,32 @@ export const assignUserToShift = async (req: Request, res: Response, next: NextF
             id: true,
             firstName: true,
             lastName: true,
-            employeeId: true
-          }
+            employeeId: true,
+          },
         },
         shift: {
           select: {
             id: true,
             title: true,
             startTime: true,
-            endTime: true
-          }
-        }
-      }
+            endTime: true,
+          },
+        },
+      },
     });
 
     res.status(201).json({
       success: true,
       message: 'Mitarbeiter erfolgreich zur Schicht zugewiesen',
-      data: assignment
+      data: assignment,
     });
   } catch (error: any) {
     console.error('Error assigning user to shift:', error);
-    
+
     if (error.code === 'P2002') {
       res.status(400).json({
         success: false,
-        message: 'Mitarbeiter ist bereits dieser Schicht zugewiesen'
+        message: 'Mitarbeiter ist bereits dieser Schicht zugewiesen',
       });
       return;
     }

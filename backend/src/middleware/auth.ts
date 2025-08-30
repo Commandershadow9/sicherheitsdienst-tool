@@ -10,7 +10,7 @@ const prisma = new PrismaClient();
 export const authenticate = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<void> => {
   const authHeader = req.headers.authorization;
   // Korrigierte Token-Extraktion
@@ -24,14 +24,14 @@ export const authenticate = async (
     // Stelle sicher, dass JWT_SECRET ein String ist, bevor jwt.verify aufgerufen wird
     const jwtSecret = process.env.JWT_SECRET;
     if (!jwtSecret) {
-        console.error('JWT_SECRET ist nicht definiert in den Umgebungsvariablen für authenticate.');
-        return next(createError(500, 'Server-Konfigurationsfehler: JWT Secret fehlt.'));
+      console.error('JWT_SECRET ist nicht definiert in den Umgebungsvariablen für authenticate.');
+      return next(createError(500, 'Server-Konfigurationsfehler: JWT Secret fehlt.'));
     }
 
-    const decoded = jwt.verify(token, jwtSecret) as { userId: string, role: string };
+    const decoded = jwt.verify(token, jwtSecret) as { userId: string; role: string };
 
     const user = await prisma.user.findUnique({
-      where: { id: decoded.userId }
+      where: { id: decoded.userId },
     });
 
     if (!user || !user.isActive) {

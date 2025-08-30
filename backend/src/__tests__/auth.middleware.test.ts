@@ -24,4 +24,3 @@ describe('Auth middleware', () => {
     expect(err.status || err.statusCode).toBe(403);
   });
 });
-

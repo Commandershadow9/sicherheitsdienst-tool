@@ -8,8 +8,8 @@ export const createShiftSchema = z.object({
     startTime: z.string().datetime({ message: 'Ungültiges Startdatum' }),
     endTime: z.string().datetime({ message: 'Ungültiges Enddatum' }),
     requiredEmployees: z.number().int().positive().optional(),
-    requiredQualifications: z.array(z.string()).optional()
-  })
+    requiredQualifications: z.array(z.string()).optional(),
+  }),
 });
 
 export const updateShiftSchema = z.object({
@@ -22,9 +22,9 @@ export const updateShiftSchema = z.object({
       endTime: z.string().datetime().optional(),
       requiredEmployees: z.number().int().positive().optional(),
       requiredQualifications: z.array(z.string()).optional(),
-      status: z.enum(['PLANNED', 'ACTIVE', 'COMPLETED', 'CANCELLED']).optional()
+      status: z.enum(['PLANNED', 'ACTIVE', 'COMPLETED', 'CANCELLED']).optional(),
     })
     .refine((data) => Object.keys(data).length > 0, {
-      message: 'Mindestens ein Feld muss angegeben werden'
-    })
+      message: 'Mindestens ein Feld muss angegeben werden',
+    }),
 });

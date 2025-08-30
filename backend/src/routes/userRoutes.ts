@@ -14,7 +14,7 @@ router.get(
   '/',
   authenticate,
   authorize('ADMIN', 'DISPATCHER'),
-  asyncHandler(userController.getAllUsers)
+  asyncHandler(userController.getAllUsers),
 );
 
 // POST /api/users - Neuen Mitarbeiter erstellen
@@ -23,7 +23,7 @@ router.post(
   authenticate,
   authorize('ADMIN'),
   validate(createUserSchema),
-  asyncHandler(userController.createUser)
+  asyncHandler(userController.createUser),
 );
 
 // GET /api/users/:id - Einzelnen Mitarbeiter abrufen
@@ -36,7 +36,7 @@ router.put(
   '/:id',
   authenticate,
   validate(updateUserSchema),
-  asyncHandler(userController.updateUser)
+  asyncHandler(userController.updateUser),
 );
 
 // DELETE /api/users/:id - Mitarbeiter deaktivieren (soft delete)
@@ -44,6 +44,6 @@ router.delete(
   '/:id',
   authenticate,
   authorize('ADMIN'),
-  asyncHandler(userController.deactivateUser)
+  asyncHandler(userController.deactivateUser),
 );
 export default router;

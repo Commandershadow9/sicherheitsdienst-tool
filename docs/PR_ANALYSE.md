@@ -542,30 +542,35 @@ Hinweis zur Einordnung: Die Datei `docs/KONZEPT.md` ist im Repo nicht vorhanden.
 ## Analyse und Empfehlungen
 
 ### pr-2
+
 - **Kurzsummary:** Führt ein vollständiges Express/TypeScript/Prisma-Backend mit Auth (JWT), CRUD für Users/Shifts, Middleware und Prisma-Migration ein. Enthält zusätzlich Docker-Setup und Seed-Daten; checkt aber `dist/` und Hilfsdateien ein und entfernt `LICENSE`/`.gitignore`.
 - **Einordnung:** MVP-relevant (Kernfunktionen vorhanden), mit problematischen Repo-Artefakten.
 - **Empfehlung:** konzepttreu neu schreiben.
 - **Begründung:** Inhalte und Schnittstellen sind nützlich, aber Build-/Review-Artefakte entfernen und `LICENSE`/`.gitignore` bewahren; optional RBAC/Validierung später ergänzen.
 
 ### pr-3
+
 - **Kurzsummary:** Inhaltlich nahezu identisch zu pr-2 (Backend + Auth + CRUD), minimale Abweichungen in Code/Zeilenzahlen. Entfernt ebenfalls `LICENSE`/`.gitignore` und enthält Artefakte.
 - **Einordnung:** Irrelevant (Duplikat von pr-2 ohne klaren Mehrwert).
 - **Empfehlung:** verwerfen.
 - **Begründung:** Kein funktionaler Zusatznutzen gegenüber pr-2; gleiche Aufräumprobleme.
 
 ### pr-4
+
 - **Kurzsummary:** Variante von pr-2 mit kleinen Formatierungs-/Minimalunterschieden; gleiche Struktur (Auth, Users/Shifts-CRUD). Entfernt `LICENSE`/`.gitignore` und enthält Artefakte.
 - **Einordnung:** Irrelevant (weiteres Duplikat ohne klaren Mehrwert).
 - **Empfehlung:** verwerfen.
 - **Begründung:** Kein zusätzlicher Nutzen; identische Aufräumarbeiten nötig wie pr-2.
 
 ### pr-5
+
 - **Kurzsummary:** Ebenfalls sehr nahe an pr-2, geringfügig geringere Zeilenzahl; gleiche Features (Auth, CRUD, Prisma). Entfernt `LICENSE`/`.gitignore` und bringt Artefakte mit.
 - **Einordnung:** Irrelevant (Duplikat ohne Mehrwert).
 - **Empfehlung:** verwerfen.
 - **Begründung:** Keine neuen Kernfeatures vs. pr-2; Aufräumaufwand analog.
 
 ### pr-6
+
 - **Kurzsummary:** Baut auf pr-2 auf und ergänzt rollenbasierte Autorisierung an Routen, zod-Validierung und strukturiertes Logging (Winston). Enthält weiterhin `dist/` und diverse Artefakte und entfernt `LICENSE`/`.gitignore`.
 - **Einordnung:** Post-MVP (liefert sinnvolle Härtungen über den MVP hinaus, Kern ist enthalten).
 - **Empfehlung:** konzepttreu neu schreiben.
@@ -574,5 +579,6 @@ Hinweis zur Einordnung: Die Datei `docs/KONZEPT.md` ist im Repo nicht vorhanden.
 ---
 
 Vorschlag für die weitere Vorgehensweise:
+
 - pr-6 als funktionale Referenz verwenden, aber sauber neu aufsetzen (ohne `dist/`, ohne Review-/Fehlerdateien, mit bestehender `LICENSE`/`.gitignore`).
 - MVP-treu zunächst Auth + Users/Shifts CRUD + Health/Stats mergen; Post-MVP (RBAC, zod, Logger) separat in kleineren, fokussierten PRs.

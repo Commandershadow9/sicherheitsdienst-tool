@@ -17,19 +17,21 @@ const PORT = process.env.PORT || 3001;
 
 // Middleware
 app.use(helmet());
-app.use(cors({
-  origin: [
-    process.env.FRONTEND_URL || 'http://localhost:3000',
-    process.env.MOBILE_APP_URL || 'http://localhost:19000'
-  ],
-  credentials: true
-}));
+app.use(
+  cors({
+    origin: [
+      process.env.FRONTEND_URL || 'http://localhost:3000',
+      process.env.MOBILE_APP_URL || 'http://localhost:19000',
+    ],
+    credentials: true,
+  }),
+);
 app.use(
   morgan('combined', {
     stream: {
-      write: (message: string) => logger.http(message.trim())
-    }
-  })
+      write: (message: string) => logger.http(message.trim()),
+    },
+  }),
 );
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -46,9 +48,9 @@ app.get('/', (req: Request, res: Response) => {
       stats: '/api/stats',
       auth: '/api/auth',
       users: '/api/users',
-      shifts: '/api/shifts'
+      shifts: '/api/shifts',
     },
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
   });
 });
 
@@ -103,7 +105,14 @@ const globalErrorHandler: ErrorRequestHandler = (err, req, res, next) => {
     message = 'Ungültiger oder abgelaufener Token.';
   }
 
-  const errorResponse: { success: boolean; message: string; errors?: any; errorDetails?: string; stack?: string; code?: string } = {
+  const errorResponse: {
+    success: boolean;
+    message: string;
+    errors?: any;
+    errorDetails?: string;
+    stack?: string;
+    code?: string;
+  } = {
     success: false,
     message,
   };
@@ -115,7 +124,7 @@ const globalErrorHandler: ErrorRequestHandler = (err, req, res, next) => {
   if (process.env.NODE_ENV === 'development') {
     errorResponse.errorDetails = err.message;
     errorResponse.stack = err.stack;
-    if(err.code) errorResponse.code = err.code;
+    if (err.code) errorResponse.code = err.code;
   }
 
   // Wichtig: Sicherstellen, dass eine Antwort gesendet wird.

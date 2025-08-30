@@ -31,8 +31,8 @@ async function main() {
         employeeId: 'ADM001',
         hireDate: new Date('2024-01-01'),
         qualifications: ['Erste Hilfe', 'Brandschutz', 'Wachdienst', 'Führungszeugnis'],
-        isActive: true
-      }
+        isActive: true,
+      },
     });
 
     // 2. Dispatcher/Manager erstellen
@@ -47,8 +47,8 @@ async function main() {
         employeeId: 'DIS001',
         hireDate: new Date('2024-01-15'),
         qualifications: ['Erste Hilfe', 'Einsatzplanung', 'Kommunikation'],
-        isActive: true
-      }
+        isActive: true,
+      },
     });
 
     // 3. Sicherheitsmitarbeiter erstellen
@@ -63,8 +63,8 @@ async function main() {
         employeeId: 'SEC001',
         hireDate: new Date('2024-02-01'),
         qualifications: ['Erste Hilfe', 'Objektschutz', 'Brandschutz'],
-        isActive: true
-      }
+        isActive: true,
+      },
     });
 
     const employee2 = await prisma.user.create({
@@ -78,8 +78,8 @@ async function main() {
         employeeId: 'SEC002',
         hireDate: new Date('2024-03-01'),
         qualifications: ['Erste Hilfe', 'Veranstaltungsschutz', 'Personenschutz'],
-        isActive: true
-      }
+        isActive: true,
+      },
     });
 
     const employee3 = await prisma.user.create({
@@ -93,54 +93,57 @@ async function main() {
         employeeId: 'SEC003',
         hireDate: new Date('2024-04-01'),
         qualifications: ['Erste Hilfe', 'Objektschutz', 'Wachdienst'],
-        isActive: true
-      }
+        isActive: true,
+      },
     });
 
     console.log('👥 Mitarbeiter erstellt');
 
     // Test-Schichten erstellen
-    
+
     // 1. Objektschutz - Tagschicht
     const morningShift = await prisma.shift.create({
       data: {
         title: 'Objektschutz Bürogebäude - Tagschicht',
-        description: 'Sicherheitsdienst für Bürokomplex in der Innenstadt. Zugangskontrolle, Empfang, Rundgänge.',
+        description:
+          'Sicherheitsdienst für Bürokomplex in der Innenstadt. Zugangskontrolle, Empfang, Rundgänge.',
         location: 'Business Center, Musterstraße 123, 12345 Musterstadt',
         startTime: new Date('2025-05-27T06:00:00Z'),
         endTime: new Date('2025-05-27T14:00:00Z'),
         requiredEmployees: 1,
         requiredQualifications: ['Objektschutz'],
-        status: 'PLANNED'
-      }
+        status: 'PLANNED',
+      },
     });
 
     // 2. Objektschutz - Nachtschicht
     const nightShift = await prisma.shift.create({
       data: {
         title: 'Objektschutz Bürogebäude - Nachtschicht',
-        description: 'Nachtdienst für Bürokomplex. Überwachung, Alarmanlage, Rundgänge alle 2 Stunden.',
+        description:
+          'Nachtdienst für Bürokomplex. Überwachung, Alarmanlage, Rundgänge alle 2 Stunden.',
         location: 'Business Center, Musterstraße 123, 12345 Musterstadt',
         startTime: new Date('2025-05-27T22:00:00Z'),
         endTime: new Date('2025-05-28T06:00:00Z'),
         requiredEmployees: 1,
         requiredQualifications: ['Objektschutz', 'Wachdienst'],
-        status: 'PLANNED'
-      }
+        status: 'PLANNED',
+      },
     });
 
     // 3. Veranstaltungsschutz
     const eventShift = await prisma.shift.create({
       data: {
         title: 'Veranstaltungsschutz - Stadtfest',
-        description: 'Sicherheitsdienst beim Stadtfest. Einlasskontrolle, Crowd Management, Notfallbereitschaft.',
+        description:
+          'Sicherheitsdienst beim Stadtfest. Einlasskontrolle, Crowd Management, Notfallbereitschaft.',
         location: 'Marktplatz, 12345 Musterstadt',
         startTime: new Date('2025-05-31T14:00:00Z'),
         endTime: new Date('2025-06-01T02:00:00Z'),
         requiredEmployees: 3,
         requiredQualifications: ['Veranstaltungsschutz'],
-        status: 'PLANNED'
-      }
+        status: 'PLANNED',
+      },
     });
 
     // 4. Baustellenüberwachung
@@ -153,8 +156,8 @@ async function main() {
         endTime: new Date('2025-05-28T18:00:00Z'),
         requiredEmployees: 2,
         requiredQualifications: ['Objektschutz'],
-        status: 'PLANNED'
-      }
+        status: 'PLANNED',
+      },
     });
 
     console.log('📅 Schichten erstellt');
@@ -164,40 +167,40 @@ async function main() {
       data: {
         userId: employee1.id,
         shiftId: morningShift.id,
-        status: 'CONFIRMED'
-      }
+        status: 'CONFIRMED',
+      },
     });
 
     await prisma.shiftAssignment.create({
       data: {
         userId: employee3.id,
         shiftId: nightShift.id,
-        status: 'ASSIGNED'
-      }
+        status: 'ASSIGNED',
+      },
     });
 
     await prisma.shiftAssignment.create({
       data: {
         userId: employee2.id,
         shiftId: eventShift.id,
-        status: 'CONFIRMED'
-      }
+        status: 'CONFIRMED',
+      },
     });
 
     await prisma.shiftAssignment.create({
       data: {
         userId: employee1.id,
         shiftId: constructionShift.id,
-        status: 'ASSIGNED'
-      }
+        status: 'ASSIGNED',
+      },
     });
 
     await prisma.shiftAssignment.create({
       data: {
         userId: employee3.id,
         shiftId: constructionShift.id,
-        status: 'ASSIGNED'
-      }
+        status: 'ASSIGNED',
+      },
     });
 
     console.log('✅ Schicht-Zuweisungen erstellt');
@@ -211,21 +214,22 @@ async function main() {
         breakTime: 30, // 30 Minuten Pause
         startLocation: 'Business Center Eingang',
         endLocation: 'Business Center Ausgang',
-        notes: 'Routinedienst, keine besonderen Vorkommnisse'
-      }
+        notes: 'Routinedienst, keine besonderen Vorkommnisse',
+      },
     });
 
     // Beispiel Vorfall
     await prisma.incident.create({
       data: {
         title: 'Unberechtigter Zutrittsversuch',
-        description: 'Person ohne Berechtigung versuchte das Gebäude zu betreten. Höflich abgewiesen und Sachverhalt dokumentiert.',
+        description:
+          'Person ohne Berechtigung versuchte das Gebäude zu betreten. Höflich abgewiesen und Sachverhalt dokumentiert.',
         severity: 'LOW',
         status: 'RESOLVED',
         location: 'Business Center Haupteingang',
         occurredAt: new Date('2025-05-26T10:30:00Z'),
-        reportedBy: employee1.id
-      }
+        reportedBy: employee1.id,
+      },
     });
 
     console.log('📋 Beispiel-Daten (Zeiterfassung & Vorfälle) erstellt');
@@ -237,12 +241,11 @@ async function main() {
     console.log('📧 Mitarbeiter 1: thomas.mueller@sicherheitsdienst.de / password123');
     console.log('📧 Mitarbeiter 2: anna.schmidt@sicherheitsdienst.de / password123');
     console.log('📧 Mitarbeiter 3: michael.wagner@sicherheitsdienst.de / password123');
-    
+
     console.log('\n🔗 Nächste Schritte:');
     console.log('1. Prisma Studio öffnen: http://localhost:5555');
     console.log('2. APIs testen: http://localhost:3001/api/users');
     console.log('3. Backend läuft auf: http://localhost:3001');
-
   } catch (error) {
     console.error('❌ Fehler beim Erstellen der Test-Daten:', error);
   } finally {

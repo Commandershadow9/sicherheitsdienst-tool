@@ -16,7 +16,7 @@ router.post(
   authenticate,
   authorize('ADMIN', 'DISPATCHER'),
   validate(createShiftSchema),
-  asyncHandler(shiftController.createShift)
+  asyncHandler(shiftController.createShift),
 );
 
 // GET /api/shifts/:id - Einzelne Schicht
@@ -28,16 +28,11 @@ router.put(
   authenticate,
   authorize('ADMIN', 'DISPATCHER'),
   validate(updateShiftSchema),
-  asyncHandler(shiftController.updateShift)
+  asyncHandler(shiftController.updateShift),
 );
 
 // DELETE /api/shifts/:id - Schicht löschen
-router.delete(
-  '/:id',
-  authenticate,
-  authorize('ADMIN'),
-  asyncHandler(shiftController.deleteShift)
-);
+router.delete('/:id', authenticate, authorize('ADMIN'), asyncHandler(shiftController.deleteShift));
 
 // POST /api/shifts/:id/assign - Mitarbeiter zur Schicht zuweisen
 router.post('/:id/assign', authenticate, asyncHandler(shiftController.assignUserToShift));

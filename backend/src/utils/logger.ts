@@ -7,7 +7,7 @@ const levels = {
   warn: 1,
   info: 2,
   http: 3,
-  debug: 4
+  debug: 4,
 };
 
 addColors({
@@ -15,7 +15,7 @@ addColors({
   warn: 'yellow',
   info: 'green',
   http: 'magenta',
-  debug: 'blue'
+  debug: 'blue',
 });
 
 const logFormat = printf(({ level, message, timestamp, stack }) => {
@@ -25,23 +25,18 @@ const logFormat = printf(({ level, message, timestamp, stack }) => {
 const logger = createLogger({
   levels,
   level: process.env.NODE_ENV === 'development' ? 'debug' : 'info',
-  format: combine(
-    timestamp(),
-    errors({ stack: true }),
-    splat(),
-    json()
-  ),
+  format: combine(timestamp(), errors({ stack: true }), splat(), json()),
   transports: [
     new transports.File({ filename: 'logs/error.log', level: 'error' }),
-    new transports.File({ filename: 'logs/combined.log' })
-  ]
+    new transports.File({ filename: 'logs/combined.log' }),
+  ],
 });
 
 if (process.env.NODE_ENV !== 'production') {
   logger.add(
     new transports.Console({
-      format: combine(colorize(), logFormat)
-    })
+      format: combine(colorize(), logFormat),
+    }),
   );
 }
 

@@ -19,19 +19,19 @@ export const getAllUsers = async (req: Request, res: Response, next: NextFunctio
         isActive: true,
         hireDate: true,
         qualifications: true,
-        createdAt: true
+        createdAt: true,
         // password excluded for security
       },
       orderBy: {
-        firstName: 'asc'
-      }
+        firstName: 'asc',
+      },
     });
-    
+
     res.json({
       success: true,
       message: `${users.length} Mitarbeiter aus Datenbank geladen`,
       data: users,
-      count: users.length
+      count: users.length,
     });
   } catch (error) {
     console.error('Error fetching users from database:', error);
@@ -51,14 +51,14 @@ export const createUser = async (req: Request, res: Response, next: NextFunction
       role = 'EMPLOYEE',
       employeeId,
       hireDate,
-      qualifications = []
+      qualifications = [],
     } = req.body;
 
     // Validation
     if (!email || !password || !firstName || !lastName) {
       res.status(400).json({
         success: false,
-        message: 'Email, Passwort, Vorname und Nachname sind erforderlich'
+        message: 'Email, Passwort, Vorname und Nachname sind erforderlich',
       });
       return;
     }
@@ -76,7 +76,7 @@ export const createUser = async (req: Request, res: Response, next: NextFunction
         role: role as any, // TypeScript-Fix für Enum
         employeeId,
         hireDate: hireDate ? new Date(hireDate) : null,
-        qualifications: Array.isArray(qualifications) ? qualifications : []
+        qualifications: Array.isArray(qualifications) ? qualifications : [],
       },
       select: {
         id: true,
@@ -89,23 +89,23 @@ export const createUser = async (req: Request, res: Response, next: NextFunction
         isActive: true,
         hireDate: true,
         qualifications: true,
-        createdAt: true
-      }
+        createdAt: true,
+      },
     });
 
     res.status(201).json({
       success: true,
       message: 'Mitarbeiter erfolgreich in Datenbank erstellt',
-      data: user
+      data: user,
     });
   } catch (error: any) {
     console.error('Error creating user in database:', error);
-    
+
     // Prisma unique constraint error
     if (error.code === 'P2002') {
       res.status(400).json({
         success: false,
-        message: 'E-Mail oder Mitarbeiter-ID bereits in Datenbank vergeben'
+        message: 'E-Mail oder Mitarbeiter-ID bereits in Datenbank vergeben',
       });
       return;
     }
@@ -118,7 +118,7 @@ export const createUser = async (req: Request, res: Response, next: NextFunction
 export const getUserById = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
-    
+
     const user = await prisma.user.findUnique({
       where: { id },
       select: {
@@ -142,10 +142,10 @@ export const getUserById = async (req: Request, res: Response, next: NextFunctio
                 startTime: true,
                 endTime: true,
                 location: true,
-                status: true
-              }
-            }
-          }
+                status: true,
+              },
+            },
+          },
         },
         timeEntries: {
           select: {
@@ -153,20 +153,20 @@ export const getUserById = async (req: Request, res: Response, next: NextFunctio
             startTime: true,
             endTime: true,
             breakTime: true,
-            notes: true
+            notes: true,
           },
           orderBy: {
-            startTime: 'desc'
+            startTime: 'desc',
           },
-          take: 10 // Letzte 10 Einträge
-        }
-      }
+          take: 10, // Letzte 10 Einträge
+        },
+      },
     });
 
     if (!user) {
       res.status(404).json({
         success: false,
-        message: 'Mitarbeiter nicht in Datenbank gefunden'
+        message: 'Mitarbeiter nicht in Datenbank gefunden',
       });
       return;
     }
@@ -174,7 +174,7 @@ export const getUserById = async (req: Request, res: Response, next: NextFunctio
     res.json({
       success: true,
       message: `Mitarbeiter ${user.firstName} ${user.lastName} aus Datenbank geladen`,
-      data: user
+      data: user,
     });
   } catch (error) {
     console.error('Error fetching user from database:', error);
@@ -195,7 +195,7 @@ export const updateUser = async (req: Request, res: Response, next: NextFunction
       employeeId,
       hireDate,
       qualifications,
-      isActive
+      isActive,
     } = req.body;
 
     const updatedUser = await prisma.user.update({
@@ -208,8 +208,10 @@ export const updateUser = async (req: Request, res: Response, next: NextFunction
         ...(role && { role: role as any }),
         ...(employeeId !== undefined && { employeeId }),
         ...(hireDate && { hireDate: new Date(hireDate) }),
-        ...(qualifications && { qualifications: Array.isArray(qualifications) ? qualifications : [] }),
-        ...(isActive !== undefined && { isActive })
+        ...(qualifications && {
+          qualifications: Array.isArray(qualifications) ? qualifications : [],
+        }),
+        ...(isActive !== undefined && { isActive }),
       },
       select: {
         id: true,
@@ -223,22 +225,22 @@ export const updateUser = async (req: Request, res: Response, next: NextFunction
         hireDate: true,
         qualifications: true,
         createdAt: true,
-        updatedAt: true
-      }
+        updatedAt: true,
+      },
     });
 
     res.json({
       success: true,
       message: 'Mitarbeiter erfolgreich aktualisiert',
-      data: updatedUser
+      data: updatedUser,
     });
   } catch (error: any) {
     console.error('Error updating user in database:', error);
-    
+
     if (error.code === 'P2002') {
       res.status(400).json({
         success: false,
-        message: 'E-Mail oder Mitarbeiter-ID bereits vergeben'
+        message: 'E-Mail oder Mitarbeiter-ID bereits vergeben',
       });
       return;
     }
@@ -246,7 +248,7 @@ export const updateUser = async (req: Request, res: Response, next: NextFunction
     if (error.code === 'P2025') {
       res.status(404).json({
         success: false,
-        message: 'Mitarbeiter nicht gefunden'
+        message: 'Mitarbeiter nicht gefunden',
       });
       return;
     }
@@ -268,22 +270,22 @@ export const deactivateUser = async (req: Request, res: Response, next: NextFunc
         firstName: true,
         lastName: true,
         email: true,
-        isActive: true
-      }
+        isActive: true,
+      },
     });
 
     res.json({
       success: true,
       message: 'Mitarbeiter erfolgreich deaktiviert',
-      data: deactivatedUser
+      data: deactivatedUser,
     });
   } catch (error: any) {
     console.error('Error deactivating user:', error);
-    
+
     if (error.code === 'P2025') {
       res.status(404).json({
         success: false,
-        message: 'Mitarbeiter nicht gefunden'
+        message: 'Mitarbeiter nicht gefunden',
       });
       return;
     }
