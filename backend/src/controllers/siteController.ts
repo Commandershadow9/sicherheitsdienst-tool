@@ -75,8 +75,8 @@ export const updateSite = async (req: Request, res: Response, next: NextFunction
 export const deleteSite = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
-    const deleted = await prisma.site.delete({ where: { id } });
-    res.json({ success: true, message: 'Site erfolgreich gelöscht', data: { id: deleted.id, name: deleted.name } });
+    await prisma.site.delete({ where: { id } });
+    res.status(204).send();
   } catch (error: any) {
     if (error?.code === 'P2025') {
       res.status(404).json({ success: false, message: 'Site nicht gefunden' });

@@ -230,6 +230,7 @@ curl -X DELETE -H "Authorization: Bearer $TOKEN" http://localhost:3001/api/sites
 Hinweise:
 - POST/PUT erfordern Rollen ADMIN/DISPATCHER; DELETE nur ADMIN.
 - 422 bei Validierungsfehlern (Zod), 404 bei unbekannter ID, 409 bei Duplikaten (Unique-Bedingung: name+address).
+ - Erfolgreiches Löschen antwortet mit Status 204 (ohne Body).
 
 ## Docker Compose: Start/Stop/Logs
 
