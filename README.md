@@ -1,5 +1,7 @@
 # Sicherheitsdienst-Tool Backend
 
+![CI](https://github.com/Commandershadow9/sicherheitsdienst-tool/actions/workflows/ci.yml/badge.svg?branch=main)
+
 This is the backend for a comprehensive management tool for security services. It provides a REST API to manage employees, shifts, time tracking, and other operational data. The project is built with Node.js, Express, TypeScript, and Prisma, using a PostgreSQL database.
 It follows consistent coding standards (EditorConfig, Prettier, ESLint v9) and includes smoke tests.
 
@@ -155,6 +157,67 @@ docker compose up -d api pgadmin
 ```
 
 Tip: For pure host development (no API container), run `npm run dev` in `backend/` and point `DATABASE_URL` to `localhost` instead of `db`.
+
+## Beispiel: Site API (curl)
+
+Voraussetzung: Auth-Header `Authorization: Bearer <TOKEN>`
+
+Create:
+curl -X POST http://localhost:3001/api/sites \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $TOKEN" \
+  -d '{"name":"HQ","address":"Main St 1","city":"Berlin","postalCode":"10115"}'
+
+List:
+curl -H "Authorization: Bearer $TOKEN" http://localhost:3001/api/sites
+
+Get by id:
+curl -H "Authorization: Bearer $TOKEN" http://localhost:3001/api/sites/<id>
+
+Update:
+curl -X PUT http://localhost:3001/api/sites/<id> \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $TOKEN" \
+  -d '{"name":"HQ Süd"}'
+
+Delete:
+curl -X DELETE -H "Authorization: Bearer $TOKEN" http://localhost:3001/api/sites/<id>
+
+Hinweise:
+- POST/PUT erfordern Rollen ADMIN/DISPATCHER; DELETE nur ADMIN.
+- 400 bei Validierungsfehlern, 404 bei unbekannter ID, 409 bei Duplikaten.
+
+## Docker Compose: Start/Stop/Logs
+
+- Start (im Projekt-Root):
+  docker compose up -d
+  - Wartet auf gesunde DB (Healthcheck).
+  - API führt beim Start automatisch `prisma migrate deploy` aus.
+
+- Stop:
+  docker compose down
+
+- Logs (folgen):
+  docker compose logs -f
+  docker compose logs -f api
+  docker compose logs -f db
+
+- Neuaufsetzen (DB behalten):
+  docker compose up -d --build
+
+Migrationshinweis:
+- Die API-Container starten mit:
+  npx prisma migrate deploy && node dist/server.js
+- Dadurch laufen Datenbankmigrationen reproduzierbar beim Containerstart.
+- Sicherstellen, dass `DATABASE_URL`, `JWT_SECRET` (und optional SMTP_*) in `backend/.env` bzw. Umgebung gesetzt sind.
+
+## Branch Protection
+
+- Empfohlene Einstellungen sind in `docs/BRANCH_PROTECTION.md` beschrieben.
+- Aktiviere in GitHub → Settings → Branches → Branch protection rules für `main`:
+  - Require a pull request before merging (Review)
+  - Require status checks to pass before merging → `lint-test-build`
+  - Optional: Require branches to be up to date before merging
 
 ## Further Development Plan (Roadmap)
 
