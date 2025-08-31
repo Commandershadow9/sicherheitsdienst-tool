@@ -1,17 +1,17 @@
 import * as siteController from '../controllers/siteController';
 
-const mPrisma = {
-  site: {
-    findMany: jest.fn(),
-    create: jest.fn(),
-    findUnique: jest.fn(),
-    update: jest.fn(),
-    delete: jest.fn(),
-  },
-};
-
+// Prisma-Client global mocken wie in den Route-Tests
 jest.mock('@prisma/client', () => {
-  return { PrismaClient: jest.fn(() => mPrisma) };
+  (global as any).prismaMock = (global as any).prismaMock || {
+    site: {
+      findMany: jest.fn(),
+      create: jest.fn(),
+      findUnique: jest.fn(),
+      update: jest.fn(),
+      delete: jest.fn(),
+    },
+  };
+  return { PrismaClient: jest.fn(() => (global as any).prismaMock) };
 });
 
 function mockRes() {
@@ -31,13 +31,19 @@ function mockRes() {
 describe('siteController', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    const pm = (global as any).prismaMock;
+    pm.site.findMany.mockReset();
+    pm.site.create.mockReset();
+    pm.site.findUnique.mockReset();
+    pm.site.update.mockReset();
+    pm.site.delete.mockReset();
   });
 
   it('getAllSites returns list', async () => {
     const req: any = {};
     const res = mockRes();
     const next = jest.fn();
-    mPrisma.site.findMany.mockResolvedValueOnce([{ id: '1', name: 'HQ', address: 'A', city: 'B', postalCode: 'C' }]);
+    (global as any).prismaMock.site.findMany.mockResolvedValueOnce([{ id: '1', name: 'HQ', address: 'A', city: 'B', postalCode: 'C' }]);
     await siteController.getAllSites(req as any, res as any, next as any);
     expect(res.statusCode).toBe(200);
     expect(res.payload?.success).toBe(true);
@@ -47,7 +53,7 @@ describe('siteController', () => {
     const req: any = { body: { name: 'HQ', address: 'A', city: 'B', postalCode: 'C' } };
     const res = mockRes();
     const next = jest.fn();
-    mPrisma.site.create.mockResolvedValueOnce({ id: '1', ...req.body });
+    (global as any).prismaMock.site.create.mockResolvedValueOnce({ id: '1', ...req.body });
     await siteController.createSite(req as any, res as any, next as any);
     expect(res.statusCode).toBe(201);
   });
@@ -56,7 +62,7 @@ describe('siteController', () => {
     const req: any = { body: { name: 'HQ', address: 'A', city: 'B', postalCode: 'C' } };
     const res = mockRes();
     const next = jest.fn();
-    mPrisma.site.create.mockRejectedValueOnce({ code: 'P2002' });
+    (global as any).prismaMock.site.create.mockRejectedValueOnce({ code: 'P2002' });
     await siteController.createSite(req as any, res as any, next as any);
     expect(res.statusCode).toBe(409);
   });
@@ -65,7 +71,7 @@ describe('siteController', () => {
     const req: any = { params: { id: 'x' } };
     const res = mockRes();
     const next = jest.fn();
-    mPrisma.site.findUnique.mockResolvedValueOnce(null);
+    (global as any).prismaMock.site.findUnique.mockResolvedValueOnce(null);
     await siteController.getSiteById(req as any, res as any, next as any);
     expect(res.statusCode).toBe(404);
   });
@@ -74,7 +80,7 @@ describe('siteController', () => {
     const req: any = { params: { id: 'x' }, body: { name: 'N' } };
     const res = mockRes();
     const next = jest.fn();
-    mPrisma.site.update.mockRejectedValueOnce({ code: 'P2025' });
+    (global as any).prismaMock.site.update.mockRejectedValueOnce({ code: 'P2025' });
     await siteController.updateSite(req as any, res as any, next as any);
     expect(res.statusCode).toBe(404);
   });
@@ -83,9 +89,8 @@ describe('siteController', () => {
     const req: any = { params: { id: 'x' } };
     const res = mockRes();
     const next = jest.fn();
-    mPrisma.site.delete.mockRejectedValueOnce({ code: 'P2025' });
+    (global as any).prismaMock.site.delete.mockRejectedValueOnce({ code: 'P2025' });
     await siteController.deleteSite(req as any, res as any, next as any);
     expect(res.statusCode).toBe(404);
   });
 });
-

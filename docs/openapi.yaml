@@ -1106,7 +1106,7 @@ paths:
               city: "Berlin"
               postalCode: "14055"
       responses:
-        '200':
+        '201':
           description: Site erstellt
           content:
             application/json:

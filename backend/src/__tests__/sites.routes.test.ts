@@ -1,19 +1,18 @@
 import request from 'supertest';
 import app from '../app';
 
-// Prisma-Mock (genutzt von den Controllern)
-const mPrisma = {
-  site: {
-    findMany: jest.fn(),
-    create: jest.fn(),
-    findUnique: jest.fn(),
-    update: jest.fn(),
-    delete: jest.fn(),
-  },
-};
-
+// Prisma-Client global mocken, damit Controller darauf zugreifen und Tests Methoden überschreiben können
 jest.mock('@prisma/client', () => {
-  return { PrismaClient: jest.fn(() => mPrisma) };
+  (global as any).prismaMock = (global as any).prismaMock || {
+    site: {
+      findMany: jest.fn(),
+      create: jest.fn(),
+      findUnique: jest.fn(),
+      update: jest.fn(),
+      delete: jest.fn(),
+    },
+  };
+  return { PrismaClient: jest.fn(() => (global as any).prismaMock) };
 });
 
 // Auth-/Authorize-Middleware für Tests durchreichen
@@ -25,14 +24,20 @@ jest.mock('../middleware/auth', () => ({
 describe('Sites Routes (E2E-light)', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    const pm = (global as any).prismaMock;
+    pm.site.findMany.mockReset();
+    pm.site.create.mockReset();
+    pm.site.findUnique.mockReset();
+    pm.site.update.mockReset();
+    pm.site.delete.mockReset();
   });
 
   it('POST /api/sites → 201 (ok)', async () => {
     const payload = { name: 'Messe Berlin', address: 'Messedamm 22', city: 'Berlin', postalCode: '14055' };
-    mPrisma.site.create.mockResolvedValueOnce({ id: 's1', ...payload });
+    (global as any).prismaMock.site.create.mockResolvedValueOnce({ id: 's1', ...payload });
     const res = await request(app).post('/api/sites').send(payload);
     expect(res.status).toBe(201);
-    expect(mPrisma.site.create).toHaveBeenCalled();
+    expect((global as any).prismaMock.site.create).toHaveBeenCalled();
   });
 
   it('POST /api/sites → 422 (Zod)', async () => {
@@ -42,32 +47,32 @@ describe('Sites Routes (E2E-light)', () => {
 
   it('POST /api/sites → 409 (Duplicate)', async () => {
     const payload = { name: 'Dup', address: 'A', city: 'C', postalCode: 'Z' };
-    mPrisma.site.create.mockRejectedValueOnce({ code: 'P2002' });
+    (global as any).prismaMock.site.create.mockRejectedValueOnce({ code: 'P2002' });
     const res = await request(app).post('/api/sites').send(payload);
     expect(res.status).toBe(409);
   });
 
   it('GET /api/sites/:id → 404 (not found)', async () => {
-    mPrisma.site.findUnique.mockResolvedValueOnce(null);
+    (global as any).prismaMock.site.findUnique.mockResolvedValueOnce(null);
     const res = await request(app).get('/api/sites/unknown');
     expect(res.status).toBe(404);
   });
 
   it('PUT /api/sites/:id → 200 (ok)', async () => {
-    mPrisma.site.update.mockResolvedValueOnce({ id: 's1', name: 'Neu', address: 'A', city: 'C', postalCode: 'Z' });
+    (global as any).prismaMock.site.update.mockResolvedValueOnce({ id: 's1', name: 'Neu', address: 'A', city: 'C', postalCode: 'Z' });
     const res = await request(app).put('/api/sites/s1').send({ name: 'Neu' });
     expect(res.status).toBe(200);
-    expect(mPrisma.site.update).toHaveBeenCalled();
+    expect((global as any).prismaMock.site.update).toHaveBeenCalled();
   });
 
   it('PUT /api/sites/:id → 404 (not found)', async () => {
-    mPrisma.site.update.mockRejectedValueOnce({ code: 'P2025' });
+    (global as any).prismaMock.site.update.mockRejectedValueOnce({ code: 'P2025' });
     const res = await request(app).put('/api/sites/sX').send({ name: 'Neu' });
     expect(res.status).toBe(404);
   });
 
   it('PUT /api/sites/:id → 409 (duplicate)', async () => {
-    mPrisma.site.update.mockRejectedValueOnce({ code: 'P2002' });
+    (global as any).prismaMock.site.update.mockRejectedValueOnce({ code: 'P2002' });
     const res = await request(app).put('/api/sites/s1').send({ name: 'Dup', address: 'A' });
     expect(res.status).toBe(409);
   });
@@ -78,15 +83,14 @@ describe('Sites Routes (E2E-light)', () => {
   });
 
   it('DELETE /api/sites/:id → 204 (no content)', async () => {
-    mPrisma.site.delete.mockResolvedValueOnce({ id: 's1', name: 'X' });
+    (global as any).prismaMock.site.delete.mockResolvedValueOnce({ id: 's1', name: 'X' });
     const res = await request(app).delete('/api/sites/s1');
     expect(res.status).toBe(204);
   });
 
   it('DELETE /api/sites/:id → 404 (not found)', async () => {
-    mPrisma.site.delete.mockRejectedValueOnce({ code: 'P2025' });
+    (global as any).prismaMock.site.delete.mockRejectedValueOnce({ code: 'P2025' });
     const res = await request(app).delete('/api/sites/s404');
     expect(res.status).toBe(404);
   });
 });
-
