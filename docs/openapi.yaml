@@ -1642,7 +1642,7 @@ paths:
               notes: "Start an Tor 3"
       responses:
         '200':
-          description: Zeiteintrag erstellt
+          description: Zeiteintrag erstellt (Warnungen möglich)
           content:
             application/json:
               schema:
@@ -1697,7 +1697,7 @@ paths:
               notes: "Ende Tor 3"
       responses:
         '200':
-          description: Zeiteintrag aktualisiert
+          description: Zeiteintrag aktualisiert (Warnungen möglich)
           content:
             application/json:
               schema:

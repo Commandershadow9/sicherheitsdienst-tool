@@ -28,7 +28,9 @@ All notable changes to this project will be documented in this file.
  - backend: `validate`-Middleware und Global-Error-Handler geben nun 422 (statt 400) bei Zod-Validierungsfehlern zurück.
 - prisma: `Site`-Unique-Constraint geändert auf (name, address) inkl. Migration (`20250831195000_site_unique_name_address`).
 - README: Site-API-Beispiele um Filter/Sortierung erweitert und Fehlercodes (422/404/409) dokumentiert.
- - Backend: DELETE `/api/sites/:id` liefert jetzt 204 (No Content) bei Erfolg; Tests ergänzt.
+- Backend: DELETE `/api/sites/:id` liefert jetzt 204 (No Content) bei Erfolg; Tests ergänzt.
+- docs/openapi.yaml: POST-Statuscodes (201) vereinheitlicht für Employees, Site-Shifts, Incidents, Assignments.
+- TimeTracking dokumentiert (README-Beispiele) und OpenAPI-Hinweis auf mögliche Warnungen bei Clock-in/out.
 
 ### Notes (Konzepttreu)
 - Änderungen folgen docs/KONZEPT.pdf und ROADMAP (OpenAPI v1 erweitert, aber konsistent mit MVP-Fokus Auth/Site). Keine API-Implementierung geändert, nur Spezifikation/Docs.
