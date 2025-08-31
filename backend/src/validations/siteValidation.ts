@@ -12,13 +12,12 @@ export const createSiteSchema = z.object({
 export const updateSiteSchema = z.object({
   body: z
     .object({
-      name: z.string().optional(),
-      address: z.string().optional(),
-      city: z.string().optional(),
-      postalCode: z.string().optional(),
+      name: z.string().min(1).optional(),
+      address: z.string().min(1).optional(),
+      city: z.string().min(1).optional(),
+      postalCode: z.string().min(1).optional(),
     })
     .refine((data) => Object.keys(data).length > 0, {
       message: 'Mindestens ein Feld muss angegeben werden',
     }),
 });
-

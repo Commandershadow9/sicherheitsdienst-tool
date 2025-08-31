@@ -24,7 +24,7 @@ const logFormat = printf(({ level, message, timestamp, stack }) => {
 
 const logger = createLogger({
   levels,
-  level: process.env.NODE_ENV === 'development' ? 'debug' : 'info',
+  level: process.env.LOG_LEVEL || (process.env.NODE_ENV === 'development' ? 'debug' : 'info'),
   format: combine(timestamp(), errors({ stack: true }), splat(), json()),
   transports: [
     new transports.File({ filename: 'logs/error.log', level: 'error' }),

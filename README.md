@@ -1,6 +1,6 @@
 # Sicherheitsdienst-Tool Backend
 
-![CI](https://github.com/Commandershadow9/sicherheitsdienst-tool/actions/workflows/ci.yml/badge.svg?branch=main)
+[![CI](https://github.com/Commandershadow9/sicherheitsdienst-tool/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/Commandershadow9/sicherheitsdienst-tool/actions/workflows/ci.yml)
 
 This is the backend for a comprehensive management tool for security services. It provides a REST API to manage employees, shifts, time tracking, and other operational data. The project is built with Node.js, Express, TypeScript, and Prisma, using a PostgreSQL database.
 It follows consistent coding standards (EditorConfig, Prettier, ESLint v9) and includes smoke tests.
@@ -59,6 +59,12 @@ Follow these steps to set up and run the project locally:
       DATABASE_URL="postgresql://your_postgres_user:your_password@localhost:5432/sicherheitsdienst_db?schema=public"
       ```
     - Generate a secure `JWT_SECRET` (at least 32 random characters).
+    - Optional: Steuere die Protokollierung über `LOG_LEVEL` (Standard: `debug` in Development, sonst `info`).
+      - Unterstützte Werte: `error`, `warn`, `info`, `http`, `debug`
+      - Beispiel `.env`:
+        ```env
+        LOG_LEVEL=debug
+        ```
 
 5.  **Migrate and Seed Database**:
     - Apply all Prisma migrations to create the database tables and populate the database with initial test data:
@@ -74,6 +80,24 @@ Follow these steps to set up and run the project locally:
       npm run dev
       ```
     - The server should now be running at `http://localhost:3001`.
+
+### Start & Logs
+- Entwicklung: `npm run dev` (im Ordner `backend/`)
+- Produktion (Build + Start):
+  - `npm run build`
+  - `npm start`
+- Logs ansehen:
+  - Konsole (dev): farbige Ausgabe über Winston
+  - Dateien: `logs/combined.log` (alle Ebenen), `logs/error.log` (nur Fehler)
+  - Live verfolgen: `npm run logs`
+
+### Test & Coverage
+- Unit-Tests: `npm test`
+- Coverage lokal erzeugen: `npm run test:coverage`
+  - HTML-Bericht: `backend/coverage/lcov-report/index.html`
+- CI-Artefakte:
+  - GitHub Actions lädt Coverage als Artefakt `coverage` hoch (falls vorhanden).
+  - CI-Workflow: siehe Badge oben (klickbar).
 
 ### Available NPM Scripts
 

@@ -26,7 +26,8 @@
     "clean": "rm -rf dist node_modules",
     "lint": "eslint . --ext .ts",
     "lint:fix": "eslint . --ext .ts --fix",
-    "logs": "tail -f logs/app.log",
+    "logs": "tail -f logs/combined.log logs/error.log",
+    "test:coverage": "jest --coverage --ci",
     "format": "prettier --check \".\"",
     "format:write": "prettier --write \".\""
   },

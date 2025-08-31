@@ -28,13 +28,22 @@ jobs:
         working-directory: backend
         run: npm run lint
 
-      - name: Test
+      - name: Test (mit Coverage)
         working-directory: backend
-        run: npm test --silent
+        run: npm test --silent -- --coverage --ci
 
       - name: Build
         working-directory: backend
         run: npm run build
+
+      - name: Coverage hochladen (Artefakt)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage
+          path: backend/coverage
+          if-no-files-found: ignore
+          retention-days: 7
 
   openapi-lint:
     runs-on: ubuntu-latest
@@ -44,4 +53,3 @@ jobs:
 
       - name: Lint OpenAPI spec (Redocly)
         run: npx --yes @redocly/cli@latest lint docs/openapi.yaml
-
