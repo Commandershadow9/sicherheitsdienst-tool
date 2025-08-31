@@ -364,3 +364,87 @@ export const assignUserToShift = async (req: Request, res: Response, next: NextF
     next(error);
   }
 };
+
+// POST /api/shifts/:id/clock-in
+export const clockIn = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { id: shiftId } = req.params;
+    const userId = (req.user as any)?.id;
+    const { at, location, notes } = req.body;
+    if (!userId) {
+      res.status(401).json({ success: false, message: 'Nicht authentifiziert' });
+      return;
+    }
+    const assigned = await prisma.shiftAssignment.findUnique({
+      where: { userId_shiftId: { userId, shiftId } },
+    });
+    if (!assigned) {
+      res.status(403).json({ success: false, message: 'Nicht für diese Schicht zugewiesen' });
+      return;
+    }
+    const open = await prisma.timeEntry.findFirst({ where: { userId, endTime: null } });
+    if (open) {
+      res.status(400).json({ success: false, message: 'Es existiert bereits ein offener Zeiteintrag' });
+      return;
+    }
+    const start = new Date(at);
+    const entry = await prisma.timeEntry.create({
+      data: { userId, shiftId, startTime: start, startLocation: location || null, notes: notes || null },
+    });
+    const warnings: string[] = [];
+    const last = await prisma.timeEntry.findFirst({
+      where: { userId, endTime: { not: null } },
+      orderBy: { endTime: 'desc' },
+    });
+    if (last?.endTime) {
+      const hoursRest = (start.getTime() - new Date(last.endTime).getTime()) / 3_600_000;
+      if (hoursRest < 11) warnings.push('WARN_REST_PERIOD_LT_11H');
+    }
+    res.json({ success: true, message: 'Clock-in erfasst', data: entry, warnings });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// POST /api/shifts/:id/clock-out
+export const clockOut = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { id: shiftId } = req.params;
+    const userId = (req.user as any)?.id;
+    const { at, breakTime, location, notes } = req.body;
+    if (!userId) {
+      res.status(401).json({ success: false, message: 'Nicht authentifiziert' });
+      return;
+    }
+    const assigned = await prisma.shiftAssignment.findUnique({
+      where: { userId_shiftId: { userId, shiftId } },
+    });
+    if (!assigned) {
+      res.status(403).json({ success: false, message: 'Nicht für diese Schicht zugewiesen' });
+      return;
+    }
+    const open = await prisma.timeEntry.findFirst({ where: { userId, endTime: null }, orderBy: { startTime: 'desc' } });
+    if (!open) {
+      res.status(400).json({ success: false, message: 'Kein offener Zeiteintrag vorhanden' });
+      return;
+    }
+    const end = new Date(at);
+    const updated = await prisma.timeEntry.update({
+      where: { id: open.id },
+      data: {
+        endTime: end,
+        breakTime: typeof breakTime === 'number' ? breakTime : null,
+        endLocation: location || null,
+        notes: notes || open.notes || null,
+      },
+    });
+    const warnings: string[] = [];
+    const durationHours =
+      (end.getTime() - new Date(updated.startTime).getTime()) / 3_600_000 - (updated.breakTime ? updated.breakTime / 60 : 0);
+    if (durationHours > 12) warnings.push('WARN_SHIFT_GT_12H');
+    if (durationHours > 10) warnings.push('WARN_SHIFT_GT_10H');
+    res.json({ success: true, message: 'Clock-out erfasst', data: updated, warnings });
+  } catch (error) {
+    next(error);
+  }
+};

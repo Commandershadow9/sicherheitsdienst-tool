@@ -877,7 +877,7 @@ paths:
               hireDate: "2024-01-15T00:00:00Z"
               qualifications: ["Sicherheitskraft"]
       responses:
-        '200':
+        '201':
           description: Mitarbeiter erstellt
           content:
             application/json:
@@ -1331,7 +1331,7 @@ paths:
               requiredEmployees: 2
               requiredQualifications: ["Sicherheitskraft"]
       responses:
-        '200':
+        '201':
           description: Schicht erstellt
           content:
             application/json:
@@ -1555,7 +1555,7 @@ paths:
               userId: "a3f1c5d2-1234-4a56-9b8c-0d1e2f3a4b5c"
               status: "ASSIGNED"
       responses:
-        '200':
+        '201':
           description: Zuweisung erstellt
           content:
             application/json:
@@ -1781,7 +1781,7 @@ paths:
               location: "Messe Nord"
               occurredAt: "2024-09-01T23:10:00Z"
       responses:
-        '200':
+        '201':
           description: Vorfall erstellt
           content:
             application/json:

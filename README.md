@@ -254,7 +254,26 @@ curl -X DELETE -H "Authorization: Bearer $TOKEN" http://localhost:3001/api/sites
 Hinweise:
 - POST/PUT erfordern Rollen ADMIN/DISPATCHER; DELETE nur ADMIN.
 - 422 bei Validierungsfehlern (Zod), 404 bei unbekannter ID, 409 bei Duplikaten (Unique-Bedingung: name+address).
- - Erfolgreiches Löschen antwortet mit Status 204 (ohne Body).
+- Erfolgreiches Löschen antwortet mit Status 204 (ohne Body).
+
+## Beispiel: Time Tracking (curl)
+Voraussetzung: Auth-Header `Authorization: Bearer <TOKEN>` und Schichtzuweisung
+
+Clock-in:
+curl -X POST http://localhost:3001/api/shifts/<shiftId>/clock-in \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $TOKEN" \
+  -d '{"at":"2024-09-01T22:05:00Z","location":"Tor 3","notes":"Start"}'
+
+Clock-out:
+curl -X POST http://localhost:3001/api/shifts/<shiftId>/clock-out \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $TOKEN" \
+  -d '{"at":"2024-09-02T06:05:00Z","breakTime":15,"location":"Tor 3","notes":"Ende"}'
+
+Hinweise:
+- Bei offensichtlichen Verstößen werden Warnungen geliefert (z. B. `WARN_REST_PERIOD_LT_11H`, `WARN_SHIFT_GT_10H`, `WARN_SHIFT_GT_12H`).
+- Kein Hard-Stop: Die Buchung erfolgt dennoch mit Warnungen.
 
 ## Docker Compose: Start/Stop/Logs
 

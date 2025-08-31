@@ -84,6 +84,7 @@ model Shift {
   
   // Beziehungen
   assignments ShiftAssignment[]
+  timeEntries TimeEntry[]
   
   @@map("shifts")
 }
@@ -131,6 +132,8 @@ model TimeEntry {
   // Beziehung
   userId String
   user   User   @relation(fields: [userId], references: [id])
+  shiftId String?
+  shift   Shift?  @relation(fields: [shiftId], references: [id])
   
   // Zeitdaten
   startTime DateTime

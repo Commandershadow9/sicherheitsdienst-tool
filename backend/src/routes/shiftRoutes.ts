@@ -3,6 +3,7 @@ import { asyncHandler } from '../middleware/asyncHandler';
 import { authenticate, authorize } from '../middleware/auth';
 import { validate } from '../middleware/validate';
 import { createShiftSchema, updateShiftSchema } from '../validations/shiftValidation';
+import { clockInSchema, clockOutSchema } from '../validations/timeValidation';
 import * as shiftController from '../controllers/shiftController';
 
 const router = Router();
@@ -36,4 +37,8 @@ router.delete('/:id', authenticate, authorize('ADMIN'), asyncHandler(shiftContro
 
 // POST /api/shifts/:id/assign - Mitarbeiter zur Schicht zuweisen
 router.post('/:id/assign', authenticate, asyncHandler(shiftController.assignUserToShift));
+// POST /api/shifts/:id/clock-in
+router.post('/:id/clock-in', authenticate, validate(clockInSchema), asyncHandler(shiftController.clockIn));
+// POST /api/shifts/:id/clock-out
+router.post('/:id/clock-out', authenticate, validate(clockOutSchema), asyncHandler(shiftController.clockOut));
 export default router;
