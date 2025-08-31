@@ -10,7 +10,7 @@ import logger from './utils/logger';
 dotenv.config();
 
 // Import all routes
-import { systemRoutes, userRoutes, shiftRoutes, authRoutes, siteRoutes } from './routes';
+import { systemRoutes, userRoutes, shiftRoutes, authRoutes, siteRoutes, notificationRoutes } from './routes';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -61,6 +61,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/shifts', shiftRoutes);
 app.use('/api/sites', siteRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 // 404 handler for unmatched routes
 app.use((req: Request, res: Response) => {

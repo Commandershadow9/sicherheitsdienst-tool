@@ -12,6 +12,20 @@ components:
       scheme: bearer
       bearerFormat: JWT
   schemas:
+    ApiResponseTimeEntry:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/TimeEntry'
+        warnings:
+          type: array
+          items:
+            type: string
+      required: [success, message, data]
     ErrorResponse:
       type: object
       properties:
@@ -1646,18 +1660,22 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/TimeEntry'
+                $ref: '#/components/schemas/ApiResponseTimeEntry'
               example:
-                id: "d34db33f-aaaa-bbbb-cccc-111122223333"
-                userId: "a3f1c5d2-1234-4a56-9b8c-0d1e2f3a4b5c"
-                startTime: "2024-09-01T22:05:00Z"
-                endTime: null
-                breakTime: null
-                startLocation: "Messedamm 22"
-                endLocation: null
-                notes: "Start an Tor 3"
-                createdAt: "2024-09-01T22:05:00Z"
-                updatedAt: "2024-09-01T22:05:00Z"
+                success: true
+                message: "Clock-in erfasst"
+                data:
+                  id: "d34db33f-aaaa-bbbb-cccc-111122223333"
+                  userId: "a3f1c5d2-1234-4a56-9b8c-0d1e2f3a4b5c"
+                  startTime: "2024-09-01T22:05:00Z"
+                  endTime: null
+                  breakTime: null
+                  startLocation: "Messedamm 22"
+                  endLocation: null
+                  notes: "Start an Tor 3"
+                  createdAt: "2024-09-01T22:05:00Z"
+                  updatedAt: "2024-09-01T22:05:00Z"
+                warnings: ["WARN_REST_PERIOD_LT_11H"]
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -1701,18 +1719,22 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/TimeEntry'
+                $ref: '#/components/schemas/ApiResponseTimeEntry'
               example:
-                id: "d34db33f-aaaa-bbbb-cccc-111122223333"
-                userId: "a3f1c5d2-1234-4a56-9b8c-0d1e2f3a4b5c"
-                startTime: "2024-09-01T22:05:00Z"
-                endTime: "2024-09-02T06:05:00Z"
-                breakTime: 15
-                startLocation: "Messedamm 22"
-                endLocation: "Messedamm 22"
-                notes: "Ende Tor 3"
-                createdAt: "2024-09-01T22:05:00Z"
-                updatedAt: "2024-09-02T06:05:00Z"
+                success: true
+                message: "Clock-out erfasst"
+                data:
+                  id: "d34db33f-aaaa-bbbb-cccc-111122223333"
+                  userId: "a3f1c5d2-1234-4a56-9b8c-0d1e2f3a4b5c"
+                  startTime: "2024-09-01T22:05:00Z"
+                  endTime: "2024-09-02T06:05:00Z"
+                  breakTime: 15
+                  startLocation: "Messedamm 22"
+                  endLocation: "Messedamm 22"
+                  notes: "Ende Tor 3"
+                  createdAt: "2024-09-01T22:05:00Z"
+                  updatedAt: "2024-09-02T06:05:00Z"
+                warnings: ["WARN_SHIFT_GT_10H"]
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':

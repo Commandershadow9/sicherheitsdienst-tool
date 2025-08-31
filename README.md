@@ -99,6 +99,15 @@ Follow these steps to set up and run the project locally:
   - GitHub Actions lädt Coverage als Artefakt `coverage` hoch (falls vorhanden).
   - CI-Workflow: siehe Badge oben (klickbar).
 
+## E-Mail-Benachrichtigungen (Schichtänderung)
+- ENV-Variablen (backend/.env):
+  - `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM`
+- Service: `backend/src/services/emailService.ts` (Logging bei Erfolg/Fehlschlag)
+- Test-Endpoint (nur zu Testzwecken):
+  - POST `/api/notifications/test` mit JSON:
+    `{ "recipient": "to@example.com", "title": "Test", "body": "Hallo" }`
+  - Antwort: 200 bei Erfolg, 422 bei ungültigen Eingaben, 400 bei `channel != email`
+
 ### Available NPM Scripts
 
 - `npm run dev`: Starts the server in development mode with live-reloading.
