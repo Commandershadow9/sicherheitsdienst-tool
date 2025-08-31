@@ -93,6 +93,49 @@ Follow these steps to set up and run the project locally:
 - ESLint v9: see `backend/eslint.config.mjs` (TypeScript rules, strict parser options).
 - TypeScript: strict config in `backend/tsconfig.json`.
 
+## OpenAPI Specification
+
+- Source: `docs/openapi.yaml` (OpenAPI 3.1)
+- Contents: Auth, Employees, Sites, Shifts, Assignments, Time, Incidents, Notifications.
+- Conventions:
+  - Centralized error responses via `#/components/responses/*` (400/401/403/404/409/422/429/500/503).
+  - Validation error payload: `#/components/schemas/ValidationError`.
+  - Pagination objects: `EmployeesList` / `SitesList` with `meta` (`page`, `perPage`, `total`, `totalPages`).
+  - Query parameters: `page`, `perPage`, `sort`, `order`, `q`, plus `city` for Sites.
+  - Allowed sort fields:
+    - Employees: `firstName`, `lastName`, `email`, `createdAt`, `updatedAt`, `role`, `isActive`
+    - Sites: `name`, `city`, `postalCode`, `createdAt`, `updatedAt`
+
+### Validate the spec locally
+
+Pick one of the following options (no code changes required):
+
+1) Using Redocly CLI (Docker)
+
+```bash
+docker run --rm -v "$PWD/docs:/work" ghcr.io/redocly/cli:latest lint /work/openapi.yaml
+```
+
+2) Using Redocly CLI (npx)
+
+```bash
+npx @redocly/cli@latest lint docs/openapi.yaml
+```
+
+3) Using swagger-cli (npx)
+
+```bash
+npx swagger-cli@latest validate docs/openapi.yaml
+```
+
+If validation reports issues, fix `docs/openapi.yaml` accordingly. CI integration can be added later to fail builds on spec errors.
+
+### CI
+
+GitHub Actions workflow `ci` runs on pushes/PRs to `main`:
+- Backend: install → lint → test → build
+- OpenAPI: `npx @redocly/cli lint docs/openapi.yaml`
+
 ## Scripts (Backend)
 
 From within `backend/`:
@@ -168,8 +211,9 @@ curl -X POST http://localhost:3001/api/sites \
   -H "Authorization: Bearer $TOKEN" \
   -d '{"name":"HQ","address":"Main St 1","city":"Berlin","postalCode":"10115"}'
 
-List:
-curl -H "Authorization: Bearer $TOKEN" http://localhost:3001/api/sites
+List (mit Filtern/Sortierung):
+curl -H "Authorization: Bearer $TOKEN" \
+  "http://localhost:3001/api/sites?page=1&perPage=20&sort=name&order=asc&city=Berlin&postalCode=14055"
 
 Get by id:
 curl -H "Authorization: Bearer $TOKEN" http://localhost:3001/api/sites/<id>
@@ -185,7 +229,7 @@ curl -X DELETE -H "Authorization: Bearer $TOKEN" http://localhost:3001/api/sites
 
 Hinweise:
 - POST/PUT erfordern Rollen ADMIN/DISPATCHER; DELETE nur ADMIN.
-- 400 bei Validierungsfehlern, 404 bei unbekannter ID, 409 bei Duplikaten.
+- 422 bei Validierungsfehlern (Zod), 404 bei unbekannter ID, 409 bei Duplikaten (Unique-Bedingung: name+address).
 
 ## Docker Compose: Start/Stop/Logs
 

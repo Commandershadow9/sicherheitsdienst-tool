@@ -35,6 +35,23 @@ model User {
   @@map("users")
 }
 
+// Einsatzorte/Sites
+model Site {
+  id         String   @id @default(cuid())
+  name       String
+  address    String
+  city       String
+  postalCode String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  // Beziehungen
+  shifts     Shift[]
+
+  @@unique([name, address], name: "sites_name_address_key")
+  @@map("sites")
+}
+
 // Benutzerrollen
 enum UserRole {
   ADMIN
@@ -46,6 +63,8 @@ enum UserRole {
 // Schichten/Dienste
 model Shift {
   id          String    @id @default(cuid())
+  siteId      String?
+  site        Site?     @relation(fields: [siteId], references: [id])
   title       String
   description String?
   location    String

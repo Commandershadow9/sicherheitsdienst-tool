@@ -12,7 +12,7 @@ export const validate = (schema: AnyZodObject): RequestHandler => {
       next();
     } catch (error: unknown) {
       if (error instanceof ZodError) {
-        res.status(400).json({
+        res.status(422).json({
           success: false,
           message: 'Validierungsfehler',
           errors: error.errors,

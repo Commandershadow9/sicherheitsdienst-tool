@@ -10,7 +10,7 @@ import logger from './utils/logger';
 dotenv.config();
 
 // Import all routes
-import { systemRoutes, userRoutes, shiftRoutes, authRoutes } from './routes';
+import { systemRoutes, userRoutes, shiftRoutes, authRoutes, siteRoutes } from './routes';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -49,6 +49,7 @@ app.get('/', (req: Request, res: Response) => {
       auth: '/api/auth',
       users: '/api/users',
       shifts: '/api/shifts',
+      sites: '/api/sites',
     },
     timestamp: new Date().toISOString(),
   });
@@ -59,6 +60,7 @@ app.use('/api', systemRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/shifts', shiftRoutes);
+app.use('/api/sites', siteRoutes);
 
 // 404 handler for unmatched routes
 app.use((req: Request, res: Response) => {
@@ -95,7 +97,7 @@ const globalErrorHandler: ErrorRequestHandler = (err, req, res, next) => {
   }
 
   if (err.name === 'ZodError' && err.errors) {
-    statusCode = 400;
+    statusCode = 422;
     message = 'Validierungsfehler.';
     errorsArray = err.errors;
   }

@@ -1,0 +1,1988 @@
+openapi: 3.1.0
+info:
+  title: Sicherheitsdienst-Tool API
+  version: 1.0.0
+  description: API v1 für Auth, Mitarbeiter, Sites, Schichten, Zuweisungen, Zeiterfassung, Vorfälle, Benachrichtigungen.
+servers:
+  - url: http://localhost:3000/api/v1
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    ErrorResponse:
+      type: object
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        details:
+          type: object
+          additionalProperties: true
+      required: [message]
+    ValidationError:
+      type: object
+      properties:
+        message:
+          type: string
+          example: "Eingaben sind ungültig."
+        errors:
+          type: array
+          items:
+            type: object
+            properties:
+              field:
+                type: string
+                example: "email"
+              message:
+                type: string
+                example: "Muss eine gültige E-Mail sein."
+              code:
+                type: string
+                nullable: true
+                example: "invalid_email"
+      required: [message]
+    PageMeta:
+      type: object
+      properties:
+        page:
+          type: integer
+          example: 1
+        perPage:
+          type: integer
+          example: 20
+        total:
+          type: integer
+          example: 123
+        totalPages:
+          type: integer
+          example: 7
+      required: [page, perPage, total, totalPages]
+    EmployeesList:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Employee'
+        meta:
+          $ref: '#/components/schemas/PageMeta'
+      required: [items, meta]
+    SitesList:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Site'
+        meta:
+          $ref: '#/components/schemas/PageMeta'
+      required: [items, meta]
+    AuthLoginRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          minLength: 6
+      required: [email, password]
+    RefreshRequest:
+      type: object
+      properties:
+        refreshToken:
+          type: string
+      required: [refreshToken]
+    AuthTokens:
+      type: object
+      properties:
+        accessToken:
+          type: string
+        refreshToken:
+          type: string
+        expiresIn:
+          type: integer
+          format: int32
+      required: [accessToken, refreshToken]
+    UserRole:
+      type: string
+      enum: [ADMIN, MANAGER, DISPATCHER, EMPLOYEE]
+    Employee:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        firstName:
+          type: string
+        lastName:
+          type: string
+        phone:
+          type: string
+          nullable: true
+        role:
+          $ref: '#/components/schemas/UserRole'
+        isActive:
+          type: boolean
+        employeeId:
+          type: string
+          nullable: true
+        hireDate:
+          type: string
+          format: date-time
+          nullable: true
+        qualifications:
+          type: array
+          items:
+            type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required: [id, email, firstName, lastName, role, isActive, createdAt, updatedAt]
+    EmployeeCreate:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          minLength: 6
+        firstName:
+          type: string
+        lastName:
+          type: string
+        phone:
+          type: string
+          nullable: true
+        role:
+          $ref: '#/components/schemas/UserRole'
+        employeeId:
+          type: string
+          nullable: true
+        hireDate:
+          type: string
+          format: date-time
+          nullable: true
+        qualifications:
+          type: array
+          items:
+            type: string
+      required: [email, password, firstName, lastName]
+    EmployeeUpdate:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+        firstName:
+          type: string
+        lastName:
+          type: string
+        phone:
+          type: string
+          nullable: true
+        role:
+          $ref: '#/components/schemas/UserRole'
+        employeeId:
+          type: string
+          nullable: true
+        hireDate:
+          type: string
+          format: date-time
+          nullable: true
+        qualifications:
+          type: array
+          items:
+            type: string
+        isActive:
+          type: boolean
+    Site:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        address:
+          type: string
+        city:
+          type: string
+        postalCode:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required: [id, name, address, city, postalCode, createdAt, updatedAt]
+    SiteCreate:
+      type: object
+      properties:
+        name:
+          type: string
+        address:
+          type: string
+        city:
+          type: string
+        postalCode:
+          type: string
+      required: [name, address, city, postalCode]
+    SiteUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+        address:
+          type: string
+        city:
+          type: string
+        postalCode:
+          type: string
+    ShiftStatus:
+      type: string
+      enum: [PLANNED, ACTIVE, COMPLETED, CANCELLED]
+    Shift:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        siteId:
+          type: string
+          format: uuid
+          nullable: true
+        title:
+          type: string
+        description:
+          type: string
+          nullable: true
+        location:
+          type: string
+        startTime:
+          type: string
+          format: date-time
+        endTime:
+          type: string
+          format: date-time
+        requiredEmployees:
+          type: integer
+          format: int32
+        requiredQualifications:
+          type: array
+          items:
+            type: string
+        status:
+          $ref: '#/components/schemas/ShiftStatus'
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required: [id, title, location, startTime, endTime, requiredEmployees, status, createdAt, updatedAt]
+    ShiftCreate:
+      type: object
+      properties:
+        siteId:
+          type: string
+          format: uuid
+        title:
+          type: string
+        description:
+          type: string
+          nullable: true
+        location:
+          type: string
+        startTime:
+          type: string
+          format: date-time
+        endTime:
+          type: string
+          format: date-time
+        requiredEmployees:
+          type: integer
+          format: int32
+        requiredQualifications:
+          type: array
+          items:
+            type: string
+      required: [title, location, startTime, endTime]
+    ShiftUpdate:
+      type: object
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+          nullable: true
+        location:
+          type: string
+        startTime:
+          type: string
+          format: date-time
+        endTime:
+          type: string
+          format: date-time
+        requiredEmployees:
+          type: integer
+          format: int32
+        requiredQualifications:
+          type: array
+          items:
+            type: string
+        status:
+          $ref: '#/components/schemas/ShiftStatus'
+    AssignmentStatus:
+      type: string
+      enum: [ASSIGNED, CONFIRMED, STARTED, COMPLETED, CANCELLED]
+    Assignment:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        userId:
+          type: string
+          format: uuid
+        shiftId:
+          type: string
+          format: uuid
+        status:
+          $ref: '#/components/schemas/AssignmentStatus'
+        assignedAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required: [id, userId, shiftId, status, assignedAt, updatedAt]
+    AssignmentCreate:
+      type: object
+      properties:
+        userId:
+          type: string
+          format: uuid
+        status:
+          $ref: '#/components/schemas/AssignmentStatus'
+      required: [userId]
+    TimeEntry:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        userId:
+          type: string
+          format: uuid
+        startTime:
+          type: string
+          format: date-time
+        endTime:
+          type: string
+          format: date-time
+          nullable: true
+        breakTime:
+          type: integer
+          format: int32
+          nullable: true
+        startLocation:
+          type: string
+          nullable: true
+        endLocation:
+          type: string
+          nullable: true
+        notes:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required: [id, userId, startTime, createdAt, updatedAt]
+    ClockInRequest:
+      type: object
+      properties:
+        at:
+          type: string
+          format: date-time
+        location:
+          type: string
+          nullable: true
+        notes:
+          type: string
+          nullable: true
+      required: [at]
+    ClockOutRequest:
+      type: object
+      properties:
+        at:
+          type: string
+          format: date-time
+        breakTime:
+          type: integer
+          format: int32
+          nullable: true
+        location:
+          type: string
+          nullable: true
+        notes:
+          type: string
+          nullable: true
+      required: [at]
+    IncidentSeverity:
+      type: string
+      enum: [LOW, MEDIUM, HIGH, CRITICAL]
+    IncidentStatus:
+      type: string
+      enum: [OPEN, IN_PROGRESS, RESOLVED, CLOSED]
+    Incident:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        description:
+          type: string
+        severity:
+          $ref: '#/components/schemas/IncidentSeverity'
+        status:
+          $ref: '#/components/schemas/IncidentStatus'
+        location:
+          type: string
+        occurredAt:
+          type: string
+          format: date-time
+        reportedBy:
+          type: string
+          format: uuid
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required: [id, title, description, severity, status, location, occurredAt, reportedBy, createdAt, updatedAt]
+    IncidentCreate:
+      type: object
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        severity:
+          $ref: '#/components/schemas/IncidentSeverity'
+        location:
+          type: string
+        occurredAt:
+          type: string
+          format: date-time
+      required: [title, description, severity, location, occurredAt]
+    IncidentUpdate:
+      type: object
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        severity:
+          $ref: '#/components/schemas/IncidentSeverity'
+        status:
+          $ref: '#/components/schemas/IncidentStatus'
+        location:
+          type: string
+        occurredAt:
+          type: string
+          format: date-time
+    NotificationStatus:
+      type: string
+      enum: [QUEUED, SENT, FAILED]
+    Notification:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        recipient:
+          type: string
+        title:
+          type: string
+        body:
+          type: string
+        channel:
+          type: string
+          description: E.g. email, sms, push
+        status:
+          $ref: '#/components/schemas/NotificationStatus'
+        createdAt:
+          type: string
+          format: date-time
+      required: [id, recipient, title, body, channel, status, createdAt]
+    NotificationTestRequest:
+      type: object
+      properties:
+        recipient:
+          type: string
+        title:
+          type: string
+        body:
+          type: string
+        channel:
+          type: string
+      required: [recipient, title, body]
+  parameters:
+    PageParam:
+      name: page
+      in: query
+      description: Seite (1-basiert)
+      schema:
+        type: integer
+        minimum: 1
+        default: 1
+    PerPageParam:
+      name: perPage
+      in: query
+      description: Elemente pro Seite
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 20
+    EmployeeSortParam:
+      name: sort
+      in: query
+      description: Sortierfeld (Employees)
+      schema:
+        type: string
+        enum: [firstName, lastName, email, createdAt, updatedAt, role, isActive]
+    OrderParam:
+      name: order
+      in: query
+      description: Sortierreihenfolge
+      schema:
+        type: string
+        enum: [asc, desc]
+        default: asc
+    QueryParam:
+      name: q
+      in: query
+      description: Volltextsuche
+      schema:
+        type: string
+    CityParam:
+      name: city
+      in: query
+      description: Städte-Filter (Sites)
+      schema:
+        type: string
+    SitePostalCodeParam:
+      name: postalCode
+      in: query
+      description: Postleitzahl-Filter (Sites)
+      schema:
+        type: string
+    EmployeeRoleParam:
+      name: role
+      in: query
+      description: Rollen-Filter (Employees)
+      schema:
+        type: string
+        enum: [ADMIN, MANAGER, DISPATCHER, EMPLOYEE]
+    EmployeeIsActiveParam:
+      name: isActive
+      in: query
+      description: Aktiv-Status (Employees)
+      schema:
+        type: boolean
+    SiteSortParam:
+      name: sort
+      in: query
+      description: Sortierfeld (Sites)
+      schema:
+        type: string
+        enum: [name, city, postalCode, createdAt, updatedAt]
+  responses:
+    BadRequest:
+      description: Ungültige Anfrage
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            code: BAD_REQUEST
+            message: Anfrageparameter sind ungültig.
+    Unauthorized:
+      description: Nicht autorisiert
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            code: UNAUTHORIZED
+            message: Token fehlt oder ist ungültig.
+    Forbidden:
+      description: Verboten
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            code: FORBIDDEN
+            message: Keine Berechtigung.
+    NotFound:
+      description: Nicht gefunden
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            code: NOT_FOUND
+            message: Ressource nicht gefunden.
+    Conflict:
+      description: Konflikt
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            code: CONFLICT
+            message: Ressourcenkonflikt.
+    ValidationError:
+      description: Validierungsfehler
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ValidationError'
+          example:
+            message: Eingaben sind ungültig.
+            errors:
+              - field: email
+                message: Muss eine gültige E-Mail sein.
+                code: invalid_email
+    TooManyRequests:
+      description: Zu viele Anfragen
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            code: TOO_MANY_REQUESTS
+            message: Rate-Limit erreicht.
+    InternalServerError:
+      description: Serverfehler
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            code: INTERNAL_SERVER_ERROR
+            message: Unerwarteter Fehler.
+    ServiceUnavailable:
+      description: Dienst nicht verfügbar
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            code: SERVICE_UNAVAILABLE
+            message: Wartung oder temporärer Ausfall.
+paths:
+  /auth/login:
+    post:
+      summary: Login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AuthLoginRequest'
+            example:
+              email: user@example.com
+              password: secret123
+      responses:
+        '200':
+          description: Tokens ausgestellt
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthTokens'
+              example:
+                accessToken: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                refreshToken: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.r..."
+                expiresIn: 3600
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+  /auth/refresh:
+    post:
+      summary: Refresh Tokens
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshRequest'
+            example:
+              refreshToken: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.r..."
+      responses:
+        '200':
+          description: Tokens erneuert
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthTokens'
+              example:
+                accessToken: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                refreshToken: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.r..."
+                expiresIn: 3600
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+  /me:
+    get:
+      summary: Aktuellen Benutzer abrufen
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Aktueller Benutzer
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Employee'
+              example:
+                id: "a3f1c5d2-1234-4a56-9b8c-0d1e2f3a4b5c"
+                email: "jane.doe@example.com"
+                firstName: "Jane"
+                lastName: "Doe"
+                phone: "+49 151 23456789"
+                role: "EMPLOYEE"
+                isActive: true
+                employeeId: "E-1024"
+                hireDate: "2024-01-15T00:00:00Z"
+                qualifications: ["Sicherheitskraft"]
+                createdAt: "2024-08-01T12:00:00Z"
+                updatedAt: "2024-08-15T12:00:00Z"
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+  /employees:
+    get:
+      summary: Mitarbeiterliste
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PerPageParam'
+        - $ref: '#/components/parameters/EmployeeSortParam'
+        - $ref: '#/components/parameters/OrderParam'
+        - $ref: '#/components/parameters/QueryParam'
+        - $ref: '#/components/parameters/EmployeeRoleParam'
+        - $ref: '#/components/parameters/EmployeeIsActiveParam'
+      responses:
+        '200':
+          description: Liste der Mitarbeiter (paginierbar)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmployeesList'
+              example:
+                items:
+                  - id: "a3f1c5d2-1234-4a56-9b8c-0d1e2f3a4b5c"
+                    email: "jane.doe@example.com"
+                    firstName: "Jane"
+                    lastName: "Doe"
+                    phone: "+49 151 23456789"
+                    role: "EMPLOYEE"
+                    isActive: true
+                    employeeId: "E-1024"
+                    hireDate: "2024-01-15T00:00:00Z"
+                    qualifications: ["Sicherheitskraft"]
+                    createdAt: "2024-08-01T12:00:00Z"
+                    updatedAt: "2024-08-15T12:00:00Z"
+                meta:
+                  page: 1
+                  perPage: 20
+                  total: 1
+                  totalPages: 1
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+    post:
+      summary: Mitarbeiter anlegen
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EmployeeCreate'
+            example:
+              email: "jane.doe@example.com"
+              password: "secret123"
+              firstName: "Jane"
+              lastName: "Doe"
+              phone: "+49 151 23456789"
+              role: "EMPLOYEE"
+              employeeId: "E-1024"
+              hireDate: "2024-01-15T00:00:00Z"
+              qualifications: ["Sicherheitskraft"]
+      responses:
+        '200':
+          description: Mitarbeiter erstellt
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Employee'
+              example:
+                id: "a3f1c5d2-1234-4a56-9b8c-0d1e2f3a4b5c"
+                email: "jane.doe@example.com"
+                firstName: "Jane"
+                lastName: "Doe"
+                phone: "+49 151 23456789"
+                role: "EMPLOYEE"
+                isActive: true
+                employeeId: "E-1024"
+                hireDate: "2024-01-15T00:00:00Z"
+                qualifications: ["Sicherheitskraft"]
+                createdAt: "2024-08-01T12:00:00Z"
+                updatedAt: "2024-08-15T12:00:00Z"
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+  /employees/{id}:
+    get:
+      summary: Mitarbeiter abrufen
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Mitarbeiter
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Employee'
+              example:
+                id: "a3f1c5d2-1234-4a56-9b8c-0d1e2f3a4b5c"
+                email: "jane.doe@example.com"
+                firstName: "Jane"
+                lastName: "Doe"
+                phone: "+49 151 23456789"
+                role: "EMPLOYEE"
+                isActive: true
+                employeeId: "E-1024"
+                hireDate: "2024-01-15T00:00:00Z"
+                qualifications: ["Sicherheitskraft"]
+                createdAt: "2024-08-01T12:00:00Z"
+                updatedAt: "2024-08-15T12:00:00Z"
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+    put:
+      summary: Mitarbeiter aktualisieren
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EmployeeUpdate'
+            example:
+              firstName: "Jane"
+              lastName: "Doe"
+              phone: "+49 151 9999999"
+              role: "MANAGER"
+      responses:
+        '200':
+          description: Aktualisiert
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Employee'
+              example:
+                id: "a3f1c5d2-1234-4a56-9b8c-0d1e2f3a4b5c"
+                email: "jane.doe@example.com"
+                firstName: "Jane"
+                lastName: "Doe"
+                phone: "+49 151 9999999"
+                role: "MANAGER"
+                isActive: true
+                employeeId: "E-1024"
+                hireDate: "2024-01-15T00:00:00Z"
+                qualifications: ["Sicherheitskraft"]
+                createdAt: "2024-08-01T12:00:00Z"
+                updatedAt: "2024-09-01T10:00:00Z"
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+    delete:
+      summary: Mitarbeiter löschen
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Gelöscht
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+  /sites:
+    get:
+      summary: Sites auflisten
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PerPageParam'
+        - $ref: '#/components/parameters/SiteSortParam'
+        - $ref: '#/components/parameters/OrderParam'
+        - $ref: '#/components/parameters/QueryParam'
+        - $ref: '#/components/parameters/CityParam'
+        - $ref: '#/components/parameters/SitePostalCodeParam'
+      responses:
+        '200':
+          description: Liste der Sites (paginierbar)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SitesList'
+              example:
+                items:
+                  - id: "7c1f2e94-5678-4a12-9cde-abcdef123456"
+                    name: "Messe Berlin"
+                    address: "Messedamm 22"
+                    city: "Berlin"
+                    postalCode: "14055"
+                    createdAt: "2024-08-01T12:00:00Z"
+                    updatedAt: "2024-08-15T12:00:00Z"
+                meta:
+                  page: 1
+                  perPage: 20
+                  total: 1
+                  totalPages: 1
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+    post:
+      summary: Site anlegen
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SiteCreate'
+            example:
+              name: "Messe Berlin"
+              address: "Messedamm 22"
+              city: "Berlin"
+              postalCode: "14055"
+      responses:
+        '200':
+          description: Site erstellt
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Site'
+              example:
+                id: "7c1f2e94-5678-4a12-9cde-abcdef123456"
+                name: "Messe Berlin"
+                address: "Messedamm 22"
+                city: "Berlin"
+                postalCode: "14055"
+                createdAt: "2024-08-01T12:00:00Z"
+                updatedAt: "2024-08-15T12:00:00Z"
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+  /sites/{id}:
+    get:
+      summary: Site abrufen
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Site
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Site'
+              example:
+                id: "7c1f2e94-5678-4a12-9cde-abcdef123456"
+                name: "Messe Berlin"
+                address: "Messedamm 22"
+                city: "Berlin"
+                postalCode: "14055"
+                createdAt: "2024-08-01T12:00:00Z"
+                updatedAt: "2024-08-15T12:00:00Z"
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+    put:
+      summary: Site aktualisieren
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SiteUpdate'
+            example:
+              name: "Messe Berlin (Nord)"
+              address: "Messedamm 24"
+              city: "Berlin"
+              postalCode: "14055"
+      responses:
+        '200':
+          description: Aktualisiert
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Site'
+              example:
+                id: "7c1f2e94-5678-4a12-9cde-abcdef123456"
+                name: "Messe Berlin (Nord)"
+                address: "Messedamm 24"
+                city: "Berlin"
+                postalCode: "14055"
+                createdAt: "2024-08-01T12:00:00Z"
+                updatedAt: "2024-09-01T10:00:00Z"
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+    delete:
+      summary: Site löschen
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Gelöscht
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+  /sites/{siteId}/shifts:
+    get:
+      summary: Schichten einer Site
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: siteId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Liste der Schichten
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Shift'
+              example:
+                - id: "b1b2b3b4-1111-2222-3333-444455556666"
+                  siteId: "7c1f2e94-5678-4a12-9cde-abcdef123456"
+                  title: "Nachtschicht"
+                  description: "Wachdienst Haupteingang"
+                  location: "Messedamm 22"
+                  startTime: "2024-09-01T22:00:00Z"
+                  endTime: "2024-09-02T06:00:00Z"
+                  requiredEmployees: 2
+                  requiredQualifications: ["Sicherheitskraft"]
+                  status: "PLANNED"
+                  createdAt: "2024-08-25T10:00:00Z"
+                  updatedAt: "2024-08-25T10:00:00Z"
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+    post:
+      summary: Schicht für Site anlegen
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: siteId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ShiftCreate'
+            example:
+              siteId: "7c1f2e94-5678-4a12-9cde-abcdef123456"
+              title: "Nachtschicht"
+              description: "Wachdienst Haupteingang"
+              location: "Messedamm 22"
+              startTime: "2024-09-01T22:00:00Z"
+              endTime: "2024-09-02T06:00:00Z"
+              requiredEmployees: 2
+              requiredQualifications: ["Sicherheitskraft"]
+      responses:
+        '200':
+          description: Schicht erstellt
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Shift'
+              example:
+                id: "b1b2b3b4-1111-2222-3333-444455556666"
+                siteId: "7c1f2e94-5678-4a12-9cde-abcdef123456"
+                title: "Nachtschicht"
+                description: "Wachdienst Haupteingang"
+                location: "Messedamm 22"
+                startTime: "2024-09-01T22:00:00Z"
+                endTime: "2024-09-02T06:00:00Z"
+                requiredEmployees: 2
+                requiredQualifications: ["Sicherheitskraft"]
+                status: "PLANNED"
+                createdAt: "2024-08-25T10:00:00Z"
+                updatedAt: "2024-08-25T10:00:00Z"
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+  /shifts:
+    get:
+      summary: Alle Schichten
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Liste der Schichten
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Shift'
+              example:
+                - id: "b1b2b3b4-1111-2222-3333-444455556666"
+                  siteId: "7c1f2e94-5678-4a12-9cde-abcdef123456"
+                  title: "Nachtschicht"
+                  location: "Messedamm 22"
+                  startTime: "2024-09-01T22:00:00Z"
+                  endTime: "2024-09-02T06:00:00Z"
+                  requiredEmployees: 2
+                  status: "PLANNED"
+                  createdAt: "2024-08-25T10:00:00Z"
+                  updatedAt: "2024-08-25T10:00:00Z"
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+  /shifts/{id}:
+    get:
+      summary: Schicht abrufen
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Schicht
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Shift'
+              example:
+                id: "b1b2b3b4-1111-2222-3333-444455556666"
+                siteId: "7c1f2e94-5678-4a12-9cde-abcdef123456"
+                title: "Nachtschicht"
+                description: "Wachdienst Haupteingang"
+                location: "Messedamm 22"
+                startTime: "2024-09-01T22:00:00Z"
+                endTime: "2024-09-02T06:00:00Z"
+                requiredEmployees: 2
+                requiredQualifications: ["Sicherheitskraft"]
+                status: "PLANNED"
+                createdAt: "2024-08-25T10:00:00Z"
+                updatedAt: "2024-08-25T10:00:00Z"
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+    put:
+      summary: Schicht aktualisieren
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ShiftUpdate'
+            example:
+              title: "Nachtschicht (verlängert)"
+              endTime: "2024-09-02T07:00:00Z"
+      responses:
+        '200':
+          description: Aktualisiert
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Shift'
+              example:
+                id: "b1b2b3b4-1111-2222-3333-444455556666"
+                siteId: "7c1f2e94-5678-4a12-9cde-abcdef123456"
+                title: "Nachtschicht (verlängert)"
+                description: "Wachdienst Haupteingang"
+                location: "Messedamm 22"
+                startTime: "2024-09-01T22:00:00Z"
+                endTime: "2024-09-02T07:00:00Z"
+                requiredEmployees: 2
+                requiredQualifications: ["Sicherheitskraft"]
+                status: "PLANNED"
+                createdAt: "2024-08-25T10:00:00Z"
+                updatedAt: "2024-09-01T10:00:00Z"
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+    delete:
+      summary: Schicht löschen
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Gelöscht
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+  /shifts/{id}/assignments:
+    post:
+      summary: Mitarbeiter zuweisen
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AssignmentCreate'
+            example:
+              userId: "a3f1c5d2-1234-4a56-9b8c-0d1e2f3a4b5c"
+              status: "ASSIGNED"
+      responses:
+        '200':
+          description: Zuweisung erstellt
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Assignment'
+              example:
+                id: "c0ffee00-aaaa-bbbb-cccc-111122223333"
+                userId: "a3f1c5d2-1234-4a56-9b8c-0d1e2f3a4b5c"
+                shiftId: "b1b2b3b4-1111-2222-3333-444455556666"
+                status: "ASSIGNED"
+                assignedAt: "2024-08-25T10:00:00Z"
+                updatedAt: "2024-08-25T10:00:00Z"
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+    delete:
+      summary: Mitarbeiter-Zuweisung entfernen
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: userId
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Entfernt
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+  /shifts/{id}/clock-in:
+    post:
+      summary: Arbeitsbeginn buchen
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClockInRequest'
+            example:
+              at: "2024-09-01T22:05:00Z"
+              location: "Messedamm 22"
+              notes: "Start an Tor 3"
+      responses:
+        '200':
+          description: Zeiteintrag erstellt
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TimeEntry'
+              example:
+                id: "d34db33f-aaaa-bbbb-cccc-111122223333"
+                userId: "a3f1c5d2-1234-4a56-9b8c-0d1e2f3a4b5c"
+                startTime: "2024-09-01T22:05:00Z"
+                endTime: null
+                breakTime: null
+                startLocation: "Messedamm 22"
+                endLocation: null
+                notes: "Start an Tor 3"
+                createdAt: "2024-09-01T22:05:00Z"
+                updatedAt: "2024-09-01T22:05:00Z"
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+  /shifts/{id}/clock-out:
+    post:
+      summary: Arbeitsende buchen
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClockOutRequest'
+            example:
+              at: "2024-09-02T06:05:00Z"
+              breakTime: 15
+              location: "Messedamm 22"
+              notes: "Ende Tor 3"
+      responses:
+        '200':
+          description: Zeiteintrag aktualisiert
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TimeEntry'
+              example:
+                id: "d34db33f-aaaa-bbbb-cccc-111122223333"
+                userId: "a3f1c5d2-1234-4a56-9b8c-0d1e2f3a4b5c"
+                startTime: "2024-09-01T22:05:00Z"
+                endTime: "2024-09-02T06:05:00Z"
+                breakTime: 15
+                startLocation: "Messedamm 22"
+                endLocation: "Messedamm 22"
+                notes: "Ende Tor 3"
+                createdAt: "2024-09-01T22:05:00Z"
+                updatedAt: "2024-09-02T06:05:00Z"
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+  /incidents:
+    get:
+      summary: Vorfälle auflisten
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Liste der Vorfälle
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Incident'
+              example:
+                - id: "e1f2e3f4-1234-5678-9999-abcdefabcdef"
+                  title: "Zaun beschädigt"
+                  description: "Schaden am Nordzaun"
+                  severity: "MEDIUM"
+                  status: "OPEN"
+                  location: "Messe Nord"
+                  occurredAt: "2024-09-01T23:10:00Z"
+                  reportedBy: "a3f1c5d2-1234-4a56-9b8c-0d1e2f3a4b5c"
+                  createdAt: "2024-09-01T23:12:00Z"
+                  updatedAt: "2024-09-01T23:12:00Z"
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+    post:
+      summary: Vorfall melden
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IncidentCreate'
+            example:
+              title: "Zaun beschädigt"
+              description: "Schaden am Nordzaun"
+              severity: "MEDIUM"
+              location: "Messe Nord"
+              occurredAt: "2024-09-01T23:10:00Z"
+      responses:
+        '200':
+          description: Vorfall erstellt
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Incident'
+              example:
+                id: "e1f2e3f4-1234-5678-9999-abcdefabcdef"
+                title: "Zaun beschädigt"
+                description: "Schaden am Nordzaun"
+                severity: "MEDIUM"
+                status: "OPEN"
+                location: "Messe Nord"
+                occurredAt: "2024-09-01T23:10:00Z"
+                reportedBy: "a3f1c5d2-1234-4a56-9b8c-0d1e2f3a4b5c"
+                createdAt: "2024-09-01T23:12:00Z"
+                updatedAt: "2024-09-01T23:12:00Z"
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+  /incidents/{id}:
+    get:
+      summary: Vorfall abrufen
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Vorfall
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Incident'
+              example:
+                id: "e1f2e3f4-1234-5678-9999-abcdefabcdef"
+                title: "Zaun beschädigt"
+                description: "Schaden am Nordzaun"
+                severity: "MEDIUM"
+                status: "OPEN"
+                location: "Messe Nord"
+                occurredAt: "2024-09-01T23:10:00Z"
+                reportedBy: "a3f1c5d2-1234-4a56-9b8c-0d1e2f3a4b5c"
+                createdAt: "2024-09-01T23:12:00Z"
+                updatedAt: "2024-09-01T23:12:00Z"
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+    put:
+      summary: Vorfall aktualisieren
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IncidentUpdate'
+            example:
+              status: "IN_PROGRESS"
+      responses:
+        '200':
+          description: Aktualisiert
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Incident'
+              example:
+                id: "e1f2e3f4-1234-5678-9999-abcdefabcdef"
+                title: "Zaun beschädigt"
+                description: "Schaden am Nordzaun"
+                severity: "MEDIUM"
+                status: "IN_PROGRESS"
+                location: "Messe Nord"
+                occurredAt: "2024-09-01T23:10:00Z"
+                reportedBy: "a3f1c5d2-1234-4a56-9b8c-0d1e2f3a4b5c"
+                createdAt: "2024-09-01T23:12:00Z"
+                updatedAt: "2024-09-01T23:30:00Z"
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+    delete:
+      summary: Vorfall löschen
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Gelöscht
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+  /notifications/test:
+    post:
+      summary: Test-Benachrichtigung senden
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NotificationTestRequest'
+            example:
+              recipient: "jane.doe@example.com"
+              title: "Test"
+              body: "Hallo Jane"
+              channel: "email"
+      responses:
+        '200':
+          description: Benachrichtigung erstellt/gesendet
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Notification'
+              example:
+                id: "f00ba7ba-1234-5678-9abc-111122223333"
+                recipient: "jane.doe@example.com"
+                title: "Test"
+                body: "Hallo Jane"
+                channel: "email"
+                status: "SENT"
+                createdAt: "2024-09-01T12:00:00Z"
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'

@@ -37,6 +37,15 @@ services:
       # Adjust to your DB credentials or override via environment
       DATABASE_URL: ${DATABASE_URL:-postgresql://${POSTGRES_USER:-admin}:${POSTGRES_PASSWORD:-admin123}@db:5432/${POSTGRES_DB:-sicherheitsdienst_db}?schema=public}
       JWT_SECRET: ${JWT_SECRET:-changeme-in-env}
+      # Optional Refresh/SMTP envs are passed if defined host-side
+      REFRESH_SECRET: ${REFRESH_SECRET:-}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-}
+      REFRESH_EXPIRES_IN: ${REFRESH_EXPIRES_IN:-}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      SMTP_FROM: ${SMTP_FROM:-}
       FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
       MOBILE_APP_URL: ${MOBILE_APP_URL:-http://localhost:19000}
     ports:
@@ -51,6 +60,10 @@ services:
       interval: 15s
       timeout: 5s
       retries: 10
+    # Run DB migrations before starting the server
+    command: >
+      sh -c "npx prisma migrate deploy &&
+             node dist/server.js"
 
   # pgAdmin (Datenbank-Verwaltung)
   pgadmin:
