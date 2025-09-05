@@ -20,7 +20,7 @@ async function main() {
     const hashedPassword = await bcrypt.hash('password123', 12);
 
     // 1. Admin erstellen
-    const admin = await prisma.user.create({
+    const _admin = await prisma.user.create({
       data: {
         email: 'admin@sicherheitsdienst.de',
         password: hashedPassword,
@@ -36,7 +36,7 @@ async function main() {
     });
 
     // 2. Dispatcher/Manager erstellen
-    const dispatcher = await prisma.user.create({
+    const _dispatcher = await prisma.user.create({
       data: {
         email: 'dispatcher@sicherheitsdienst.de',
         password: hashedPassword,

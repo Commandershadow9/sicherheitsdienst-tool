@@ -4,7 +4,7 @@ import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
 
 // GET /api/health - System Health Check
-export const healthCheck = async (req: Request, res: Response, next: NextFunction) => {
+export const healthCheck = async (_req: Request, res: Response, _next: NextFunction) => {
   try {
     // Datenbankverbindung testen
     await prisma.$queryRaw`SELECT 1`;

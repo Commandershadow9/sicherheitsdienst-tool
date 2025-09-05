@@ -9,7 +9,6 @@ const smtpFrom = process.env.SMTP_FROM || process.env.SMTP_USER || 'no-reply@exa
 
 function getTransport() {
   try {
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
     const nodemailer = require('nodemailer');
     return nodemailer.createTransport({
       host: smtpHost,
@@ -17,7 +16,7 @@ function getTransport() {
       secure: smtpSecure,
       auth: smtpUser && smtpPass ? { user: smtpUser, pass: smtpPass } : undefined,
     } as any);
-  } catch (_e) {
+  } catch {
     // Fallback-Transport im Test-/Dev-Kontext, wenn nodemailer nicht installiert ist
     return {
       async sendMail() {

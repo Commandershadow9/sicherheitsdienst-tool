@@ -1,4 +1,4 @@
-import express, { Request, Response, NextFunction, ErrorRequestHandler } from 'express'; // ErrorRequestHandler importiert
+import express, { Request, Response, ErrorRequestHandler } from 'express'; // ErrorRequestHandler importiert
 import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
@@ -13,7 +13,7 @@ dotenv.config();
 import { systemRoutes, userRoutes, shiftRoutes, authRoutes, siteRoutes, notificationRoutes } from './routes';
 
 const app = express();
-const PORT = process.env.PORT || 3001;
+// Port-Konstante wird hier nicht benötigt (Server-Start in server.ts)
 
 // Middleware
 app.use(helmet());

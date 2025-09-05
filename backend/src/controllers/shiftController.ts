@@ -133,7 +133,7 @@ export const createShift = async (req: Request, res: Response, next: NextFunctio
     // E-Mail-Benachrichtigung (Feature-Flag)
     try {
       await notifyAssignedUsers(shift, 'erstellt');
-    } catch (e) {
+    } catch {
       // bereits intern geloggt
     }
     res.status(201).json({
@@ -256,7 +256,7 @@ export const updateShift = async (req: Request, res: Response, next: NextFunctio
     // E-Mail-Benachrichtigung (Feature-Flag)
     try {
       await notifyAssignedUsers(updatedShift, 'aktualisiert');
-    } catch (e) {
+    } catch {
       // bereits intern geloggt
     }
     res.json({
@@ -296,7 +296,7 @@ export const deleteShift = async (req: Request, res: Response, next: NextFunctio
           },
         },
       });
-    } catch (_e) {
+    } catch {
       // ignore; Benachrichtigung optional
     }
     // Erst alle Zuweisungen löschen
@@ -313,7 +313,7 @@ export const deleteShift = async (req: Request, res: Response, next: NextFunctio
       if (shiftForNotify) {
         await notifyAssignedUsers({ ...shiftForNotify, title: shiftForNotify.title || deletedShift.title }, 'gelöscht');
       }
-    } catch (e) {
+    } catch {
       // bereits intern geloggt
     }
     res.json({
