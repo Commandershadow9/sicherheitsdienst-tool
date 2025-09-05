@@ -108,6 +108,14 @@ Follow these steps to set up and run the project locally:
     `{ "recipient": "to@example.com", "title": "Test", "body": "Hallo" }`
   - Antwort: 200 bei Erfolg, 422 bei ungültigen Eingaben, 400 bei `channel != email`
 
+### RBAC Notifications
+- Rollenmatrix (Zugriff auf Benachrichtigungen):
+  - ADMIN: erlaubt
+  - MANAGER: erlaubt
+  - EMPLOYEE: verboten (403)
+  - anonym: verboten (401)
+- Implementierung: Middleware `notificationsRBAC` in `backend/src/middleware/rbac.ts` prüft `req.user.role ∈ {ADMIN, MANAGER}` und wird in `backend/src/routes/notificationRoutes.ts` vor die Validierung geschaltet.
+
 ### Available NPM Scripts
 
 - `npm run dev`: Starts the server in development mode with live-reloading.

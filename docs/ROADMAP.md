@@ -23,11 +23,12 @@ Erweiterung (konzepttreu, dokumentarisch):
 - POST-Statuscodes auf 201 vereinheitlicht (Create-Endpunkte).
 - TimeTracking (Clock-in/out) mit Basis-AZG-Warnungen und Tests.
 - E-Mail-Benachrichtigungen (SMTP aus ENV), Test-Endpoint `/api/notifications/test`, Tests.
+- RBAC-Feinschliff umgesetzt: Notifications-Endpoint auf ADMIN/MANAGER eingeschränkt.
 
 ## Nächste Schritte (Vorschlag)
 - Echte E-Mail-Benachrichtigung bei Schichtänderung verknüpfen (PUT/DELETE Schicht), Feature-Flag `NOTIFY_SHIFT_CHANGES=true`.
 - OpenAPI: Notifications (Test) um Fehlerbeispiele ergänzen; ggf. E-Mail-Schema/Response standardisieren.
-- RBAC-Feinschliff: Notifications-Endpoint auf ADMIN/MANAGER einschränken.
+  (erledigt) RBAC-Feinschliff: Notifications-Endpoint auf ADMIN/MANAGER einschränken.
 - CI: Optional Coverage-Badge/Codecov integrieren.
 - Performance: Indexe prüfen (Users.email, Sites.name+address), Query-Parameter serverseitig umsetzen (Sort/Filter/Pagination intern).
 
