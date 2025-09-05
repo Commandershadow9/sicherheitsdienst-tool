@@ -1,0 +1,61 @@
+name: Notify Discord
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  pull_request:
+    types: [opened, synchronize, reopened, closed]
+  workflow_run:
+    workflows: [ "ci" ]
+    types: [completed]
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout (für Commit-Infos)
+        uses: actions/checkout@v4
+        if: ${{ github.event_name == 'push' }}
+
+      - name: Build Discord message
+        id: msg
+        run: |
+          EVENT="${{ github.event_name }}"
+          REPO="${{ github.repository }}"
+          ACTOR="${{ github.actor }}"
+          SHA="${{ github.sha }}"
+          URL="https://github.com/${REPO}"
+          RUN_URL="https://github.com/${REPO}/actions/runs/${{ github.run_id }}"
+
+          if [ "$EVENT" = "push" ]; then
+            # Liste der Commits dieser Push-Action
+            COMMITS=$(jq -r '.commits[] | "- \(.id[0:7]) \(.message | gsub("\n"; " ")) by \(.author.username)"' <<< '${{ toJson(github.event) }}' | head -n 20)
+            [ -z "$COMMITS" ] && COMMITS="- (keine Commit-Liste verfügbar)"
+            TITLE="📦 Push auf ${REPO} (${GITHUB_REF_NAME})"
+            DESC="**Actor:** ${ACTOR}\n**Branch:** ${GITHUB_REF_NAME}\n**Commits:**\n${COMMITS}\n\n${URL}/commit/${SHA}"
+          elif [ "$EVENT" = "pull_request" ]; then
+            PR_NUM='${{ github.event.pull_request.number }}'
+            PR_TITLE='${{ github.event.pull_request.title }}'
+            PR_STATE='${{ github.event.pull_request.state }}'
+            PR_MERGED='${{ github.event.pull_request.merged }}'
+            TITLE="🔀 PR #${PR_NUM}: ${PR_TITLE}"
+            DESC="**Actor:** ${ACTOR}\n**State:** ${PR_STATE}\n**Merged:** ${PR_MERGED}\n${{ github.event.pull_request.html_url }}"
+          elif [ "$EVENT" = "workflow_run" ]; then
+            CONCL='${{ github.event.workflow_run.conclusion }}'
+            WFN='${{ github.event.workflow_run.name }}'
+            TITLE="🧪 CI: ${WFN} → ${CONCL}"
+            DESC="**Actor:** ${ACTOR}\n${RUN_URL}"
+          else
+            TITLE="ℹ️ ${EVENT} in ${REPO}"
+            DESC="${URL}"
+          fi
+
+          # Discord Embed (max. 2000 Zeichen beachten)
+          jq -n --arg title "$TITLE" --arg desc "$DESC" \
+            '{embeds: [{title: $title, description: $desc, color: 5814783}]}' > payload.json
+
+      - name: Send to Discord
+        env:
+          WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+        run: |
+          curl -sS -H "Content-Type: application/json" -d @payload.json "$WEBHOOK"
