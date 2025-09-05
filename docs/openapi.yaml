@@ -1993,7 +1993,14 @@ paths:
                 status: "SENT"
                 createdAt: "2024-09-01T12:00:00Z"
         '400':
-          $ref: '#/components/responses/BadRequest'
+          description: Ungültige Anfrage (z. B. nicht unterstützter Kanal)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                code: BAD_REQUEST
+                message: "Nur channel=email wird unterstützt"
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -2001,7 +2008,20 @@ paths:
         '409':
           $ref: '#/components/responses/Conflict'
         '422':
-          $ref: '#/components/responses/ValidationError'
+          description: Validierungsfehler (z. B. fehlende Felder)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+              example:
+                message: "Validierungsfehler"
+                errors:
+                  - field: recipient
+                    message: Darf nicht leer sein.
+                  - field: title
+                    message: Darf nicht leer sein.
+                  - field: body
+                    message: Darf nicht leer sein.
         '429':
           $ref: '#/components/responses/TooManyRequests'
         '500':
