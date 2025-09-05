@@ -119,4 +119,116 @@ JSON
             FIELDS=$(cat <<JSON
 [
   { "name": "Basis → Head", "value": "$(printf "\`%s\` → \`%s\`" "$base" "$head" | esc_json)" },
-  { "name": "Repository"
+  { "name": "Repository", "value": "$(printf "%s" "$repo_url" | esc_json)" }
+]
+JSON
+)
+          elif [ "$event" = "workflow_run" ]; then
+            name='${{ github.event.workflow_run.name }}'
+            conc='${{ github.event.workflow_run.conclusion }}'
+            TITLE="🧪 CI: ${name}"
+            case "$conc" in
+              success) COLOR=4437377; status="✅ Erfolg";;
+              failure) COLOR=13631488; status="❌ Fehlgeschlagen";;
+              cancelled) COLOR=14540253; status="⏹️ Abgebrochen";;
+              skipped) COLOR=15132390; status="⏭️ Übersprungen";;
+              *) COLOR=8421504; status="ℹ️ ${conc}";;
+            esac
+            DESC="**Akteur:** ${actor}\n**Ergebnis:** ${status}\n${run_url}"
+            ICON="https://raw.githubusercontent.com/primer/octicons/main/icons/checklist-24.svg"
+            FIELDS=$(cat <<JSON
+[
+  { "name": "Workflow", "value": "$(printf "%s" "$name" | esc_json)" },
+  { "name": "Repository", "value": "$(printf "%s" "$repo_url" | esc_json)" }
+]
+JSON
+)
+          elif [ "$event" = "release" ]; then
+            tag='${{ github.event.release.tag_name }}'
+            rname='${{ github.event.release.name }}'
+            rurl='${{ github.event.release.html_url }}'
+            [ -z "$rurl" ] && rurl="${repo_url}/releases/tag/${tag}"
+
+            TITLE="🏷️ Release ${tag}"
+            [ -n "$rname" ] && TITLE="🏷️ ${rname} (${tag})"
+            DESC="**Repository:** ${repo}\n**Akteur:** ${actor}\n**Release:** ${rurl}"
+            COLOR=5793266
+            ICON="https://raw.githubusercontent.com/primer/octicons/main/icons/tag-24.svg"
+
+            version="${tag#v}"
+            CHANGELOG_SECTION=""
+            if [ -f CHANGELOG.md ]; then
+              CHANGELOG_SECTION="$(awk -v ver="$version" '
+                BEGIN{found=0}
+                tolower($0) ~ "^##[[:space:]]*\\[?v?" tolower(ver) "\\]?" { if(!found){found=1; next} }
+                found && /^##[[:space:]]*\[?v?[0-9]/ {exit}
+                found {print}
+              ' CHANGELOG.md)"
+            fi
+            [ -z "$CHANGELOG_SECTION" ] && CHANGELOG_SECTION="(Kein spezifischer Changelog-Eintrag für ${tag} gefunden.)"
+
+            CLEAN_SECTION="$(printf '%s' "$CHANGELOG_SECTION")"
+            if [ "${#CLEAN_SECTION}" -gt 1000 ]; then
+              CLEAN_SECTION="${CLEAN_SECTION:0:1000}\n… (gekürzt)"
+            fi
+
+            FIELDS=$(cat <<JSON
+[
+  { "name": "Änderungen (CHANGELOG)", "value": "$(printf "%s" "$CLEAN_SECTION" | esc_json)" },
+  { "name": "Links", "value": "$(printf "• Repo: %s\n• Actions: %s\n• Tag: %s" "$repo_url" "$run_url" "$rurl" | esc_json)" }
+]
+JSON
+)
+          fi
+
+          title_json="$(printf "%s" "$TITLE" | esc_json)"
+          desc_json="$(printf "%s" "$DESC" | esc_json)"
+
+          cat > payload.json <<JSON
+{
+  "username": "GitHub · ${repo}",
+  "avatar_url": "${avatar}",
+  "embeds": [
+    {
+      "title": "${title_json}",
+      "description": "${desc_json}",
+      "color": ${COLOR},
+      "timestamp": "${ts}",
+      "thumbnail": { "url": "${ICON}" },
+      "fields": ${FIELDS},
+      "footer": { "text": "Automatische Benachrichtigung • $(date -u +%Y-%m-%d)" }
+    }
+  ]
+}
+JSON
+
+          # als Ausgabe (base64) für den nächsten Step
+          base64 -w0 < payload.json > payload.b64 || base64 < payload.json > payload.b64
+          echo "payload=$(cat payload.b64)" >> "$GITHUB_OUTPUT"
+
+      - name: Send to Discord (with retry)
+        env:
+          WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "${WEBHOOK:-}" || { echo "::error::Secret DISCORD_WEBHOOK fehlt"; exit 1; }
+          echo "${{ steps.build.outputs.payload }}" | base64 -d > payload.json || base64 -D > payload.json
+
+          # bis zu 5 Versuche (z.B. bei 429 Rate Limit)
+          for i in 1 2 3 4 5; do
+            http_code=$(curl -sS -H "Content-Type: application/json" -d @payload.json "$WEBHOOK" -o resp.txt -w "%{http_code}" || echo "000")
+            echo "Discord HTTP: $http_code (try $i)"
+            if [ "$http_code" -ge 200 ] && [ "$http_code" -lt 300 ]; then
+              echo "OK"; break
+            fi
+            echo "Antwort:"
+            cat resp.txt || true
+            sleep $((i*2))
+          done
+
+          # finaler Check
+          if [ "$http_code" -lt 200 ] || [ "$http_code" -ge 300 ]; then
+            echo "::error::Discord-Request fehlgeschlagen (HTTP $http_code)"
+            exit 1
+          fi
