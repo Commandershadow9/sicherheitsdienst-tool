@@ -1,0 +1,25 @@
+name: Notify Discord (releases/tags)
+
+on:
+  release:
+    types: [published]
+  push:
+    tags:
+      - 'v*'   # feuert bei Tags wie v0.1.0, v1.2.3
+
+jobs:
+  notify-release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Build message
+        run: |
+          TITLE="🏷️ Neues Release/Tag: ${{ github.event.release.tag_name || github.ref_name }}"
+          DESC="${{ github.event.release.name || 'Tag erstellt' }}\n${{ github.event.release.html_url || format('https://github.com/{0}/releases/tag/{1}', github.repository, github.ref_name) }}"
+          jq -n --arg title "$TITLE" --arg desc "$DESC" \
+            '{embeds: [{title: $title, description: $desc, color: 5793266}]}' > payload.json
+
+      - name: Send to Discord
+        env:
+          WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+        run: |
+          curl -sS -H "Content-Type: application/json" -d @payload.json "$WEBHOOK"
