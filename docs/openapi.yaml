@@ -1600,8 +1600,11 @@ paths:
           $ref: '#/components/responses/ServiceUnavailable'
     put:
       summary: Schicht aktualisieren
-      description: 'Feature-Flag: Bei EMAIL_NOTIFY_SHIFTS=true werden E-Mails an zugewiesene Mitarbeiter versendet.'
+      description: 'RBAC: ADMIN oder DISPATCHER. Feature-Flag: Bei EMAIL_NOTIFY_SHIFTS=true werden E-Mails an zugewiesene Mitarbeiter versendet.'
       x-feature-flag: EMAIL_NOTIFY_SHIFTS
+      x-required-roles:
+        - ADMIN
+        - DISPATCHER
       security:
         - BearerAuth: []
       parameters:
@@ -1658,7 +1661,7 @@ paths:
           $ref: '#/components/responses/ServiceUnavailable'
     delete:
       summary: Schicht löschen
-      description: 'Feature-Flag: Bei EMAIL_NOTIFY_SHIFTS=true werden E-Mails an zugewiesene Mitarbeiter versendet.'
+      description: 'RBAC: ADMIN. Feature-Flag: Bei EMAIL_NOTIFY_SHIFTS=true werden E-Mails an zugewiesene Mitarbeiter versendet.'
       x-feature-flag: EMAIL_NOTIFY_SHIFTS
       security:
         - BearerAuth: []
@@ -1670,8 +1673,31 @@ paths:
             type: string
             format: uuid
       responses:
-        '204':
-          description: Gelöscht
+        '200':
+          description: Schicht gelöscht (Antwort enthält Basisdaten)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  data:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        format: uuid
+                      title:
+                        type: string
+              example:
+                success: true
+                message: 'Schicht erfolgreich gelöscht'
+                data:
+                  id: 'b1b2b3b4-1111-2222-3333-444455556666'
+                  title: 'Nachtschicht'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
