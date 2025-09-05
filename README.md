@@ -117,6 +117,21 @@ Follow these steps to set up and run the project locally:
 - Implementierung: Controller in `backend/src/controllers/shiftController.ts` rufen `sendShiftChangedEmail` aus `emailService` auf.
 - Tests: Unit-Tests mocken `emailService` und prüfen Aufruf abhängig vom Flag; Routen-Tests decken 201/200/404/400-Fälle ab.
 
+### RBAC Übersicht
+- Notifications:
+  - ADMIN: erlaubt, MANAGER: erlaubt, EMPLOYEE: 403, anonym: 401
+- Sites:
+  - GET/Liste/Details: Auth erforderlich (alle Rollen)
+  - POST/PUT: ADMIN, DISPATCHER
+  - DELETE: ADMIN
+- Shifts:
+  - GET/Liste/Details: Auth erforderlich (alle Rollen)
+  - POST/PUT: ADMIN, DISPATCHER
+  - DELETE: ADMIN
+- Users:
+  - GET Liste: ADMIN, DISPATCHER
+  - POST/DELETE/PUT: ADMIN (detailspezifische Logik ggf. erweitert)
+
 ### RBAC Notifications
 - Rollenmatrix (Zugriff auf Benachrichtigungen):
   - ADMIN: erlaubt
