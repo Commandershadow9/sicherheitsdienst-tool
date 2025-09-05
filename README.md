@@ -205,6 +205,17 @@ From within `backend/`:
 - Tests are written with Jest and avoid port-binding. Controller and middleware smoke tests simulate Express `req/res/next`.
 - Health and stats controllers handle lack of DB (503), tests pass in both cases (connected/disconnected).
 
+## Listen-API: Pagination/Sort/Filter
+
+- Endpunkte (mindestens): `GET /api/sites`, `GET /api/shifts`, `GET /api/users` unterstützen serverseitige Pagination, Sortierung und Filter.
+- Query-Parameter:
+  - `page` (ab 1), `pageSize` (max 100)
+  - `sortBy` (Sites: name, city, postalCode, createdAt, updatedAt; Shifts: startTime, endTime, title, location, status, createdAt, updatedAt; Users: firstName, lastName, email, createdAt, updatedAt, role, isActive)
+  - `sortDir`: `asc` | `desc`
+  - `filter[feld]`: z. B. Sites: `name`, `city`, `postalCode`; Shifts: `title`, `location`, `status`; Users: `firstName`, `lastName`, `email`, `role`, `isActive`.
+- Response-Format:
+  `{ data: [...], pagination: { page, pageSize, total, totalPages }, sort: { by, dir }, filters?: { ... } }`
+
 ## Docker Compose
 
 - See `docker-compose.yml` for Postgres (`db`) and pgAdmin (`pgadmin`) with healthchecks.

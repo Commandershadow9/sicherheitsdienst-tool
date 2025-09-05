@@ -5,37 +5,68 @@ import bcrypt from 'bcryptjs';
 const prisma = new PrismaClient();
 
 // GET /api/users - Alle Mitarbeiter abrufen
-export const getAllUsers = async (req: Request, res: Response, next: NextFunction) => {
+export const getAllUsers = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const users = await prisma.user.findMany({
-      select: {
-        id: true,
-        email: true,
-        firstName: true,
-        lastName: true,
-        phone: true,
-        role: true,
-        employeeId: true,
-        isActive: true,
-        hireDate: true,
-        qualifications: true,
-        createdAt: true,
-        // password excluded for security
-      },
-      orderBy: {
-        firstName: 'asc',
-      },
-    });
+    const page = Math.max(parseInt((req.query.page as string) || '1', 10), 1);
+    const pageSizeRaw = parseInt((req.query.pageSize as string) || '20', 10);
+    const pageSize = Math.min(Math.max(pageSizeRaw || 20, 1), 100);
+    const sortBy = (req.query.sortBy as string) || 'firstName';
+    const sortDir = (req.query.sortDir as string) === 'desc' ? 'desc' : 'asc';
+    const filtersFromQueryParam = (req.query.filter as Record<string, string>) || {};
+    const filters: Record<string, string> = { ...filtersFromQueryParam };
+    const rawQuery = req.query as Record<string, unknown>;
+    for (const key of Object.keys(rawQuery)) {
+      const m = key.match(/^filter\[(.+)\]$/);
+      if (m) filters[m[1]] = String(rawQuery[key] as any);
+    }
 
-    res.json({
-      success: true,
-      message: `${users.length} Mitarbeiter aus Datenbank geladen`,
-      data: users,
-      count: users.length,
-    });
+    const allowedSortFields = ['firstName', 'lastName', 'email', 'createdAt', 'updatedAt', 'role', 'isActive'];
+    if (sortBy && !allowedSortFields.includes(sortBy)) {
+      res.status(400).json({ success: false, message: `Ungültiges Sortierfeld: ${sortBy}`, allowed: allowedSortFields });
+      return;
+    }
+
+    const where: any = {};
+    if (filters) {
+      if (typeof filters.firstName === 'string' && filters.firstName)
+        where.firstName = { contains: filters.firstName, mode: 'insensitive' };
+      if (typeof filters.lastName === 'string' && filters.lastName)
+        where.lastName = { contains: filters.lastName, mode: 'insensitive' };
+      if (typeof filters.email === 'string' && filters.email)
+        where.email = { contains: filters.email, mode: 'insensitive' };
+      if (typeof filters.employeeId === 'string' && filters.employeeId)
+        where.employeeId = { contains: filters.employeeId, mode: 'insensitive' };
+      if (typeof filters.role === 'string' && filters.role) where.role = filters.role as any;
+      if (typeof filters.isActive === 'string' && filters.isActive)
+        where.isActive = filters.isActive === 'true' ? true : filters.isActive === 'false' ? false : undefined;
+    }
+
+    const select = {
+      id: true,
+      email: true,
+      firstName: true,
+      lastName: true,
+      phone: true,
+      role: true,
+      employeeId: true,
+      isActive: true,
+      hireDate: true,
+      qualifications: true,
+      createdAt: true,
+      updatedAt: true,
+    } as const;
+
+    const total = await prisma.user.count({ where });
+    const totalPages = Math.max(Math.ceil(total / pageSize), 1);
+    const skip = (page - 1) * pageSize;
+    const data = await prisma.user.findMany({ where, select, orderBy: { [sortBy]: sortDir as any }, skip, take: pageSize });
+
+    res.json({ data, pagination: { page, pageSize, total, totalPages }, sort: { by: sortBy, dir: sortDir }, filters: Object.keys(where).length ? filters : undefined });
+    return;
   } catch (error) {
     console.error('Error fetching users from database:', error);
     next(error);
+    return;
   }
 };
 

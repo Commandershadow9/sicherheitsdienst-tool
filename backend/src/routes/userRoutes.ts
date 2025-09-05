@@ -3,19 +3,14 @@ import { asyncHandler } from '../middleware/asyncHandler';
 import * as userController from '../controllers/userController';
 import { authenticate, authorize } from '../middleware/auth';
 import { validate } from '../middleware/validate';
-import { createUserSchema, updateUserSchema } from '../validations/userValidation';
+import { createUserSchema, updateUserSchema, userListQuerySchema } from '../validations/userValidation';
 
 const router = Router();
 
 // Alle folgenden Routen erfordern Authentifizierung
 
 // GET /api/users - Alle Mitarbeiter abrufen
-router.get(
-  '/',
-  authenticate,
-  authorize('ADMIN', 'DISPATCHER'),
-  asyncHandler(userController.getAllUsers),
-);
+router.get('/', authenticate, authorize('ADMIN', 'DISPATCHER'), validate(userListQuerySchema), asyncHandler(userController.getAllUsers));
 
 // POST /api/users - Neuen Mitarbeiter erstellen
 router.post(

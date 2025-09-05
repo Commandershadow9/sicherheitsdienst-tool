@@ -2171,3 +2171,119 @@ paths:
           $ref: '#/components/responses/InternalServerError'
         '503':
           $ref: '#/components/responses/ServiceUnavailable'
+  /users:
+    get:
+      summary: Mitarbeiter auflisten
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - name: pageSize
+          in: query
+          description: Elemente pro Seite (max 100)
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+        - name: sortBy
+          in: query
+          description: Sortierfeld
+          schema:
+            type: string
+            enum: [firstName, lastName, email, createdAt, updatedAt, role, isActive]
+        - name: sortDir
+          in: query
+          description: Sortierrichtung
+          schema:
+            type: string
+            enum: [asc, desc]
+            default: asc
+        - name: filter[firstName]
+          in: query
+          description: Filtert nach Vorname (contains)
+          schema:
+            type: string
+        - name: filter[lastName]
+          in: query
+          description: Filtert nach Nachname (contains)
+          schema:
+            type: string
+        - name: filter[email]
+          in: query
+          description: Filtert nach E-Mail (contains)
+          schema:
+            type: string
+        - name: filter[role]
+          in: query
+          description: Filtert nach Rolle (exakt)
+          schema:
+            type: string
+            enum: [ADMIN, MANAGER, DISPATCHER, EMPLOYEE]
+        - name: filter[isActive]
+          in: query
+          description: Filtert nach Aktiv-Status (true/false)
+          schema:
+            type: string
+            enum: ["true", "false"]
+      responses:
+        '200':
+          description: Liste der Mitarbeiter
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Employee'
+                  pagination:
+                    type: object
+                    properties:
+                      page:
+                        type: integer
+                      pageSize:
+                        type: integer
+                      total:
+                        type: integer
+                      totalPages:
+                        type: integer
+                  sort:
+                    type: object
+                    properties:
+                      by:
+                        type: string
+                      dir:
+                        type: string
+                        enum: [asc, desc]
+                  filters:
+                    type: object
+              example:
+                data:
+                  - id: "e1"
+                    email: "alice@example.com"
+                    firstName: "Alice"
+                    lastName: "Doe"
+                    role: "EMPLOYEE"
+                    isActive: true
+                pagination:
+                  page: 1
+                  pageSize: 20
+                  total: 1
+                  totalPages: 1
+                sort:
+                  by: firstName
+                  dir: asc
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
