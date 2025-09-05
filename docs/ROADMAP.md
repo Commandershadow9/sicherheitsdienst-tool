@@ -26,11 +26,12 @@ Erweiterung (konzepttreu, dokumentarisch):
 - RBAC-Feinschliff umgesetzt: Notifications-Endpoint auf ADMIN/MANAGER eingeschränkt.
 
 ## Nächste Schritte (Vorschlag)
-- Echte E-Mail-Benachrichtigung bei Schichtänderung verknüpfen (PUT/DELETE Schicht), Feature-Flag `NOTIFY_SHIFT_CHANGES=true`.
-- OpenAPI: Notifications (Test) um Fehlerbeispiele ergänzen; ggf. E-Mail-Schema/Response standardisieren.
-  (erledigt) RBAC-Feinschliff: Notifications-Endpoint auf ADMIN/MANAGER einschränken.
-- CI: Optional Coverage-Badge/Codecov integrieren.
-- Performance: Indexe prüfen (Users.email, Sites.name+address), Query-Parameter serverseitig umsetzen (Sort/Filter/Pagination intern).
+- OpenAPI-Parität: Konsistente Paginierungs-/Sort-/Filter-Parameter und Fehler-Responses (400/401/403/404/409/422/429/500/503) über alle Listen-/Mutationsendpunkte; RBAC-Hinweise (`x-required-roles`) ergänzen.
+- Docker/Compose: README-Quickstart schärfen, Healthchecks belassen, `prisma migrate deploy` beim Start (bereits umgesetzt) dokumentieren.
+- Auth-Flow: Refresh-Token-Endpoint + Tests; OpenAPI ergänzen.
+- CI: Optional Coverage-Upload (Codecov) + Badge; Beibehaltung Node 20/setup-node@v4.
+- Performance: Indexe (Users.email, Sites.name+address, Shifts.startTime/status) prüfen und bei Bedarf Migrationen vorschlagen.
+- Sicherheit: Rate-Limits für Test-/Sensitiv-Endpunkte (z. B. `/notifications/test`) optional feature-flag-gesteuert.
 
 2) Zod-DTOs für Auth und Site ableiten
 - Akzeptanzkriterien:
