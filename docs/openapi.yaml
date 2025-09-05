@@ -1320,6 +1320,8 @@ paths:
           $ref: '#/components/responses/ServiceUnavailable'
     post:
       summary: Schicht für Site anlegen
+      description: 'Feature-Flag: Bei EMAIL_NOTIFY_SHIFTS=true werden E-Mails an zugewiesene Mitarbeiter versendet.'
+      x-feature-flag: EMAIL_NOTIFY_SHIFTS
       security:
         - BearerAuth: []
       parameters:
@@ -1465,6 +1467,8 @@ paths:
           $ref: '#/components/responses/ServiceUnavailable'
     put:
       summary: Schicht aktualisieren
+      description: 'Feature-Flag: Bei EMAIL_NOTIFY_SHIFTS=true werden E-Mails an zugewiesene Mitarbeiter versendet.'
+      x-feature-flag: EMAIL_NOTIFY_SHIFTS
       security:
         - BearerAuth: []
       parameters:
@@ -1521,6 +1525,8 @@ paths:
           $ref: '#/components/responses/ServiceUnavailable'
     delete:
       summary: Schicht löschen
+      description: 'Feature-Flag: Bei EMAIL_NOTIFY_SHIFTS=true werden E-Mails an zugewiesene Mitarbeiter versendet.'
+      x-feature-flag: EMAIL_NOTIFY_SHIFTS
       security:
         - BearerAuth: []
       parameters:
