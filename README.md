@@ -253,6 +253,14 @@ cp backend/.env.example backend/.env
 # In backend/.env, set at least:
 # DATABASE_URL="postgresql://admin:admin123@db:5432/sicherheitsdienst_db?schema=public"
 # JWT_SECRET="change-me"
+# Optional Feature-Flags / SMTP:
+# EMAIL_NOTIFY_SHIFTS=false
+# SMTP_HOST=...
+# SMTP_PORT=587
+# SMTP_SECURE=false
+# SMTP_USER=...
+# SMTP_PASS=...
+# SMTP_FROM="Security Tool <no-reply@example.com>"
 ```
 
 2. Start database first, wait for healthy
@@ -276,6 +284,9 @@ docker compose up -d api pgadmin
 ```
 
 Tip: For pure host development (no API container), run `npm run dev` in `backend/` and point `DATABASE_URL` to `localhost` instead of `db`.
+
+Flag-Hinweis:
+- Setze `EMAIL_NOTIFY_SHIFTS=true`, um E-Mails bei Schicht-Erstellung/-Aktualisierung/-Löschung an zugewiesene Mitarbeiter zu senden. Standard: `false` (nur Logging).
 
 ## Beispiel: Site API (curl)
 
