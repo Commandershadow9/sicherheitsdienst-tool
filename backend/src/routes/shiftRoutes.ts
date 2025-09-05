@@ -2,14 +2,14 @@ import { Router } from 'express';
 import { asyncHandler } from '../middleware/asyncHandler';
 import { authenticate, authorize } from '../middleware/auth';
 import { validate } from '../middleware/validate';
-import { createShiftSchema, updateShiftSchema } from '../validations/shiftValidation';
+import { createShiftSchema, updateShiftSchema, shiftListQuerySchema } from '../validations/shiftValidation';
 import { clockInSchema, clockOutSchema } from '../validations/timeValidation';
 import * as shiftController from '../controllers/shiftController';
 
 const router = Router();
 
 // GET /api/shifts - Alle Schichten
-router.get('/', authenticate, asyncHandler(shiftController.getAllShifts));
+router.get('/', authenticate, validate(shiftListQuerySchema), asyncHandler(shiftController.getAllShifts));
 
 // POST /api/shifts - Neue Schicht erstellen
 router.post(

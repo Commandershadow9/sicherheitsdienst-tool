@@ -4,12 +4,50 @@ import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
 
 // GET /api/sites - Alle Sites
-export const getAllSites = async (req: Request, res: Response, next: NextFunction) => {
+export const getAllSites = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const sites = await prisma.site.findMany({ orderBy: { name: 'asc' } });
-    res.json({ success: true, message: `${sites.length} Sites geladen`, data: sites, count: sites.length });
+    const page = Math.max(parseInt((req.query.page as string) || '1', 10), 1);
+    const pageSizeRaw = parseInt((req.query.pageSize as string) || '20', 10);
+    const pageSize = Math.min(Math.max(pageSizeRaw || 20, 1), 100);
+    const sortBy = (req.query.sortBy as string) || 'name';
+    const sortDir = (req.query.sortDir as string) === 'desc' ? 'desc' : 'asc';
+    const filtersFromQueryParam = (req.query.filter as Record<string, string>) || {};
+    const filters: Record<string, string> = { ...filtersFromQueryParam };
+    const rawQuery = req.query as Record<string, unknown>;
+    for (const key of Object.keys(rawQuery)) {
+      const m = key.match(/^filter\[(.+)\]$/);
+      if (m) filters[m[1]] = String(rawQuery[key] as any);
+    }
+
+    const allowedSortFields = ['name', 'city', 'postalCode', 'createdAt', 'updatedAt'];
+    if (sortBy && !allowedSortFields.includes(sortBy)) {
+      res.status(400).json({ success: false, message: `Ungültiges Sortierfeld: ${sortBy}`, allowed: allowedSortFields });
+      return;
+    }
+
+    const where: any = {};
+    if (filters) {
+      if (typeof filters.name === 'string' && filters.name) where.name = { contains: filters.name, mode: 'insensitive' };
+      if (typeof filters.city === 'string' && filters.city) where.city = { contains: filters.city, mode: 'insensitive' };
+      if (typeof filters.postalCode === 'string' && filters.postalCode)
+        where.postalCode = { contains: filters.postalCode, mode: 'insensitive' };
+    }
+
+    const total = await prisma.site.count({ where });
+    const totalPages = Math.max(Math.ceil(total / pageSize), 1);
+    const skip = (page - 1) * pageSize;
+    const data = await prisma.site.findMany({ where, orderBy: { [sortBy]: sortDir as any }, skip, take: pageSize });
+
+    res.json({
+      data,
+      pagination: { page, pageSize, total, totalPages },
+      sort: { by: sortBy, dir: sortDir },
+      filters: Object.keys(where).length ? filters : undefined,
+    });
+    return;
   } catch (error) {
     next(error);
+    return;
   }
 };
 

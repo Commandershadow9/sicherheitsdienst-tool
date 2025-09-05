@@ -1065,21 +1065,77 @@ paths:
         - BearerAuth: []
       parameters:
         - $ref: '#/components/parameters/PageParam'
-        - $ref: '#/components/parameters/PerPageParam'
-        - $ref: '#/components/parameters/SiteSortParam'
-        - $ref: '#/components/parameters/OrderParam'
-        - $ref: '#/components/parameters/QueryParam'
-        - $ref: '#/components/parameters/CityParam'
-        - $ref: '#/components/parameters/SitePostalCodeParam'
+        - name: pageSize
+          in: query
+          description: Elemente pro Seite (max 100)
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+        - name: sortBy
+          in: query
+          description: Sortierfeld
+          schema:
+            type: string
+            enum: [name, city, postalCode, createdAt, updatedAt]
+        - name: sortDir
+          in: query
+          description: Sortierrichtung
+          schema:
+            type: string
+            enum: [asc, desc]
+            default: asc
+        - name: filter[name]
+          in: query
+          description: Filtert Sites nach Name (contains)
+          schema:
+            type: string
+        - name: filter[city]
+          in: query
+          description: Filtert Sites nach Stadt (contains)
+          schema:
+            type: string
+        - name: filter[postalCode]
+          in: query
+          description: Filtert Sites nach Postleitzahl (contains)
+          schema:
+            type: string
       responses:
         '200':
           description: Liste der Sites (paginierbar)
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SitesList'
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Site'
+                  pagination:
+                    type: object
+                    properties:
+                      page:
+                        type: integer
+                      pageSize:
+                        type: integer
+                      total:
+                        type: integer
+                      totalPages:
+                        type: integer
+                  sort:
+                    type: object
+                    properties:
+                      by:
+                        type: string
+                      dir:
+                        type: string
+                        enum: [asc, desc]
+                  filters:
+                    type: object
               example:
-                items:
+                data:
                   - id: "7c1f2e94-5678-4a12-9cde-abcdef123456"
                     name: "Messe Berlin"
                     address: "Messedamm 22"
@@ -1087,11 +1143,16 @@ paths:
                     postalCode: "14055"
                     createdAt: "2024-08-01T12:00:00Z"
                     updatedAt: "2024-08-15T12:00:00Z"
-                meta:
+                pagination:
                   page: 1
-                  perPage: 20
+                  pageSize: 20
                   total: 1
                   totalPages: 1
+                sort:
+                  by: name
+                  dir: asc
+                filters:
+                  city: Berlin
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -1387,26 +1448,98 @@ paths:
       summary: Alle Schichten
       security:
         - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - name: pageSize
+          in: query
+          description: Elemente pro Seite (max 100)
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+        - name: sortBy
+          in: query
+          description: Sortierfeld
+          schema:
+            type: string
+            enum: [startTime, endTime, title, location, status, createdAt, updatedAt]
+        - name: sortDir
+          in: query
+          description: Sortierrichtung
+          schema:
+            type: string
+            enum: [asc, desc]
+            default: asc
+        - name: filter[title]
+          in: query
+          description: Filtert Schichten nach Titel (contains)
+          schema:
+            type: string
+        - name: filter[location]
+          in: query
+          description: Filtert nach Ort (contains)
+          schema:
+            type: string
+        - name: filter[status]
+          in: query
+          description: Filtert nach Status (exakt)
+          schema:
+            type: string
+            enum: [PLANNED, ACTIVE, COMPLETED, CANCELLED]
       responses:
         '200':
           description: Liste der Schichten
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Shift'
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Shift'
+                  pagination:
+                    type: object
+                    properties:
+                      page:
+                        type: integer
+                      pageSize:
+                        type: integer
+                      total:
+                        type: integer
+                      totalPages:
+                        type: integer
+                  sort:
+                    type: object
+                    properties:
+                      by:
+                        type: string
+                      dir:
+                        type: string
+                        enum: [asc, desc]
+                  filters:
+                    type: object
               example:
-                - id: "b1b2b3b4-1111-2222-3333-444455556666"
-                  siteId: "7c1f2e94-5678-4a12-9cde-abcdef123456"
-                  title: "Nachtschicht"
-                  location: "Messedamm 22"
-                  startTime: "2024-09-01T22:00:00Z"
-                  endTime: "2024-09-02T06:00:00Z"
-                  requiredEmployees: 2
-                  status: "PLANNED"
-                  createdAt: "2024-08-25T10:00:00Z"
-                  updatedAt: "2024-08-25T10:00:00Z"
+                data:
+                  - id: "b1b2b3b4-1111-2222-3333-444455556666"
+                    siteId: "7c1f2e94-5678-4a12-9cde-abcdef123456"
+                    title: "Nachtschicht"
+                    location: "Messedamm 22"
+                    startTime: "2024-09-01T22:00:00Z"
+                    endTime: "2024-09-02T06:00:00Z"
+                    requiredEmployees: 2
+                    status: "PLANNED"
+                    createdAt: "2024-08-25T10:00:00Z"
+                    updatedAt: "2024-08-25T10:00:00Z"
+                pagination:
+                  page: 1
+                  pageSize: 20
+                  total: 1
+                  totalPages: 1
+                sort:
+                  by: startTime
+                  dir: asc
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':

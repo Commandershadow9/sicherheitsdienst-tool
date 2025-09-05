@@ -1,5 +1,15 @@
 import { z } from 'zod';
 
+export const siteListQuerySchema = z.object({
+  query: z.object({
+    page: z.coerce.number().int().min(1).optional(),
+    pageSize: z.coerce.number().int().min(1).max(100).optional(),
+    sortBy: z.string().optional(),
+    sortDir: z.enum(['asc', 'desc']).optional(),
+    filter: z.record(z.string()).optional(),
+  }),
+});
+
 export const createSiteSchema = z.object({
   body: z.object({
     name: z.string().min(1, { message: 'Name ist erforderlich' }),

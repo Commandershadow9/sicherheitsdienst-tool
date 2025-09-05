@@ -4,11 +4,12 @@ import { validate } from '../middleware/validate';
 import { createSiteSchema, updateSiteSchema } from '../validations/siteValidation';
 import * as siteController from '../controllers/siteController';
 import { asyncHandler } from '../middleware/asyncHandler';
+import { siteListQuerySchema } from '../validations/siteValidation';
 
 const router = Router();
 
 // GET /api/sites
-router.get('/', authenticate, asyncHandler(siteController.getAllSites));
+router.get('/', authenticate, validate(siteListQuerySchema), asyncHandler(siteController.getAllSites));
 
 // POST /api/sites
 router.post(
@@ -35,4 +36,3 @@ router.put(
 router.delete('/:id', authenticate, authorize('ADMIN'), asyncHandler(siteController.deleteSite));
 
 export default router;
-

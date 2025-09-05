@@ -4,6 +4,7 @@ import * as siteController from '../controllers/siteController';
 jest.mock('@prisma/client', () => {
   (global as any).prismaMock = (global as any).prismaMock || {
     site: {
+      count: jest.fn(),
       findMany: jest.fn(),
       create: jest.fn(),
       findUnique: jest.fn(),
@@ -40,13 +41,14 @@ describe('siteController', () => {
   });
 
   it('getAllSites returns list', async () => {
-    const req: any = {};
+    const req: any = { query: {} };
     const res = mockRes();
     const next = jest.fn();
+    (global as any).prismaMock.site.count.mockResolvedValueOnce(1);
     (global as any).prismaMock.site.findMany.mockResolvedValueOnce([{ id: '1', name: 'HQ', address: 'A', city: 'B', postalCode: 'C' }]);
     await siteController.getAllSites(req as any, res as any, next as any);
     expect(res.statusCode).toBe(200);
-    expect(res.payload?.success).toBe(true);
+    expect(res.payload?.pagination?.page).toBe(1);
   });
 
   it('createSite 201', async () => {

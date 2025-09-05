@@ -34,9 +34,43 @@ async function notifyAssignedUsers(shift: any, change: string): Promise<void> {
 const prisma = new PrismaClient();
 
 // GET /api/shifts - Alle Schichten abrufen
-export const getAllShifts = async (req: Request, res: Response, next: NextFunction) => {
+export const getAllShifts = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const shifts = await prisma.shift.findMany({
+    const page = Math.max(parseInt((req.query.page as string) || '1', 10), 1);
+    const pageSizeRaw = parseInt((req.query.pageSize as string) || '20', 10);
+    const pageSize = Math.min(Math.max(pageSizeRaw || 20, 1), 100);
+    const sortBy = (req.query.sortBy as string) || 'startTime';
+    const sortDir = (req.query.sortDir as string) === 'desc' ? 'desc' : 'asc';
+    const filtersFromQueryParam = (req.query.filter as Record<string, string>) || {};
+    const filters: Record<string, string> = { ...filtersFromQueryParam };
+    const rawQuery = req.query as Record<string, unknown>;
+    for (const key of Object.keys(rawQuery)) {
+      const m = key.match(/^filter\[(.+)\]$/);
+      if (m) filters[m[1]] = String(rawQuery[key] as any);
+    }
+
+    const allowedSortFields = ['startTime', 'endTime', 'title', 'location', 'status', 'createdAt', 'updatedAt'];
+    if (sortBy && !allowedSortFields.includes(sortBy)) {
+      res.status(400).json({ success: false, message: `Ungültiges Sortierfeld: ${sortBy}`, allowed: allowedSortFields });
+      return;
+    }
+
+    const where: any = {};
+    if (filters) {
+      if (typeof filters.title === 'string' && filters.title) where.title = { contains: filters.title, mode: 'insensitive' };
+      if (typeof filters.location === 'string' && filters.location)
+        where.location = { contains: filters.location, mode: 'insensitive' };
+      if (typeof filters.status === 'string' && filters.status) where.status = filters.status as any;
+    }
+
+    const total = await prisma.shift.count({ where });
+    const totalPages = Math.max(Math.ceil(total / pageSize), 1);
+    const skip = (page - 1) * pageSize;
+    const data = await prisma.shift.findMany({
+      where,
+      orderBy: { [sortBy]: sortDir as any },
+      skip,
+      take: pageSize,
       include: {
         assignments: {
           include: {
@@ -53,20 +87,14 @@ export const getAllShifts = async (req: Request, res: Response, next: NextFuncti
           },
         },
       },
-      orderBy: {
-        startTime: 'asc',
-      },
     });
 
-    res.json({
-      success: true,
-      message: `${shifts.length} Schichten aus Datenbank geladen`,
-      data: shifts,
-      count: shifts.length,
-    });
+    res.json({ data, pagination: { page, pageSize, total, totalPages }, sort: { by: sortBy, dir: sortDir }, filters: Object.keys(where).length ? filters : undefined });
+    return;
   } catch (error) {
     console.error('Error fetching shifts from database:', error);
     next(error);
+    return;
   }
 };
 

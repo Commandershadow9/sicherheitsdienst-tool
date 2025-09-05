@@ -1,5 +1,15 @@
 import { z } from 'zod';
 
+export const shiftListQuerySchema = z.object({
+  query: z.object({
+    page: z.coerce.number().int().min(1).optional(),
+    pageSize: z.coerce.number().int().min(1).max(100).optional(),
+    sortBy: z.string().optional(),
+    sortDir: z.enum(['asc', 'desc']).optional(),
+    filter: z.record(z.string()).optional(),
+  }),
+});
+
 export const createShiftSchema = z.object({
   body: z.object({
     title: z.string().min(1, { message: 'Titel ist erforderlich' }),
