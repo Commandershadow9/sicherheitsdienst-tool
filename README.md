@@ -110,6 +110,13 @@ Follow these steps to set up and run the project locally:
   - OpenAPI ergänzt Beispiel-Responses für 400 (Bad Request) und 422 (Validation Error) unter `docs/openapi.yaml`.
   - RBAC: Zugriff nur für Rollen `ADMIN` und `MANAGER`.
 
+### E-Mail-Trigger bei Schicht-Änderungen (Feature-Flag)
+- Flag: `EMAIL_NOTIFY_SHIFTS=true` aktiviert echte E-Mail-Benachrichtigungen bei Schicht-Erstellung/-Aktualisierung/-Löschung.
+- Bei deaktiviertem Flag werden nur Logs geschrieben, es erfolgt kein Mailversand.
+- Empfänger: aktuell zugewiesene Mitarbeiter der Schicht (falls vorhanden).
+- Implementierung: Controller in `backend/src/controllers/shiftController.ts` rufen `sendShiftChangedEmail` aus `emailService` auf.
+- Tests: Unit-Tests mocken `emailService` und prüfen Aufruf abhängig vom Flag; Routen-Tests decken 201/200/404/400-Fälle ab.
+
 ### RBAC Notifications
 - Rollenmatrix (Zugriff auf Benachrichtigungen):
   - ADMIN: erlaubt

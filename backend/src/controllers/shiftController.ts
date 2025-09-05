@@ -1,5 +1,35 @@
 import { Request, Response, NextFunction } from 'express';
 import { PrismaClient } from '@prisma/client';
+import logger from '../utils/logger';
+import { sendShiftChangedEmail } from '../services/emailService';
+
+const EMAIL_FLAG = 'EMAIL_NOTIFY_SHIFTS';
+
+function isEmailNotifyEnabled(): boolean {
+  return process.env[EMAIL_FLAG] === 'true';
+}
+
+async function notifyAssignedUsers(shift: any, change: string): Promise<void> {
+  if (!isEmailNotifyEnabled()) {
+    logger.info('E-Mail-Shift-Notify deaktiviert (%s!=true). Nur Log.', EMAIL_FLAG);
+    return;
+  }
+  const assignments = Array.isArray(shift?.assignments) ? shift.assignments : [];
+  const emails: string[] = assignments
+    .map((a: any) => a?.user?.email)
+    .filter((e: any): e is string => typeof e === 'string' && e.length > 0);
+  if (emails.length === 0) {
+    logger.info('Keine Empfänger für Schichtbenachrichtigung gefunden (keine Zuweisungen).');
+    return;
+  }
+  await Promise.all(
+    emails.map((to) =>
+      sendShiftChangedEmail(to, shift.title || 'Schicht', change).catch((err) =>
+        logger.error('Fehler beim Versenden der Schicht-Mail an %s: %o', to, err),
+      ),
+    ),
+  );
+}
 
 const prisma = new PrismaClient();
 
@@ -93,13 +123,19 @@ export const createShift = async (req: Request, res: Response, next: NextFunctio
                 firstName: true,
                 lastName: true,
                 employeeId: true,
+                email: true,
               },
             },
           },
         },
       },
     });
-
+    // E-Mail-Benachrichtigung (Feature-Flag)
+    try {
+      await notifyAssignedUsers(shift, 'erstellt');
+    } catch (e) {
+      // bereits intern geloggt
+    }
     res.status(201).json({
       success: true,
       message: 'Schicht erfolgreich erstellt',
@@ -210,13 +246,19 @@ export const updateShift = async (req: Request, res: Response, next: NextFunctio
                 firstName: true,
                 lastName: true,
                 employeeId: true,
+                email: true,
               },
             },
           },
         },
       },
     });
-
+    // E-Mail-Benachrichtigung (Feature-Flag)
+    try {
+      await notifyAssignedUsers(updatedShift, 'aktualisiert');
+    } catch (e) {
+      // bereits intern geloggt
+    }
     res.json({
       success: true,
       message: 'Schicht erfolgreich aktualisiert',
@@ -241,7 +283,22 @@ export const updateShift = async (req: Request, res: Response, next: NextFunctio
 export const deleteShift = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
-
+    // Empfänger vor Löschen ermitteln
+    let shiftForNotify: any = null;
+    try {
+      shiftForNotify = await prisma.shift.findUnique({
+        where: { id },
+        include: {
+          assignments: {
+            include: {
+              user: { select: { id: true, email: true, firstName: true, lastName: true, employeeId: true } },
+            },
+          },
+        },
+      });
+    } catch (_e) {
+      // ignore; Benachrichtigung optional
+    }
     // Erst alle Zuweisungen löschen
     await prisma.shiftAssignment.deleteMany({
       where: { shiftId: id },
@@ -251,7 +308,14 @@ export const deleteShift = async (req: Request, res: Response, next: NextFunctio
     const deletedShift = await prisma.shift.delete({
       where: { id },
     });
-
+    // E-Mail-Benachrichtigung (Feature-Flag)
+    try {
+      if (shiftForNotify) {
+        await notifyAssignedUsers({ ...shiftForNotify, title: shiftForNotify.title || deletedShift.title }, 'gelöscht');
+      }
+    } catch (e) {
+      // bereits intern geloggt
+    }
     res.json({
       success: true,
       message: 'Schicht erfolgreich gelöscht',
