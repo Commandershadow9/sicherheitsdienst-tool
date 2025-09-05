@@ -1,61 +1,178 @@
-name: Notify Discord
+name: Notify Discord (Push/PR/CI – hübsch)
 
 on:
   push:
-    branches: [ "main", "master" ]
+    branches: [ "main", "master", "**" ]
   pull_request:
-    types: [opened, synchronize, reopened, closed]
+    types: [opened, synchronize, reopened, closed, ready_for_review, converted_to_draft]
   workflow_run:
-    workflows: [ "ci" ]
+    workflows: [ "ci", "CI", "build", "test" ]   # bei Bedarf anpassen
     types: [completed]
 
 jobs:
   notify:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout (für Commit-Infos)
-        uses: actions/checkout@v4
+      - name: Checkout (nur für Push nötig)
         if: ${{ github.event_name == 'push' }}
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 20
 
-      - name: Build Discord message
-        id: msg
+      - name: Build pretty Discord embed
+        id: build
+        shell: bash
         run: |
-          EVENT="${{ github.event_name }}"
-          REPO="${{ github.repository }}"
-          ACTOR="${{ github.actor }}"
-          SHA="${{ github.sha }}"
-          URL="https://github.com/${REPO}"
-          RUN_URL="https://github.com/${REPO}/actions/runs/${{ github.run_id }}"
+          set -euo pipefail
 
+          # ========== Helpers ==========
+          esc_json () { python3 - << 'PY'
+import sys, json
+print(json.dumps(sys.stdin.read())[1:-1])
+PY
+          }
+
+          trim () { # trim to N chars, preserve last link if present
+            local N="$1"; shift
+            local s="$(cat)"
+            local len="${#s}"
+            if [ "$len" -le "$N" ]; then printf "%s" "$s"; exit 0; fi
+            printf "%s… (gekürzt)" "${s:0:$((N-12))}"
+          }
+
+          actor="${{ github.actor }}"
+          repo="${{ github.repository }}"
+          repo_url="https://github.com/${repo}"
+          run_url="https://github.com/${repo}/actions/runs/${{ github.run_id }}"
+          avatar="https://github.com/${actor}.png"
+          ts="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+
+          EVENT="${{ github.event_name }}"
+          TITLE=""
+          DESC=""
+          COLOR=5793266  # blau
+          THUMB="https://raw.githubusercontent.com/simple-icons/simple-icons/develop/icons/github.svg"
+
+          # ========== Build per event ==========
           if [ "$EVENT" = "push" ]; then
-            # Liste der Commits dieser Push-Action
-            COMMITS=$(jq -r '.commits[] | "- \(.id[0:7]) \(.message | gsub("\n"; " ")) by \(.author.username)"' <<< '${{ toJson(github.event) }}' | head -n 20)
-            [ -z "$COMMITS" ] && COMMITS="- (keine Commit-Liste verfügbar)"
-            TITLE="📦 Push auf ${REPO} (${GITHUB_REF_NAME})"
-            DESC="**Actor:** ${ACTOR}\n**Branch:** ${GITHUB_REF_NAME}\n**Commits:**\n${COMMITS}\n\n${URL}/commit/${SHA}"
+            ref="${GITHUB_REF_NAME}"
+            sha="${GITHUB_SHA}"
+            short_sha="${sha:0:7}"
+            compare_url="${repo_url}/compare/${{ github.event.before }}...${sha}"
+
+            # Commit-Liste hübsch (max 10)
+            COMMITS="$(jq -r '
+              .commits[0:10][] |
+               ( "- **" + .id[0:7] + "**: " + ( .message | gsub("\\n"; " ") ) + "  — _" + .author.username + "_" )
+            ' <<< '${{ toJson(github.event) }}' | sed '/^$/d')"
+
+            [ -z "$COMMITS" ] && COMMITS="- (keine Commits übermittelt)"
+
+            TITLE="📦 Push auf ${repo} — ${ref}"
+            DESC="**Akteur:** ${actor}\n**Branch:** ${ref}\n**SHA:** \`${short_sha}\`\n**Vergleich:** ${compare_url}"
+
+            COLOR=5814783  # GitHub-blau
+            ICON="https://raw.githubusercontent.com/primer/octicons/main/icons/upload-24.svg"
+
+            # Felder
+            field1_name="Commits"
+            field1_val="$(printf "%s" "$COMMITS" | sed -e 's/"/\\"/g' | awk 'NR>10{exit}1' | esc_json | tr -d '\n')"
+
+            fields_json=$(cat <<JSON
+[{ "name": "Commits", "value": "$field1_val" }]
+JSON
+)
+
           elif [ "$EVENT" = "pull_request" ]; then
-            PR_NUM='${{ github.event.pull_request.number }}'
-            PR_TITLE='${{ github.event.pull_request.title }}'
-            PR_STATE='${{ github.event.pull_request.state }}'
-            PR_MERGED='${{ github.event.pull_request.merged }}'
-            TITLE="🔀 PR #${PR_NUM}: ${PR_TITLE}"
-            DESC="**Actor:** ${ACTOR}\n**State:** ${PR_STATE}\n**Merged:** ${PR_MERGED}\n${{ github.event.pull_request.html_url }}"
+            pr_title='${{ github.event.pull_request.title }}'
+            pr_num='${{ github.event.pull_request.number }}'
+            pr_state='${{ github.event.pull_request.state }}'
+            pr_merged='${{ github.event.pull_request.merged }}'
+            pr_url='${{ github.event.pull_request.html_url }}'
+            base='${{ github.event.pull_request.base.ref }}'
+            head='${{ github.event.pull_request.head.ref }}'
+            draft='${{ github.event.pull_request.draft }}'
+
+            TITLE="🔀 PR #${pr_num}: ${pr_title}"
+            status_emoji="🟢"
+            [ "$pr_state" != "open" ] && status_emoji="🟡"
+            [ "${pr_merged}" = "true" ] && status_emoji="🟣"
+            [ "${draft}" = "true" ] && status_emoji="⚪"
+
+            DESC="${status_emoji} **Status:** ${pr_state}  |  **Merged:** ${pr_merged}\n**Akteur:** ${actor}\n${pr_url}"
+            COLOR=9055202   # lila
+            ICON="https://raw.githubusercontent.com/primer/octicons/main/icons/git-pull-request-24.svg"
+
+            fields_json=$(cat <<JSON
+[
+  { "name": "Basis → Head", "value": "\`${base}\` → \`${head}\`" },
+  { "name": "Repository", "value": "${repo_url}" }
+]
+JSON
+)
+
           elif [ "$EVENT" = "workflow_run" ]; then
-            CONCL='${{ github.event.workflow_run.conclusion }}'
-            WFN='${{ github.event.workflow_run.name }}'
-            TITLE="🧪 CI: ${WFN} → ${CONCL}"
-            DESC="**Actor:** ${ACTOR}\n${RUN_URL}"
+            name='${{ github.event.workflow_run.name }}'
+            conc='${{ github.event.workflow_run.conclusion }}'
+            TITLE="🧪 CI: ${name}"
+            case "$conc" in
+              success) COLOR=4437377; status="✅ Erfolg";;
+              failure) COLOR=13631488; status="❌ Fehlgeschlagen";;
+              cancelled) COLOR=14540253; status="⏹️ Abgebrochen";;
+              skipped) COLOR=15132390; status="⏭️ Übersprungen";;
+              *) COLOR=8421504; status="ℹ️ ${conc}";;
+            esac
+
+            DESC="**Akteur:** ${actor}\n**Ergebnis:** ${status}\n${run_url}"
+            ICON="https://raw.githubusercontent.com/primer/octicons/main/icons/checklist-24.svg"
+
+            fields_json=$(cat <<JSON
+[
+  { "name": "Workflow", "value": "${name}" },
+  { "name": "Repository", "value": "${repo_url}" }
+]
+JSON
+)
+
           else
-            TITLE="ℹ️ ${EVENT} in ${REPO}"
-            DESC="${URL}"
+            TITLE="ℹ️ Ereignis: ${EVENT}"
+            DESC="Repository: ${repo_url}"
+            COLOR=8421504
+            ICON="https://raw.githubusercontent.com/primer/octicons/main/icons/info-24.svg"
+            fields_json="[]"
           fi
 
-          # Discord Embed (max. 2000 Zeichen beachten)
-          jq -n --arg title "$TITLE" --arg desc "$DESC" \
-            '{embeds: [{title: $title, description: $desc, color: 5814783}]}' > payload.json
+          # ========== Final payload ==========
+          title_json="$(printf "%s" "$TITLE" | esc_json)"
+          desc_json="$(printf "%s" "$DESC" | esc_json)"
+
+          cat > payload.json <<JSON
+{
+  "username": "GitHub · ${repo}",
+  "avatar_url": "${avatar}",
+  "embeds": [
+    {
+      "title": "${title_json}",
+      "description": "${desc_json}",
+      "color": ${COLOR},
+      "timestamp": "${ts}",
+      "thumbnail": { "url": "${ICON}" },
+      "fields": ${fields_json},
+      "footer": { "text": "Automatische Benachrichtigung • $(date -u +%Y-%m-%d)" }
+    }
+  ]
+}
+JSON
+
+          echo "payload=$(base64 -w0 < payload.json)" >> "$GITHUB_OUTPUT"
 
       - name: Send to Discord
         env:
           WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
         run: |
-          curl -sS -H "Content-Type: application/json" -d @payload.json "$WEBHOOK"
+          test -n "$WEBHOOK" || { echo "Secret DISCORD_WEBHOOK fehlt"; exit 1; }
+          echo "${{ steps.build.outputs.payload }}" | base64 -d > payload.json
+          http_code=$(curl -sS -H "Content-Type: application/json" -d @payload.json "$WEBHOOK" -o /dev/null -w "%{http_code}")
+          echo "Discord HTTP: $http_code"
+          test "$http_code" -ge 200 -a "$http_code" -lt 300
