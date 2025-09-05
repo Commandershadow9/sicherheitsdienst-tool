@@ -1,33 +1,40 @@
-name: Notify Discord (All Events, pretty + Changelog)
+name: Notify Discord (All Events, pretty + Changelog + Retry)
 
 on:
-  push:
-    branches: [ "main", "master", "**" ]
+  workflow_dispatch: {}            # manueller Test-Trigger
+  push:                            # ALLE Branches & Tags
     tags:
-      - "v*"
+      - 'v*'
   pull_request:
     types: [opened, synchronize, reopened, closed, ready_for_review, converted_to_draft]
-  workflow_run:
-    workflows: [ "ci", "CI", "build", "test" ]   # ggf. anpassen
+  workflow_run:                    # CI-Ergebnisse
+    workflows: [ "ci", "CI", "build", "test" ]   # -> an EURE Workflow-Namen anpassen!
     types: [completed]
   release:
     types: [published]
+
+permissions:
+  contents: read
 
 jobs:
   notify:
     runs-on: ubuntu-latest
 
     steps:
-      # Wir brauchen Checkout für push (Commitliste) und release/tag (CHANGELOG)
-      - name: Checkout repository (when needed)
-        if: ${{ github.event_name == 'push' || github.event_name == 'release' }}
+      - name: Checkout (für push/release/dispatch nötig)
+        if: ${{ github.event_name == 'push' || github.event_name == 'release' || github.event_name == 'workflow_dispatch' }}
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
+      - name: Ensure jq & curl present
+        run: sudo apt-get update && sudo apt-get install -y jq curl
+
       - name: Build Discord payload
         id: build
         shell: bash
+        env:
+          GH_EVENT_JSON: ${{ toJson(github.event) }}
         run: |
           set -euo pipefail
 
@@ -58,19 +65,29 @@ PY
           ICON="https://raw.githubusercontent.com/primer/octicons/main/icons/info-24.svg"
           FIELDS="[]"
 
-          # ---------- PUSH ----------
-          if [ "$event" = "push" ]; then
+          if [ "$event" = "workflow_dispatch" ]; then
+            # Manuelle Test-Nachricht
+            TITLE="🔔 Testbenachrichtigung"
+            DESC="Manuell ausgelöst von **${actor}**\n${run_url}"
+            COLOR=4437377
+            ICON="https://raw.githubusercontent.com/primer/octicons/main/icons/bell-24.svg"
+            FIELDS=$(cat <<JSON
+[
+  { "name": "Repository", "value": "$(printf "%s" "$repo_url" | esc_json)" }
+]
+JSON
+)
+          elif [ "$event" = "push" ]; then
             ref="${GITHUB_REF_NAME}"
             sha="${GITHUB_SHA}"
             short_sha="${sha:0:7}"
-            before="${{ github.event.before }}"
+            before="$(echo "$GH_EVENT_JSON" | jq -r '.before // ""')"
             compare_url="${repo_url}/compare/${before}...${sha}"
 
-            # Commitliste (max 10)
-            COMMITS_RAW="$(jq -r '
-              .commits[0:10][] |
-               ( "- **" + .id[0:7] + "**: " + ( .message | gsub("\\n"; " ") ) + "  — _" + .author.username + "_" )
-            ' <<< '${{ toJson(github.event) }}' | sed '/^$/d')"
+            COMMITS_RAW="$(echo "$GH_EVENT_JSON" | jq -r '
+              (.commits // [])[0:10][]?
+              | "- **" + (.id[0:7]) + "**: " + ((.message // "") | gsub("\n"; " ")) + "  — _" + ((.author.username // .author.name) // "unknown") + "_"
+            ')"
             [ -z "$COMMITS_RAW" ] && COMMITS_RAW="- (keine Commits übermittelt)"
             COMMITS_ESC="$(printf "%s" "$COMMITS_RAW" | esc_json)"
 
@@ -85,8 +102,6 @@ PY
 ]
 JSON
 )
-
-          # ---------- PULL REQUEST ----------
           elif [ "$event" = "pull_request" ]; then
             pr_title='${{ github.event.pull_request.title }}'
             pr_num='${{ github.event.pull_request.number }}'
@@ -102,7 +117,6 @@ JSON
             [ "$pr_state" != "open" ] && status_emoji="🟡"
             [ "${pr_merged}" = "true" ] && status_emoji="🟣"
             [ "${draft}" = "true" ] && status_emoji="⚪"
-
             DESC="${status_emoji} **Status:** ${pr_state}  |  **Merged:** ${pr_merged}\n**Akteur:** ${actor}\n${pr_url}"
             COLOR=9055202
             ICON="https://raw.githubusercontent.com/primer/octicons/main/icons/git-pull-request-24.svg"
@@ -113,8 +127,6 @@ JSON
 ]
 JSON
 )
-
-          # ---------- CI WORKFLOW RUN ----------
           elif [ "$event" = "workflow_run" ]; then
             name='${{ github.event.workflow_run.name }}'
             conc='${{ github.event.workflow_run.conclusion }}'
@@ -126,7 +138,6 @@ JSON
               skipped) COLOR=15132390; status="⏭️ Übersprungen";;
               *) COLOR=8421504; status="ℹ️ ${conc}";;
             esac
-
             DESC="**Akteur:** ${actor}\n**Ergebnis:** ${status}\n${run_url}"
             ICON="https://raw.githubusercontent.com/primer/octicons/main/icons/checklist-24.svg"
             FIELDS=$(cat <<JSON
@@ -136,8 +147,6 @@ JSON
 ]
 JSON
 )
-
-          # ---------- RELEASE (mit CHANGELOG) ----------
           elif [ "$event" = "release" ]; then
             tag='${{ github.event.release.tag_name }}'
             rname='${{ github.event.release.name }}'
@@ -163,7 +172,6 @@ JSON
             [ -z "$CHANGELOG_SECTION" ] && CHANGELOG_SECTION="(Kein spezifischer Changelog-Eintrag für ${tag} gefunden.)"
 
             CLEAN_SECTION="$(printf '%s' "$CHANGELOG_SECTION")"
-            # Feldlimit Discord ~1024, wir nehmen 1000
             if [ "${#CLEAN_SECTION}" -gt 1000 ]; then
               CLEAN_SECTION="${CLEAN_SECTION:0:1000}\n… (gekürzt)"
             fi
@@ -175,8 +183,6 @@ JSON
 ]
 JSON
 )
-
-          # ---------- TAG-PUSH ohne Release (fällt hier unter push+tags) ----------
           fi
 
           title_json="$(printf "%s" "$TITLE" | esc_json)"
@@ -202,12 +208,25 @@ JSON
 
           echo "payload=$(base64 -w0 < payload.json)" >> "$GITHUB_OUTPUT"
 
-      - name: Send to Discord
+      - name: Send to Discord (with retry)
         env:
           WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+        shell: bash
         run: |
+          set -euo pipefail
           test -n "$WEBHOOK" || { echo "Secret DISCORD_WEBHOOK fehlt"; exit 1; }
           echo "${{ steps.build.outputs.payload }}" | base64 -d > payload.json
-          http_code=$(curl -sS -H "Content-Type: application/json" -d @payload.json "$WEBHOOK" -o /dev/null -w "%{http_code}")
-          echo "Discord HTTP: $http_code"
+
+          # bis zu 5 Versuche (z.B. bei 429 Rate Limit)
+          for i in 1 2 3 4 5; do
+            http_code=$(curl -sS -H "Content-Type: application/json" -d @payload.json "$WEBHOOK" -o resp.txt -w "%{http_code}")
+            echo "Discord HTTP: $http_code (try $i)"
+            if [ "$http_code" -ge 200 ] && [ "$http_code" -lt 300 ]; then
+              echo "OK"; break
+            fi
+            cat resp.txt || true
+            sleep $((i*2))
+          done
+
+          # finaler Check
           test "$http_code" -ge 200 -a "$http_code" -lt 300
