@@ -108,6 +108,7 @@ Follow these steps to set up and run the project locally:
     `{ "recipient": "to@example.com", "title": "Test", "body": "Hallo" }`
   - Antwort: 200 bei Erfolg, 422 bei ungültigen Eingaben, 400 bei `channel != email`
   - OpenAPI ergänzt Beispiel-Responses für 400 (Bad Request) und 422 (Validation Error) unter `docs/openapi.yaml`.
+  - RBAC: Zugriff nur für Rollen `ADMIN` und `MANAGER`.
 
 ### RBAC Notifications
 - Rollenmatrix (Zugriff auf Benachrichtigungen):
