@@ -15,3 +15,8 @@ Dieser Integrationsnachweis dokumentiert die konzepttreue Überführung der empf
 Hinweis: Die Integration erfolgte in kleinen, überprüfbaren Schritten mit Tests, Lint und aktualisierten Docs. Separate Integrations-Commits werden mit dem Schema
 `merge: adopt PR #<nr> concept-aligned` geführt.
 
+## Folgeänderungen (konzepttreu nach ROADMAP)
+
+- RBAC-Feinschliff: Notifications-Endpoint auf Rollen `ADMIN`/`MANAGER` eingeschränkt (`notificationsRBAC`-Middleware) und in Routen vorgeschaltet.
+- Tests ergänzt: RBAC-Cases für Notifications (ADMIN/MANAGER erlaubt; EMPLOYEE 403; anonym 401).
+- OpenAPI synchronisiert: `POST /notifications/test` mit 400/422-Responses inkl. Beispielen (BadRequest/ValidationError) gemäß Projekt-Schema.

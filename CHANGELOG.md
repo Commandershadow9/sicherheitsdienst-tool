@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## 2025-09-05
+
+### Added
+- Backend: RBAC-Guard für Notifications implementiert (`notificationsRBAC`), erlaubt nur Rollen `ADMIN` und `MANAGER`.
+- Tests: RBAC-Tests für Notifications (ADMIN=200, MANAGER=200, EMPLOYEE=403, anonym=401).
+
+### Changed
+- Routes: Notifications-Route (`POST /api/notifications/test`) mit `authenticate` + `notificationsRBAC` gesichert; Validierung unverändert.
+- Docs: README um Abschnitt „RBAC Notifications“ (Rollenmatrix) erweitert.
+- OpenAPI: `docs/openapi.yaml` für Notifications-Endpoint um 400/422-Responses inkl. Beispielpayloads ergänzt.
+- Roadmap: RBAC-Feinschliff für Notifications als erledigt markiert.
+
 ## 2025-08-31
 
 ### Integrated
