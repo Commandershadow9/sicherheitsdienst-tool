@@ -1167,6 +1167,10 @@ paths:
           $ref: '#/components/responses/ServiceUnavailable'
     post:
       summary: Site anlegen
+      description: 'RBAC: ADMIN oder DISPATCHER.'
+      x-required-roles:
+        - ADMIN
+        - DISPATCHER
       security:
         - BearerAuth: []
       requestBody:
@@ -1254,6 +1258,10 @@ paths:
           $ref: '#/components/responses/ServiceUnavailable'
     put:
       summary: Site aktualisieren
+      description: 'RBAC: ADMIN oder DISPATCHER.'
+      x-required-roles:
+        - ADMIN
+        - DISPATCHER
       security:
         - BearerAuth: []
       parameters:
@@ -1307,6 +1315,9 @@ paths:
           $ref: '#/components/responses/ServiceUnavailable'
     delete:
       summary: Site löschen
+      description: 'RBAC: ADMIN.'
+      x-required-roles:
+        - ADMIN
       security:
         - BearerAuth: []
       parameters:
@@ -2200,6 +2211,10 @@ paths:
   /users:
     get:
       summary: Mitarbeiter auflisten
+      description: 'RBAC: ADMIN oder DISPATCHER.'
+      x-required-roles:
+        - ADMIN
+        - DISPATCHER
       security:
         - BearerAuth: []
       parameters:
