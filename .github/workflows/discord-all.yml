@@ -17,6 +17,7 @@ on:
 
 permissions:
   contents: read
+  actions: read
 
 jobs:
   notify:
@@ -213,7 +214,8 @@ JSON
         run: |
           set -euo pipefail
           test -n "${WEBHOOK:-}" || { echo "::error::Secret DISCORD_WEBHOOK fehlt"; exit 1; }
-          echo "${{ steps.build.outputs.payload }}" | base64 -d > payload.json || base64 -D > payload.json
+          # base64 decode (Linux/macOS compatible)
+          echo "${{ steps.build.outputs.payload }}" | base64 -d > payload.json || echo "${{ steps.build.outputs.payload }}" | base64 -D > payload.json
 
           # bis zu 5 Versuche (z.B. bei 429 Rate Limit)
           for i in 1 2 3 4 5; do
