@@ -206,16 +206,22 @@ JSON
       - name: Send to Discord (with retry)
         env:
           WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+          WEBHOOK_CI: ${{ secrets.DISCORD_WEBHOOK_CI }}
         shell: bash
         run: |
           set -euo pipefail
-          test -n "${WEBHOOK:-}" || { echo "::error::Secret DISCORD_WEBHOOK fehlt"; exit 1; }
+          # Wähle Kanal: für workflow_run (CI-Status) bevorzugt CI-Hook, andernfalls Default
+          URL="$WEBHOOK"
+          if [ "${{ github.event_name }}" = "workflow_run" ] && [ -n "${WEBHOOK_CI:-}" ]; then
+            URL="$WEBHOOK_CI"
+          fi
+          test -n "${URL:-}" || { echo "::error::Secret DISCORD_WEBHOOK (oder _CI) fehlt"; exit 1; }
           # base64 decode (Linux/macOS compatible)
           echo "${{ steps.build.outputs.payload }}" | base64 -d > payload.json || echo "${{ steps.build.outputs.payload }}" | base64 -D > payload.json
 
           # bis zu 5 Versuche (z.B. bei 429 Rate Limit)
           for i in 1 2 3 4 5; do
-            http_code=$(curl -sS -H "Content-Type: application/json" -d @payload.json "$WEBHOOK" -o resp.txt -w "%{http_code}" || echo "000")
+            http_code=$(curl -sS -H "Content-Type: application/json" -d @payload.json "$URL" -o resp.txt -w "%{http_code}" || echo "000")
             echo "Discord HTTP: $http_code (try $i)"
             if [ "$http_code" -ge 200 ] && [ "$http_code" -lt 300 ]; then
               echo "OK"; break
