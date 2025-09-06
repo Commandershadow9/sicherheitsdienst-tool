@@ -99,6 +99,8 @@ jobs:
             base='${{ github.event.pull_request.base.ref }}'
             head='${{ github.event.pull_request.head.ref }}'
             draft='${{ github.event.pull_request.draft }}'
+            labels="$(echo "$GH_EVENT_JSON" | jq -r '[.pull_request.labels[]?.name] | select(length>0) | join(", ") // ""')"
+            assignees="$(echo "$GH_EVENT_JSON" | jq -r '[.pull_request.assignees[]?.login] | select(length>0) | join(", ") // ""')"
 
             TITLE="🔀 PR #${pr_num}: ${pr_title}"
             status_emoji="🟢"
@@ -111,7 +113,10 @@ jobs:
             embed_url="${pr_url}"
             FIELDS=$(jq -n \
               --arg base "$base" --arg head "$head" --arg repo_url "$repo_url" \
-              '[{"name":"Basis → Head","value":("`"+$base+"` → `"+$head+"`")},{"name":"Repository","value":$repo_url}]')
+              --arg labels "$labels" --arg assignees "$assignees" \
+              '[{"name":"Basis → Head","value":("`"+$base+"` → `"+$head+"`")},{"name":"Repository","value":$repo_url}] \
+               + (if $labels != "" then [{"name":"Labels","value":$labels}] else [] end) \
+               + (if $assignees != "" then [{"name":"Assignees","value":$assignees}] else [] end)')
           elif [ "$event" = "workflow_run" ]; then
             name='${{ github.event.workflow_run.name }}'
             conc='${{ github.event.workflow_run.conclusion }}'
@@ -150,17 +155,19 @@ jobs:
                 found {print}
               ' CHANGELOG.md)"
             fi
-            [ -z "$CHANGELOG_SECTION" ] && CHANGELOG_SECTION="(Kein spezifischer Changelog-Eintrag für ${tag} gefunden.)"
-
-            CLEAN_SECTION="$(printf '%s' "$CHANGELOG_SECTION")"
-            if [ "${#CLEAN_SECTION}" -gt 1000 ]; then
-              CLEAN_SECTION="${CLEAN_SECTION:0:1000}\n… (gekürzt)"
+            release_body="$(echo "$GH_EVENT_JSON" | jq -r '.release.body // ""')"
+            TEXT="$release_body"
+            [ -z "$TEXT" ] && TEXT="$CHANGELOG_SECTION"
+            [ -z "$TEXT" ] && TEXT="(Keine Release-Notes/Changelog gefunden.)"
+            CLEAN_SECTION="$(printf '%s' "$TEXT")"
+            if [ "${#CLEAN_SECTION}" -gt 1800 ]; then
+              CLEAN_SECTION="${CLEAN_SECTION:0:1800}\n… (gekürzt)"
             fi
 
             FIELDS=$(jq -n \
               --arg changes "$CLEAN_SECTION" \
               --arg links "$(printf "• Repo: %s\n• Actions: %s\n• Tag: %s" "$repo_url" "$run_url" "$rurl")" \
-              '[{"name":"Änderungen (CHANGELOG)","value":$changes},{"name":"Links","value":$links}]')
+              '[{"name":"Release Notes / Changelog","value":$changes},{"name":"Links","value":$links}]')
           fi
 
           jq -n \
