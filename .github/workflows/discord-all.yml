@@ -64,12 +64,7 @@ jobs:
             DESC="Manuell ausgelöst von **${actor}**\n${run_url}"
             COLOR=4437377
             ICON="https://raw.githubusercontent.com/primer/octicons/main/icons/bell-24.svg"
-            FIELDS=$(cat <<JSON
-[
-  { "name": "Repository", "value": "$(printf "%s" "$repo_url" | esc_json)" }
-]
-JSON
-)
+            FIELDS=$(jq -n --arg repo_url "$repo_url" '[{"name":"Repository","value":$repo_url}]')
           elif [ "$event" = "push" ]; then
             ref="${GITHUB_REF_NAME:-unknown}"
             sha="${GITHUB_SHA:-}"
@@ -88,13 +83,10 @@ JSON
             DESC="**Akteur:** ${actor}\n**Branch:** ${ref}\n**SHA:** \`${short_sha}\`\n**Vergleich:** ${compare_url}"
             COLOR=5814783
             ICON="https://raw.githubusercontent.com/primer/octicons/main/icons/upload-24.svg"
-            FIELDS=$(cat <<JSON
-[
-  { "name": "Commits", "value": "$COMMITS_ESC" },
-  { "name": "Links", "value": "$(printf "• Repo: %s\n• Actions: %s" "$repo_url" "$run_url" | esc_json)" }
-]
-JSON
-)
+            FIELDS=$(jq -n \
+              --arg commits "$COMMITS_RAW" \
+              --arg links "$(printf "• Repo: %s\n• Actions: %s" "$repo_url" "$run_url")" \
+              '[{"name":"Commits","value":$commits},{"name":"Links","value":$links}]')
           elif [ "$event" = "pull_request" ]; then
             pr_title='${{ github.event.pull_request.title }}'
             pr_num='${{ github.event.pull_request.number }}'
@@ -113,13 +105,9 @@ JSON
             DESC="${status_emoji} **Status:** ${pr_state}  |  **Merged:** ${pr_merged}\n**Akteur:** ${actor}\n${pr_url}"
             COLOR=9055202
             ICON="https://raw.githubusercontent.com/primer/octicons/main/icons/git-pull-request-24.svg"
-            FIELDS=$(cat <<JSON
-[
-  { "name": "Basis → Head", "value": "$(printf "\`%s\` → \`%s\`" "$base" "$head" | esc_json)" },
-  { "name": "Repository", "value": "$(printf "%s" "$repo_url" | esc_json)" }
-]
-JSON
-)
+            FIELDS=$(jq -n \
+              --arg base "$base" --arg head "$head" --arg repo_url "$repo_url" \
+              '[{"name":"Basis → Head","value":("`"+$base+"` → `"+$head+"`")},{"name":"Repository","value":$repo_url}]')
           elif [ "$event" = "workflow_run" ]; then
             name='${{ github.event.workflow_run.name }}'
             conc='${{ github.event.workflow_run.conclusion }}'
@@ -133,13 +121,7 @@ JSON
             esac
             DESC="**Akteur:** ${actor}\n**Ergebnis:** ${status}\n${run_url}"
             ICON="https://raw.githubusercontent.com/primer/octicons/main/icons/checklist-24.svg"
-            FIELDS=$(cat <<JSON
-[
-  { "name": "Workflow", "value": "$(printf "%s" "$name" | esc_json)" },
-  { "name": "Repository", "value": "$(printf "%s" "$repo_url" | esc_json)" }
-]
-JSON
-)
+            FIELDS=$(jq -n --arg name "$name" --arg repo_url "$repo_url" '[{"name":"Workflow","value":$name},{"name":"Repository","value":$repo_url}]')
           elif [ "$event" = "release" ]; then
             tag='${{ github.event.release.tag_name }}'
             rname='${{ github.event.release.name }}'
@@ -169,35 +151,24 @@ JSON
               CLEAN_SECTION="${CLEAN_SECTION:0:1000}\n… (gekürzt)"
             fi
 
-            FIELDS=$(cat <<JSON
-[
-  { "name": "Änderungen (CHANGELOG)", "value": "$(printf "%s" "$CLEAN_SECTION" | esc_json)" },
-  { "name": "Links", "value": "$(printf "• Repo: %s\n• Actions: %s\n• Tag: %s" "$repo_url" "$run_url" "$rurl" | esc_json)" }
-]
-JSON
-)
+            FIELDS=$(jq -n \
+              --arg changes "$CLEAN_SECTION" \
+              --arg links "$(printf "• Repo: %s\n• Actions: %s\n• Tag: %s" "$repo_url" "$run_url" "$rurl")" \
+              '[{"name":"Änderungen (CHANGELOG)","value":$changes},{"name":"Links","value":$links}]')
           fi
 
-          title_json="$(printf "%s" "$TITLE" | esc_json)"
-          desc_json="$(printf "%s" "$DESC" | esc_json)"
-
-          cat > payload.json <<JSON
-{
-  "username": "GitHub · ${repo}",
-  "avatar_url": "${avatar}",
-  "embeds": [
-    {
-      "title": "${title_json}",
-      "description": "${desc_json}",
-      "color": ${COLOR},
-      "timestamp": "${ts}",
-      "thumbnail": { "url": "${ICON}" },
-      "fields": ${FIELDS},
-      "footer": { "text": "Automatische Benachrichtigung • $(date -u +%Y-%m-%d)" }
-    }
-  ]
-}
-JSON
+          jq -n \
+            --arg username "GitHub · ${repo}" \
+            --arg avatar_url "${avatar}" \
+            --arg title "$TITLE" \
+            --arg description "$DESC" \
+            --arg ts "${ts}" \
+            --arg icon "${ICON}" \
+            --arg date "$(date -u +%Y-%m-%d)" \
+            --argjson fields "$FIELDS" \
+            --arg color "${COLOR}" \
+            '{username:$username, avatar_url:$avatar_url, embeds:[{title:$title, description:$description, color:($color|tonumber), timestamp:$ts, thumbnail:{url:$icon}, fields:$fields, footer:{text:("Automatische Benachrichtigung • " + $date)}}]}' \
+            > payload.json
 
           # als Ausgabe (base64) für den nächsten Step
           base64 -w0 < payload.json > payload.b64 || base64 < payload.json > payload.b64
