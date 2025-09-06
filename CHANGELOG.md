@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## 2025-09-06
+
+### Added
+- feat(rbac): RBAC für Notifications – nur Rollen ADMIN/MANAGER; Tests für ADMIN/MANAGER=200, EMPLOYEE=403, anonym=401.
+- feat(email): E-Mail-Trigger bei Schicht-Erstellung/-Aktualisierung/-Löschung (Feature-Flag `EMAIL_NOTIFY_SHIFTS=true`), Tests mit gemocktem Mailservice (Flag on/off).
+- feat(listing): Serverseitige Pagination/Sort/Filter für Sites, Shifts und Users inkl. Zod-Validierung, Prisma-Queries (`where`/`orderBy`/`skip`/`take`) und einheitlichem Response-Schema; Tests und OpenAPI ergänzt.
+
+### Changed
+- chore(ci): CI stabilisiert – tolerante Installation (Fallback auf `npm install`), OpenAPI-Lint via `npx @redocly/cli` (warn-only), Build/Tests grün.
+- docs(openapi): Notifications-Endpoint `/notifications/test` um 400/422-Responses mit Beispielen ergänzt; RBAC-Hinweise (`x-required-roles`) für Sites/Shifts/Users dokumentiert; Users‑Endpoints (POST/GET{id}/PUT/DELETE) spezifiziert.
+- docs(readme): ENV/SMTP/Feature-Flag (`EMAIL_NOTIFY_SHIFTS`) im Compose-Quickstart; RBAC‑Übersicht und Listen‑Parameter dokumentiert.
+- ci(discord): Discord-Workflow robuster und grafisch verbessert (klin­kbarer Titel/URL, Autor‑Badge, Felder pro Event; optionaler CI‑Kanal per `DISCORD_WEBHOOK_CI`).
+
 ## 2025-09-05
 
 ### Added

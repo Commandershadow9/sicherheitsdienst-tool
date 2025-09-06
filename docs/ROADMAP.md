@@ -24,14 +24,17 @@ Erweiterung (konzepttreu, dokumentarisch):
 - TimeTracking (Clock-in/out) mit Basis-AZG-Warnungen und Tests.
 - E-Mail-Benachrichtigungen (SMTP aus ENV), Test-Endpoint `/api/notifications/test`, Tests.
 - RBAC-Feinschliff umgesetzt: Notifications-Endpoint auf ADMIN/MANAGER eingeschränkt.
+- Serverseitige Pagination/Sort/Filter für Sites/Shifts (und Users) mit Tests; OpenAPI-Parameter und Beispiele ergänzt.
+- E-Mail-Benachrichtigungen bei Schicht-Änderungen hinter Feature-Flag `EMAIL_NOTIFY_SHIFTS=true`; Tests (Flag on/off) ergänzt.
+- CI stabilisiert (tolerante Installation, OpenAPI‑Lint via npx, warn-only), Discord-Notifications grafisch verbessert.
 
 ## Nächste Schritte (Vorschlag)
-- OpenAPI-Parität: Konsistente Paginierungs-/Sort-/Filter-Parameter und Fehler-Responses (400/401/403/404/409/422/429/500/503) über alle Listen-/Mutationsendpunkte; RBAC-Hinweise (`x-required-roles`) ergänzen.
-- Docker/Compose: README-Quickstart schärfen, Healthchecks belassen, `prisma migrate deploy` beim Start (bereits umgesetzt) dokumentieren.
-- Auth-Flow: Refresh-Token-Endpoint + Tests; OpenAPI ergänzen.
-- CI: Optional Coverage-Upload (Codecov) + Badge; Beibehaltung Node 20/setup-node@v4.
-- Performance: Indexe (Users.email, Sites.name+address, Shifts.startTime/status) prüfen und bei Bedarf Migrationen vorschlagen.
-- Sicherheit: Rate-Limits für Test-/Sensitiv-Endpunkte (z. B. `/notifications/test`) optional feature-flag-gesteuert.
+- RBAC‑Feinschliff: weitere Endpunkte mit `x-required-roles` dokumentieren; negative Testfälle ergänzen.
+- OpenAPI: Fehlerbeispiele vereinheitlichen; optionale operationId‑Felder vergeben; ungenutzte Komponenten abbauen.
+- Auth/Refresh: Refresh‑Token‑Endpoint inkl. Tests und Doku.
+- Reporting/Exports (CSV/Excel) für Listenendpunkte; Filter‑Preset‑Doku.
+- Performance: sinnvolle Indexe (Users.email, Sites.name+address, Shifts.startTime/status) prüfen; Migrationsvorschläge.
+- Sicherheit: Optionales Rate‑Limit für `/notifications/test`; Env‑Flag für Aktivierung.
 
 2) Zod-DTOs für Auth und Site ableiten
 - Akzeptanzkriterien:
