@@ -59,6 +59,8 @@ jobs:
           ICON="https://raw.githubusercontent.com/primer/octicons/main/icons/info-24.svg"
           FIELDS="[]"
 
+          embed_url="$run_url"
+
           if [ "$event" = "workflow_dispatch" ]; then
             TITLE="🔔 Testbenachrichtigung"
             DESC="Manuell ausgelöst von **${actor}**\n${run_url}"
@@ -83,10 +85,11 @@ jobs:
             DESC="**Akteur:** ${actor}\n**Branch:** ${ref}\n**SHA:** \`${short_sha}\`\n**Vergleich:** ${compare_url}"
             COLOR=5814783
             ICON="https://raw.githubusercontent.com/primer/octicons/main/icons/upload-24.svg"
+            embed_url="$compare_url"
             FIELDS=$(jq -n \
               --arg commits "$COMMITS_RAW" \
               --arg links "$(printf "• Repo: %s\n• Actions: %s" "$repo_url" "$run_url")" \
-              '[{"name":"Commits","value":$commits},{"name":"Links","value":$links}]')
+              '[{"name":"Commits (max 10)","value":$commits},{"name":"Links","value":$links}]')
           elif [ "$event" = "pull_request" ]; then
             pr_title='${{ github.event.pull_request.title }}'
             pr_num='${{ github.event.pull_request.number }}'
@@ -105,6 +108,7 @@ jobs:
             DESC="${status_emoji} **Status:** ${pr_state}  |  **Merged:** ${pr_merged}\n**Akteur:** ${actor}\n${pr_url}"
             COLOR=9055202
             ICON="https://raw.githubusercontent.com/primer/octicons/main/icons/git-pull-request-24.svg"
+            embed_url="${pr_url}"
             FIELDS=$(jq -n \
               --arg base "$base" --arg head "$head" --arg repo_url "$repo_url" \
               '[{"name":"Basis → Head","value":("`"+$base+"` → `"+$head+"`")},{"name":"Repository","value":$repo_url}]')
@@ -121,6 +125,7 @@ jobs:
             esac
             DESC="**Akteur:** ${actor}\n**Ergebnis:** ${status}\n${run_url}"
             ICON="https://raw.githubusercontent.com/primer/octicons/main/icons/checklist-24.svg"
+            embed_url="$run_url"
             FIELDS=$(jq -n --arg name "$name" --arg repo_url "$repo_url" '[{"name":"Workflow","value":$name},{"name":"Repository","value":$repo_url}]')
           elif [ "$event" = "release" ]; then
             tag='${{ github.event.release.tag_name }}'
@@ -133,6 +138,7 @@ jobs:
             DESC="**Repository:** ${repo}\n**Akteur:** ${actor}\n**Release:** ${rurl}"
             COLOR=5793266
             ICON="https://raw.githubusercontent.com/primer/octicons/main/icons/tag-24.svg"
+            embed_url="$rurl"
 
             version="${tag#v}"
             CHANGELOG_SECTION=""
@@ -167,7 +173,11 @@ jobs:
             --arg date "$(date -u +%Y-%m-%d)" \
             --argjson fields "$FIELDS" \
             --arg color "${COLOR}" \
-            '{username:$username, avatar_url:$avatar_url, embeds:[{title:$title, description:$description, color:($color|tonumber), timestamp:$ts, thumbnail:{url:$icon}, fields:$fields, footer:{text:("Automatische Benachrichtigung • " + $date)}}]}' \
+            --arg url "$embed_url" \
+            --arg author_name "$actor" \
+            --arg author_url "https://github.com/${actor}" \
+            --arg author_icon "$avatar" \
+            '{username:$username, avatar_url:$avatar_url, embeds:[{title:$title, url:$url, description:$description, color:($color|tonumber), timestamp:$ts, thumbnail:{url:$icon}, author:{name:$author_name, url:$author_url, icon_url:$author_icon}, fields:$fields, footer:{text:("Automatische Benachrichtigung • " + $date)}}]}' \
             > payload.json
 
           # als Ausgabe (base64) für den nächsten Step
