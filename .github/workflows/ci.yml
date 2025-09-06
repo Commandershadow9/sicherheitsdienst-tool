@@ -52,9 +52,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Lint OpenAPI (Redocly)
-        # Lint läuft, aber Warnungen sollen den Job NICHT fehlschlagen lassen
-        uses: redocly/redocly-cli-action@v2
+      - name: Setup Node
+        uses: actions/setup-node@v4
         with:
-          args: lint docs/openapi.yaml --format=github
-        continue-on-error: true
+          node-version: 20
+
+      - name: Lint OpenAPI (Redocly via npx)
+        # Lint läuft, aber Warnungen sollen den Job NICHT fehlschlagen lassen
+        run: npx --yes @redocly/cli@latest lint docs/openapi.yaml --format=github || true
