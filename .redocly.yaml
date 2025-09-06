@@ -1,0 +1,9 @@
+extends:
+  - recommended
+rules:
+  # Make style checks non-blocking (warn-only)
+  no-unused-components: warn
+  operation-2xx-response: warn
+  operation-operationId: warn
+  no-invalid-media-type-examples: warn
+  tag-operations-order: off
