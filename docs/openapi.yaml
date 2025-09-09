@@ -2239,32 +2239,89 @@ paths:
       summary: Vorfälle auflisten
       security:
         - BearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          schema: { type: integer, minimum: 1, default: 1 }
+        - name: pageSize
+          in: query
+          schema: { type: integer, minimum: 1, maximum: 100, default: 20 }
+        - name: sortBy
+          in: query
+          schema: { type: string, enum: [occurredAt, createdAt, updatedAt, severity, status, title] }
+        - name: sortDir
+          in: query
+          schema: { type: string, enum: [asc, desc], default: asc }
+        - name: filter[title]
+          in: query
+          schema: { type: string }
+        - name: filter[location]
+          in: query
+          schema: { type: string }
+        - name: filter[severity]
+          in: query
+          schema: { type: string, enum: [LOW, MEDIUM, HIGH, CRITICAL] }
+        - name: filter[status]
+          in: query
+          schema: { type: string, enum: [OPEN, IN_PROGRESS, RESOLVED, CLOSED] }
+        - name: filter[reportedBy]
+          in: query
+          schema: { type: string, format: uuid }
       responses:
         '200':
           description: Liste der Vorfälle
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Incident'
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/Incident' }
+                  pagination:
+                    type: object
+                    properties:
+                      page: { type: integer }
+                      pageSize: { type: integer }
+                      total: { type: integer }
+                      totalPages: { type: integer }
+                  sort:
+                    type: object
+                    properties:
+                      by: { type: string }
+                      dir: { type: string, enum: [asc, desc] }
+                  filters:
+                    type: object
               example:
-                - id: "e1f2e3f4-1234-5678-9999-abcdefabcdef"
-                  title: "Zaun beschädigt"
-                  description: "Schaden am Nordzaun"
-                  severity: "MEDIUM"
-                  status: "OPEN"
-                  location: "Messe Nord"
-                  occurredAt: "2024-09-01T23:10:00Z"
-                  reportedBy: "a3f1c5d2-1234-4a56-9b8c-0d1e2f3a4b5c"
-                  createdAt: "2024-09-01T23:12:00Z"
-                  updatedAt: "2024-09-01T23:12:00Z"
+                data:
+                  - id: "e1f2e3f4-1234-5678-9999-abcdefabcdef"
+                    title: "Zaun beschädigt"
+                    description: "Schaden am Nordzaun"
+                    severity: "MEDIUM"
+                    status: "OPEN"
+                    location: "Messe Nord"
+                    occurredAt: "2024-09-01T23:10:00Z"
+                    reportedBy: "a3f1c5d2-1234-4a56-9b8c-0d1e2f3a4b5c"
+                    createdAt: "2024-09-01T23:12:00Z"
+                    updatedAt: "2024-09-01T23:12:00Z"
+                pagination: { page: 1, pageSize: 20, total: 1, totalPages: 1 }
+                sort: { by: occurredAt, dir: asc }
+            text/csv:
+              schema:
+                type: string
+                format: binary
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema:
+                type: string
+                format: binary
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
+        '405':
+          $ref: '#/components/responses/MethodNotAllowed'
         '429':
           $ref: '#/components/responses/TooManyRequests'
         '500':
@@ -2315,6 +2372,8 @@ paths:
           $ref: '#/components/responses/Conflict'
         '422':
           $ref: '#/components/responses/ValidationError'
+        '405':
+          $ref: '#/components/responses/MethodNotAllowed'
         '429':
           $ref: '#/components/responses/TooManyRequests'
         '500':
@@ -2359,6 +2418,8 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
+        '405':
+          $ref: '#/components/responses/MethodNotAllowed'
         '429':
           $ref: '#/components/responses/TooManyRequests'
         '500':
@@ -2412,6 +2473,8 @@ paths:
           $ref: '#/components/responses/NotFound'
         '422':
           $ref: '#/components/responses/ValidationError'
+        '405':
+          $ref: '#/components/responses/MethodNotAllowed'
         '429':
           $ref: '#/components/responses/TooManyRequests'
         '500':
@@ -2440,6 +2503,8 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
+        '405':
+          $ref: '#/components/responses/MethodNotAllowed'
         '429':
           $ref: '#/components/responses/TooManyRequests'
         '500':
