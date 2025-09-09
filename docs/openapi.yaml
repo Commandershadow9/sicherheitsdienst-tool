@@ -2580,7 +2580,15 @@ paths:
         '429':
           $ref: '#/components/responses/TooManyRequests'
         '500':
-          $ref: '#/components/responses/InternalServerError'
+          description: SMTP/Provider-Fehler
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                success: false
+                code: INTERNAL_SERVER_ERROR
+                message: SMTP nicht verfügbar oder Zeitüberschreitung.
         '503':
           $ref: '#/components/responses/ServiceUnavailable'
   /users:
@@ -3032,7 +3040,15 @@ paths:
                     items: { $ref: '#/components/schemas/DeviceToken' }
                 required: [success, data]
         '401': { $ref: '#/components/responses/Unauthorized' }
-        '500': { $ref: '#/components/responses/InternalServerError' }
+        '500':
+          description: Push-Provider-Fehler
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+              example:
+                success: false
+                code: INTERNAL_SERVER_ERROR
+                message: Push-Dienst vorübergehend nicht erreichbar.
         '503': { $ref: '#/components/responses/ServiceUnavailable' }
     post:
       operationId: registerToken
@@ -3074,7 +3090,15 @@ paths:
                     message: Muss einer der Werte IOS/ANDROID/WEB sein.
                   - field: token
                     message: Darf nicht leer sein.
-        '500': { $ref: '#/components/responses/InternalServerError' }
+        '500':
+          description: Push-Provider-Fehler
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+              example:
+                success: false
+                code: INTERNAL_SERVER_ERROR
+                message: Push-Dienst vorübergehend nicht erreichbar.
         '503': { $ref: '#/components/responses/ServiceUnavailable' }
 
   /push/tokens/{token}:
@@ -3131,7 +3155,15 @@ paths:
                     message: Muss boolean sein.
                   - field: notificationsEnabled
                     message: Muss boolean sein.
-        '500': { $ref: '#/components/responses/InternalServerError' }
+        '500':
+          description: Push-Provider-Fehler
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+              example:
+                success: false
+                code: INTERNAL_SERVER_ERROR
+                message: Push-Dienst vorübergehend nicht erreichbar.
         '503': { $ref: '#/components/responses/ServiceUnavailable' }
     delete:
       operationId: deleteMyToken

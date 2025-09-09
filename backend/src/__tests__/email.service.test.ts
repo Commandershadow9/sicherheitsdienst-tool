@@ -29,4 +29,18 @@ describe('emailService', () => {
     const res = await sendShiftChangedEmail('to@example.com', 'Nachtschicht', 'Zeit geändert');
     expect((res as any).messageId).toBe('msg-1');
   });
+
+  it('sendEmail retries once on transient failure and succeeds', async () => {
+    // Arrange: get mock transport and make it fail once with ETIMEDOUT, then succeed
+    const nm = require('nodemailer');
+    const transport = nm.createTransport();
+    (transport.sendMail as jest.Mock).mockImplementationOnce(async () => {
+      const e: any = new Error('ETIMEDOUT');
+      e.code = 'ETIMEDOUT';
+      throw e;
+    });
+    (transport.sendMail as jest.Mock).mockResolvedValueOnce({ messageId: 'msg-2' });
+    const info = await sendEmail('to@example.com', 'Subject', 'Body');
+    expect((info as any).messageId).toBe('msg-2');
+  });
 });
