@@ -3287,6 +3287,12 @@ paths:
                           platform: { type: string }
                           memory: { type: object }
                           logLevel: { type: string }
+                      requests:
+                        type: object
+                        properties:
+                          requestsTotal: { type: integer }
+                          responses4xx: { type: integer }
+                          responses5xx: { type: integer }
                       features:
                         type: object
                         properties:
@@ -3323,6 +3329,7 @@ paths:
                   incidents: { open: 3 }
                   timeEntries: { total: 1450 }
                   system: { uptime: 123.45, nodeVersion: v20.11.0, platform: linux, logLevel: info }
+                  requests: { requestsTotal: 200, responses4xx: 5, responses5xx: 1 }
                   features: { emailNotifyShifts: false, pushNotifyEvents: true }
                   notifications: { testRateLimit: { enabled: true, perMin: 10, windowMs: 60000 }, smtpConfigured: false, pushConfigured: false }
                   auth: { jwtExpiresIn: 7d, refreshExpiresIn: 30d }
