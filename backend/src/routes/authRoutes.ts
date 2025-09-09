@@ -2,14 +2,13 @@ import { Router } from 'express';
 import { asyncHandler } from '../middleware/asyncHandler';
 import * as authController from '../controllers/authController';
 import { validate } from '../middleware/validate';
-import { refreshSchema } from '../validations/authValidation';
+import { refreshSchema, loginSchema } from '../validations/authValidation';
 import { authenticate } from '../middleware/auth';
 
 const router = Router();
 
 // POST /api/auth/login - Benutzer anmelden
-// Hier könntest du eine Validierungs-Middleware einfügen, z.B. validate(loginSchema)
-router.post('/login', asyncHandler(authController.login));
+router.post('/login', validate(loginSchema), asyncHandler(authController.login));
 
 // POST /api/auth/refresh - Tokens erneuern
 router.post('/refresh', validate(refreshSchema), asyncHandler(authController.refresh));
