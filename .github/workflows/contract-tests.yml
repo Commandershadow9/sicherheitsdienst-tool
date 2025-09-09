@@ -53,7 +53,7 @@ jobs:
           exit 1
       - name: Run Dredd against API
         run: npx --yes dredd@latest docs/openapi.yaml http://localhost:3001/api/v1
-      - name: Show compose status and logs (always)
+      - name: Show compose status and full logs (always)
         if: ${{ always() }}
         run: |
           set +e
@@ -63,7 +63,7 @@ jobs:
             DOCKER_COMPOSE="docker-compose"
           fi
           $DOCKER_COMPOSE ps
-          $DOCKER_COMPOSE logs --no-color --tail=200 db api || true
+          $DOCKER_COMPOSE logs --no-color db api || true
       - name: Teardown stack (always)
         if: ${{ always() }}
         run: |
