@@ -25,7 +25,7 @@ function initFCM() {
       }),
     });
     firebase = admin;
-    logger.info('FCM initialisiert.');
+    logger.info('FCM initialisiert (projectId=%s)', process.env.FCM_PROJECT_ID);
   } catch (err) {
     logger.warn('FCM konnte nicht initialisiert werden: %o', err);
   }
@@ -63,19 +63,24 @@ export async function sendPushToUsers(userIds: string[], title: string, body: st
 
   try {
     const resp = await firebase.messaging().sendEachForMulticast({ tokens, notification: { title, body } });
-    // Optional: inaktive Tokens deaktivieren
+    // Optional: inaktive Tokens gezielt deaktivieren
     if (resp.failureCount > 0 && Array.isArray(resp.responses)) {
       const toDisable: string[] = [];
       resp.responses.forEach((r: any, idx: number) => {
-        if (!r.success) toDisable.push(tokens[idx]);
+        if (!r.success && r.error && typeof r.error.code === 'string') {
+          const code: string = r.error.code;
+          if (code.includes('registration-token-not-registered') || code.includes('invalid-registration-token')) {
+            toDisable.push(tokens[idx]);
+          }
+        }
       });
       if (toDisable.length) {
         await (prisma as any).deviceToken.updateMany({ where: { token: { in: toDisable } }, data: { isActive: false } });
-        logger.warn('PUSH: %d Tokens deaktiviert', toDisable.length);
+        logger.warn('PUSH: %d ungültige Tokens deaktiviert', toDisable.length);
       }
     }
-    incrPushSuccess(tokens.length - resp.failureCount);
-    if (resp.failureCount > 0) incrPushFail();
+    incrPushSuccess(tokens.length - (resp.failureCount || 0));
+    if ((resp.failureCount || 0) > 0) incrPushFail();
     return { success: true, count: tokens.length, result: resp }; 
   } catch (err) {
     logger.error('PUSH Fehler: %o', err);

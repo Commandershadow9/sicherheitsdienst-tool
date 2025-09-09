@@ -37,6 +37,15 @@ See CHANGELOG.md for details.
 - Felder: Titel, Beschreibung, Site, Start/Ende, Dienstanweisungen, zugewiesene Mitarbeiter, Status.
 - Push-Hinweis: Bei Event-Erstellung/-Änderung kann (Feature-Flag) eine Push-Mitteilung an zugewiesene Mitarbeiter ausgelöst werden.
 - ENV: `PUSH_NOTIFY_EVENTS=true|false` (Standard false). Spätere Integration von FCM/APNs möglich.
+### Push/FCM Setup (Produktiv)
+- Setze `PUSH_NOTIFY_EVENTS=true` und FCM-Credentials:
+  - `FCM_PROJECT_ID`
+  - `FCM_CLIENT_EMAIL`
+  - `FCM_PRIVATE_KEY` (Zeilenumbrüche als `\n` escapen)
+- Verhalten:
+  - Ohne FCM: best-effort Mock (nur Logging, zählt `push.success`).
+  - Mit FCM: `sendEachForMulticast`; ungültige Tokens werden automatisch deaktiviert (z. B. `registration-token-not-registered`).
+- Beobachtung: `/api/stats` → `notifications.counters.push { success, fail }`
 
 ---
 
