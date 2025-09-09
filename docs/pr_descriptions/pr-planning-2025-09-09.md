@@ -42,6 +42,18 @@
 - Label-Vorschlag: `planning`, `P0|P1|P2`.
 - CI: OpenAPI validate + lint dürfen nicht fehlschlagen.
 
+## Reviewer-Checkliste (What to look for)
+- OpenAPI: `swagger-cli validate` und Redocly-Lint laufen lokal/CI grün; Fehlerschema `{ success:false, code, message, errors? }` konsistent.
+- Incidents: CRUD/Listen/Filter funktionieren; RBAC (ADMIN/MANAGER schreiben, AUTH lesen); CSV/XLSX via `Accept` liefert korrekte Dateien.
+- 405-Handling: Nicht erlaubte Methoden liefern 405 mit korrektem `Allow`-Header auf allen Routern (Users/Sites/Shifts/Events/Incidents/Auth/Notifications/System).
+- Auth-Rate-Limit: 429 inkl. `Retry-After` und `RateLimit-*` Header bei Last; ENV-Toggles (`AUTH_RATE_LIMIT_*`) wirken.
+- Request-ID/Logs: `X-Request-ID` im Response-Header und in HTTP-Logs sichtbar; Korrelation bei Fehlern.
+- /stats: enthält `requestsTotal`, `responses4xx`, `responses5xx` sowie Feature-/Rate-Limit-Konfigurationen.
+- E-Mail-Retry: Bei transientem Fehler (simuliert) erfolgt ein Retry (max 1x), danach Erfolg/Fehler wie erwartet.
+- Prisma-Singleton: Keine verbleibenden `new PrismaClient()`-Streustellen (alles über `src/utils/prisma.ts`).
+- ENV/Doku: `.env.example` und README-Runbook umfassen neue Variablen (AUTH_RATE_LIMIT_*, SMTP_RETRY_*); Beispiele stimmen.
+- Tests: Neue/angepasste Tests (RBAC negativ, 405, TimeTracking-Warnungen, Email-Retry, Incidents-Routen) laufen stabil.
+
 ## QA / Abnahme
 - Alle Acceptance Criteria pro Ticket erfüllt.
 - CI status grün (typecheck, build, tests, coverage artifact, openapi validate/lint).
