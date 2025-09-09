@@ -11,21 +11,21 @@
 
 ## Ergebnisse heute (abgeschlossen)
 
-- Auth: Refresh-Token-Flow (`POST /api/auth/refresh`), Zod-Validation für Login, `GET /api/auth/me`, `/api/v1`-Alias.
-- Notifications: Rate-Limit für Test-Endpoint (ENV + Middleware + Tests + Doku).
-- OpenAPI: Konsistente Listen-Parameter/Responses, `/auth/me`, `operationId`, ungenutzte Komponenten entfernt.
-- Fehler-Responses: Einheitliche Struktur (`code`, `message`, `details`, `errors`).
-- DX/CI: `LOG_LEVEL` in `.env.example`, CI Typecheck + Coverage-Artefakt, PR-Template.
-- Doku: README (Error Responses, curl Quickstart), CHANGELOG aktualisiert.
+- RBAC (Users): Detail- und Update-Routen abgesichert (ADMIN oder Self-Access); Self-Updates auf Basisfelder beschränkt.
+- Validierung: 422-Fehler enthalten `code: VALIDATION_ERROR` (Middleware + Tests angepasst).
+- OpenAPI: Push-API dokumentiert (`/push/tokens`, `/push/tokens/{token}`, `/push/users/{userId}/opt`) + zusätzlicher Server `http://localhost:3001/api/v1`.
+- Doku: README Listen-Parameter vereinheitlicht (`page/pageSize/sortBy/sortDir/filter[...]`).
+- Tests/Build lokal: Typecheck/Build grün; einige Jest-Suites benötigen Prisma-Generate/Mocks (CI deckt regulär ab).
 
 Alle Änderungen sind auf `main` gemergt.
 
 ## Nächste Schritte (Backlog, kurz)
 
-- Zusätzliche RBAC-Tests (Users-Endpunkte; negative Fälle) – abgesichert.
-- OpenAPI Feinschliff (operationId für Randendpunkte prüfen, kleine Beispiele ergänzen) – optional.
-- Reporting/Exports (CSV/Excel) für Listenendpunkte – Post‑MVP.
-- Performance: sinnvolle Indexe (Users.email, Sites.name+address, Shifts.startTime/status) prüfen – optional.
+- Users: Positive Tests für Self-Access (eigene ID lesen/ändern) ergänzen.
+- OpenAPI: Fehlerbeispiele (400/422) für Push ergänzen; Redocly-Konfig prüfen/beruhigen (Warnmodus).
+- CI: Prisma Client Generate vor Tests einbauen oder relevante Tests mocken (stabilere lokale Läufe).
+- Security: RBAC-Matrix in README konsolidieren (Users Self-Access Hinweis).
+- DX: Swagger UI Endpoint optional (nur Dev) – schnelleres Testen der Push-/Events-Endpunkte.
 
 ## Historie (bereits umgesetzt)
 
