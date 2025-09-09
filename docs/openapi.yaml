@@ -822,25 +822,108 @@ paths:
   /employees:
     get:
       summary: Mitarbeiterliste
+      description: 'RBAC: ADMIN oder DISPATCHER.'
+      x-required-roles:
+        - ADMIN
+        - DISPATCHER
       security:
         - BearerAuth: []
       parameters:
-        - $ref: '#/components/parameters/PageParam'
-        - $ref: '#/components/parameters/PerPageParam'
-        - $ref: '#/components/parameters/EmployeeSortParam'
-        - $ref: '#/components/parameters/OrderParam'
-        - $ref: '#/components/parameters/QueryParam'
-        - $ref: '#/components/parameters/EmployeeRoleParam'
-        - $ref: '#/components/parameters/EmployeeIsActiveParam'
+        - name: page
+          in: query
+          description: Seite (beginnend bei 1)
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: pageSize
+          in: query
+          description: Elemente pro Seite (max 100)
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+        - name: sortBy
+          in: query
+          description: Sortierfeld
+          schema:
+            type: string
+            enum: [firstName, lastName, email, createdAt, updatedAt, role, isActive]
+        - name: sortDir
+          in: query
+          description: Sortierrichtung
+          schema:
+            type: string
+            enum: [asc, desc]
+            default: asc
+        - name: filter[firstName]
+          in: query
+          description: Filtert nach Vorname (contains)
+          schema:
+            type: string
+        - name: filter[lastName]
+          in: query
+          description: Filtert nach Nachname (contains)
+          schema:
+            type: string
+        - name: filter[email]
+          in: query
+          description: Filtert nach E-Mail (contains)
+          schema:
+            type: string
+        - name: filter[employeeId]
+          in: query
+          description: Filtert nach Mitarbeiter-ID (contains)
+          schema:
+            type: string
+        - name: filter[role]
+          in: query
+          description: Filtert nach Rolle (exakt)
+          schema:
+            type: string
+            enum: [ADMIN, MANAGER, DISPATCHER, EMPLOYEE]
+        - name: filter[isActive]
+          in: query
+          description: Filtert nach Aktiv-Status (true/false)
+          schema:
+            type: string
+            enum: ["true", "false"]
       responses:
         '200':
           description: Liste der Mitarbeiter (paginierbar)
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/EmployeesList'
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Employee'
+                  pagination:
+                    type: object
+                    properties:
+                      page:
+                        type: integer
+                      pageSize:
+                        type: integer
+                      total:
+                        type: integer
+                      totalPages:
+                        type: integer
+                  sort:
+                    type: object
+                    properties:
+                      by:
+                        type: string
+                      dir:
+                        type: string
+                        enum: [asc, desc]
+                  filters:
+                    type: object
               example:
-                items:
+                data:
                   - id: "a3f1c5d2-1234-4a56-9b8c-0d1e2f3a4b5c"
                     email: "jane.doe@example.com"
                     firstName: "Jane"
@@ -853,11 +936,14 @@ paths:
                     qualifications: ["Sicherheitskraft"]
                     createdAt: "2024-08-01T12:00:00Z"
                     updatedAt: "2024-08-15T12:00:00Z"
-                meta:
+                pagination:
                   page: 1
-                  perPage: 20
+                  pageSize: 20
                   total: 1
                   totalPages: 1
+                sort:
+                  by: firstName
+                  dir: asc
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
