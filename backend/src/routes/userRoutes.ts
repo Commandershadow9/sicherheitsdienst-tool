@@ -23,13 +23,16 @@ router.post(
 
 // GET /api/users/:id - Einzelnen Mitarbeiter abrufen
 // Erlaubt dem Admin, jeden User abzurufen, oder einem User, sein eigenes Profil abzurufen (komplexere Logik im Controller nötig)
-router.get('/:id', authenticate, asyncHandler(userController.getUserById));
+// Detailansicht nur für ADMIN (Self-Access kann später gezielt ergänzt werden)
+router.get('/:id', authenticate, authorize('ADMIN'), asyncHandler(userController.getUserById));
 
 // PUT /api/users/:id - Mitarbeiter aktualisieren
 // Ähnlich wie oben, Admin darf alle, User evtl. nur sich selbst
+// Update nur für ADMIN
 router.put(
   '/:id',
   authenticate,
+  authorize('ADMIN'),
   validate(updateUserSchema),
   asyncHandler(userController.updateUser),
 );
