@@ -41,6 +41,26 @@ The project is in a stable development stage. The basic API structure is establi
 - `GET /api/auth/me`: gibt den aktuell authentifizierten Benutzer zurück.
 - Alle Endpunkte sind zusätzlich unter `/api/v1/...` erreichbar (Kompatibilität zur OpenAPI `servers`-Angabe).
 
+### Quickstart (curl)
+- Login (Access-Token erhalten):
+  ```bash
+  curl -s -X POST http://localhost:3001/api/auth/login \
+    -H 'Content-Type: application/json' \
+    -d '{"email":"admin@example.com","password":"secret123"}'
+  ```
+- Refresh (neue Tokens ausstellen):
+  ```bash
+  curl -s -X POST http://localhost:3001/api/auth/refresh \
+    -H 'Content-Type: application/json' \
+    -d '{"refreshToken":"<REFRESH_TOKEN>"}'
+  ```
+- Me (aktuellen Benutzer holen):
+  ```bash
+  ACCESS_TOKEN="<ACCESS_TOKEN>"
+  curl -s http://localhost:3001/api/auth/me \
+    -H "Authorization: Bearer ${ACCESS_TOKEN}"
+  ```
+
 ## Error Responses
 
 - Shape: jede Fehlermeldung folgt der Struktur
