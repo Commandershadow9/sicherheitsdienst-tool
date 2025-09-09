@@ -7,6 +7,7 @@ import { asyncHandler } from '../middleware/asyncHandler';
 import { siteListQuerySchema } from '../validations/siteValidation';
 import * as shiftController from '../controllers/shiftController';
 import { shiftListQuerySchema } from '../validations/shiftValidation';
+import methodNotAllowed from '../middleware/methodNotAllowed';
 
 const router = Router();
 
@@ -46,4 +47,8 @@ router.put(
 // DELETE /api/sites/:id
 router.delete('/:id', authenticate, authorize('ADMIN'), asyncHandler(siteController.deleteSite));
 
+// 405
+router.all('/', authenticate, methodNotAllowed(['GET', 'POST']));
+router.all('/:id', authenticate, methodNotAllowed(['GET', 'PUT', 'DELETE']));
+router.all('/:siteId/shifts', authenticate, methodNotAllowed(['GET']));
 export default router;

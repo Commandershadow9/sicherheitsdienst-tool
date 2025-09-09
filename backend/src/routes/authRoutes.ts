@@ -5,6 +5,7 @@ import { validate } from '../middleware/validate';
 import { refreshSchema, loginSchema } from '../validations/authValidation';
 import { authenticate } from '../middleware/auth';
 import { createRateLimit } from '../middleware/rateLimit';
+import methodNotAllowed from '../middleware/methodNotAllowed';
 
 // Rate limiters for auth endpoints (configurable via AUTH_RATE_LIMIT_*)
 const authLimiter = createRateLimit({ keyName: 'auth' });
@@ -26,3 +27,7 @@ router.get('/me', authenticate, asyncHandler(authController.me));
 // router.post('/reset-password', asyncHandler(authController.resetPassword));
 
 export default router;
+// 405
+router.all('/login', methodNotAllowed(['POST']));
+router.all('/refresh', methodNotAllowed(['POST']));
+router.all('/me', authenticate, methodNotAllowed(['GET']));

@@ -5,6 +5,7 @@ import { validate } from '../middleware/validate';
 import { createShiftSchema, updateShiftSchema, shiftListQuerySchema } from '../validations/shiftValidation';
 import { clockInSchema, clockOutSchema } from '../validations/timeValidation';
 import * as shiftController from '../controllers/shiftController';
+import methodNotAllowed from '../middleware/methodNotAllowed';
 
 const router = Router();
 
@@ -41,4 +42,10 @@ router.post('/:id/assign', authenticate, asyncHandler(shiftController.assignUser
 router.post('/:id/clock-in', authenticate, validate(clockInSchema), asyncHandler(shiftController.clockIn));
 // POST /api/shifts/:id/clock-out
 router.post('/:id/clock-out', authenticate, validate(clockOutSchema), asyncHandler(shiftController.clockOut));
+// 405
+router.all('/', authenticate, methodNotAllowed(['GET', 'POST']));
+router.all('/:id', authenticate, methodNotAllowed(['GET', 'PUT', 'DELETE']));
+router.all('/:id/assign', authenticate, methodNotAllowed(['POST']));
+router.all('/:id/clock-in', authenticate, methodNotAllowed(['POST']));
+router.all('/:id/clock-out', authenticate, methodNotAllowed(['POST']));
 export default router;
