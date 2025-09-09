@@ -6,6 +6,7 @@ import dotenv from 'dotenv';
 import jwt from 'jsonwebtoken';
 import logger from './utils/logger';
 import requestId from './middleware/requestId';
+import { onRequestStart, onResponseStatus } from './utils/stats';
 
 // Load environment variables
 dotenv.config();
@@ -29,6 +30,13 @@ app.use(
 );
 // Request ID middleware before logging
 app.use(requestId());
+
+// Lightweight request counters for /stats
+app.use((req, res, next) => {
+  onRequestStart();
+  res.on('finish', () => onResponseStatus(res.statusCode));
+  next();
+});
 
 // Add morgan token for request id and use custom format including it
 morgan.token('id', (req: any) => req.id || '-');

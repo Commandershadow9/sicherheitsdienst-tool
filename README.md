@@ -85,6 +85,42 @@ See CHANGELOG.md for details.
   - `curl -s http://localhost:3001/api/health`
   - `curl -s http://localhost:3001/api/stats`
 
+## Operations / Runbook
+
+- Start (Dev): `npm run dev` im `backend/` (setzt lokale .env voraus)
+- Start (Compose): `docker-compose up -d --build` (führt `prisma migrate deploy` aus)
+- Healthchecks:
+  - API: `GET /api/health` → 200/503
+  - Stats: `GET /api/stats` → Aggregierte Zahlen und Konfiguration
+- Logs: Winston (level via `LOG_LEVEL`), HTTP-Logs via morgan; jeder Request hat `X-Request-ID` (Header und Logs)
+- Rate Limiting:
+  - Notifications-Testendpoint per `NOTIFICATIONS_TEST_RATE_LIMIT_*`
+  - Auth (Login/Refresh) per `AUTH_RATE_LIMIT_*`
+- E-Mail Zustellung:
+  - SMTP via `SMTP_*`; einfacher Retry (`SMTP_RETRY_MAX`, `SMTP_RETRY_DELAY_MS`)
+- Push:
+  - Best‑effort ohne FCM; mit FCM via `FCM_*`
+
+### Environment Variablen (Auszug)
+- Auth:
+  - `JWT_SECRET` (Pflicht), `JWT_EXPIRES_IN`
+  - `REFRESH_SECRET` (optional), `REFRESH_EXPIRES_IN`
+  - `AUTH_RATE_LIMIT_ENABLED` (default `true`), `AUTH_RATE_LIMIT_PER_MIN` (default `10`), `AUTH_RATE_LIMIT_WINDOW_MS` (default `60000`)
+- Notifications (Test):
+  - `NOTIFICATIONS_TEST_RATE_LIMIT_ENABLED` (default `true`), `NOTIFICATIONS_TEST_RATE_LIMIT_PER_MIN`, `NOTIFICATIONS_TEST_RATE_LIMIT_WINDOW_MS`
+- SMTP:
+  - `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM`
+  - `SMTP_RETRY_MAX` (default `1`), `SMTP_RETRY_DELAY_MS` (default `200`)
+- Push/Events:
+  - `PUSH_NOTIFY_EVENTS` (default `false`)
+  - `FCM_PROJECT_ID`, `FCM_CLIENT_EMAIL`, `FCM_PRIVATE_KEY` (optional)
+
+### Diagnose / Troubleshooting
+- 401/403/404/422/429/5xx → einheitliches Fehlerformat `{ success:false, code, message, errors? }`
+- Rate‑Limit → 429 mit `Retry-After`, `RateLimit-*` Headern
+- Korrelation → `X-Request-ID` im Request/Response/Logs verfolgen
+- DB → Prisma Migrations/Indices siehe `backend/prisma` und `docs/DB_INDEXES.md`
+
 ## Error Responses
 
 - Shape: jede Fehlermeldung folgt der Struktur

@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import prisma from '../utils/prisma';
+import { getCounters } from '../utils/stats';
 
 // GET /api/health - System Health Check
 export const healthCheck = async (_req: Request, res: Response, _next: NextFunction) => {
@@ -94,6 +95,7 @@ export const getSystemStats = async (req: Request, res: Response, next: NextFunc
           memory: process.memoryUsage(),
           logLevel: process.env.LOG_LEVEL || (process.env.NODE_ENV === 'development' ? 'debug' : 'info'),
         },
+        requests: getCounters(),
         features: featureFlags,
         notifications: {
           testRateLimit: rateLimit,
