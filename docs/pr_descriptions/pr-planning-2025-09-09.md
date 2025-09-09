@@ -1,5 +1,14 @@
 # PR: Planung – Analyse & Tickets (2025-09-09)
 
+## Kurz-Zusammenfassung (Phasen 1–5)
+- Spec-Alignment: OpenAPI-Fehlerschema vereinheitlicht, Beispiele aktualisiert; 405-Komponente ergänzt.
+- Stabilität: Prisma-Singleton; Rate-Limit für Login/Refresh; Request-ID in Logs; einfache Request-Zähler in /stats.
+- Incidents E2E: CRUD + Listen/Filter + CSV/XLSX; RBAC (ADMIN/MANAGER schreiben, AUTH lesen); Zod-Validation; Tests; OpenAPI angepasst.
+- Hardening: 405-Handling auf allen Routern inkl. Allow-Header; Negative RBAC-Tests (Incidents anonymous/employee) und TimeTracking-Warnungen.
+- Notifications: E-Mail Retry (1x) mit Tests; 5xx-Fehlerbeispiele für Push/E-Mail in OpenAPI.
+- Operability: README-Runbook (Start/Stop, Health/Stats, Logs/Request-ID, Rate-Limits, SMTP/Retry, ENV-Matrix).
+- Doku & CI: Roadmap/Changelog aktualisiert; Leitfaden für Contract-Tests (Prism/Dredd) und CI-Vorschlag beigefügt.
+
 ## Kontext
 - Analyse-Report: `docs/planning/analysis-2025-09-09.md`
 - Ticketliste: `docs/planning/tickets-2025-09-09.md`
