@@ -9,6 +9,30 @@
 - Fokus: OpenAPI v1, Auth/RBAC, Entity „Site“.
 - Jede Aufgabe ≤ 90 Minuten mit klaren Akzeptanzkriterien.
 
+## Heutige Tasks (Vorschlag)
+
+1) Auth: Refresh-Token-Flow implementieren (Backend + Tests + Doku)
+- Nutzen/Risiko/Aufwand: 5 / 3 / 3 (60–90 Min)
+- Akzeptanzkriterien:
+  - Endpoint `POST /api/auth/refresh` gibt neue Access/Refresh-Tokens zurück (ENV: `REFRESH_SECRET`, `REFRESH_EXPIRES_IN`).
+  - Zod-Validierung (`refreshSchema`) aktiv; ungültige Eingaben → 422 mit Feldfehlern.
+  - Tests: Happy Path, ungültiger/abgelaufener Refresh-Token → 401; strukturelle Fehler → 422.
+  - README aktualisiert (Abschnitt Auth/Refresh), `.env.example` geprüft/ergänzt (falls nötig).
+
+2) API-Parität: `GET /api/me` + `/api/v1`-Alias
+- Nutzen/Risiko/Aufwand: 4 / 2 / 2 (45–60 Min)
+- Akzeptanzkriterien:
+  - `GET /api/me` liefert den authentifizierten Benutzer (401 ohne Token).
+  - Alle bestehenden Router zusätzlich unter `/api/v1` gemountet (Alias), Smoke-Test prüft Erreichbarkeit beider Pfade.
+  - OpenAPI `servers` bleibt kompatibel (`/api/v1`).
+
+3) Auth-Validation härten (Login/Refresh via Zod) + Tests
+- Nutzen/Risiko/Aufwand: 4 / 2 / 2 (30–60 Min)
+- Akzeptanzkriterien:
+  - `authValidation.ts` mit `loginSchema` (email,password) und `refreshSchema` (refreshToken).
+  - `validate(...)` in `authRoutes` integriert; ungültige Payloads → 422.
+  - Tests decken 422 bei invaliden Eingaben ab.
+
 ## Tasks für heute (umgesetzt)
 
 1) OpenAPI v1 Grundgerüst aktualisieren (Auth + Site – minimal)
