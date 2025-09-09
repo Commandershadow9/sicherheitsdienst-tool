@@ -122,6 +122,10 @@ See CHANGELOG.md for details.
 - Korrelation → `X-Request-ID` im Request/Response/Logs verfolgen
 - DB → Prisma Migrations/Indices siehe `backend/prisma` und `docs/DB_INDEXES.md`
 
+### Issue-Management (Planung 2025-09-09)
+- Issues erzeugen (gh CLI): `bash scripts/create-issues-2025-09-09.sh`
+- Issues/Milestone schließen (gh CLI): `bash scripts/close-issues-2025-09-09.sh`
+
 ## RBAC Matrix (Kurz)
 - Users: Liste/Erstellen/Löschen → ADMIN; Lesen/Aktualisieren → ADMIN oder Self (eingeschränkt bei Self)
 - Sites: Erstellen/Aktualisieren → ADMIN, DISPATCHER; Lesen → AUTH; Löschen → ADMIN
