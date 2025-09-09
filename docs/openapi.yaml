@@ -749,6 +749,16 @@ components:
             success: false
             code: SERVICE_UNAVAILABLE
             message: Wartung oder temporärer Ausfall.
+    MethodNotAllowed:
+      description: Methode nicht erlaubt
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            code: METHOD_NOT_ALLOWED
+            message: HTTP-Methode wird auf dieser Ressource nicht unterstützt.
 paths:
   /auth/login:
     post:
