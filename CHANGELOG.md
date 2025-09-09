@@ -111,9 +111,13 @@ All notable changes to this project will be documented in this file.
 - docs(openapi): `/me` zu `/auth/me` ausgerichtet; `operationId` für zentrale Endpunkte ergänzt; `/employees`-List-Response auf `data/pagination/sort/filters` umgestellt; Parameter für `/sites` und `/shifts` vereinheitlicht (`page/pageSize/sortBy/sortDir/filter[...]`); ungenutzte `EmployeesList`/`SitesList`-Schemas entfernt.
 - ci: `typecheck`-Step ergänzt; Tests erzeugen Coverage und werden als Artefakt hochgeladen.
 - env: `LOG_LEVEL` in `.env.example` ergänzt.
+- rbac(users): Self-Access für `GET/PUT /api/users/:id` erlaubt; Self-Updates auf Basisfelder (email, firstName, lastName, phone) beschränkt.
+- fix(validation): 422-Responses der `validate`-Middleware enthalten jetzt `code: "VALIDATION_ERROR"`.
+- docs(readme): Listen-Parameter und Beispiele vereinheitlicht auf `page/pageSize/sortBy/sortDir/filter[...]`.
 
 ### Added (Events & Push)
 - feat(events): CRUD + CSV/XLSX Exporte, PDF-Bericht via `Accept: application/pdf`, OpenAPI-Schemas/Paths
 - feat(push): Geräte-Token-API (registrieren/listen/ändern/löschen), optional FCM-Support, Event-Push (Feature-Flag), Admin-Opt-In/Out je Benutzer, `User.pushOptIn`
 - perf(db): Indizes für Users/Sites/Shifts/Assignments/TimeEntries + neue Tabellen `events` und `device_tokens`
 - docs: README (Exports, Push, Events, PDF), OpenAPI Accept-Hinweise, FEATURE_EVENTS.md, TODO/ROADMAP aktualisiert
+ - docs(openapi): Push-API in Spezifikation ergänzt (`/push/tokens`, `/push/tokens/{token}`, `/push/users/{userId}/opt`) und zusätzlicher Server `http://localhost:3001/api/v1`.

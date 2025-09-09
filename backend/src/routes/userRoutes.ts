@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { asyncHandler } from '../middleware/asyncHandler';
 import * as userController from '../controllers/userController';
-import { authenticate, authorize } from '../middleware/auth';
+import { authenticate, authorize, authorizeSelfOr } from '../middleware/auth';
 import { validate } from '../middleware/validate';
 import { createUserSchema, updateUserSchema, userListQuerySchema } from '../validations/userValidation';
 
@@ -23,16 +23,16 @@ router.post(
 
 // GET /api/users/:id - Einzelnen Mitarbeiter abrufen
 // Erlaubt dem Admin, jeden User abzurufen, oder einem User, sein eigenes Profil abzurufen (komplexere Logik im Controller nötig)
-// Detailansicht nur für ADMIN (Self-Access kann später gezielt ergänzt werden)
-router.get('/:id', authenticate, authorize('ADMIN'), asyncHandler(userController.getUserById));
+// Detailansicht: ADMIN oder Self-Access
+router.get('/:id', authenticate, authorizeSelfOr('ADMIN'), asyncHandler(userController.getUserById));
 
 // PUT /api/users/:id - Mitarbeiter aktualisieren
 // Ähnlich wie oben, Admin darf alle, User evtl. nur sich selbst
-// Update nur für ADMIN
+// Update: ADMIN oder Self-Access (Controller beschränkt veränderbare Felder bei Self)
 router.put(
   '/:id',
   authenticate,
-  authorize('ADMIN'),
+  authorizeSelfOr('ADMIN'),
   validate(updateUserSchema),
   asyncHandler(userController.updateUser),
 );

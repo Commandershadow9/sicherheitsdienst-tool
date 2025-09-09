@@ -62,3 +62,20 @@ export const authorize = (...roles: string[]) => {
     next();
   };
 };
+
+// Erlaubt Zugriff, wenn Benutzer selbst betroffen ist (z. B. /users/:id) oder eine der Rollen passt
+export const authorizeSelfOr = (...roles: string[]) => {
+  return (req: Request, _res: Response, next: NextFunction): void => {
+    if (!req.user) {
+      return next(createError(401, 'Authentifizierung erforderlich.'));
+    }
+    const user = req.user as User;
+    const isRoleAllowed = roles.includes(user.role as any);
+    const targetId = (req.params as any)?.id;
+    const isSelf = !!targetId && user.id === targetId;
+    if (isRoleAllowed || isSelf) {
+      return next();
+    }
+    return next(createError(403, 'Keine Berechtigung für diese Aktion.'));
+  };
+};

@@ -316,6 +316,24 @@ export const updateUser = async (req: Request, res: Response, next: NextFunction
       isActive,
     } = req.body;
 
+    // RBAC: Self-Access Einschränkungen – Nicht-ADMIN darf nur eigene Basisdaten ändern
+    const actor = req.user as any;
+    const isAdmin = actor?.role === 'ADMIN';
+    const isSelf = actor?.id === id;
+    if (!isAdmin) {
+      if (!isSelf) {
+        res.status(403).json({ success: false, code: 'FORBIDDEN', message: 'Keine Berechtigung für diese Aktion.' });
+        return;
+      }
+      const providedKeys = Object.keys(req.body || {});
+      const allowedForSelf = new Set(['email', 'firstName', 'lastName', 'phone']);
+      const disallowed = providedKeys.filter((k) => !allowedForSelf.has(k));
+      if (disallowed.length > 0) {
+        res.status(403).json({ success: false, code: 'FORBIDDEN', message: `Nicht erlaubt, folgende Felder zu ändern: ${disallowed.join(', ')}` });
+        return;
+      }
+    }
+
     const updatedUser = await prisma.user.update({
       where: { id },
       data: {
