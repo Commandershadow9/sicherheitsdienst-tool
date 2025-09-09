@@ -5,6 +5,7 @@ info:
   description: API v1 für Auth, Mitarbeiter, Sites, Schichten, Zuweisungen, Zeiterfassung, Vorfälle, Benachrichtigungen.
 servers:
   - url: http://localhost:3000/api/v1
+  - url: http://localhost:3001/api/v1
 components:
   securitySchemes:
     BearerAuth:
@@ -75,6 +76,50 @@ components:
           type: integer
           example: 7
       required: [page, perPage, total, totalPages]
+    
+    DevicePlatform:
+      type: string
+      enum: [IOS, ANDROID, WEB]
+    DeviceToken:
+      type: object
+      properties:
+        platform:
+          $ref: '#/components/schemas/DevicePlatform'
+        token:
+          type: string
+        isActive:
+          type: boolean
+        notificationsEnabled:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required: [platform, token, isActive, notificationsEnabled, createdAt, updatedAt]
+    DeviceTokenCreate:
+      type: object
+      properties:
+        platform:
+          $ref: '#/components/schemas/DevicePlatform'
+        token:
+          type: string
+      required: [platform, token]
+    DeviceTokenUpdate:
+      type: object
+      properties:
+        isActive:
+          type: boolean
+        notificationsEnabled:
+          type: boolean
+      additionalProperties: false
+    PushOptRequest:
+      type: object
+      properties:
+        pushOptIn:
+          type: boolean
+      required: [pushOptIn]
     
     AuthLoginRequest:
       type: object
@@ -2884,3 +2929,151 @@ paths:
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
+
+  /push/tokens:
+    get:
+      operationId: listMyTokens
+      summary: List my push tokens
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean, example: true }
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/DeviceToken' }
+                required: [success, data]
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '500': { $ref: '#/components/responses/InternalServerError' }
+        '503': { $ref: '#/components/responses/ServiceUnavailable' }
+    post:
+      operationId: registerToken
+      summary: Register or update a device token
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/DeviceTokenCreate' }
+            examples:
+              sample:
+                value:
+                  platform: ANDROID
+                  token: fcm-xxx
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean, example: true }
+                  data: { $ref: '#/components/schemas/DeviceToken' }
+                required: [success, data]
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+        '500': { $ref: '#/components/responses/InternalServerError' }
+        '503': { $ref: '#/components/responses/ServiceUnavailable' }
+
+  /push/tokens/{token}:
+    parameters:
+      - in: path
+        name: token
+        required: true
+        schema: { type: string }
+    put:
+      operationId: updateMyToken
+      summary: Update a device token (status flags)
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/DeviceTokenUpdate' }
+            examples:
+              disable:
+                value:
+                  isActive: false
+                  notificationsEnabled: false
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean, example: true }
+                  data: { $ref: '#/components/schemas/DeviceToken' }
+                required: [success, data]
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+        '500': { $ref: '#/components/responses/InternalServerError' }
+        '503': { $ref: '#/components/responses/ServiceUnavailable' }
+    delete:
+      operationId: deleteMyToken
+      summary: Delete a device token
+      security:
+        - BearerAuth: []
+      responses:
+        '204': { description: No Content }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '500': { $ref: '#/components/responses/InternalServerError' }
+        '503': { $ref: '#/components/responses/ServiceUnavailable' }
+
+  /push/users/{userId}/opt:
+    put:
+      operationId: setUserPushOpt
+      summary: Set push opt-in/out for a user (ADMIN)
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: userId
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/PushOptRequest' }
+            examples:
+              enable:
+                value:
+                  pushOptIn: true
+              disable:
+                value:
+                  pushOptIn: false
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean, example: true }
+                  data:
+                    type: object
+                    properties:
+                      id: { type: string, format: uuid }
+                      pushOptIn: { type: boolean }
+                    required: [id, pushOptIn]
+                required: [success, data]
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+        '500': { $ref: '#/components/responses/InternalServerError' }
+        '503': { $ref: '#/components/responses/ServiceUnavailable' }
