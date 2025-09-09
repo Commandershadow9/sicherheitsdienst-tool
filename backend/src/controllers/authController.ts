@@ -1,9 +1,8 @@
 import { Request, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
+import prisma from '../utils/prisma';
 import bcrypt from 'bcryptjs';
 import jwt, { SignOptions } from 'jsonwebtoken';
 
-const prisma = new PrismaClient();
 
 export const login = async (req: Request, res: Response): Promise<Response> => {
   const { email, password } = req.body;
@@ -47,6 +46,8 @@ export const login = async (req: Request, res: Response): Promise<Response> => {
     const signOptions: SignOptions = {
       expiresIn: expiresInValue as any,
     };
+    if (process.env.JWT_ISSUER) signOptions.issuer = process.env.JWT_ISSUER;
+    if (process.env.JWT_AUDIENCE) signOptions.audience = process.env.JWT_AUDIENCE;
 
     const accessToken = jwt.sign(payload, jwtSecret, signOptions);
 
@@ -92,7 +93,10 @@ export const refresh = async (req: Request, res: Response): Promise<Response> =>
       return res.status(422).json({ success: false, code: 'VALIDATION_ERROR', message: 'Validierungsfehler.', errors: [{ path: ['refreshToken'], message: 'refreshToken ist erforderlich' }] });
     }
 
-    const decoded = jwt.verify(refreshToken, refreshSecret) as { userId: string; role?: string; iat?: number; exp?: number };
+    const verifyOptions: jwt.VerifyOptions = {};
+    if (process.env.JWT_ISSUER) verifyOptions.issuer = process.env.JWT_ISSUER;
+    if (process.env.JWT_AUDIENCE) verifyOptions.audience = process.env.JWT_AUDIENCE;
+    const decoded = jwt.verify(refreshToken, refreshSecret, verifyOptions) as { userId: string; role?: string; iat?: number; exp?: number };
     const user = await prisma.user.findUnique({ where: { id: decoded.userId } });
     if (!user || !user.isActive) {
       return res.status(401).json({ success: false, code: 'UNAUTHORIZED', message: 'Ungültiger oder inaktiver Benutzer.' });
@@ -103,6 +107,8 @@ export const refresh = async (req: Request, res: Response): Promise<Response> =>
     const accessSignOpts: SignOptions = {
       expiresIn: (accessExpRaw && accessExpRaw.trim() !== '' ? (accessExpRaw as any) : ('7d' as any)) as any,
     };
+    if (process.env.JWT_ISSUER) accessSignOpts.issuer = process.env.JWT_ISSUER;
+    if (process.env.JWT_AUDIENCE) accessSignOpts.audience = process.env.JWT_AUDIENCE;
     const accessPayload = { userId: user.id, role: user.role };
     const newAccessToken = jwt.sign(accessPayload, accessSecret, accessSignOpts);
 
@@ -111,6 +117,8 @@ export const refresh = async (req: Request, res: Response): Promise<Response> =>
     const refreshSignOpts: SignOptions = {
       expiresIn: (refreshExpRaw && refreshExpRaw.trim() !== '' ? (refreshExpRaw as any) : ('30d' as any)) as any,
     };
+    if (process.env.JWT_ISSUER) refreshSignOpts.issuer = process.env.JWT_ISSUER;
+    if (process.env.JWT_AUDIENCE) refreshSignOpts.audience = process.env.JWT_AUDIENCE;
     const refreshPayload = { userId: user.id, role: user.role };
     const newRefreshToken = jwt.sign(refreshPayload, refreshSecret, refreshSignOpts);
 

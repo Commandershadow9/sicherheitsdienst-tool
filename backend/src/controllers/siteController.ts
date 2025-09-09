@@ -1,8 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
-import { PrismaClient } from '@prisma/client';
+import prisma from '../utils/prisma';
 import ExcelJS from 'exceljs';
 
-const prisma = new PrismaClient();
 
 // GET /api/sites - Alle Sites
 export const getAllSites = async (req: Request, res: Response, next: NextFunction): Promise<void> => {

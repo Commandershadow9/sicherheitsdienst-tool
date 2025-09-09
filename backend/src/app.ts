@@ -5,12 +5,14 @@ import morgan from 'morgan';
 import dotenv from 'dotenv';
 import jwt from 'jsonwebtoken';
 import logger from './utils/logger';
+import requestId from './middleware/requestId';
+import { onRequestStart, onResponseStatus } from './utils/stats';
 
 // Load environment variables
 dotenv.config();
 
 // Import all routes
-import { systemRoutes, userRoutes, shiftRoutes, authRoutes, siteRoutes, notificationRoutes, eventRoutes, pushRoutes } from './routes';
+import { systemRoutes, userRoutes, shiftRoutes, authRoutes, siteRoutes, notificationRoutes, eventRoutes, pushRoutes, incidentRoutes } from './routes';
 
 const app = express();
 // Port-Konstante wird hier nicht benötigt (Server-Start in server.ts)
@@ -26,8 +28,21 @@ app.use(
     credentials: true,
   }),
 );
+// Request ID middleware before logging
+app.use(requestId());
+
+// Lightweight request counters for /stats
+app.use((req, res, next) => {
+  onRequestStart();
+  res.on('finish', () => onResponseStatus(res.statusCode));
+  next();
+});
+
+// Add morgan token for request id and use custom format including it
+morgan.token('id', (req: any) => req.id || '-');
+const morganFormat = ':id :remote-addr :method :url :status :res[content-length] - :response-time ms';
 app.use(
-  morgan('combined', {
+  morgan(morganFormat, {
     stream: {
       write: (message: string) => logger.http(message.trim()),
     },
@@ -76,6 +91,7 @@ app.use('/api/sites', siteRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/events', eventRoutes);
 app.use('/api/push', pushRoutes);
+app.use('/api/incidents', incidentRoutes);
 
 // API v1 Alias (OpenAPI servers: /api/v1)
 app.use('/api/v1', systemRoutes);
@@ -86,6 +102,7 @@ app.use('/api/v1/sites', siteRoutes);
 app.use('/api/v1/notifications', notificationRoutes);
 app.use('/api/v1/events', eventRoutes);
 app.use('/api/v1/push', pushRoutes);
+app.use('/api/v1/incidents', incidentRoutes);
 
 // 404 handler for unmatched routes
 app.use((req: Request, res: Response) => {

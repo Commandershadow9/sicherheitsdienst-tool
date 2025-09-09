@@ -4,14 +4,19 @@ import * as authController from '../controllers/authController';
 import { validate } from '../middleware/validate';
 import { refreshSchema, loginSchema } from '../validations/authValidation';
 import { authenticate } from '../middleware/auth';
+import { createRateLimit } from '../middleware/rateLimit';
+import methodNotAllowed from '../middleware/methodNotAllowed';
+
+// Rate limiters for auth endpoints (configurable via AUTH_RATE_LIMIT_*)
+const authLimiter = createRateLimit({ keyName: 'auth' });
 
 const router = Router();
 
 // POST /api/auth/login - Benutzer anmelden
-router.post('/login', validate(loginSchema), asyncHandler(authController.login));
+router.post('/login', authLimiter, validate(loginSchema), asyncHandler(authController.login));
 
 // POST /api/auth/refresh - Tokens erneuern
-router.post('/refresh', validate(refreshSchema), asyncHandler(authController.refresh));
+router.post('/refresh', authLimiter, validate(refreshSchema), asyncHandler(authController.refresh));
 
 // GET /api/auth/me - Aktuellen Benutzer abrufen
 router.get('/me', authenticate, asyncHandler(authController.me));
@@ -22,3 +27,7 @@ router.get('/me', authenticate, asyncHandler(authController.me));
 // router.post('/reset-password', asyncHandler(authController.resetPassword));
 
 export default router;
+// 405
+router.all('/login', methodNotAllowed(['POST']));
+router.all('/refresh', methodNotAllowed(['POST']));
+router.all('/me', authenticate, methodNotAllowed(['GET']));

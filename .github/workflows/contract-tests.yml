@@ -1,0 +1,35 @@
+name: contract-tests (optional)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  prism-mock:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Validate OpenAPI
+        run: npx --yes swagger-cli@latest validate docs/openapi.yaml
+      - name: Start Prism mock
+        run: npx --yes @stoplight/prism-cli@latest mock docs/openapi.yaml &
+      - name: Wait and probe mock
+        run: |
+          sleep 3
+          curl -fsSL http://127.0.0.1:4010/ || true
+
+  dredd-proxy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Start API (placeholder)
+        run: |
+          echo "Start your API here if needed (docker-compose up -d)"
+      - name: Run Dredd against API (non-blocking)
+        run: npx --yes dredd@latest docs/openapi.yaml http://localhost:3001/api/v1 || true
+

@@ -2,10 +2,9 @@
 
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
-import { PrismaClient, User } from '@prisma/client'; // User wird hier für req.user benötigt
+import { User } from '@prisma/client'; // User wird hier für req.user benötigt
 import createError from 'http-errors';
-
-const prisma = new PrismaClient();
+import prisma from '../utils/prisma';
 
 export const authenticate = async (
   req: Request,
@@ -28,7 +27,10 @@ export const authenticate = async (
       return next(createError(500, 'Server-Konfigurationsfehler: JWT Secret fehlt.'));
     }
 
-    const decoded = jwt.verify(token, jwtSecret) as { userId: string; role: string };
+    const verifyOptions: jwt.VerifyOptions = {};
+    if (process.env.JWT_ISSUER) verifyOptions.issuer = process.env.JWT_ISSUER;
+    if (process.env.JWT_AUDIENCE) verifyOptions.audience = process.env.JWT_AUDIENCE;
+    const decoded = jwt.verify(token, jwtSecret, verifyOptions) as { userId: string; role: string };
 
     const user = await prisma.user.findUnique({
       where: { id: decoded.userId },

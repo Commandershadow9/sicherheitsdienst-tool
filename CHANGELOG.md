@@ -125,3 +125,17 @@ All notable changes to this project will be documented in this file.
 - perf(db): Indizes für Users/Sites/Shifts/Assignments/TimeEntries + neue Tabellen `events` und `device_tokens`
 - docs: README (Exports, Push, Events, PDF), OpenAPI Accept-Hinweise, FEATURE_EVENTS.md, TODO/ROADMAP aktualisiert
  - docs(openapi): Push-API in Spezifikation ergänzt (`/push/tokens`, `/push/tokens/{token}`, `/push/users/{userId}/opt`) und zusätzlicher Server `http://localhost:3001/api/v1`.
+
+### Added (Planning Phases 1–5)
+- feat(openapi): Fehler-Response-Shape harmonisiert (`success:false`, `code`, `message`, `errors?`) und Beispiele in `#/components/responses/*` aktualisiert.
+- feat(auth): Rate-Limit für `POST /auth/login` und `POST /auth/refresh` (ENV `AUTH_RATE_LIMIT_*`), Header `Retry-After` und `RateLimit-*` gesetzt.
+- feat(observability): Request-ID Middleware (`X-Request-ID`) + Logs; leichte Request-Zähler (`requestsTotal`, `responses4xx`, `responses5xx`) in `/stats`.
+- feat(incidents): E2E-Implementierung (CRUD, List/Filter, CSV/XLSX Exporte, RBAC ADMIN/MANAGER schreiben, AUTH lesen) inkl. Tests und OpenAPI-Erweiterungen.
+- feat(email): Einfacher Retry (1x) bei transienten SMTP-Fehlern (`SMTP_RETRY_MAX`, `SMTP_RETRY_DELAY_MS`), Tests.
+- docs(runbook): Operations-/Runbook-Abschnitt in README (Health/Stats, Logs/Request-ID, Rate-Limits, SMTP/Retry, ENV-Matrix).
+
+### Changed
+- refactor(prisma): Zentrale Prisma-Client-Singleton (`backend/src/utils/prisma.ts`); Controller/Middleware/Services umgestellt.
+- docs(openapi): Incidents-List-Antwort vereinheitlicht (data/pagination/sort/filters) und CSV/XLSX Accept dokumentiert; 405 `MethodNotAllowed`-Komponente ergänzt.
+- tests: RBAC-Tests für Incidents (anonymous/employee negative), TimeTracking-Warnungen (Restzeit <11h, Dauer >10h/>12h) ergänzt.
+- auth/jwt: Optional `JWT_ISSUER`/`JWT_AUDIENCE` in Signatur/Verifikation berücksichtigt (konfigurierbar via ENV).

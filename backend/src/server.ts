@@ -1,8 +1,7 @@
-import { PrismaClient } from '@prisma/client';
 import app from './app';
 import logger from './utils/logger';
+import prisma from './utils/prisma';
 
-const prisma = new PrismaClient();
 const PORT = process.env.PORT || 3001;
 
 const server = app.listen(PORT, () => {

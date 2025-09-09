@@ -4,6 +4,7 @@ import * as userController from '../controllers/userController';
 import { authenticate, authorize, authorizeSelfOr } from '../middleware/auth';
 import { validate } from '../middleware/validate';
 import { createUserSchema, updateUserSchema, userListQuerySchema } from '../validations/userValidation';
+import methodNotAllowed from '../middleware/methodNotAllowed';
 
 const router = Router();
 
@@ -44,4 +45,7 @@ router.delete(
   authorize('ADMIN'),
   asyncHandler(userController.deactivateUser),
 );
+// 405
+router.all('/', authenticate, methodNotAllowed(['GET', 'POST']));
+router.all('/:id', authenticate, methodNotAllowed(['GET', 'PUT', 'DELETE']));
 export default router;

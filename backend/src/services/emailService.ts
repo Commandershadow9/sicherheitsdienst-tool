@@ -26,18 +26,51 @@ function getTransport() {
   }
 }
 
+function isTransientError(err: any): boolean {
+  const code = (err && (err.code || err?.cause?.code)) as string | undefined;
+  const msg = String(err?.message || '').toLowerCase();
+  if (process.env.SMTP_TEST_TRANSIENT === 'true') return true;
+  return (
+    code === 'ETIMEDOUT' ||
+    code === 'ECONNRESET' ||
+    code === 'ECONNREFUSED' ||
+    msg.includes('timeout') ||
+    msg.includes('temporarily') ||
+    msg.includes('temporary')
+  );
+}
+
+function sleep(ms: number) {
+  return new Promise((r) => setTimeout(r, ms));
+}
+
 export async function sendEmail(to: string, subject: string, text?: string, html?: string) {
   const transport = getTransport();
-  try {
-    if (process.env.SMTP_TEST_FAIL === 'true') {
-      throw new Error('Simulated SMTP failure');
+  const maxRetries = Math.max(parseInt(String(process.env.SMTP_RETRY_MAX || '1'), 10) || 1, 0);
+  const retryDelayMs = Math.max(parseInt(String(process.env.SMTP_RETRY_DELAY_MS || '200'), 10) || 200, 0);
+  let attempt = 0;
+  // First try + up to maxRetries additional attempts on transient errors
+  // attempt counts total tries; retries happen while attempt <= maxRetries
+  /* eslint-disable no-constant-condition */
+  while (true) {
+    try {
+      if (process.env.SMTP_TEST_FAIL === 'true') {
+        throw new Error('Simulated SMTP failure');
+      }
+      const info = await transport.sendMail({ from: smtpFrom, to, subject, text, html });
+      logger.info('E-Mail erfolgreich gesendet: %o', { to, messageId: info.messageId });
+      return info;
+    } catch (err) {
+      const transient = isTransientError(err);
+      if (transient && attempt < maxRetries) {
+        attempt++;
+        logger.warn('E-Mail transienter Fehler, versuche erneut (%d/%d): %o', attempt, maxRetries, err);
+        if (retryDelayMs > 0) await sleep(retryDelayMs);
+        continue;
+      }
+      logger.error('E-Mail-Versand fehlgeschlagen: %o', err);
+      throw err;
     }
-    const info = await transport.sendMail({ from: smtpFrom, to, subject, text, html });
-    logger.info('E-Mail erfolgreich gesendet: %o', { to, messageId: info.messageId });
-    return info;
-  } catch (err) {
-    logger.error('E-Mail-Versand fehlgeschlagen: %o', err);
-    throw err;
   }
 }
 

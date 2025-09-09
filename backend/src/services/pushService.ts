@@ -1,5 +1,5 @@
 import logger from '../utils/logger';
-import { PrismaClient } from '@prisma/client';
+import prisma from '../utils/prisma';
 
 let firebase: any | null = null;
 
@@ -30,7 +30,6 @@ function initFCM() {
   }
 }
 
-const prisma = new PrismaClient();
 
 async function getActiveTokens(userIds: string[]): Promise<string[]> {
   if (!userIds.length) return [];

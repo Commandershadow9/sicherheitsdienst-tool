@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { PrismaClient } from '@prisma/client';
+import prisma from '../utils/prisma';
 import ExcelJS from 'exceljs';
 import logger from '../utils/logger';
 import { sendShiftChangedEmail } from '../services/emailService';
@@ -32,7 +32,6 @@ async function notifyAssignedUsers(shift: any, change: string): Promise<void> {
   );
 }
 
-const prisma = new PrismaClient();
 
 // GET /api/shifts - Alle Schichten abrufen
 export const getAllShifts = async (req: Request, res: Response, next: NextFunction): Promise<void> => {

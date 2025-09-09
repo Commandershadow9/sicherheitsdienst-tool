@@ -21,13 +21,28 @@
 
 Alle Änderungen sind auf `main` gemergt.
 
+## Milestone 2025‑09‑09 (Planning Phases 1–5) – abgeschlossen (Branch: planning/analysis-20250909)
+
+- Phase 1 – Spec Alignment & Stability
+  - OpenAPI Fehlerschema harmonisiert; Prisma‑Singleton; Auth Rate‑Limit (ENV); Request‑ID Logging.
+- Phase 2 – Incidents E2E
+  - CRUD/Listen/Filter/CSV/XLSX; RBAC (ADMIN/MANAGER schreiben, AUTH lesen); OpenAPI ergänzt; Tests.
+- Phase 3 – Hardening & Coverage
+  - RBAC Negative (anonymous/employee) für Incidents; TimeTracking‑Warnungen; OpenAPI 405/Incidents‑List‑Form.
+- Phase 4 – Notifications Reliability
+  - E‑Mail Retry (1x) + Tests; 5xx‑Beispiele für Push/Email in OpenAPI.
+- Phase 5 – Operability & Docs
+  - README Runbook; /stats zeigt Request‑Zähler; ENV‑Beispiele (SMTP Retry).
+
+→ Zusammenfassung siehe `CHANGELOG.md` und PR `planning/analysis-20250909`.
+
 ## Nächste Schritte (Backlog, kurz)
 
-- Users: Positive Tests für Self-Access (eigene ID lesen/ändern) ergänzen.
-- OpenAPI: Fehlerbeispiele (400/422) für Push ergänzen; Redocly-Konfig prüfen/beruhigen (Warnmodus).
-- CI: Prisma Client Generate vor Tests einbauen oder relevante Tests mocken (stabilere lokale Läufe).
-- Security: RBAC-Matrix in README konsolidieren (Users Self-Access Hinweis).
-- DX: Swagger UI Endpoint optional (nur Dev) – schnelleres Testen der Push-/Events-Endpunkte.
+- Contract‑Tests gegen OpenAPI (z. B. Prism/Dredd) für Kernpfade.
+- Export‑Streaming (CSV) für große Resultsets; Timeouts/Size‑Limits.
+- Weitere 405‑Referenzen in Paths; konsistente Beispieldaten (Incidents/Events).
+- RBAC Matrix in README konsolidieren (inkl. Incidents/Push/Events); zusätzliche negative Tests.
+- CI: Optional lokaler Prisma‑Mock/Generate‑Step verbessern; OpenAPI validate/lint bleibt Pflicht.
 
 ## Historie (bereits umgesetzt)
 

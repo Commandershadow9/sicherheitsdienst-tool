@@ -30,6 +30,9 @@ components:
     ErrorResponse:
       type: object
       properties:
+        success:
+          type: boolean
+          example: false
         code:
           type: string
         message:
@@ -37,7 +40,12 @@ components:
         details:
           type: object
           additionalProperties: true
-      required: [message]
+        errors:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+      required: [success, code, message]
     ValidationError:
       type: object
       properties:
@@ -656,6 +664,7 @@ components:
           schema:
             $ref: '#/components/schemas/ErrorResponse'
           example:
+            success: false
             code: BAD_REQUEST
             message: Anfrageparameter sind ungültig.
     Unauthorized:
@@ -665,6 +674,7 @@ components:
           schema:
             $ref: '#/components/schemas/ErrorResponse'
           example:
+            success: false
             code: UNAUTHORIZED
             message: Token fehlt oder ist ungültig.
     Forbidden:
@@ -674,6 +684,7 @@ components:
           schema:
             $ref: '#/components/schemas/ErrorResponse'
           example:
+            success: false
             code: FORBIDDEN
             message: Keine Berechtigung.
     NotFound:
@@ -683,6 +694,7 @@ components:
           schema:
             $ref: '#/components/schemas/ErrorResponse'
           example:
+            success: false
             code: NOT_FOUND
             message: Ressource nicht gefunden.
     Conflict:
@@ -692,6 +704,7 @@ components:
           schema:
             $ref: '#/components/schemas/ErrorResponse'
           example:
+            success: false
             code: CONFLICT
             message: Ressourcenkonflikt.
     ValidationError:
@@ -713,6 +726,7 @@ components:
           schema:
             $ref: '#/components/schemas/ErrorResponse'
           example:
+            success: false
             code: TOO_MANY_REQUESTS
             message: Rate-Limit erreicht.
     InternalServerError:
@@ -722,6 +736,7 @@ components:
           schema:
             $ref: '#/components/schemas/ErrorResponse'
           example:
+            success: false
             code: INTERNAL_SERVER_ERROR
             message: Unerwarteter Fehler.
     ServiceUnavailable:
@@ -731,8 +746,19 @@ components:
           schema:
             $ref: '#/components/schemas/ErrorResponse'
           example:
+            success: false
             code: SERVICE_UNAVAILABLE
             message: Wartung oder temporärer Ausfall.
+    MethodNotAllowed:
+      description: Methode nicht erlaubt
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            code: METHOD_NOT_ALLOWED
+            message: HTTP-Methode wird auf dieser Ressource nicht unterstützt.
 paths:
   /auth/login:
     post:
@@ -2213,32 +2239,89 @@ paths:
       summary: Vorfälle auflisten
       security:
         - BearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          schema: { type: integer, minimum: 1, default: 1 }
+        - name: pageSize
+          in: query
+          schema: { type: integer, minimum: 1, maximum: 100, default: 20 }
+        - name: sortBy
+          in: query
+          schema: { type: string, enum: [occurredAt, createdAt, updatedAt, severity, status, title] }
+        - name: sortDir
+          in: query
+          schema: { type: string, enum: [asc, desc], default: asc }
+        - name: filter[title]
+          in: query
+          schema: { type: string }
+        - name: filter[location]
+          in: query
+          schema: { type: string }
+        - name: filter[severity]
+          in: query
+          schema: { type: string, enum: [LOW, MEDIUM, HIGH, CRITICAL] }
+        - name: filter[status]
+          in: query
+          schema: { type: string, enum: [OPEN, IN_PROGRESS, RESOLVED, CLOSED] }
+        - name: filter[reportedBy]
+          in: query
+          schema: { type: string, format: uuid }
       responses:
         '200':
           description: Liste der Vorfälle
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Incident'
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/Incident' }
+                  pagination:
+                    type: object
+                    properties:
+                      page: { type: integer }
+                      pageSize: { type: integer }
+                      total: { type: integer }
+                      totalPages: { type: integer }
+                  sort:
+                    type: object
+                    properties:
+                      by: { type: string }
+                      dir: { type: string, enum: [asc, desc] }
+                  filters:
+                    type: object
               example:
-                - id: "e1f2e3f4-1234-5678-9999-abcdefabcdef"
-                  title: "Zaun beschädigt"
-                  description: "Schaden am Nordzaun"
-                  severity: "MEDIUM"
-                  status: "OPEN"
-                  location: "Messe Nord"
-                  occurredAt: "2024-09-01T23:10:00Z"
-                  reportedBy: "a3f1c5d2-1234-4a56-9b8c-0d1e2f3a4b5c"
-                  createdAt: "2024-09-01T23:12:00Z"
-                  updatedAt: "2024-09-01T23:12:00Z"
+                data:
+                  - id: "e1f2e3f4-1234-5678-9999-abcdefabcdef"
+                    title: "Zaun beschädigt"
+                    description: "Schaden am Nordzaun"
+                    severity: "MEDIUM"
+                    status: "OPEN"
+                    location: "Messe Nord"
+                    occurredAt: "2024-09-01T23:10:00Z"
+                    reportedBy: "a3f1c5d2-1234-4a56-9b8c-0d1e2f3a4b5c"
+                    createdAt: "2024-09-01T23:12:00Z"
+                    updatedAt: "2024-09-01T23:12:00Z"
+                pagination: { page: 1, pageSize: 20, total: 1, totalPages: 1 }
+                sort: { by: occurredAt, dir: asc }
+            text/csv:
+              schema:
+                type: string
+                format: binary
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema:
+                type: string
+                format: binary
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
+        '405':
+          $ref: '#/components/responses/MethodNotAllowed'
         '429':
           $ref: '#/components/responses/TooManyRequests'
         '500':
@@ -2289,6 +2372,8 @@ paths:
           $ref: '#/components/responses/Conflict'
         '422':
           $ref: '#/components/responses/ValidationError'
+        '405':
+          $ref: '#/components/responses/MethodNotAllowed'
         '429':
           $ref: '#/components/responses/TooManyRequests'
         '500':
@@ -2333,6 +2418,8 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
+        '405':
+          $ref: '#/components/responses/MethodNotAllowed'
         '429':
           $ref: '#/components/responses/TooManyRequests'
         '500':
@@ -2386,6 +2473,8 @@ paths:
           $ref: '#/components/responses/NotFound'
         '422':
           $ref: '#/components/responses/ValidationError'
+        '405':
+          $ref: '#/components/responses/MethodNotAllowed'
         '429':
           $ref: '#/components/responses/TooManyRequests'
         '500':
@@ -2414,6 +2503,8 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
+        '405':
+          $ref: '#/components/responses/MethodNotAllowed'
         '429':
           $ref: '#/components/responses/TooManyRequests'
         '500':
@@ -2489,7 +2580,15 @@ paths:
         '429':
           $ref: '#/components/responses/TooManyRequests'
         '500':
-          $ref: '#/components/responses/InternalServerError'
+          description: SMTP/Provider-Fehler
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                success: false
+                code: INTERNAL_SERVER_ERROR
+                message: SMTP nicht verfügbar oder Zeitüberschreitung.
         '503':
           $ref: '#/components/responses/ServiceUnavailable'
   /users:
@@ -2941,7 +3040,15 @@ paths:
                     items: { $ref: '#/components/schemas/DeviceToken' }
                 required: [success, data]
         '401': { $ref: '#/components/responses/Unauthorized' }
-        '500': { $ref: '#/components/responses/InternalServerError' }
+        '500':
+          description: Push-Provider-Fehler
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+              example:
+                success: false
+                code: INTERNAL_SERVER_ERROR
+                message: Push-Dienst vorübergehend nicht erreichbar.
         '503': { $ref: '#/components/responses/ServiceUnavailable' }
     post:
       operationId: registerToken
@@ -2983,7 +3090,15 @@ paths:
                     message: Muss einer der Werte IOS/ANDROID/WEB sein.
                   - field: token
                     message: Darf nicht leer sein.
-        '500': { $ref: '#/components/responses/InternalServerError' }
+        '500':
+          description: Push-Provider-Fehler
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+              example:
+                success: false
+                code: INTERNAL_SERVER_ERROR
+                message: Push-Dienst vorübergehend nicht erreichbar.
         '503': { $ref: '#/components/responses/ServiceUnavailable' }
 
   /push/tokens/{token}:
@@ -3040,7 +3155,15 @@ paths:
                     message: Muss boolean sein.
                   - field: notificationsEnabled
                     message: Muss boolean sein.
-        '500': { $ref: '#/components/responses/InternalServerError' }
+        '500':
+          description: Push-Provider-Fehler
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+              example:
+                success: false
+                code: INTERNAL_SERVER_ERROR
+                message: Push-Dienst vorübergehend nicht erreichbar.
         '503': { $ref: '#/components/responses/ServiceUnavailable' }
     delete:
       operationId: deleteMyToken
@@ -3164,6 +3287,12 @@ paths:
                           platform: { type: string }
                           memory: { type: object }
                           logLevel: { type: string }
+                      requests:
+                        type: object
+                        properties:
+                          requestsTotal: { type: integer }
+                          responses4xx: { type: integer }
+                          responses5xx: { type: integer }
                       features:
                         type: object
                         properties:
@@ -3200,6 +3329,7 @@ paths:
                   incidents: { open: 3 }
                   timeEntries: { total: 1450 }
                   system: { uptime: 123.45, nodeVersion: v20.11.0, platform: linux, logLevel: info }
+                  requests: { requestsTotal: 200, responses4xx: 5, responses5xx: 1 }
                   features: { emailNotifyShifts: false, pushNotifyEvents: true }
                   notifications: { testRateLimit: { enabled: true, perMin: 10, windowMs: 60000 }, smtpConfigured: false, pushConfigured: false }
                   auth: { jwtExpiresIn: 7d, refreshExpiresIn: 30d }
