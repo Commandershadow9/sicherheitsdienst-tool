@@ -75,26 +75,7 @@ components:
           type: integer
           example: 7
       required: [page, perPage, total, totalPages]
-    EmployeesList:
-      type: object
-      properties:
-        items:
-          type: array
-          items:
-            $ref: '#/components/schemas/Employee'
-        meta:
-          $ref: '#/components/schemas/PageMeta'
-      required: [items, meta]
-    SitesList:
-      type: object
-      properties:
-        items:
-          type: array
-          items:
-            $ref: '#/components/schemas/Site'
-        meta:
-          $ref: '#/components/schemas/PageMeta'
-      required: [items, meta]
+    
     AuthLoginRequest:
       type: object
       properties:
@@ -719,6 +700,7 @@ components:
 paths:
   /auth/login:
     post:
+      operationId: authLogin
       summary: Login
       requestBody:
         required: true
@@ -754,6 +736,7 @@ paths:
           $ref: '#/components/responses/ServiceUnavailable'
   /auth/refresh:
     post:
+      operationId: authRefresh
       summary: Refresh Tokens
       requestBody:
         required: true
@@ -786,6 +769,7 @@ paths:
           $ref: '#/components/responses/ServiceUnavailable'
   /auth/me:
     get:
+      operationId: authMe
       summary: Aktuellen Benutzer abrufen
       security:
         - BearerAuth: []
@@ -821,6 +805,7 @@ paths:
           $ref: '#/components/responses/ServiceUnavailable'
   /employees:
     get:
+      operationId: listEmployees
       summary: Mitarbeiterliste
       description: 'RBAC: ADMIN oder DISPATCHER.'
       x-required-roles:
@@ -1146,6 +1131,7 @@ paths:
           $ref: '#/components/responses/ServiceUnavailable'
   /sites:
     get:
+      operationId: listSites
       summary: Sites auflisten
       security:
         - BearerAuth: []
@@ -1548,6 +1534,7 @@ paths:
           $ref: '#/components/responses/ServiceUnavailable'
   /shifts:
     get:
+      operationId: listShifts
       summary: Alle Schichten
       security:
         - BearerAuth: []
