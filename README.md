@@ -7,14 +7,15 @@ It follows consistent coding standards (EditorConfig, Prettier, ESLint v9) and i
 
 ## Current Project Status
 
-The project is in a stable development stage. The basic API structure is established, and a **complete authentication system based on JSON Web Tokens (JWT) has been successfully implemented and tested.**
+The project is in a stable development stage. The basic API structure is established.
 
-- **Core Functions**: CRUD operations for `Users` and `Shifts` are in place.
-- **Authentication**: Users can log in via `POST /api/auth/login` to receive a valid JWT.
-- **Security**: User routes (`/api/users`) are protected by middleware and require authentication.
-- **Logging**: Structured application logs are written using Winston.
-- **Validation**: Zod-based request validation via middleware.
-- **RBAC**: Route-level authorization with roles (e.g. ADMIN, DISPATCHER).
+Milestone 2025‑09‑09 (summary)
+- Auth: Refresh flow, `GET /api/auth/me`, `/api/v1` alias, Zod validation for login.
+- Notifications: Rate‑limit for test endpoint (ENV + middleware + tests + docs).
+- OpenAPI: Unified list params + response shape; `/auth/me`; operationIds; removed unused components.
+- Error responses: Harmonized `{ success:false, code, message, details?, errors? }` format.
+- DX/CI: Typecheck job + coverage artifact; `.env.example` with `LOG_LEVEL`; PR template.
+See CHANGELOG.md for details.
 
 ## Technology Stack
 
