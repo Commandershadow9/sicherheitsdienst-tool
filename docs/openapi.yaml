@@ -1150,7 +1150,13 @@ paths:
       security:
         - BearerAuth: []
       parameters:
-        - $ref: '#/components/parameters/PageParam'
+        - name: page
+          in: query
+          description: Seite (beginnend bei 1)
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
         - name: pageSize
           in: query
           description: Elemente pro Seite (max 100)
@@ -1546,7 +1552,13 @@ paths:
       security:
         - BearerAuth: []
       parameters:
-        - $ref: '#/components/parameters/PageParam'
+        - name: page
+          in: query
+          description: Seite (beginnend bei 1)
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
         - name: pageSize
           in: query
           description: Elemente pro Seite (max 100)
