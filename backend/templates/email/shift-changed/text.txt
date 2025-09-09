@@ -1,0 +1,5 @@
+Hallo,
+
+deine Schicht "{{shiftTitle}}" wurde geändert: {{change}}
+
+Viele Grüße

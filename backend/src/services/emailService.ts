@@ -1,5 +1,6 @@
 import logger from '../utils/logger';
 import { incrEmailSuccess, incrEmailFail } from '../utils/notifyStats';
+import { renderEmailTemplate } from './templateService';
 
 const smtpHost = process.env.SMTP_HOST;
 const smtpPort = process.env.SMTP_PORT ? parseInt(process.env.SMTP_PORT, 10) : 587;
@@ -78,6 +79,10 @@ export async function sendEmail(to: string, subject: string, text?: string, html
 }
 
 export async function sendShiftChangedEmail(to: string, shiftTitle: string, change: string) {
+  const tpl = renderEmailTemplate('shift-changed', { shiftTitle, change });
+  if (tpl?.subject || tpl?.text || tpl?.html) {
+    return sendEmail(to, tpl.subject || `Schichtänderung: ${shiftTitle}`, tpl.text, tpl.html);
+  }
   const subject = `Schichtänderung: ${shiftTitle}`;
   const text = `Hallo,\n\nDeine Schicht "${shiftTitle}" wurde geändert: ${change}\n\nViele Grüße`;
   return sendEmail(to, subject, text);
