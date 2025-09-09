@@ -27,9 +27,29 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-      - name: Start API (placeholder)
+      - name: Start stack (db + api) via docker compose
+        env:
+          COMPOSE_DOCKER_CLI_BUILD: 1
+          DOCKER_BUILDKIT: 1
         run: |
-          echo "Start your API here if needed (docker-compose up -d)"
-      - name: Run Dredd against API (non-blocking)
-        run: npx --yes dredd@latest docs/openapi.yaml http://localhost:3001/api/v1 || true
-
+          set -euxo pipefail
+          if docker compose version >/dev/null 2>&1; then
+            DOCKER_COMPOSE="docker compose"
+          else
+            DOCKER_COMPOSE="docker-compose"
+          fi
+          $DOCKER_COMPOSE version
+          $DOCKER_COMPOSE up -d --build db api
+      - name: Wait for API health
+        run: |
+          set -e
+          for i in $(seq 1 40); do
+            if curl -fsS http://localhost:3001/api/health >/dev/null; then
+              echo "API is healthy"; exit 0; fi
+            sleep 3
+          done
+          echo "API did not become healthy in time" >&2
+          curl -s http://localhost:3001/api/health || true
+          exit 1
+      - name: Run Dredd against API
+        run: npx --yes dredd@latest docs/openapi.yaml http://localhost:3001/api/v1
