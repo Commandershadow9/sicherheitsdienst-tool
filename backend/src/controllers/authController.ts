@@ -84,6 +84,16 @@ export const login = async (req: Request, res: Response): Promise<Response> => {
   }
 };
 
+export const me = async (req: Request, res: Response): Promise<Response> => {
+  // req.user kommt aus authenticate-Middleware
+  const user = (req as any).user;
+  if (!user) {
+    return res.status(401).json({ success: false, message: 'Nicht authentifiziert' });
+  }
+  const { password: _pw, ...sanitized } = user;
+  return res.json({ success: true, data: sanitized });
+};
+
 export const refresh = async (req: Request, res: Response): Promise<Response> => {
   const { refreshToken } = req.body as { refreshToken?: string };
   try {

@@ -63,6 +63,14 @@ app.use('/api/shifts', shiftRoutes);
 app.use('/api/sites', siteRoutes);
 app.use('/api/notifications', notificationRoutes);
 
+// API v1 Alias (OpenAPI servers: /api/v1)
+app.use('/api/v1', systemRoutes);
+app.use('/api/v1/auth', authRoutes);
+app.use('/api/v1/users', userRoutes);
+app.use('/api/v1/shifts', shiftRoutes);
+app.use('/api/v1/sites', siteRoutes);
+app.use('/api/v1/notifications', notificationRoutes);
+
 // 404 handler for unmatched routes
 app.use((req: Request, res: Response) => {
   res.status(404).json({

@@ -37,6 +37,9 @@ The project is in a stable development stage. The basic API structure is establi
   - `JWT_SECRET` (Pflicht), `JWT_EXPIRES_IN` (z. B. `3600` oder `7d`)
   - `REFRESH_SECRET` (Pflicht für Refresh), `REFRESH_EXPIRES_IN` (z. B. `7200` oder `30d`)
 
+### Me-Endpoint und API v1 Alias
+- `GET /api/auth/me`: gibt den aktuell authentifizierten Benutzer zurück.
+- Alle Endpunkte sind zusätzlich unter `/api/v1/...` erreichbar (Kompatibilität zur OpenAPI `servers`-Angabe).
 ## Setup & Installation (For Developers)
 
 Follow these steps to set up and run the project locally:
