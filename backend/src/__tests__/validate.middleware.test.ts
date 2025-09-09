@@ -24,7 +24,7 @@ describe('validate middleware', () => {
     const next = jest.fn();
     await handler(req as any, res as any, next as any);
     expect(res.statusCode).toBe(422);
+    expect(res.payload?.code).toBe('VALIDATION_ERROR');
     expect(res.payload?.message).toMatch(/Validierungsfehler/);
   });
 });
-
