@@ -3309,6 +3309,19 @@ paths:
                               windowMs: { type: integer }
                           smtpConfigured: { type: boolean }
                           pushConfigured: { type: boolean }
+                          counters:
+                            type: object
+                            properties:
+                              email:
+                                type: object
+                                properties:
+                                  success: { type: integer }
+                                  fail: { type: integer }
+                              push:
+                                type: object
+                                properties:
+                                  success: { type: integer }
+                                  fail: { type: integer }
                       auth:
                         type: object
                         properties:
@@ -3331,7 +3344,7 @@ paths:
                   system: { uptime: 123.45, nodeVersion: v20.11.0, platform: linux, logLevel: info }
                   requests: { requestsTotal: 200, responses4xx: 5, responses5xx: 1 }
                   features: { emailNotifyShifts: false, pushNotifyEvents: true }
-                  notifications: { testRateLimit: { enabled: true, perMin: 10, windowMs: 60000 }, smtpConfigured: false, pushConfigured: false }
+                  notifications: { testRateLimit: { enabled: true, perMin: 10, windowMs: 60000 }, smtpConfigured: false, pushConfigured: false, counters: { email: { success: 10, fail: 1 }, push: { success: 20, fail: 2 } } }
                   auth: { jwtExpiresIn: 7d, refreshExpiresIn: 30d }
                   env: { nodeEnv: development, version: 1.0.0 }
         '503': { $ref: '#/components/responses/ServiceUnavailable' }

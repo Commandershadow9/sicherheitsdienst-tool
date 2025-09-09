@@ -93,6 +93,7 @@ See CHANGELOG.md for details.
   - API: `GET /api/health` → 200/503
   - Stats: `GET /api/stats` → Aggregierte Zahlen und Konfiguration
 - Logs: Winston (level via `LOG_LEVEL`), HTTP-Logs via morgan; jeder Request hat `X-Request-ID` (Header und Logs)
+  - Optional: `LOG_FORMAT=json` für strukturierte Console-Logs (JSON)
 - Rate Limiting:
   - Notifications-Testendpoint per `NOTIFICATIONS_TEST_RATE_LIMIT_*`
   - Auth (Login/Refresh) per `AUTH_RATE_LIMIT_*`
@@ -107,6 +108,7 @@ See CHANGELOG.md for details.
   - `REFRESH_SECRET` (optional), `REFRESH_EXPIRES_IN`
   - `AUTH_RATE_LIMIT_ENABLED` (default `true`), `AUTH_RATE_LIMIT_PER_MIN` (default `10`), `AUTH_RATE_LIMIT_WINDOW_MS` (default `60000`)
   - Optional Claims: `JWT_ISSUER`, `JWT_AUDIENCE` (werden bei Signatur und Verifikation berücksichtigt)
+  - Logging: `LOG_FORMAT=json` (optional; Console-Logs als JSON)
 - Notifications (Test):
   - `NOTIFICATIONS_TEST_RATE_LIMIT_ENABLED` (default `true`), `NOTIFICATIONS_TEST_RATE_LIMIT_PER_MIN`, `NOTIFICATIONS_TEST_RATE_LIMIT_WINDOW_MS`
 - SMTP:
