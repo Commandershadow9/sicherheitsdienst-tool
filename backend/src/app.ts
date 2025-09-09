@@ -5,6 +5,7 @@ import morgan from 'morgan';
 import dotenv from 'dotenv';
 import jwt from 'jsonwebtoken';
 import logger from './utils/logger';
+import requestId from './middleware/requestId';
 
 // Load environment variables
 dotenv.config();
@@ -26,8 +27,14 @@ app.use(
     credentials: true,
   }),
 );
+// Request ID middleware before logging
+app.use(requestId());
+
+// Add morgan token for request id and use custom format including it
+morgan.token('id', (req: any) => req.id || '-');
+const morganFormat = ':id :remote-addr :method :url :status :res[content-length] - :response-time ms';
 app.use(
-  morgan('combined', {
+  morgan(morganFormat, {
     stream: {
       write: (message: string) => logger.http(message.trim()),
     },

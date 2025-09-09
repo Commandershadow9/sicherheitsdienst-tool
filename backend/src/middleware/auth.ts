@@ -2,10 +2,9 @@
 
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
-import { PrismaClient, User } from '@prisma/client'; // User wird hier für req.user benötigt
+import { User } from '@prisma/client'; // User wird hier für req.user benötigt
 import createError from 'http-errors';
-
-const prisma = new PrismaClient();
+import prisma from '../utils/prisma';
 
 export const authenticate = async (
   req: Request,

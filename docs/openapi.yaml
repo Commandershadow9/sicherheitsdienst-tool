@@ -30,6 +30,9 @@ components:
     ErrorResponse:
       type: object
       properties:
+        success:
+          type: boolean
+          example: false
         code:
           type: string
         message:
@@ -37,7 +40,12 @@ components:
         details:
           type: object
           additionalProperties: true
-      required: [message]
+        errors:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+      required: [success, code, message]
     ValidationError:
       type: object
       properties:
@@ -656,6 +664,7 @@ components:
           schema:
             $ref: '#/components/schemas/ErrorResponse'
           example:
+            success: false
             code: BAD_REQUEST
             message: Anfrageparameter sind ungültig.
     Unauthorized:
@@ -665,6 +674,7 @@ components:
           schema:
             $ref: '#/components/schemas/ErrorResponse'
           example:
+            success: false
             code: UNAUTHORIZED
             message: Token fehlt oder ist ungültig.
     Forbidden:
@@ -674,6 +684,7 @@ components:
           schema:
             $ref: '#/components/schemas/ErrorResponse'
           example:
+            success: false
             code: FORBIDDEN
             message: Keine Berechtigung.
     NotFound:
@@ -683,6 +694,7 @@ components:
           schema:
             $ref: '#/components/schemas/ErrorResponse'
           example:
+            success: false
             code: NOT_FOUND
             message: Ressource nicht gefunden.
     Conflict:
@@ -692,6 +704,7 @@ components:
           schema:
             $ref: '#/components/schemas/ErrorResponse'
           example:
+            success: false
             code: CONFLICT
             message: Ressourcenkonflikt.
     ValidationError:
@@ -713,6 +726,7 @@ components:
           schema:
             $ref: '#/components/schemas/ErrorResponse'
           example:
+            success: false
             code: TOO_MANY_REQUESTS
             message: Rate-Limit erreicht.
     InternalServerError:
@@ -722,6 +736,7 @@ components:
           schema:
             $ref: '#/components/schemas/ErrorResponse'
           example:
+            success: false
             code: INTERNAL_SERVER_ERROR
             message: Unerwarteter Fehler.
     ServiceUnavailable:
@@ -731,6 +746,7 @@ components:
           schema:
             $ref: '#/components/schemas/ErrorResponse'
           example:
+            success: false
             code: SERVICE_UNAVAILABLE
             message: Wartung oder temporärer Ausfall.
 paths:

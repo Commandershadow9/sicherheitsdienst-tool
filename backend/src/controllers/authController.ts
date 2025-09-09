@@ -1,9 +1,8 @@
 import { Request, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
+import prisma from '../utils/prisma';
 import bcrypt from 'bcryptjs';
 import jwt, { SignOptions } from 'jsonwebtoken';
 
-const prisma = new PrismaClient();
 
 export const login = async (req: Request, res: Response): Promise<Response> => {
   const { email, password } = req.body;

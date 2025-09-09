@@ -1,10 +1,9 @@
 import { Request, Response, NextFunction } from 'express';
-import { PrismaClient } from '@prisma/client';
+import prisma from '../utils/prisma';
 import ExcelJS from 'exceljs';
 import { sendPushToUsers } from '../services/pushService';
 import { generateEventPdf } from '../services/pdfService';
 
-const prisma = new PrismaClient();
 
 function acceptHeader(req: Request): string {
   return (req.headers['accept'] as string) || '';

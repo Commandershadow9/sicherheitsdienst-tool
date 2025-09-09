@@ -1,9 +1,8 @@
 import { Request, Response, NextFunction } from 'express';
-import { PrismaClient } from '@prisma/client';
+import prisma from '../utils/prisma';
 import ExcelJS from 'exceljs';
 import bcrypt from 'bcryptjs';
 
-const prisma = new PrismaClient();
 
 // GET /api/users - Alle Mitarbeiter abrufen
 export const getAllUsers = async (req: Request, res: Response, next: NextFunction): Promise<void> => {

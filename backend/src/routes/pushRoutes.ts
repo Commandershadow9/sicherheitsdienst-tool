@@ -2,6 +2,7 @@ import { Router, Request, Response, NextFunction } from 'express';
 import { authenticate, authorize } from '../middleware/auth';
 import { asyncHandler } from '../middleware/asyncHandler';
 import * as pushController from '../controllers/pushController';
+import prisma from '../utils/prisma';
 
 const router = Router();
 
@@ -15,8 +16,6 @@ router.put('/users/:userId/opt', authenticate, authorize('ADMIN'), asyncHandler(
   try {
     const { userId } = req.params as { userId: string };
     const { pushOptIn } = req.body as { pushOptIn: boolean };
-    const { PrismaClient } = require('@prisma/client');
-    const prisma = new PrismaClient();
     const updated = await prisma.user.update({ where: { id: userId }, data: { pushOptIn: !!pushOptIn }, select: { id: true, pushOptIn: true } });
     res.json({ success: true, data: updated });
   } catch (err) { next(err); }
