@@ -3,22 +3,30 @@
 ## Kontext
 - Analyse-Report: `docs/planning/analysis-2025-09-09.md`
 - Ticketliste: `docs/planning/tickets-2025-09-09.md`
+- Branch: `planning/analysis-20250909`
+
+## Zusammenfassung (Phasen 1–5)
+- Phase 1 – Spec/Stable: OpenAPI Fehlerschema harmonisiert (`success:false`, `code`), Prisma‑Singleton, Auth Rate‑Limit (ENV), Request‑ID Logging.
+- Phase 2 – Incidents E2E: CRUD/Listen/Filter + CSV/XLSX, RBAC (ADMIN/MANAGER schreiben, AUTH lesen), Tests, OpenAPI.
+- Phase 3 – Hardening: RBAC negative (anonymous/employee) für Incidents, TimeTracking‑Warnungen; 405/Incidents‑List in OpenAPI.
+- Phase 4 – Notifications Reliability: E‑Mail Retry (1x) + Tests; 5xx Beispiele für Push/Email in OpenAPI.
+- Phase 5 – Operability: README Runbook; /stats mit Request‑Zählern; ENV‑Beispiele (SMTP Retry).
 
 ## Ziel
 - Die aufgeführten Tickets anlegen, priorisieren und nacheinander abarbeiten.
 - OpenAPI/Backend-Konformität herstellen und Incidents-Funktion vollständig liefern.
 
 ## Checkliste (verlinkt zu Issues)
-- [ ] P0: Incidents CRUD + List/Filter/Export (issue: TBA)
-- [ ] P0: OpenAPI ErrorResponse harmonisieren (issue: TBA)
-- [ ] P1: Request-ID Middleware + Log-Korrelation (issue: TBA)
-- [ ] P1: Rate-Limit für auth/login & refresh (issue: TBA)
-- [ ] P1: PrismaClient Singleton (issue: TBA)
-- [ ] P1: /stats erweitern (Basics) (issue: TBA)
-- [ ] P2: OpenAPI Fehlerbeispiele (Push/E-Mail) (issue: TBA)
-- [ ] P2: README Operations/Runbook (issue: TBA)
-- [ ] P2: 404/405 in OpenAPI dokumentieren (issue: TBA)
-- [ ] P2: E-Mail Retry (einfach) (issue: TBA)
+- [x] P0: Incidents CRUD + List/Filter/Export (issue: TBA)
+- [x] P0: OpenAPI ErrorResponse harmonisieren (issue: TBA)
+- [x] P1: Request-ID Middleware + Log-Korrelation (issue: TBA)
+- [x] P1: Rate-Limit für auth/login & refresh (issue: TBA)
+- [x] P1: PrismaClient Singleton (issue: TBA)
+- [x] P1: /stats erweitern (Basics) (issue: TBA)
+- [x] P2: OpenAPI Fehlerbeispiele (Push/E-Mail) (issue: TBA)
+- [x] P2: README Operations/Runbook (issue: TBA)
+- [x] P2: 404/405 in OpenAPI dokumentieren (issue: TBA)
+- [x] P2: E-Mail Retry (einfach) (issue: TBA)
 
 ## Hinweise
 - Nach Erstellung der Issues können die Einträge oben zu "Closes #<nr>" aktualisiert werden.
