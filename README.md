@@ -320,8 +320,8 @@ curl -s -H 'Accept: application/vnd.openxmlformats-officedocument.spreadsheetml.
 - Conventions:
   - Centralized error responses via `#/components/responses/*` (400/401/403/404/409/422/429/500/503).
   - Validation error payload: `#/components/schemas/ValidationError`.
-  - Pagination objects: `EmployeesList` / `SitesList` with `meta` (`page`, `perPage`, `total`, `totalPages`).
-  - Query parameters: `page`, `perPage`, `sort`, `order`, `q`, plus `city` for Sites.
+  - List responses: `{ data: [...], pagination: { page, pageSize, total, totalPages }, sort: { by, dir }, filters?: { ... } }`.
+  - Query parameters: `page`, `pageSize`, `sortBy`, `sortDir`, `filter[...]` (z. B. Sites: `filter[city]`).
   - Allowed sort fields:
     - Employees: `firstName`, `lastName`, `email`, `createdAt`, `updatedAt`, `role`, `isActive`
     - Sites: `name`, `city`, `postalCode`, `createdAt`, `updatedAt`
@@ -455,7 +455,7 @@ curl -X POST http://localhost:3001/api/sites \
 
 List (mit Filtern/Sortierung):
 curl -H "Authorization: Bearer $TOKEN" \
-  "http://localhost:3001/api/sites?page=1&perPage=20&sort=name&order=asc&city=Berlin&postalCode=14055"
+  "http://localhost:3001/api/sites?page=1&pageSize=20&sortBy=name&sortDir=asc&filter[city]=Berlin&filter[postalCode]=14055"
 
 Get by id:
 curl -H "Authorization: Bearer $TOKEN" http://localhost:3001/api/sites/<id>
