@@ -4,10 +4,15 @@ import app from '../app';
 // authenticate wird überschrieben, authorize bleibt real
 jest.mock('../middleware/auth', () => {
   const actual = jest.requireActual('../middleware/auth');
+  let currentUser: any = null;
   return {
-    ...actual,
-    authenticate: (_req: any, _res: any, next: any) => {
+    ...actual, // nutzt echte authorize/authorizeSelfOr Logik
+    authenticate: (req: any, _res: any, next: any) => {
+      req.user = currentUser || null;
       next();
+    },
+    setTestUser: (u: any) => {
+      currentUser = u;
     },
   };
 });
@@ -15,10 +20,7 @@ jest.mock('../middleware/auth', () => {
 describe('RBAC negative (EMPLOYEE) for /api/users/:id', () => {
   beforeAll(() => {
     const mod = require('../middleware/auth');
-    mod.authenticate = (_req: any, _res: any, next: any) => {
-      _req.user = { id: 'u-employee', role: 'EMPLOYEE', isActive: true };
-      next();
-    };
+    mod.setTestUser({ id: 'u-employee', role: 'EMPLOYEE', isActive: true });
   });
 
   it('GET /api/users/:id → 403 (EMPLOYEE, fremde ID)', async () => {
@@ -35,10 +37,7 @@ describe('RBAC negative (EMPLOYEE) for /api/users/:id', () => {
 describe('RBAC negative (MANAGER) for /api/users/:id', () => {
   beforeAll(() => {
     const mod = require('../middleware/auth');
-    mod.authenticate = (_req: any, _res: any, next: any) => {
-      _req.user = { id: 'u-manager', role: 'MANAGER', isActive: true };
-      next();
-    };
+    mod.setTestUser({ id: 'u-manager', role: 'MANAGER', isActive: true });
   });
 
   it('GET /api/users/:id → 403 (MANAGER)', async () => {
@@ -51,4 +50,3 @@ describe('RBAC negative (MANAGER) for /api/users/:id', () => {
     expect(res.status).toBe(403);
   });
 });
-

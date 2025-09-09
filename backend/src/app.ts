@@ -36,13 +36,25 @@ app.use(
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Swagger UI (nur Development): zeigt docs/openapi.yaml unter /api-docs
+if (process.env.NODE_ENV !== 'production') {
+  // Statische Auslieferung der Spezifikation
+  app.use('/api-docs-spec', express.static('docs'));
+  // Swagger UI mit Verweis auf die YAML-Spezifikation
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const swaggerUi = require('swagger-ui-express');
+  app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(null, {
+    swaggerOptions: { url: '/api-docs-spec/openapi.yaml' },
+  }));
+}
+
 // Welcome Route
 app.get('/', (req: Request, res: Response) => {
   res.json({
     message: '🛡️ Sicherheitsdienst-Tool Backend API',
     version: process.env.npm_package_version || '1.0.0',
     status: 'Running',
-    documentation: `/api-docs`,
+    documentation: process.env.NODE_ENV !== 'production' ? '/api-docs' : undefined,
     endpoints: {
       health: '/api/health',
       stats: '/api/stats',

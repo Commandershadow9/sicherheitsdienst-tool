@@ -6,6 +6,8 @@ jest.mock('../middleware/auth', () => ({
     _req.user = { id: 'u1', role: 'ADMIN' };
     next();
   },
+  authorize: () => (_req: any, _res: any, next: any) => next(),
+  authorizeSelfOr: () => (_req: any, _res: any, next: any) => next(),
 }));
 
 jest.mock('../services/emailService', () => ({
@@ -30,4 +32,3 @@ describe('Notifications Rate Limit disabled', () => {
     expect(r3.status).toBeLessThan(400);
   });
 });
-

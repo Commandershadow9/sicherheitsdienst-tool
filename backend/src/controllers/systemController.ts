@@ -49,6 +49,22 @@ export const getSystemStats = async (req: Request, res: Response, next: NextFunc
         prisma.timeEntry.count(),
       ]);
 
+    // Feature-/Env-Status ableiten
+    const featureFlags = {
+      emailNotifyShifts: String(process.env.EMAIL_NOTIFY_SHIFTS || 'false').toLowerCase() === 'true',
+      pushNotifyEvents: String(process.env.PUSH_NOTIFY_EVENTS || 'false').toLowerCase() === 'true',
+    };
+    const rateLimit = {
+      enabled: String(process.env.NOTIFICATIONS_TEST_RATE_LIMIT_ENABLED || 'true').toLowerCase() !== 'false',
+      perMin: Number(process.env.NOTIFICATIONS_TEST_RATE_LIMIT_PER_MIN || 10),
+      windowMs: Number(process.env.NOTIFICATIONS_TEST_RATE_LIMIT_WINDOW_MS || 60000),
+    };
+    const pushConfigured = Boolean(process.env.FCM_PROJECT_ID && process.env.FCM_CLIENT_EMAIL && process.env.FCM_PRIVATE_KEY);
+    const authCfg = {
+      jwtExpiresIn: process.env.JWT_EXPIRES_IN || '7d',
+      refreshExpiresIn: process.env.REFRESH_EXPIRES_IN || '30d',
+    };
+
     res.json({
       success: true,
       message: 'System-Statistiken erfolgreich abgerufen',
@@ -73,6 +89,18 @@ export const getSystemStats = async (req: Request, res: Response, next: NextFunc
           nodeVersion: process.version,
           platform: process.platform,
           memory: process.memoryUsage(),
+          logLevel: process.env.LOG_LEVEL || (process.env.NODE_ENV === 'development' ? 'debug' : 'info'),
+        },
+        features: featureFlags,
+        notifications: {
+          testRateLimit: rateLimit,
+          smtpConfigured: Boolean(process.env.SMTP_HOST),
+          pushConfigured,
+        },
+        auth: authCfg,
+        env: {
+          nodeEnv: process.env.NODE_ENV || 'development',
+          version: process.env.npm_package_version || '1.0.0',
         },
       },
       timestamp: new Date().toISOString(),

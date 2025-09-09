@@ -66,7 +66,7 @@ components:
         page:
           type: integer
           example: 1
-        perPage:
+        pageSize:
           type: integer
           example: 20
         total:
@@ -75,7 +75,7 @@ components:
         totalPages:
           type: integer
           example: 7
-      required: [page, perPage, total, totalPages]
+      required: [page, pageSize, total, totalPages]
     
     DevicePlatform:
       type: string
@@ -595,15 +595,6 @@ components:
         type: integer
         minimum: 1
         default: 1
-    PerPageParam:
-      name: perPage
-      in: query
-      description: Elemente pro Seite
-      schema:
-        type: integer
-        minimum: 1
-        maximum: 100
-        default: 20
     EmployeeSortParam:
       name: sort
       in: query
@@ -2978,8 +2969,20 @@ paths:
                   success: { type: boolean, example: true }
                   data: { $ref: '#/components/schemas/DeviceToken' }
                 required: [success, data]
+        '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
-        '422': { $ref: '#/components/responses/ValidationError' }
+        '422':
+          description: Validierungsfehler
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ValidationError' }
+              example:
+                message: "Validierungsfehler."
+                errors:
+                  - field: platform
+                    message: Muss einer der Werte IOS/ANDROID/WEB sein.
+                  - field: token
+                    message: Darf nicht leer sein.
         '500': { $ref: '#/components/responses/InternalServerError' }
         '503': { $ref: '#/components/responses/ServiceUnavailable' }
 
@@ -3015,9 +3018,28 @@ paths:
                   success: { type: boolean, example: true }
                   data: { $ref: '#/components/schemas/DeviceToken' }
                 required: [success, data]
+        '400':
+          description: Ungültige Anfrage
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+              example:
+                code: BAD_REQUEST
+                message: "Ungültige Flags übergeben."
         '401': { $ref: '#/components/responses/Unauthorized' }
         '404': { $ref: '#/components/responses/NotFound' }
-        '422': { $ref: '#/components/responses/ValidationError' }
+        '422':
+          description: Validierungsfehler
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ValidationError' }
+              example:
+                message: "Validierungsfehler."
+                errors:
+                  - field: isActive
+                    message: Muss boolean sein.
+                  - field: notificationsEnabled
+                    message: Muss boolean sein.
         '500': { $ref: '#/components/responses/InternalServerError' }
         '503': { $ref: '#/components/responses/ServiceUnavailable' }
     delete:
@@ -3071,9 +3093,115 @@ paths:
                       pushOptIn: { type: boolean }
                     required: [id, pushOptIn]
                 required: [success, data]
+        '400':
+          description: Ungültige Anfrage
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+              example:
+                code: BAD_REQUEST
+                message: "Ungültiger Benutzer oder Payload."
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
-        '422': { $ref: '#/components/responses/ValidationError' }
+        '422':
+          description: Validierungsfehler
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ValidationError' }
+              example:
+                message: "Validierungsfehler."
+                errors:
+                  - field: pushOptIn
+                    message: Muss boolean sein.
         '500': { $ref: '#/components/responses/InternalServerError' }
+        '503': { $ref: '#/components/responses/ServiceUnavailable' }
+
+  /stats:
+    get:
+      operationId: getSystemStats
+      summary: System-Statistiken und Feature-Status
+      description: Aggregierte Zahlen (Users/Shifts/Incidents/TimeEntries) und Observability-Infos (Features, Notifications, Auth, System, Env).
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean, example: true }
+                  message: { type: string, example: System-Statistiken erfolgreich abgerufen }
+                  data:
+                    type: object
+                    properties:
+                      users:
+                        type: object
+                        properties:
+                          total: { type: integer }
+                          active: { type: integer }
+                          inactive: { type: integer }
+                      shifts:
+                        type: object
+                        properties:
+                          total: { type: integer }
+                          upcoming: { type: integer }
+                      incidents:
+                        type: object
+                        properties:
+                          open: { type: integer }
+                      timeEntries:
+                        type: object
+                        properties:
+                          total: { type: integer }
+                      system:
+                        type: object
+                        properties:
+                          uptime: { type: number }
+                          nodeVersion: { type: string }
+                          platform: { type: string }
+                          memory: { type: object }
+                          logLevel: { type: string }
+                      features:
+                        type: object
+                        properties:
+                          emailNotifyShifts: { type: boolean }
+                          pushNotifyEvents: { type: boolean }
+                      notifications:
+                        type: object
+                        properties:
+                          testRateLimit:
+                            type: object
+                            properties:
+                              enabled: { type: boolean }
+                              perMin: { type: integer }
+                              windowMs: { type: integer }
+                          smtpConfigured: { type: boolean }
+                          pushConfigured: { type: boolean }
+                      auth:
+                        type: object
+                        properties:
+                          jwtExpiresIn: { type: string }
+                          refreshExpiresIn: { type: string }
+                      env:
+                        type: object
+                        properties:
+                          nodeEnv: { type: string }
+                          version: { type: string }
+                required: [success, data]
+              example:
+                success: true
+                message: System-Statistiken erfolgreich abgerufen
+                data:
+                  users: { total: 42, active: 40, inactive: 2 }
+                  shifts: { total: 120, upcoming: 18 }
+                  incidents: { open: 3 }
+                  timeEntries: { total: 1450 }
+                  system: { uptime: 123.45, nodeVersion: v20.11.0, platform: linux, logLevel: info }
+                  features: { emailNotifyShifts: false, pushNotifyEvents: true }
+                  notifications: { testRateLimit: { enabled: true, perMin: 10, windowMs: 60000 }, smtpConfigured: false, pushConfigured: false }
+                  auth: { jwtExpiresIn: 7d, refreshExpiresIn: 30d }
+                  env: { nodeEnv: development, version: 1.0.0 }
         '503': { $ref: '#/components/responses/ServiceUnavailable' }

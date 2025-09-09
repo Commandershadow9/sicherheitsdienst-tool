@@ -4,6 +4,7 @@ import app from '../app';
 jest.mock('../middleware/auth', () => ({
   authenticate: (_req: any, _res: any, next: any) => next(),
   authorize: () => (_req: any, _res: any, next: any) => next(),
+  authorizeSelfOr: () => (_req: any, _res: any, next: any) => next(),
 }));
 
 jest.mock('../services/emailService', () => ({
@@ -36,4 +37,3 @@ describe('POST /api/notifications/test', () => {
     expect(res.status).toBe(400);
   });
 });
-

@@ -8,6 +8,7 @@ jest.mock('../middleware/auth', () => ({
     next();
   },
   authorize: () => (_req: any, _res: any, next: any) => next(),
+  authorizeSelfOr: () => (_req: any, _res: any, next: any) => next(),
 }));
 
 // Prisma mock
@@ -43,9 +44,10 @@ describe('Events routes', () => {
   });
 
   it('POST /api/events', async () => {
-    const payload = { title: 'X', startTime: '2024-09-01T08:00:00Z', endTime: '2024-09-01T18:00:00Z', serviceInstructions: 'Text', assignedEmployeeIds: ['u2'] };
+    const uid = '00000000-0000-0000-0000-000000000002';
+    (global as any).prismaMock.user.findMany.mockResolvedValueOnce([{ id: uid }]);
+    const payload = { title: 'X', startTime: '2024-09-01T08:00:00Z', endTime: '2024-09-01T18:00:00Z', serviceInstructions: 'Text', assignedEmployeeIds: [uid] };
     const res = await request(app).post('/api/events').send(payload);
     expect(res.status).toBe(201);
   });
 });
-

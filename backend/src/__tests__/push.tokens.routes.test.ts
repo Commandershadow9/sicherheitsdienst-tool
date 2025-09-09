@@ -6,6 +6,8 @@ jest.mock('../middleware/auth', () => ({
     _req.user = { id: 'u1', role: 'EMPLOYEE', isActive: true };
     next();
   },
+  authorize: () => (_req: any, _res: any, next: any) => next(),
+  authorizeSelfOr: () => (_req: any, _res: any, next: any) => next(),
 }));
 
 jest.mock('@prisma/client', () => {
@@ -41,4 +43,3 @@ describe('Push tokens routes', () => {
     expect(res.status).toBe(204);
   });
 });
-

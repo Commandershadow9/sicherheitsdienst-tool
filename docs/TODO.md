@@ -2,17 +2,20 @@
 
 Stand: 2025-09-09
 
-## Kurzfristig (P1, 1–2 Tage)
-- [ ] Users: Positive Self‑Access‑Tests ergänzen (eigene ID lesen/ändern)
+- ## Kurzfristig (P1, 1–2 Tage)
+- [x] Users: Positive Self‑Access‑Tests ergänzen (eigene ID lesen/ändern)
   - Akzeptanz: EMPLOYEE/MANAGER dürfen `GET/PUT /api/users/{ownId}` (200), nur Basisfelder updaten; fremde ID → 403; ADMIN unverändert.
-- [ ] OpenAPI Push‑API: Fehlerbeispiele (400/422) ergänzen und Referenzen prüfen
+- [x] OpenAPI Push‑API: Fehlerbeispiele (400/422) ergänzen und Referenzen prüfen
   - Akzeptanz: `docs/openapi.yaml` enthält Beispiel‑Responses für 400/422 bei Push‑Endpunkten; `redocly lint` ohne neue Errors (Warnmodus ok).
-- [ ] CI Stabilität: Prisma Client Generate/Mocks vor Tests
+- [x] CI Stabilität: Prisma Client Generate/Mocks vor Tests
   - Akzeptanz: CI‑Workflow führt `npx prisma generate` vor Tests aus oder globale Prisma‑Mocks verhindern Initialisierung; Tests grün.
-- [ ] README RBAC: Self‑Access‑Hinweis ergänzen
+- [x] README RBAC: Self‑Access‑Hinweis ergänzen
   - Akzeptanz: Abschnitt „RBAC Übersicht“ erwähnt Self‑Access für Users‑Detail/Update + Feldbeschränkung.
-- [ ] DX: (Optional) Swagger UI nur in Dev unter `/api-docs`
+- [x] DX: (Optional) Swagger UI nur in Dev unter `/api-docs`
   - Akzeptanz: Dev‑Server bietet Swagger UI; Prod unverändert.
+  
+Erledigt:
+- [x] Swagger UI (Dev) unter `/api-docs` mit YAML‑Quelle (`/api-docs-spec/openapi.yaml`).
 - [x] Users: RBAC‑Negativtests ergänzen (403/401) – analog zu Sites/Shifts
   - Akzeptanz: Tests schlagen korrekt bei EMPLOYEE/anonymous an; CI grün.
 - [x] OpenAPI Feinschliff – operationId/Beispiele für Randendpunkte prüfen/ergänzen
@@ -23,7 +26,7 @@ Stand: 2025-09-09
   - Akzeptanz: 2–3 schlanke Tests, keine Ports/DB nötig.
 
 ## Mittelfristig (P2)
-- [ ] XLSX‑Exports lokal stabilisieren
+- [x] XLSX‑Exports lokal stabilisieren
   - Akzeptanz: Tests für XLSX‑Exports erkennen Buffer zuverlässig (lokal/CI); ggf. Content‑Type/Body‑Parser‑Setup prüfen.
 - [ ] Reporting/Exports: CSV/Excel für Listen (Employees/Sites/Shifts)
   - [x] Employees: CSV/XLSX via `Accept` (Filter/Sort unterstützt; README/OpenAPI ergänzt)

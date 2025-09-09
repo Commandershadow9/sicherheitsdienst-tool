@@ -157,10 +157,11 @@ export const getAllShifts = async (req: Request, res: Response, next: NextFuncti
           new Date(sh.updatedAt).toISOString(),
         ]);
       }
-      const buffer = await wb.xlsx.writeBuffer();
+      const buffer = Buffer.from(await wb.xlsx.writeBuffer());
       res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
       res.setHeader('Content-Disposition', 'attachment; filename="shifts.xlsx"');
-      res.status(200).send(Buffer.from(buffer));
+      res.setHeader('Content-Length', String(buffer.length));
+      res.status(200).end(buffer);
       return;
     }
 
@@ -224,10 +225,11 @@ export const getShiftsForSite = async (req: Request, res: Response, next: NextFu
           sh.status,
         ]);
       }
-      const buffer = await wb.xlsx.writeBuffer();
+      const buffer = Buffer.from(await wb.xlsx.writeBuffer());
       res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
       res.setHeader('Content-Disposition', `attachment; filename="site_${siteId}_shifts.xlsx"`);
-      res.status(200).send(Buffer.from(buffer));
+      res.setHeader('Content-Length', String(buffer.length));
+      res.status(200).end(buffer);
       return;
     }
 

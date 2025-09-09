@@ -14,26 +14,17 @@ export const login = async (req: Request, res: Response): Promise<Response> => {
     });
 
     if (!user || !(await bcrypt.compare(password, user.password))) {
-      return res.status(401).json({
-        success: false,
-        message: 'Ungültige Anmeldedaten',
-      });
+      return res.status(401).json({ success: false, code: 'UNAUTHORIZED', message: 'Ungültige Anmeldedaten' });
     }
 
     if (!user.isActive) {
-      return res.status(403).json({
-        success: false,
-        message: 'Benutzerkonto ist inaktiv. Bitte kontaktiere den Administrator.',
-      });
+      return res.status(403).json({ success: false, code: 'FORBIDDEN', message: 'Benutzerkonto ist inaktiv. Bitte kontaktiere den Administrator.' });
     }
 
     const jwtSecret = process.env.JWT_SECRET;
     if (!jwtSecret) {
       console.error('JWT_SECRET ist nicht definiert in den Umgebungsvariablen.');
-      return res.status(500).json({
-        success: false,
-        message: 'Server-Konfigurationsfehler: JWT Secret fehlt.',
-      });
+      return res.status(500).json({ success: false, code: 'INTERNAL_SERVER_ERROR', message: 'Server-Konfigurationsfehler: JWT Secret fehlt.' });
     }
 
     let expiresInValue: string | number;
@@ -72,15 +63,9 @@ export const login = async (req: Request, res: Response): Promise<Response> => {
   } catch (error) {
     console.error('Login error:', error);
     if (error instanceof jwt.JsonWebTokenError || error instanceof jwt.TokenExpiredError) {
-      return res.status(401).json({
-        success: false,
-        message: 'Token-Fehler: ' + error.message,
-      });
+      return res.status(401).json({ success: false, code: 'UNAUTHORIZED', message: 'Token-Fehler: ' + error.message });
     }
-    return res.status(500).json({
-      success: false,
-      message: 'Ein interner Serverfehler ist beim Login aufgetreten.',
-    });
+    return res.status(500).json({ success: false, code: 'INTERNAL_SERVER_ERROR', message: 'Ein interner Serverfehler ist beim Login aufgetreten.' });
   }
 };
 
@@ -101,23 +86,16 @@ export const refresh = async (req: Request, res: Response): Promise<Response> =>
     const accessSecret = process.env.JWT_SECRET;
     if (!refreshSecret || !accessSecret) {
       console.error('JWT/REFRESH Secrets fehlen in den Umgebungsvariablen.');
-      return res.status(500).json({
-        success: false,
-        message: 'Server-Konfigurationsfehler: Secrets fehlen.',
-      });
+      return res.status(500).json({ success: false, code: 'INTERNAL_SERVER_ERROR', message: 'Server-Konfigurationsfehler: Secrets fehlen.' });
     }
     if (!refreshToken) {
-      return res.status(422).json({
-        success: false,
-        message: 'Validierungsfehler',
-        errors: [{ path: ['refreshToken'], message: 'refreshToken ist erforderlich' }],
-      });
+      return res.status(422).json({ success: false, code: 'VALIDATION_ERROR', message: 'Validierungsfehler.', errors: [{ path: ['refreshToken'], message: 'refreshToken ist erforderlich' }] });
     }
 
     const decoded = jwt.verify(refreshToken, refreshSecret) as { userId: string; role?: string; iat?: number; exp?: number };
     const user = await prisma.user.findUnique({ where: { id: decoded.userId } });
     if (!user || !user.isActive) {
-      return res.status(401).json({ success: false, message: 'Ungültiger oder inaktiver Benutzer.' });
+      return res.status(401).json({ success: false, code: 'UNAUTHORIZED', message: 'Ungültiger oder inaktiver Benutzer.' });
     }
 
     // Access-Token Gültigkeit
@@ -149,9 +127,9 @@ export const refresh = async (req: Request, res: Response): Promise<Response> =>
     });
   } catch (error) {
     if (error instanceof jwt.JsonWebTokenError || error instanceof jwt.TokenExpiredError) {
-      return res.status(401).json({ success: false, message: 'Ungültiger oder abgelaufener Refresh-Token.' });
+      return res.status(401).json({ success: false, code: 'UNAUTHORIZED', message: 'Ungültiger oder abgelaufener Refresh-Token.' });
     }
     console.error('Refresh error:', error);
-    return res.status(500).json({ success: false, message: 'Interner Serverfehler beim Token-Refresh.' });
+    return res.status(500).json({ success: false, code: 'INTERNAL_SERVER_ERROR', message: 'Interner Serverfehler beim Token-Refresh.' });
   }
 };

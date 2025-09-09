@@ -15,6 +15,7 @@ jest.mock('@prisma/client', () => {
 jest.mock('../middleware/auth', () => ({
   authenticate: (_req: any, _res: any, next: any) => next(),
   authorize: () => (_req: any, _res: any, next: any) => next(),
+  authorizeSelfOr: () => (_req: any, _res: any, next: any) => next(),
 }));
 
 describe('Shifts list (pagination/sort/filter)', () => {
@@ -52,4 +53,3 @@ describe('Shifts list (pagination/sort/filter)', () => {
     expect(call.where.title.contains).toBe('Nacht');
   });
 });
-

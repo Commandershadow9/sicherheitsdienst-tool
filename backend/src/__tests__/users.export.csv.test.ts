@@ -7,6 +7,7 @@ jest.mock('../middleware/auth', () => ({
     next();
   },
   authorize: () => (_req: any, _res: any, next: any) => next(),
+  authorizeSelfOr: () => (_req: any, _res: any, next: any) => next(),
 }));
 
 // Mock Prisma for predictable data

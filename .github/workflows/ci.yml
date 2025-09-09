@@ -36,6 +36,11 @@ jobs:
         run: |
           (npm ci --no-audit --prefer-offline || npm install --no-audit)
 
+      - name: Generate Prisma Client (backend)
+        if: ${{ hashFiles('backend/package.json') != '' }}
+        working-directory: backend
+        run: npx prisma generate
+
       - name: Typecheck backend
         if: ${{ hashFiles('backend/package.json') != '' }}
         working-directory: backend

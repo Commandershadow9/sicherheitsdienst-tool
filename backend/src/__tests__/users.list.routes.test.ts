@@ -14,6 +14,7 @@ jest.mock('@prisma/client', () => {
 jest.mock('../middleware/auth', () => ({
   authenticate: (_req: any, _res: any, next: any) => next(),
   authorize: () => (_req: any, _res: any, next: any) => next(),
+  authorizeSelfOr: () => (_req: any, _res: any, next: any) => next(),
 }));
 
 describe('Users list (pagination/sort/filter)', () => {
@@ -48,4 +49,3 @@ describe('Users list (pagination/sort/filter)', () => {
     expect(res.body.data).toHaveLength(1);
   });
 });
-

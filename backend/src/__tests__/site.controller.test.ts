@@ -41,7 +41,7 @@ describe('siteController', () => {
   });
 
   it('getAllSites returns list', async () => {
-    const req: any = { query: {} };
+    const req: any = { query: {}, headers: { accept: 'application/json' } };
     const res = mockRes();
     const next = jest.fn();
     (global as any).prismaMock.site.count.mockResolvedValueOnce(1);

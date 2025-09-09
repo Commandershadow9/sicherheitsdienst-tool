@@ -106,6 +106,7 @@ All notable changes to this project will be documented in this file.
 - feat(auth): Refresh-Token-Flow implementiert (`POST /api/auth/refresh`) inkl. Zod-Validation und Tests (200/422/401); README um Abschnitt „Authentication & Refresh“ ergänzt.
 - feat(api): `GET /api/auth/me` hinzugefügt; alle Routen zusätzlich unter `/api/v1/...` gemountet; Tests für Me-Endpoint und v1-Alias.
 - feat(notifications): Rate-Limit für Test-Endpoint `/api/notifications/test` (ENV: `NOTIFICATIONS_TEST_RATE_LIMIT_PER_MIN`, `NOTIFICATIONS_TEST_RATE_LIMIT_WINDOW_MS`), Tests und Doku.
+- docs(stats): Observability erweitert – README Abschnitt „System-/Stats-Details“ ergänzt; OpenAPI `/stats` dokumentiert (Features/Notifications/Auth/System/Env Felder).
 
 ### Changed
 - docs(openapi): `/me` zu `/auth/me` ausgerichtet; `operationId` für zentrale Endpunkte ergänzt; `/employees`-List-Response auf `data/pagination/sort/filters` umgestellt; Parameter für `/sites` und `/shifts` vereinheitlicht (`page/pageSize/sortBy/sortDir/filter[...]`); ungenutzte `EmployeesList`/`SitesList`-Schemas entfernt.
@@ -114,6 +115,9 @@ All notable changes to this project will be documented in this file.
 - rbac(users): Self-Access für `GET/PUT /api/users/:id` erlaubt; Self-Updates auf Basisfelder (email, firstName, lastName, phone) beschränkt.
 - fix(validation): 422-Responses der `validate`-Middleware enthalten jetzt `code: "VALIDATION_ERROR"`.
 - docs(readme): Listen-Parameter und Beispiele vereinheitlicht auf `page/pageSize/sortBy/sortDir/filter[...]`.
+
+### Fixed
+- fix(exports): XLSX-Exporte stabilisiert (korrekte Binary-Ausgabe mit `Content-Length` und `res.end`) für Users/Sites/Shifts/Events.
 
 ### Added (Events & Push)
 - feat(events): CRUD + CSV/XLSX Exporte, PDF-Bericht via `Accept: application/pdf`, OpenAPI-Schemas/Paths

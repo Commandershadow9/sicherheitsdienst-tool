@@ -4,6 +4,7 @@ import app from '../app';
 jest.mock('../middleware/auth', () => ({
   authenticate: (_req: any, _res: any, next: any) => { _req.user = { id: 'admin', role: 'ADMIN' }; next(); },
   authorize: () => (_req: any, _res: any, next: any) => next(),
+  authorizeSelfOr: () => (_req: any, _res: any, next: any) => next(),
 }));
 
 jest.mock('@prisma/client', () => {
@@ -20,4 +21,3 @@ describe('Admin set user push opt-in/out', () => {
     expect(res.body.success).toBe(true);
   });
 });
-

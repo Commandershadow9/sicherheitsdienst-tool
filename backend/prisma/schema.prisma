@@ -53,6 +53,7 @@ model Site {
 
   // Beziehungen
   shifts     Shift[]
+  events     Event[]
 
   @@unique([name, address], name: "sites_name_address_key")
   @@map("sites")

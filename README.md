@@ -240,7 +240,9 @@ Follow these steps to set up and run the project locally:
   - DELETE: ADMIN
 - Users:
   - GET Liste: ADMIN, DISPATCHER
-  - POST/DELETE/PUT: ADMIN (detailspezifische Logik ggf. erweitert)
+  - Detail (GET `/api/users/:id`): ADMIN oder Self‑Access (eigene ID)
+  - Update (PUT `/api/users/:id`): ADMIN oder Self‑Access; bei Self sind nur Basisfelder erlaubt (`email`, `firstName`, `lastName`, `phone`)
+  - Delete: ADMIN
   - CSV-Export: `GET /api/users` mit `Accept: text/csv` (gleiche Query‑Parameter)
   - XLSX-Export: `GET /api/users` mit `Accept: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet`
 
@@ -355,6 +357,19 @@ If validation reports issues, fix `docs/openapi.yaml` accordingly. CI integratio
 GitHub Actions workflow `ci` runs on pushes/PRs to `main`:
 - Backend: install → lint → test → build
 - OpenAPI: `npx @redocly/cli lint docs/openapi.yaml`
+
+### Swagger UI (nur Development)
+- UI erreichbar unter `http://localhost:3001/api-docs` (nur wenn `NODE_ENV` ≠ `production`).
+- Quelle der Spezifikation: `docs/openapi.yaml` (wird unter `/api-docs-spec/openapi.yaml` bereitgestellt).
+
+### System-/Stats-Details
+- Endpoint: `GET /api/stats` (liefert `503`, wenn DB nicht verbunden ist).
+- Zusätzliche Felder (Observability):
+  - features: Flags wie `emailNotifyShifts`, `pushNotifyEvents` (aus ENV)
+  - notifications: Rate-Limit-Konfiguration (`enabled`, `perMin`, `windowMs`), `smtpConfigured`, `pushConfigured`
+  - auth: `jwtExpiresIn`, `refreshExpiresIn`
+  - system: `logLevel` zusätzlich zu `uptime`, `nodeVersion`, `platform`, `memory`
+  - env: `nodeEnv`, `version`
 
 ## Scripts (Backend)
 

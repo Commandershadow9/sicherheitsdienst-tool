@@ -19,6 +19,7 @@ jest.mock('@prisma/client', () => {
 jest.mock('../middleware/auth', () => ({
   authenticate: (_req: any, _res: any, next: any) => next(),
   authorize: () => (_req: any, _res: any, next: any) => next(),
+  authorizeSelfOr: () => (_req: any, _res: any, next: any) => next(),
 }));
 
 describe('Sites Routes (E2E-light)', () => {

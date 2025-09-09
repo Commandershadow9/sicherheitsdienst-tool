@@ -7,6 +7,7 @@ jest.mock('../middleware/auth', () => ({
     next();
   },
   authorize: () => (_req: any, _res: any, next: any) => next(),
+  authorizeSelfOr: () => (_req: any, _res: any, next: any) => next(),
 }));
 
 jest.mock('@prisma/client', () => {
@@ -30,4 +31,3 @@ describe('GET /api/sites/:siteId/shifts CSV export', () => {
     expect(res.text.split('\n')[0]).toMatch(/id,siteId,title,location,startTime,endTime,requiredEmployees,status/);
   });
 });
-

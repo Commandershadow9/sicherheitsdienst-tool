@@ -79,10 +79,11 @@ export const listEvents = async (req: Request, res: Response, next: NextFunction
       for (const e of data) {
         ws.addRow([e.id, e.title, e.siteId || '', e.startTime.toISOString(), e.endTime.toISOString(), e.status]);
       }
-      const buffer = await wb.xlsx.writeBuffer();
+      const buffer = Buffer.from(await wb.xlsx.writeBuffer());
       res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
       res.setHeader('Content-Disposition', 'attachment; filename="events.xlsx"');
-      res.status(200).send(Buffer.from(buffer));
+      res.setHeader('Content-Length', String(buffer.length));
+      res.status(200).end(buffer);
       return;
     }
 
@@ -128,10 +129,10 @@ export const getEventById = async (req: Request, res: Response, next: NextFuncti
     // Optional PDF via Accept
     const accept = (req.headers['accept'] as string) || '';
     if (accept.includes('application/pdf')) {
-      // Zusatzdaten: Site + eingesetzte Mitarbeiter auflösen
+      // Zusatzdaten: Site + eingesetzte Mitarbeiter auflösen (optional, wenn Client/Mock verfügbar)
       let site: any = null;
-      if (e.siteId) {
-        site = await prisma.site.findUnique({ where: { id: e.siteId }, select: { name: true, address: true, city: true, postalCode: true } });
+      if (e.siteId && (prisma as any).site?.findUnique) {
+        site = await (prisma as any).site.findUnique({ where: { id: e.siteId }, select: { name: true, address: true, city: true, postalCode: true } });
       }
       let assignedEmployees: any[] = [];
       if (Array.isArray(e.assignedEmployeeIds) && e.assignedEmployeeIds.length) {

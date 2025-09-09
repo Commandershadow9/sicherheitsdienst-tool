@@ -7,6 +7,7 @@ jest.mock('../middleware/auth', () => ({
     next();
   },
   authorize: () => (_req: any, _res: any, next: any) => next(),
+  authorizeSelfOr: () => (_req: any, _res: any, next: any) => next(),
 }));
 
 jest.mock('@prisma/client', () => {
@@ -36,9 +37,16 @@ jest.mock('@prisma/client', () => {
 
 describe('GET /api/users XLSX export', () => {
   it('returns XLSX when Accept xlsx is sent', async () => {
+    const toBuffer = (res: any, cb: any) => {
+      const chunks: any[] = [];
+      res.on('data', (c: any) => chunks.push(c));
+      res.on('end', () => cb(null, Buffer.concat(chunks)));
+    };
     const res = await request(app)
       .get('/api/users?page=1&pageSize=1')
-      .set('Accept', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      .set('Accept', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+      .buffer(true)
+      .parse(toBuffer as any);
     expect(res.status).toBe(200);
     expect(res.headers['content-type']).toMatch(/application\/vnd.openxmlformats-officedocument.spreadsheetml.sheet/);
     // XLSX ist ZIP-Container → beginnt mit 'PK'

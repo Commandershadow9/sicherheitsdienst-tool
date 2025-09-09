@@ -138,13 +138,14 @@ export const getAllUsers = async (req: Request, res: Response, next: NextFunctio
           new Date(u.updatedAt).toISOString(),
         ]);
       }
-      const buffer = await wb.xlsx.writeBuffer();
+      const buffer = Buffer.from(await wb.xlsx.writeBuffer());
       res.setHeader(
         'Content-Type',
         'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
       );
       res.setHeader('Content-Disposition', 'attachment; filename="users.xlsx"');
-      res.status(200).send(Buffer.from(buffer));
+      res.setHeader('Content-Length', String(buffer.length));
+      res.status(200).end(buffer);
       return;
     }
 
