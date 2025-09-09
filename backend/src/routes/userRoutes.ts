@@ -4,6 +4,9 @@ import * as userController from '../controllers/userController';
 import { authenticate, authorize, authorizeSelfOr } from '../middleware/auth';
 import { validate } from '../middleware/validate';
 import { createUserSchema, updateUserSchema, userListQuerySchema } from '../validations/userValidation';
+import { createWriteRateLimit } from '../middleware/rateLimit';
+
+const writeLimiter = createWriteRateLimit();
 import methodNotAllowed from '../middleware/methodNotAllowed';
 
 const router = Router();
@@ -18,6 +21,7 @@ router.post(
   '/',
   authenticate,
   authorize('ADMIN'),
+  writeLimiter,
   validate(createUserSchema),
   asyncHandler(userController.createUser),
 );
@@ -34,6 +38,7 @@ router.put(
   '/:id',
   authenticate,
   authorizeSelfOr('ADMIN'),
+  writeLimiter,
   validate(updateUserSchema),
   asyncHandler(userController.updateUser),
 );
@@ -43,6 +48,7 @@ router.delete(
   '/:id',
   authenticate,
   authorize('ADMIN'),
+  writeLimiter,
   asyncHandler(userController.deactivateUser),
 );
 // 405

@@ -5,23 +5,25 @@ import * as incidentController from '../controllers/incidentController';
 import { validate } from '../middleware/validate';
 import { incidentCreateSchema, incidentListQuerySchema, incidentUpdateSchema } from '../validations/incidentValidation';
 import methodNotAllowed from '../middleware/methodNotAllowed';
+import { createWriteRateLimit } from '../middleware/rateLimit';
 
 const router = Router();
+const writeLimiter = createWriteRateLimit();
 
 // List (auth: any authenticated)
 router.get('/', authenticate, validate(incidentListQuerySchema), asyncHandler(incidentController.listIncidents));
 
 // Create (ADMIN, MANAGER)
-router.post('/', authenticate, authorize('ADMIN', 'MANAGER'), validate(incidentCreateSchema), asyncHandler(incidentController.createIncident));
+router.post('/', authenticate, authorize('ADMIN', 'MANAGER'), writeLimiter, validate(incidentCreateSchema), asyncHandler(incidentController.createIncident));
 
 // Get by id (auth: any authenticated)
 router.get('/:id', authenticate, asyncHandler(incidentController.getIncident));
 
 // Update (ADMIN, MANAGER)
-router.put('/:id', authenticate, authorize('ADMIN', 'MANAGER'), validate(incidentUpdateSchema), asyncHandler(incidentController.updateIncident));
+router.put('/:id', authenticate, authorize('ADMIN', 'MANAGER'), writeLimiter, validate(incidentUpdateSchema), asyncHandler(incidentController.updateIncident));
 
 // Delete (ADMIN, MANAGER)
-router.delete('/:id', authenticate, authorize('ADMIN', 'MANAGER'), asyncHandler(incidentController.deleteIncident));
+router.delete('/:id', authenticate, authorize('ADMIN', 'MANAGER'), writeLimiter, asyncHandler(incidentController.deleteIncident));
 
 // 405 handlers with auth
 router.all('/', authenticate, methodNotAllowed(['GET', 'POST']));

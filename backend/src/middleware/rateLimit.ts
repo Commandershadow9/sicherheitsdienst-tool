@@ -125,3 +125,12 @@ export function createRateLimit(options?: {
     return next();
   };
 }
+
+// Convenience factory for write-heavy endpoints (POST/PUT/DELETE)
+export const createWriteRateLimit = () =>
+  createRateLimit({
+    windowMsEnv: 'WRITE_RATE_LIMIT_WINDOW_MS',
+    perMinEnv: 'WRITE_RATE_LIMIT_PER_MIN',
+    enabledEnv: 'WRITE_RATE_LIMIT_ENABLED',
+    keyName: 'write',
+  });

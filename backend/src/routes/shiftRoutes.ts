@@ -5,6 +5,9 @@ import { validate } from '../middleware/validate';
 import { createShiftSchema, updateShiftSchema, shiftListQuerySchema } from '../validations/shiftValidation';
 import { clockInSchema, clockOutSchema } from '../validations/timeValidation';
 import * as shiftController from '../controllers/shiftController';
+import { createWriteRateLimit } from '../middleware/rateLimit';
+
+const writeLimiter = createWriteRateLimit();
 import methodNotAllowed from '../middleware/methodNotAllowed';
 
 const router = Router();
@@ -17,6 +20,7 @@ router.post(
   '/',
   authenticate,
   authorize('ADMIN', 'DISPATCHER'),
+  writeLimiter,
   validate(createShiftSchema),
   asyncHandler(shiftController.createShift),
 );
@@ -29,12 +33,13 @@ router.put(
   '/:id',
   authenticate,
   authorize('ADMIN', 'DISPATCHER'),
+  writeLimiter,
   validate(updateShiftSchema),
   asyncHandler(shiftController.updateShift),
 );
 
 // DELETE /api/shifts/:id - Schicht löschen
-router.delete('/:id', authenticate, authorize('ADMIN'), asyncHandler(shiftController.deleteShift));
+router.delete('/:id', authenticate, authorize('ADMIN'), writeLimiter, asyncHandler(shiftController.deleteShift));
 
 // POST /api/shifts/:id/assign - Mitarbeiter zur Schicht zuweisen
 router.post('/:id/assign', authenticate, asyncHandler(shiftController.assignUserToShift));

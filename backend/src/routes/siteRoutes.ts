@@ -7,6 +7,9 @@ import { asyncHandler } from '../middleware/asyncHandler';
 import { siteListQuerySchema } from '../validations/siteValidation';
 import * as shiftController from '../controllers/shiftController';
 import { shiftListQuerySchema } from '../validations/shiftValidation';
+import { createWriteRateLimit } from '../middleware/rateLimit';
+
+const writeLimiter = createWriteRateLimit();
 import methodNotAllowed from '../middleware/methodNotAllowed';
 
 const router = Router();
@@ -19,6 +22,7 @@ router.post(
   '/',
   authenticate,
   authorize('ADMIN', 'DISPATCHER'),
+  writeLimiter,
   validate(createSiteSchema),
   asyncHandler(siteController.createSite),
 );
@@ -40,12 +44,13 @@ router.put(
   '/:id',
   authenticate,
   authorize('ADMIN', 'DISPATCHER'),
+  writeLimiter,
   validate(updateSiteSchema),
   asyncHandler(siteController.updateSite),
 );
 
 // DELETE /api/sites/:id
-router.delete('/:id', authenticate, authorize('ADMIN'), asyncHandler(siteController.deleteSite));
+router.delete('/:id', authenticate, authorize('ADMIN'), writeLimiter, asyncHandler(siteController.deleteSite));
 
 // 405
 router.all('/', authenticate, methodNotAllowed(['GET', 'POST']));

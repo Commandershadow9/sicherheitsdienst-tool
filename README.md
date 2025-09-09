@@ -106,6 +106,7 @@ See CHANGELOG.md for details.
 - Rate Limiting:
   - Notifications-Testendpoint per `NOTIFICATIONS_TEST_RATE_LIMIT_*`
   - Auth (Login/Refresh) per `AUTH_RATE_LIMIT_*`
+  - Optional Write-Limits (POST/PUT/DELETE) per `WRITE_RATE_LIMIT_*`
 - E-Mail Zustellung:
   - SMTP via `SMTP_*`; einfacher Retry (`SMTP_RETRY_MAX`, `SMTP_RETRY_DELAY_MS`)
 - Push:
