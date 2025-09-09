@@ -100,3 +100,14 @@ All notable changes to this project will be documented in this file.
 
 - Dist/review artifacts excluded from VCS.
 - LICENSE and .gitignore preserved.
+## 2025-09-09
+
+### Added
+- feat(auth): Refresh-Token-Flow implementiert (`POST /api/auth/refresh`) inkl. Zod-Validation und Tests (200/422/401); README um Abschnitt „Authentication & Refresh“ ergänzt.
+- feat(api): `GET /api/auth/me` hinzugefügt; alle Routen zusätzlich unter `/api/v1/...` gemountet; Tests für Me-Endpoint und v1-Alias.
+- feat(notifications): Rate-Limit für Test-Endpoint `/api/notifications/test` (ENV: `NOTIFICATIONS_TEST_RATE_LIMIT_PER_MIN`, `NOTIFICATIONS_TEST_RATE_LIMIT_WINDOW_MS`), Tests und Doku.
+
+### Changed
+- docs(openapi): `/me` zu `/auth/me` ausgerichtet; `operationId` für zentrale Endpunkte ergänzt; `/employees`-List-Response auf `data/pagination/sort/filters` umgestellt; Parameter für `/sites` und `/shifts` vereinheitlicht (`page/pageSize/sortBy/sortDir/filter[...]`); ungenutzte `EmployeesList`/`SitesList`-Schemas entfernt.
+- ci: `typecheck`-Step ergänzt; Tests erzeugen Coverage und werden als Artefakt hochgeladen.
+- env: `LOG_LEVEL` in `.env.example` ergänzt.

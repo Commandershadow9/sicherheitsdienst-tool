@@ -152,6 +152,12 @@ Follow these steps to set up and run the project locally:
   - anonym: verboten (401)
 - Implementierung: Middleware `notificationsRBAC` in `backend/src/middleware/rbac.ts` prüft `req.user.role ∈ {ADMIN, MANAGER}` und wird in `backend/src/routes/notificationRoutes.ts` vor die Validierung geschaltet.
 
+- Rate-Limit (Test-Endpoint):
+  - ENV:
+    - `NOTIFICATIONS_TEST_RATE_LIMIT_PER_MIN` (Standard 10)
+    - `NOTIFICATIONS_TEST_RATE_LIMIT_WINDOW_MS` (Standard 60000)
+  - Gilt nur für `POST /api/notifications/test` (Middleware `notificationsTestRateLimit`).
+
 ### Available NPM Scripts
 
 - `npm run dev`: Starts the server in development mode with live-reloading.

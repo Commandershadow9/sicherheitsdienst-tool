@@ -2225,7 +2225,7 @@ paths:
   /notifications/test:
     post:
       summary: Test-Benachrichtigung senden
-      description: 'RBAC: Zugriff nur für Rollen ADMIN oder MANAGER.'
+      description: 'RBAC: ADMIN oder MANAGER. Rate-Limit aktiv (konfigurierbar per ENV).'
       security:
         - BearerAuth: []
       x-required-roles:
