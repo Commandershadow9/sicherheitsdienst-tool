@@ -86,6 +86,7 @@ const globalErrorHandler: ErrorRequestHandler = (err, req, res, next) => {
   let statusCode = err.status || err.statusCode || 500;
   let message = err.message || 'Interner Serverfehler.';
   let errorsArray;
+  let code: string | undefined;
 
   if (err.code?.startsWith('P')) {
     switch (err.code) {
@@ -93,14 +94,17 @@ const globalErrorHandler: ErrorRequestHandler = (err, req, res, next) => {
         statusCode = 409;
         const target = err.meta?.target;
         message = `Ein Eintrag mit diesen Daten existiert bereits (${Array.isArray(target) ? target.join(', ') : target}).`;
+        code = 'CONFLICT';
         break;
       case 'P2025':
         statusCode = 404;
         message = 'Die angeforderte Ressource wurde nicht gefunden.';
+        code = 'NOT_FOUND';
         break;
       default:
         statusCode = 400;
         message = 'Ein Datenbankfehler ist aufgetreten.';
+        code = 'BAD_REQUEST';
         break;
     }
   }
@@ -109,18 +113,20 @@ const globalErrorHandler: ErrorRequestHandler = (err, req, res, next) => {
     statusCode = 422;
     message = 'Validierungsfehler.';
     errorsArray = err.errors;
+    code = 'VALIDATION_ERROR';
   }
 
   if (err instanceof jwt.JsonWebTokenError || err instanceof jwt.TokenExpiredError) {
     statusCode = 401;
     message = 'Ungültiger oder abgelaufener Token.';
+    code = 'UNAUTHORIZED';
   }
 
   const errorResponse: {
     success: boolean;
     message: string;
     errors?: any;
-    errorDetails?: string;
+    details?: string;
     stack?: string;
     code?: string;
   } = {
@@ -133,9 +139,41 @@ const globalErrorHandler: ErrorRequestHandler = (err, req, res, next) => {
   }
 
   if (process.env.NODE_ENV === 'development') {
-    errorResponse.errorDetails = err.message;
+    errorResponse.details = err.message;
     errorResponse.stack = err.stack;
-    if (err.code) errorResponse.code = err.code;
+    if (!code && err.code) errorResponse.code = String(err.code);
+  }
+
+  // Mappe generische Codes für bekannte Status, falls kein spezifischer Code gesetzt wurde
+  if (!errorResponse.code) {
+    switch (statusCode) {
+      case 400:
+        errorResponse.code = 'BAD_REQUEST';
+        break;
+      case 401:
+        errorResponse.code = 'UNAUTHORIZED';
+        break;
+      case 403:
+        errorResponse.code = 'FORBIDDEN';
+        break;
+      case 404:
+        errorResponse.code = 'NOT_FOUND';
+        break;
+      case 409:
+        errorResponse.code = 'CONFLICT';
+        break;
+      case 422:
+        errorResponse.code = 'VALIDATION_ERROR';
+        break;
+      case 429:
+        errorResponse.code = 'TOO_MANY_REQUESTS';
+        break;
+      case 503:
+        errorResponse.code = 'SERVICE_UNAVAILABLE';
+        break;
+      default:
+        errorResponse.code = 'INTERNAL_SERVER_ERROR';
+    }
   }
 
   // Wichtig: Sicherstellen, dass eine Antwort gesendet wird.
