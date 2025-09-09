@@ -138,3 +138,4 @@ All notable changes to this project will be documented in this file.
 - refactor(prisma): Zentrale Prisma-Client-Singleton (`backend/src/utils/prisma.ts`); Controller/Middleware/Services umgestellt.
 - docs(openapi): Incidents-List-Antwort vereinheitlicht (data/pagination/sort/filters) und CSV/XLSX Accept dokumentiert; 405 `MethodNotAllowed`-Komponente ergänzt.
 - tests: RBAC-Tests für Incidents (anonymous/employee negative), TimeTracking-Warnungen (Restzeit <11h, Dauer >10h/>12h) ergänzt.
+- auth/jwt: Optional `JWT_ISSUER`/`JWT_AUDIENCE` in Signatur/Verifikation berücksichtigt (konfigurierbar via ENV).
