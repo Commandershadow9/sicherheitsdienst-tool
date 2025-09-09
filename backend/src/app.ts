@@ -11,7 +11,7 @@ import requestId from './middleware/requestId';
 dotenv.config();
 
 // Import all routes
-import { systemRoutes, userRoutes, shiftRoutes, authRoutes, siteRoutes, notificationRoutes, eventRoutes, pushRoutes } from './routes';
+import { systemRoutes, userRoutes, shiftRoutes, authRoutes, siteRoutes, notificationRoutes, eventRoutes, pushRoutes, incidentRoutes } from './routes';
 
 const app = express();
 // Port-Konstante wird hier nicht benötigt (Server-Start in server.ts)
@@ -83,6 +83,7 @@ app.use('/api/sites', siteRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/events', eventRoutes);
 app.use('/api/push', pushRoutes);
+app.use('/api/incidents', incidentRoutes);
 
 // API v1 Alias (OpenAPI servers: /api/v1)
 app.use('/api/v1', systemRoutes);
@@ -93,6 +94,7 @@ app.use('/api/v1/sites', siteRoutes);
 app.use('/api/v1/notifications', notificationRoutes);
 app.use('/api/v1/events', eventRoutes);
 app.use('/api/v1/push', pushRoutes);
+app.use('/api/v1/incidents', incidentRoutes);
 
 // 404 handler for unmatched routes
 app.use((req: Request, res: Response) => {

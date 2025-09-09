@@ -9,3 +9,4 @@ export { default as siteRoutes } from './siteRoutes';
 export { default as notificationRoutes } from './notificationRoutes';
 export { default as eventRoutes } from './eventRoutes';
 export { default as pushRoutes } from './pushRoutes';
+export { default as incidentRoutes } from './incidentRoutes';
