@@ -40,6 +40,39 @@ The project is in a stable development stage. The basic API structure is establi
 ### Me-Endpoint und API v1 Alias
 - `GET /api/auth/me`: gibt den aktuell authentifizierten Benutzer zurück.
 - Alle Endpunkte sind zusätzlich unter `/api/v1/...` erreichbar (Kompatibilität zur OpenAPI `servers`-Angabe).
+
+## Error Responses
+
+- Shape: jede Fehlermeldung folgt der Struktur
+  - `{ success: false, code: string, message: string, details?: string, errors?: any }`
+- Codes (Mapping nach HTTP-Status):
+  - 400 → `BAD_REQUEST`
+  - 401 → `UNAUTHORIZED`
+  - 403 → `FORBIDDEN`
+  - 404 → `NOT_FOUND`
+  - 409 → `CONFLICT`
+  - 422 → `VALIDATION_ERROR` (Zod-Fehler in `errors`)
+  - 429 → `TOO_MANY_REQUESTS`
+  - 503 → `SERVICE_UNAVAILABLE`
+  - default → `INTERNAL_SERVER_ERROR`
+- Beispiele:
+  - Validation (422):
+    ```json
+    {
+      "success": false,
+      "code": "VALIDATION_ERROR",
+      "message": "Validierungsfehler.",
+      "errors": [{ "path": ["email"], "message": "Gültige E-Mail erforderlich" }]
+    }
+    ```
+  - Unauthorized (401):
+    ```json
+    {
+      "success": false,
+      "code": "UNAUTHORIZED",
+      "message": "Ungültiger oder abgelaufener Token."
+    }
+    ```
 ## Setup & Installation (For Developers)
 
 Follow these steps to set up and run the project locally:
