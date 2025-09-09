@@ -4,6 +4,7 @@ import { asyncHandler } from '../middleware/asyncHandler';
 import * as incidentController from '../controllers/incidentController';
 import { validate } from '../middleware/validate';
 import { incidentCreateSchema, incidentListQuerySchema, incidentUpdateSchema } from '../validations/incidentValidation';
+import methodNotAllowed from '../middleware/methodNotAllowed';
 
 const router = Router();
 
@@ -22,5 +23,8 @@ router.put('/:id', authenticate, authorize('ADMIN', 'MANAGER'), validate(inciden
 // Delete (ADMIN, MANAGER)
 router.delete('/:id', authenticate, authorize('ADMIN', 'MANAGER'), asyncHandler(incidentController.deleteIncident));
 
-export default router;
+// 405 handlers with auth
+router.all('/', authenticate, methodNotAllowed(['GET', 'POST']));
+router.all('/:id', authenticate, methodNotAllowed(['GET', 'PUT', 'DELETE']));
 
+export default router;
