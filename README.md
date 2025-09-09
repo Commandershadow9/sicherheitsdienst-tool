@@ -106,6 +106,7 @@ See CHANGELOG.md for details.
   - `JWT_SECRET` (Pflicht), `JWT_EXPIRES_IN`
   - `REFRESH_SECRET` (optional), `REFRESH_EXPIRES_IN`
   - `AUTH_RATE_LIMIT_ENABLED` (default `true`), `AUTH_RATE_LIMIT_PER_MIN` (default `10`), `AUTH_RATE_LIMIT_WINDOW_MS` (default `60000`)
+  - Optional Claims: `JWT_ISSUER`, `JWT_AUDIENCE` (werden bei Signatur und Verifikation berücksichtigt)
 - Notifications (Test):
   - `NOTIFICATIONS_TEST_RATE_LIMIT_ENABLED` (default `true`), `NOTIFICATIONS_TEST_RATE_LIMIT_PER_MIN`, `NOTIFICATIONS_TEST_RATE_LIMIT_WINDOW_MS`
 - SMTP:
@@ -120,6 +121,14 @@ See CHANGELOG.md for details.
 - Rate‑Limit → 429 mit `Retry-After`, `RateLimit-*` Headern
 - Korrelation → `X-Request-ID` im Request/Response/Logs verfolgen
 - DB → Prisma Migrations/Indices siehe `backend/prisma` und `docs/DB_INDEXES.md`
+
+## RBAC Matrix (Kurz)
+- Users: Liste/Erstellen/Löschen → ADMIN; Lesen/Aktualisieren → ADMIN oder Self (eingeschränkt bei Self)
+- Sites: Erstellen/Aktualisieren → ADMIN, DISPATCHER; Lesen → AUTH; Löschen → ADMIN
+- Shifts: Erstellen/Aktualisieren → ADMIN, DISPATCHER; Lesen → AUTH; Löschen → ADMIN; Clock-In/Out/Assign gemäß Zuweisung
+- Events: Erstellen/Aktualisieren → ADMIN, DISPATCHER; Lesen → AUTH; Löschen → ADMIN
+- Incidents: Erstellen/Aktualisieren/Löschen → ADMIN, MANAGER; Lesen → AUTH
+- Notifications (Test): Senden → ADMIN, MANAGER (Rate-Limit aktivierbar)
 
 ## Error Responses
 
