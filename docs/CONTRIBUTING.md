@@ -50,6 +50,7 @@ Hinweis: OpenAPI enthält ergänzend `x-required-roles` je Endpoint.
 
 - Quelle: `docs/openapi.yaml` (3.1)
 - Lokal prüfen: `npx swagger-cli@latest validate docs/openapi.yaml`
+ - CI: führt `swagger-cli validate` (fail on invalid) und Redocly Lint (warn-only) aus.
 
 ## Docker/Compose (Kurz)
 
@@ -57,4 +58,3 @@ Hinweis: OpenAPI enthält ergänzend `x-required-roles` je Endpoint.
 - API-Service baut/migriert automatisch (`prisma migrate deploy`) und hat Healthcheck `/api/health`
 
 Viel Spaß beim Mitmachen! ✨
-

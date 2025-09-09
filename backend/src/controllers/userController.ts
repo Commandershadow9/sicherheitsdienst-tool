@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { PrismaClient } from '@prisma/client';
+import ExcelJS from 'exceljs';
 import bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
@@ -60,6 +61,92 @@ export const getAllUsers = async (req: Request, res: Response, next: NextFunctio
     const totalPages = Math.max(Math.ceil(total / pageSize), 1);
     const skip = (page - 1) * pageSize;
     const data = await prisma.user.findMany({ where, select, orderBy: { [sortBy]: sortDir as any }, skip, take: pageSize });
+
+    // CSV/XLSX-Export unterstützen via Accept-Header
+    const accept = (req.headers['accept'] as string) || '';
+    if (accept.includes('text/csv')) {
+      const rows = data.map((u: any) => ({
+        id: u.id,
+        email: u.email,
+        firstName: u.firstName,
+        lastName: u.lastName,
+        phone: u.phone ?? '',
+        role: u.role,
+        employeeId: u.employeeId ?? '',
+        isActive: u.isActive ? 'true' : 'false',
+        hireDate: u.hireDate ? new Date(u.hireDate).toISOString() : '',
+        qualifications: Array.isArray(u.qualifications) ? u.qualifications.join('|') : '',
+        createdAt: new Date(u.createdAt).toISOString(),
+        updatedAt: new Date(u.updatedAt).toISOString(),
+      }));
+      const header = Object.keys(rows[0] || {
+        id: '',
+        email: '',
+        firstName: '',
+        lastName: '',
+        phone: '',
+        role: '',
+        employeeId: '',
+        isActive: '',
+        hireDate: '',
+        qualifications: '',
+        createdAt: '',
+        updatedAt: '',
+      });
+      const escape = (v: any) => {
+        const s = String(v ?? '');
+        if (/[",\n]/.test(s)) return '"' + s.replace(/"/g, '""') + '"';
+        return s;
+      };
+      const csv = [header.join(','), ...rows.map((r) => header.map((h) => escape((r as any)[h])).join(','))].join('\n');
+      res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+      res.setHeader('Content-Disposition', 'attachment; filename="users.csv"');
+      res.status(200).send(csv);
+      return;
+    }
+    if (accept.includes('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')) {
+      const wb = new ExcelJS.Workbook();
+      const ws = wb.addWorksheet('users');
+      const header = [
+        'id',
+        'email',
+        'firstName',
+        'lastName',
+        'phone',
+        'role',
+        'employeeId',
+        'isActive',
+        'hireDate',
+        'qualifications',
+        'createdAt',
+        'updatedAt',
+      ];
+      ws.addRow(header);
+      for (const u of data as any[]) {
+        ws.addRow([
+          u.id,
+          u.email,
+          u.firstName,
+          u.lastName,
+          u.phone ?? '',
+          u.role,
+          u.employeeId ?? '',
+          u.isActive ? 'true' : 'false',
+          u.hireDate ? new Date(u.hireDate).toISOString() : '',
+          Array.isArray(u.qualifications) ? u.qualifications.join('|') : '',
+          new Date(u.createdAt).toISOString(),
+          new Date(u.updatedAt).toISOString(),
+        ]);
+      }
+      const buffer = await wb.xlsx.writeBuffer();
+      res.setHeader(
+        'Content-Type',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      );
+      res.setHeader('Content-Disposition', 'attachment; filename="users.xlsx"');
+      res.status(200).send(Buffer.from(buffer));
+      return;
+    }
 
     res.json({ data, pagination: { page, pageSize, total, totalPages }, sort: { by: sortBy, dir: sortDir }, filters: Object.keys(where).length ? filters : undefined });
     return;

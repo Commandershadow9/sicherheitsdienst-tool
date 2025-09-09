@@ -22,6 +22,7 @@ model User {
   employeeId     String?  @unique
   hireDate       DateTime?
   qualifications String[] // Array von Qualifikationen
+  pushOptIn      Boolean  @default(true)
   
   // Zeitstempel
   createdAt DateTime @default(now())
@@ -31,8 +32,13 @@ model User {
   shifts        ShiftAssignment[]
   timeEntries   TimeEntry[]
   incidents     Incident[]
-  
+
   @@map("users")
+  @@index([lastName, firstName], name: "users_name_idx")
+  @@index([createdAt], name: "users_createdAt_idx")
+  @@index([isActive], name: "users_isActive_idx")
+  @@index([role], name: "users_role_idx")
+  deviceTokens DeviceToken[]
 }
 
 // Einsatzorte/Sites
@@ -50,6 +56,9 @@ model Site {
 
   @@unique([name, address], name: "sites_name_address_key")
   @@map("sites")
+  @@index([name], name: "sites_name_idx")
+  @@index([city], name: "sites_city_idx")
+  @@index([postalCode], name: "sites_postal_idx")
 }
 
 // Benutzerrollen
@@ -85,8 +94,11 @@ model Shift {
   // Beziehungen
   assignments ShiftAssignment[]
   timeEntries TimeEntry[]
-  
+
   @@map("shifts")
+  @@index([startTime], name: "shifts_startTime_idx")
+  @@index([status], name: "shifts_status_idx")
+  @@index([siteId, startTime], name: "shifts_site_start_idx")
 }
 
 enum ShiftStatus {
@@ -115,6 +127,7 @@ model ShiftAssignment {
   
   @@unique([userId, shiftId])
   @@map("shift_assignments")
+  @@index([shiftId], name: "shift_assignments_shift_idx")
 }
 
 enum AssignmentStatus {
@@ -152,6 +165,7 @@ model TimeEntry {
   updatedAt DateTime @updatedAt
   
   @@map("time_entries")
+  @@index([userId, startTime], name: "time_entries_user_start_idx")
 }
 
 // Vorfälle
@@ -189,4 +203,54 @@ enum IncidentStatus {
   IN_PROGRESS
   RESOLVED
   CLOSED
+}
+
+// Einsätze / Events
+model Event {
+  id                  String   @id @default(cuid())
+  title               String
+  description         String?
+  siteId              String?
+  site                Site?    @relation(fields: [siteId], references: [id])
+  startTime           DateTime
+  endTime             DateTime
+  serviceInstructions String
+  assignedEmployeeIds String[]
+  status              EventStatus @default(PLANNED)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@map("events")
+  @@index([startTime], name: "events_start_idx")
+  @@index([siteId, startTime], name: "events_site_start_idx")
+}
+
+enum EventStatus {
+  PLANNED
+  ACTIVE
+  DONE
+  CANCELLED
+}
+
+// Push-Geräte-Token
+enum DevicePlatform {
+  IOS
+  ANDROID
+  WEB
+}
+
+model DeviceToken {
+  id          String         @id @default(cuid())
+  userId      String
+  user        User           @relation(fields: [userId], references: [id])
+  platform    DevicePlatform
+  token       String         @unique
+  isActive    Boolean        @default(true)
+  notificationsEnabled Boolean @default(true)
+  lastUsedAt  DateTime?
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  @@map("device_tokens")
+  @@index([userId], name: "device_tokens_user_idx")
 }

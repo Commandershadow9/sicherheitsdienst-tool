@@ -14,26 +14,49 @@ function getLimit(): number {
   return n > 0 ? n : 10;
 }
 
+function isEnabled(): boolean {
+  const raw = (process.env.NOTIFICATIONS_TEST_RATE_LIMIT_ENABLED || 'true').toLowerCase();
+  return raw !== 'false' && raw !== '0' && raw !== 'off';
+}
+
+function getClientKey(req: any): string {
+  const userId = req.user?.id;
+  const xff = (req.headers['x-forwarded-for'] as string) || '';
+  const firstForwarded = xff.split(',')[0]?.trim();
+  const ip = firstForwarded || req.ip || 'anon';
+  return `${userId || ip}:notifications:test`;
+}
+
 export const notificationsTestRateLimit = (req: any, res: any, next: any) => {
-  const key = `${req.ip || req.headers['x-forwarded-for'] || 'anon'}:notifications:test`;
+  if (!isEnabled()) return next();
+
+  const key = getClientKey(req);
   const now = Date.now();
   const windowMs = getWindow();
   const limit = getLimit();
-  const b = buckets.get(key);
+  let b = buckets.get(key);
   if (!b || b.resetAt <= now) {
-    buckets.set(key, { count: 1, resetAt: now + windowMs });
-    return next();
-  }
-  if (b.count < limit) {
+    b = { count: 1, resetAt: now + windowMs };
+    buckets.set(key, b);
+  } else if (b.count < limit) {
     b.count++;
-    return next();
+  } else {
+    const retryAfter = Math.max(0, Math.ceil((b.resetAt - now) / 1000));
+    res.set('Retry-After', String(retryAfter));
+    res.set('RateLimit-Limit', String(limit));
+    res.set('RateLimit-Remaining', '0');
+    res.set('RateLimit-Reset', String(Math.max(0, Math.ceil((b.resetAt - now) / 1000))));
+    return res.status(429).json({
+      success: false,
+      message: 'Rate-Limit erreicht.',
+      code: 'TOO_MANY_REQUESTS',
+    });
   }
-  const retryAfter = Math.max(0, Math.ceil((b.resetAt - now) / 1000));
-  res.set('Retry-After', String(retryAfter));
-  return res.status(429).json({
-    success: false,
-    message: 'Rate-Limit erreicht.',
-    code: 'TOO_MANY_REQUESTS',
-  });
-};
 
+  // Erfolgsfall → Header setzen
+  const remaining = Math.max(0, limit - b.count);
+  res.set('RateLimit-Limit', String(limit));
+  res.set('RateLimit-Remaining', String(remaining));
+  res.set('RateLimit-Reset', String(Math.max(0, Math.ceil((b.resetAt - now) / 1000))));
+  return next();
+};

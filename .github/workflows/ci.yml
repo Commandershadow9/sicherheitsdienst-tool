@@ -69,6 +69,9 @@ jobs:
         with:
           node-version: 20
 
+      - name: Validate OpenAPI (swagger-cli)
+        run: npx --yes swagger-cli@latest validate docs/openapi.yaml
+
       - name: Lint OpenAPI (Redocly via npx)
         # Lint läuft, aber Warnungen sollen den Job NICHT fehlschlagen lassen
         run: npx --yes @redocly/cli@latest lint docs/openapi.yaml --format=github || true

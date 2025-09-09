@@ -807,7 +807,7 @@ paths:
     get:
       operationId: listEmployees
       summary: Mitarbeiterliste
-      description: 'RBAC: ADMIN oder DISPATCHER.'
+      description: 'RBAC: ADMIN oder DISPATCHER. CSV: Accept=text/csv, XLSX: Accept=application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
       x-required-roles:
         - ADMIN
         - DISPATCHER
@@ -929,6 +929,112 @@ paths:
                 sort:
                   by: firstName
                   dir: asc
+            text/csv:
+              schema:
+                type: string
+                format: binary
+              example: |
+                id,email,firstName,lastName,phone,role,employeeId,isActive,hireDate,qualifications,createdAt,updatedAt
+                a3f1c5d2-1234-4a56-9b8c-0d1e2f3a4b5c,jane.doe@example.com,Jane,Doe,+49 151 23456789,EMPLOYEE,E-1024,true,2024-01-15T00:00:00Z,Sicherheitskraft,2024-08-01T12:00:00Z,2024-08-15T12:00:00Z
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema:
+                type: string
+                format: binary
+              example: (xlsx)
+    EventStatus:
+      type: string
+      enum: [PLANNED, ACTIVE, DONE, CANCELLED]
+    Event:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        description:
+          type: string
+          nullable: true
+        siteId:
+          type: string
+          format: uuid
+          nullable: true
+        startTime:
+          type: string
+          format: date-time
+        endTime:
+          type: string
+          format: date-time
+        serviceInstructions:
+          type: string
+          description: Dienstanweisungen (Markdown/Text)
+        assignedEmployeeIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+        status:
+          $ref: '#/components/schemas/EventStatus'
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required: [id, title, startTime, endTime, serviceInstructions, status, createdAt, updatedAt]
+    EventCreate:
+      type: object
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+          nullable: true
+        siteId:
+          type: string
+          format: uuid
+          nullable: true
+        startTime:
+          type: string
+          format: date-time
+        endTime:
+          type: string
+          format: date-time
+        serviceInstructions:
+          type: string
+        assignedEmployeeIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+      required: [title, startTime, endTime, serviceInstructions]
+    EventUpdate:
+      type: object
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+          nullable: true
+        siteId:
+          type: string
+          format: uuid
+          nullable: true
+        startTime:
+          type: string
+          format: date-time
+        endTime:
+          type: string
+          format: date-time
+        serviceInstructions:
+          type: string
+        assignedEmployeeIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+        status:
+          $ref: '#/components/schemas/EventStatus'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -942,6 +1048,7 @@ paths:
         '503':
           $ref: '#/components/responses/ServiceUnavailable'
     post:
+      operationId: createEmployee
       summary: Mitarbeiter anlegen
       security:
         - BearerAuth: []
@@ -999,6 +1106,7 @@ paths:
           $ref: '#/components/responses/ServiceUnavailable'
   /employees/{id}:
     get:
+      operationId: getEmployee
       summary: Mitarbeiter abrufen
       security:
         - BearerAuth: []
@@ -1044,6 +1152,7 @@ paths:
         '503':
           $ref: '#/components/responses/ServiceUnavailable'
     put:
+      operationId: updateEmployee
       summary: Mitarbeiter aktualisieren
       security:
         - BearerAuth: []
@@ -1102,6 +1211,7 @@ paths:
         '503':
           $ref: '#/components/responses/ServiceUnavailable'
     delete:
+      operationId: deleteEmployee
       summary: Mitarbeiter löschen
       security:
         - BearerAuth: []
@@ -1133,6 +1243,7 @@ paths:
     get:
       operationId: listSites
       summary: Sites auflisten
+      description: 'CSV/XLSX via Accept-Header (siehe /employees)'
       security:
         - BearerAuth: []
       parameters:
@@ -1231,6 +1342,18 @@ paths:
                   dir: asc
                 filters:
                   city: Berlin
+            text/csv:
+              schema:
+                type: string
+                format: binary
+              example: |
+                id,name,address,city,postalCode,createdAt,updatedAt
+                7c1f2e94-5678-4a12-9cde-abcdef123456,Messe Berlin,Messedamm 22,Berlin,14055,2024-08-01T12:00:00Z,2024-08-15T12:00:00Z
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema:
+                type: string
+                format: binary
+              example: (xlsx)
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -1244,6 +1367,7 @@ paths:
         '503':
           $ref: '#/components/responses/ServiceUnavailable'
     post:
+      operationId: createSite
       summary: Site anlegen
       description: 'RBAC: ADMIN oder DISPATCHER.'
       x-required-roles:
@@ -1295,6 +1419,7 @@ paths:
           $ref: '#/components/responses/ServiceUnavailable'
   /sites/{id}:
     get:
+      operationId: getSite
       summary: Site abrufen
       security:
         - BearerAuth: []
@@ -1335,6 +1460,7 @@ paths:
         '503':
           $ref: '#/components/responses/ServiceUnavailable'
     put:
+      operationId: updateSite
       summary: Site aktualisieren
       description: 'RBAC: ADMIN oder DISPATCHER.'
       x-required-roles:
@@ -1392,6 +1518,7 @@ paths:
         '503':
           $ref: '#/components/responses/ServiceUnavailable'
     delete:
+      operationId: deleteSite
       summary: Site löschen
       description: 'RBAC: ADMIN.'
       x-required-roles:
@@ -1424,7 +1551,9 @@ paths:
           $ref: '#/components/responses/ServiceUnavailable'
   /sites/{siteId}/shifts:
     get:
+      operationId: listShiftsForSite
       summary: Schichten einer Site
+      description: 'CSV/XLSX via Accept-Header (siehe /employees)'
       security:
         - BearerAuth: []
       parameters:
@@ -1456,6 +1585,18 @@ paths:
                   status: "PLANNED"
                   createdAt: "2024-08-25T10:00:00Z"
                   updatedAt: "2024-08-25T10:00:00Z"
+            text/csv:
+              schema:
+                type: string
+                format: binary
+              example: |
+                id,siteId,title,location,startTime,endTime,requiredEmployees,status
+                b1b2b3b4-1111-2222-3333-444455556666,7c1f2e94-5678-4a12-9cde-abcdef123456,Nachtschicht,Messedamm 22,2024-09-01T22:00:00Z,2024-09-02T06:00:00Z,2,PLANNED
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema:
+                type: string
+                format: binary
+              example: (xlsx)
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -1469,6 +1610,7 @@ paths:
         '503':
           $ref: '#/components/responses/ServiceUnavailable'
     post:
+      operationId: createShiftForSite
       summary: Schicht für Site anlegen
       description: 'Feature-Flag: Bei EMAIL_NOTIFY_SHIFTS=true werden E-Mails an zugewiesene Mitarbeiter versendet.'
       x-feature-flag: EMAIL_NOTIFY_SHIFTS
@@ -1536,6 +1678,7 @@ paths:
     get:
       operationId: listShifts
       summary: Alle Schichten
+      description: 'CSV/XLSX via Accept-Header (siehe /employees)'
       security:
         - BearerAuth: []
       parameters:
@@ -1636,6 +1779,18 @@ paths:
                 sort:
                   by: startTime
                   dir: asc
+            text/csv:
+              schema:
+                type: string
+                format: binary
+              example: |
+                id,siteId,title,location,startTime,endTime,requiredEmployees,status,createdAt,updatedAt
+                b1b2b3b4-1111-2222-3333-444455556666,7c1f2e94-5678-4a12-9cde-abcdef123456,Nachtschicht,Messedamm 22,2024-09-01T22:00:00Z,2024-09-02T06:00:00Z,2,PLANNED,2024-08-25T10:00:00Z,2024-08-25T10:00:00Z
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema:
+                type: string
+                format: binary
+              example: (xlsx)
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -1650,6 +1805,7 @@ paths:
           $ref: '#/components/responses/ServiceUnavailable'
   /shifts/{id}:
     get:
+      operationId: getShift
       summary: Schicht abrufen
       security:
         - BearerAuth: []
@@ -1695,6 +1851,7 @@ paths:
         '503':
           $ref: '#/components/responses/ServiceUnavailable'
     put:
+      operationId: updateShift
       summary: Schicht aktualisieren
       description: 'RBAC: ADMIN oder DISPATCHER. Feature-Flag: Bei EMAIL_NOTIFY_SHIFTS=true werden E-Mails an zugewiesene Mitarbeiter versendet.'
       x-feature-flag: EMAIL_NOTIFY_SHIFTS
@@ -1756,6 +1913,7 @@ paths:
         '503':
           $ref: '#/components/responses/ServiceUnavailable'
     delete:
+      operationId: deleteShift
       summary: Schicht löschen
       description: 'RBAC: ADMIN. Feature-Flag: Bei EMAIL_NOTIFY_SHIFTS=true werden E-Mails an zugewiesene Mitarbeiter versendet.'
       x-feature-flag: EMAIL_NOTIFY_SHIFTS
@@ -1810,6 +1968,7 @@ paths:
           $ref: '#/components/responses/ServiceUnavailable'
   /shifts/{id}/assignments:
     post:
+      operationId: assignUserToShift
       summary: Mitarbeiter zuweisen
       security:
         - BearerAuth: []
@@ -1860,6 +2019,7 @@ paths:
         '503':
           $ref: '#/components/responses/ServiceUnavailable'
     delete:
+      operationId: removeUserFromShift
       summary: Mitarbeiter-Zuweisung entfernen
       security:
         - BearerAuth: []
@@ -1895,6 +2055,7 @@ paths:
           $ref: '#/components/responses/ServiceUnavailable'
   /shifts/{id}/clock-in:
     post:
+      operationId: clockIn
       summary: Arbeitsbeginn buchen
       security:
         - BearerAuth: []
@@ -1953,6 +2114,7 @@ paths:
           $ref: '#/components/responses/ServiceUnavailable'
   /shifts/{id}/clock-out:
     post:
+      operationId: clockOut
       summary: Arbeitsende buchen
       security:
         - BearerAuth: []
@@ -2224,6 +2386,7 @@ paths:
           $ref: '#/components/responses/ServiceUnavailable'
   /notifications/test:
     post:
+      operationId: sendTestNotification
       summary: Test-Benachrichtigung senden
       description: 'RBAC: ADMIN oder MANAGER. Rate-Limit aktiv (konfigurierbar per ENV).'
       security:
@@ -2579,3 +2742,145 @@ paths:
           $ref: '#/components/responses/InternalServerError'
         '503':
           $ref: '#/components/responses/ServiceUnavailable'
+  /events:
+    get:
+      operationId: listEvents
+      summary: Einsätze/Events auflisten
+      description: 'RBAC: Auth erforderlich. CSV/XLSX via Accept-Header.'
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          schema: { type: integer, minimum: 1, default: 1 }
+        - name: pageSize
+          in: query
+          schema: { type: integer, minimum: 1, maximum: 100, default: 20 }
+        - name: sortBy
+          in: query
+          schema: { type: string, enum: [startTime, endTime, title, createdAt, updatedAt] }
+        - name: sortDir
+          in: query
+          schema: { type: string, enum: [asc, desc], default: asc }
+        - name: filter[title]
+          in: query
+          schema: { type: string }
+        - name: filter[siteId]
+          in: query
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Liste der Einsätze
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/Event' }
+                  pagination: { $ref: '#/components/schemas/PageMeta' }
+            text/csv:
+              schema: { type: string, format: binary }
+              example: |
+                id,title,siteId,startTime,endTime,status
+                e1,Messe Berlin,7c1f2e94-5678-4a12-9cde-abcdef123456,2024-09-01T08:00:00Z,2024-09-01T18:00:00Z,PLANNED
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema: { type: string, format: binary }
+              example: (xlsx)
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    post:
+      operationId: createEvent
+      summary: Einsatz/Event anlegen
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/EventCreate' }
+            example:
+              title: "Messe Berlin – Tag 1"
+              siteId: "7c1f2e94-5678-4a12-9cde-abcdef123456"
+              startTime: "2024-09-01T08:00:00Z"
+              endTime: "2024-09-01T18:00:00Z"
+              serviceInstructions: "Treffpunkt 07:30 Uhr Hintereingang."
+              assignedEmployeeIds: ["a3f1c5d2-1234-4a56-9b8c-0d1e2f3a4b5c"]
+      responses:
+        '201':
+          description: Erstellt
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Event' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+  /events/{id}:
+    get:
+      operationId: getEvent
+      summary: Einsatz/Event abrufen
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Event
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Event' }
+            application/pdf:
+              schema: { type: string, format: binary }
+              example: (PDF)
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    put:
+      operationId: updateEvent
+      summary: Einsatz/Event aktualisieren
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/EventUpdate' }
+            example:
+              title: "Messe Berlin – Tag 1 (aktualisiert)"
+              serviceInstructions: "Treffpunkt 07:45 Uhr."
+      responses:
+        '200':
+          description: Aktualisiert
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Event' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+    delete:
+      operationId: deleteEvent
+      summary: Einsatz/Event löschen
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '204': { description: Gelöscht }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }

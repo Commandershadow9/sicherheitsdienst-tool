@@ -14,6 +14,20 @@ jest.mock('../middleware/auth', () => {
 });
 
 describe('RBAC negative (EMPLOYEE) → 403', () => {
+  // Users (ADMIN/DISPATCHER required on list; ADMIN on create/delete)
+  it('GET /api/users → 403', async () => {
+    const res = await request(app).get('/api/users');
+    expect(res.status).toBe(403);
+  });
+  it('POST /api/users → 403', async () => {
+    const res = await request(app).post('/api/users').send({});
+    expect(res.status).toBe(403);
+  });
+  it('DELETE /api/users/:id → 403', async () => {
+    const res = await request(app).delete('/api/users/u1');
+    expect(res.status).toBe(403);
+  });
+
   it('POST /api/sites → 403', async () => {
     const res = await request(app).post('/api/sites').send({});
     expect(res.status).toBe(403);
@@ -40,4 +54,3 @@ describe('RBAC negative (EMPLOYEE) → 403', () => {
     expect(res.status).toBe(403);
   });
 });
-

@@ -49,6 +49,13 @@ Erweiterung (konzepttreu, dokumentarisch):
 ## Nächste Schritte (Vorschlag)
 - RBAC‑Feinschliff: weitere Endpunkte mit `x-required-roles` dokumentieren; negative Testfälle ergänzen.
 - OpenAPI: Fehlerbeispiele vereinheitlichen; optionale operationId‑Felder vergeben; ungenutzte Komponenten abbauen.
+
+## Nächste größere Features
+- Einsätze/Events (Planungseinheiten für Aufträge):
+  - Objekt mit Start/Ende, Site, Dienstanweisungen, zugewiesene Mitarbeiter, optional Anhänge.
+  - RBAC: ADMIN/DISPATCHER verwalten; alle Auth‑Benutzer lesen, eigene Anweisungen sehen.
+  - Export (CSV/XLSX, PDF Bericht) und OpenAPI‑Doku.
+  - Push‑Benachrichtigungen: Geräte‑Token, optional FCM, Opt‑In/Out je Benutzer.
 - Auth/Refresh: Refresh‑Token‑Endpoint inkl. Tests und Doku.
 - Reporting/Exports (CSV/Excel) für Listenendpunkte; Filter‑Preset‑Doku.
 - Performance: sinnvolle Indexe (Users.email, Sites.name+address, Shifts.startTime/status) prüfen; Migrationsvorschläge.

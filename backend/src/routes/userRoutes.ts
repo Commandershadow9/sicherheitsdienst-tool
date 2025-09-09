@@ -9,7 +9,7 @@ const router = Router();
 
 // Alle folgenden Routen erfordern Authentifizierung
 
-// GET /api/users - Alle Mitarbeiter abrufen
+// GET /api/users - Alle Mitarbeiter abrufen (JSON oder CSV via Accept)
 router.get('/', authenticate, authorize('ADMIN', 'DISPATCHER'), validate(userListQuerySchema), asyncHandler(userController.getAllUsers));
 
 // POST /api/users - Neuen Mitarbeiter erstellen

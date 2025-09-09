@@ -27,6 +27,17 @@ See CHANGELOG.md for details.
 - **Authentication**: JSON Web Tokens (JWT) with `bcryptjs` for password hashing.
 - **Development Environment**: `ts-node` and `nodemon` for live-reloading.
 
+## Einsätze / Events
+- Endpunkte:
+  - `GET /api/events` (Liste; Filter/Sort/Pagination wie bei anderen Listen; Exporte via Accept: CSV/XLSX)
+  - `POST /api/events` (ADMIN/DISPATCHER)
+  - `GET /api/events/{id}`
+  - `PUT /api/events/{id}` (ADMIN/DISPATCHER)
+  - `DELETE /api/events/{id}` (ADMIN)
+- Felder: Titel, Beschreibung, Site, Start/Ende, Dienstanweisungen, zugewiesene Mitarbeiter, Status.
+- Push-Hinweis: Bei Event-Erstellung/-Änderung kann (Feature-Flag) eine Push-Mitteilung an zugewiesene Mitarbeiter ausgelöst werden.
+- ENV: `PUSH_NOTIFY_EVENTS=true|false` (Standard false). Spätere Integration von FCM/APNs möglich.
+
 ---
 
 ## Authentication & Refresh
@@ -61,6 +72,18 @@ See CHANGELOG.md for details.
   curl -s http://localhost:3001/api/auth/me \
     -H "Authorization: Bearer ${ACCESS_TOKEN}"
   ```
+
+## Quickstart (Docker Compose)
+
+- Copy envs: `cp backend/.env.example backend/.env` and set at least `JWT_SECRET` (and `REFRESH_SECRET` if you use refresh tokens).
+- Start stack: `docker-compose up -d --build`
+- Healthchecks:
+  - DB: waits via `pg_isready`
+  - API: checks `GET http://localhost:3001/api/health`
+- Migrations: `npx prisma migrate deploy` runs automatically before the API starts.
+- Verify:
+  - `curl -s http://localhost:3001/api/health`
+  - `curl -s http://localhost:3001/api/stats`
 
 ## Error Responses
 
@@ -175,6 +198,27 @@ Follow these steps to set up and run the project locally:
   - Antwort: 200 bei Erfolg, 422 bei ungültigen Eingaben, 400 bei `channel != email`
   - OpenAPI ergänzt Beispiel-Responses für 400 (Bad Request) und 422 (Validation Error) unter `docs/openapi.yaml`.
   - RBAC: Zugriff nur für Rollen `ADMIN` und `MANAGER`.
+  - Rate-Limit (konfigurierbar über ENV):
+    - `NOTIFICATIONS_TEST_RATE_LIMIT_ENABLED` (true|false)
+    - `NOTIFICATIONS_TEST_RATE_LIMIT_PER_MIN` (Standard 10)
+    - `NOTIFICATIONS_TEST_RATE_LIMIT_WINDOW_MS` (Standard 60000)
+    - Headers: `RateLimit-Limit`, `RateLimit-Remaining`, `RateLimit-Reset`; bei 429 zusätzlich `Retry-After`.
+
+## Push-Benachrichtigungen (Mobile App)
+- Geräte-Token (pro Benutzer) verwalten:
+  - `POST /api/push/tokens` mit `{ platform: IOS|ANDROID|WEB, token: string }` – registriert/aktualisiert Token
+  - `GET /api/push/tokens` – listet eigene Tokens
+  - `PUT /api/push/tokens/:token` – Status ändern (`isActive`, `notificationsEnabled`)
+  - `DELETE /api/push/tokens/:token` – Token entfernen
+- Events können (Feature-Flag) Push auslösen (best‑effort):
+  - Flag: `PUSH_NOTIFY_EVENTS=true`
+  - Optional FCM: `FCM_PROJECT_ID`, `FCM_CLIENT_EMAIL`, `FCM_PRIVATE_KEY` (Zeilenumbrüche als `\n`)
+  - Ohne FCM: Mock‑Versand (nur Logging)
+- Admin: globales Push‑Opt‑In/Out je Benutzer
+  - `PUT /api/push/users/{userId}/opt` mit `{ pushOptIn: true|false }` (ADMIN)
+
+## Event‑PDF
+- `GET /api/events/{id}` liefert bei `Accept: application/pdf` einen einfachen Einsatzbericht (Titel, Zeitraum, Site, Dienstanweisungen, eingesetzte Mitarbeiter).
 
 ### E-Mail-Trigger bei Schicht-Änderungen (Feature-Flag)
 - Flag: `EMAIL_NOTIFY_SHIFTS=true` aktiviert echte E-Mail-Benachrichtigungen bei Schicht-Erstellung/-Aktualisierung/-Löschung.
@@ -197,6 +241,45 @@ Follow these steps to set up and run the project locally:
 - Users:
   - GET Liste: ADMIN, DISPATCHER
   - POST/DELETE/PUT: ADMIN (detailspezifische Logik ggf. erweitert)
+  - CSV-Export: `GET /api/users` mit `Accept: text/csv` (gleiche Query‑Parameter)
+  - XLSX-Export: `GET /api/users` mit `Accept: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet`
+
+### Listen-Exporte (Sites, Shifts)
+- Sites:
+  - CSV: `GET /api/sites` mit `Accept: text/csv`
+  - XLSX: `GET /api/sites` mit `Accept: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet`
+- Shifts:
+  - CSV: `GET /api/shifts` mit `Accept: text/csv`
+  - XLSX: `GET /api/shifts` mit `Accept: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet`
+
+Schichten einer Site:
+- `GET /api/sites/{siteId}/shifts` unterstützt ebenfalls CSV/XLSX via Accept‑Header (analog zu oben).
+
+Beispiel (CSV für Site‑Schichten):
+```bash
+SITE_ID="<SITE_ID>"
+curl -s -H 'Accept: text/csv' "http://localhost:3001/api/sites/${SITE_ID}/shifts" -o site_shifts.csv
+```
+Beispiel (XLSX für Site‑Schichten):
+```bash
+SITE_ID="<SITE_ID>"
+curl -s -H 'Accept: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' \
+  "http://localhost:3001/api/sites/${SITE_ID}/shifts" -o site_shifts.xlsx
+```
+
+### Accept‑Header Referenz
+- JSON (Standard): `application/json` (oder Header weglassen)
+- CSV: `text/csv`
+- XLSX: `application/vnd.openxmlformats-officedocument.spreadsheetml.sheet`
+
+Beispiel (CSV):
+```bash
+curl -s -H 'Accept: text/csv' 'http://localhost:3001/api/users?page=1&pageSize=20' -o users.csv
+```
+Beispiel (XLSX):
+```bash
+curl -s -H 'Accept: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' 'http://localhost:3001/api/users?page=1&pageSize=20' -o users.xlsx
+```
 
 ### RBAC Notifications
 - Rollenmatrix (Zugriff auf Benachrichtigungen):

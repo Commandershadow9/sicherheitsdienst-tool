@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { PrismaClient } from '@prisma/client';
+import ExcelJS from 'exceljs';
 import logger from '../utils/logger';
 import { sendShiftChangedEmail } from '../services/emailService';
 
@@ -89,12 +90,150 @@ export const getAllShifts = async (req: Request, res: Response, next: NextFuncti
       },
     });
 
+    const accept = (req.headers['accept'] as string) || '';
+    if (accept.includes('text/csv')) {
+      const rows = (data as any[]).map((sh) => ({
+        id: sh.id,
+        siteId: sh.siteId || '',
+        title: sh.title,
+        location: sh.location,
+        startTime: new Date(sh.startTime).toISOString(),
+        endTime: new Date(sh.endTime).toISOString(),
+        requiredEmployees: sh.requiredEmployees,
+        status: sh.status,
+        createdAt: new Date(sh.createdAt).toISOString(),
+        updatedAt: new Date(sh.updatedAt).toISOString(),
+      }));
+      const header = Object.keys(rows[0] || {
+        id: '',
+        siteId: '',
+        title: '',
+        location: '',
+        startTime: '',
+        endTime: '',
+        requiredEmployees: '',
+        status: '',
+        createdAt: '',
+        updatedAt: '',
+      });
+      const escape = (v: any) => {
+        const s = String(v ?? '');
+        if (/[",\n]/.test(s)) return '"' + s.replace(/"/g, '""') + '"';
+        return s;
+      };
+      const csv = [header.join(','), ...rows.map((r) => header.map((h) => escape((r as any)[h])).join(','))].join('\n');
+      res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+      res.setHeader('Content-Disposition', 'attachment; filename="shifts.csv"');
+      res.status(200).send(csv);
+      return;
+    }
+    if (accept.includes('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')) {
+      const wb = new ExcelJS.Workbook();
+      const ws = wb.addWorksheet('shifts');
+      const header = [
+        'id',
+        'siteId',
+        'title',
+        'location',
+        'startTime',
+        'endTime',
+        'requiredEmployees',
+        'status',
+        'createdAt',
+        'updatedAt',
+      ];
+      ws.addRow(header);
+      for (const sh of data as any[]) {
+        ws.addRow([
+          sh.id,
+          sh.siteId || '',
+          sh.title,
+          sh.location,
+          new Date(sh.startTime).toISOString(),
+          new Date(sh.endTime).toISOString(),
+          sh.requiredEmployees,
+          sh.status,
+          new Date(sh.createdAt).toISOString(),
+          new Date(sh.updatedAt).toISOString(),
+        ]);
+      }
+      const buffer = await wb.xlsx.writeBuffer();
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      res.setHeader('Content-Disposition', 'attachment; filename="shifts.xlsx"');
+      res.status(200).send(Buffer.from(buffer));
+      return;
+    }
+
     res.json({ data, pagination: { page, pageSize, total, totalPages }, sort: { by: sortBy, dir: sortDir }, filters: Object.keys(where).length ? filters : undefined });
     return;
   } catch (error) {
     console.error('Error fetching shifts from database:', error);
     next(error);
     return;
+  }
+};
+
+// GET /api/sites/:siteId/shifts – Schichten einer Site (JSON Array oder CSV/XLSX)
+export const getShiftsForSite = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const { siteId } = req.params as { siteId: string };
+    const data = await prisma.shift.findMany({
+      where: { siteId },
+      orderBy: { startTime: 'asc' },
+      include: { assignments: false },
+    });
+
+    const accept = (req.headers['accept'] as string) || '';
+    if (accept.includes('text/csv')) {
+      const rows = (data as any[]).map((sh) => ({
+        id: sh.id,
+        siteId: sh.siteId || '',
+        title: sh.title,
+        location: sh.location,
+        startTime: new Date(sh.startTime).toISOString(),
+        endTime: new Date(sh.endTime).toISOString(),
+        requiredEmployees: sh.requiredEmployees,
+        status: sh.status,
+      }));
+      const header = Object.keys(rows[0] || { id: '', siteId: '', title: '', location: '', startTime: '', endTime: '', requiredEmployees: '', status: '' });
+      const escape = (v: any) => {
+        const s = String(v ?? '');
+        if (/[",\n]/.test(s)) return '"' + s.replace(/"/g, '""') + '"';
+        return s;
+      };
+      const csv = [header.join(','), ...rows.map((r) => header.map((h) => escape((r as any)[h])).join(','))].join('\n');
+      res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+      res.setHeader('Content-Disposition', `attachment; filename="site_${siteId}_shifts.csv"`);
+      res.status(200).send(csv);
+      return;
+    }
+    if (accept.includes('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')) {
+      const wb = new ExcelJS.Workbook();
+      const ws = wb.addWorksheet('shifts');
+      const header = ['id', 'siteId', 'title', 'location', 'startTime', 'endTime', 'requiredEmployees', 'status'];
+      ws.addRow(header);
+      for (const sh of data as any[]) {
+        ws.addRow([
+          sh.id,
+          sh.siteId || '',
+          sh.title,
+          sh.location,
+          new Date(sh.startTime).toISOString(),
+          new Date(sh.endTime).toISOString(),
+          sh.requiredEmployees,
+          sh.status,
+        ]);
+      }
+      const buffer = await wb.xlsx.writeBuffer();
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      res.setHeader('Content-Disposition', `attachment; filename="site_${siteId}_shifts.xlsx"`);
+      res.status(200).send(Buffer.from(buffer));
+      return;
+    }
+
+    res.json(data);
+  } catch (error) {
+    next(error);
   }
 };
 

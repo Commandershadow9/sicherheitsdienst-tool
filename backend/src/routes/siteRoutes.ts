@@ -5,6 +5,8 @@ import { createSiteSchema, updateSiteSchema } from '../validations/siteValidatio
 import * as siteController from '../controllers/siteController';
 import { asyncHandler } from '../middleware/asyncHandler';
 import { siteListQuerySchema } from '../validations/siteValidation';
+import * as shiftController from '../controllers/shiftController';
+import { shiftListQuerySchema } from '../validations/shiftValidation';
 
 const router = Router();
 
@@ -22,6 +24,15 @@ router.post(
 
 // GET /api/sites/:id
 router.get('/:id', authenticate, asyncHandler(siteController.getSiteById));
+
+// GET /api/sites/:siteId/shifts – Schichten einer Site (unterstützt CSV/XLSX via Accept)
+router.get(
+  '/:siteId/shifts',
+  authenticate,
+  // optional: gleiche Query-Validierung wie /shifts (derzeit nicht genutzt, Response ist Array)
+  // validate(shiftListQuerySchema),
+  asyncHandler(shiftController.getShiftsForSite),
+);
 
 // PUT /api/sites/:id
 router.put(

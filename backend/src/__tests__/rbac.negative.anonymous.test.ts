@@ -14,6 +14,28 @@ jest.mock('../middleware/auth', () => {
 });
 
 describe('RBAC negative (anonymous) → 401', () => {
+  // Users
+  it('GET /api/users → 401', async () => {
+    const res = await request(app).get('/api/users');
+    expect(res.status).toBe(401);
+  });
+  it('POST /api/users → 401', async () => {
+    const res = await request(app).post('/api/users').send({});
+    expect(res.status).toBe(401);
+  });
+  it('GET /api/users/:id → 401', async () => {
+    const res = await request(app).get('/api/users/u1');
+    expect(res.status).toBe(401);
+  });
+  it('PUT /api/users/:id → 401', async () => {
+    const res = await request(app).put('/api/users/u1').send({ firstName: 'X' });
+    expect(res.status).toBe(401);
+  });
+  it('DELETE /api/users/:id → 401', async () => {
+    const res = await request(app).delete('/api/users/u1');
+    expect(res.status).toBe(401);
+  });
+
   it('POST /api/sites → 401', async () => {
     const res = await request(app).post('/api/sites').send({});
     expect(res.status).toBe(401);
@@ -40,4 +62,3 @@ describe('RBAC negative (anonymous) → 401', () => {
     expect(res.status).toBe(401);
   });
 });
-

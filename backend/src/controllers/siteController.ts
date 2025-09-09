@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { PrismaClient } from '@prisma/client';
+import ExcelJS from 'exceljs';
 
 const prisma = new PrismaClient();
 
@@ -37,6 +38,60 @@ export const getAllSites = async (req: Request, res: Response, next: NextFunctio
     const totalPages = Math.max(Math.ceil(total / pageSize), 1);
     const skip = (page - 1) * pageSize;
     const data = await prisma.site.findMany({ where, orderBy: { [sortBy]: sortDir as any }, skip, take: pageSize });
+
+    const accept = (req.headers['accept'] as string) || '';
+    if (accept.includes('text/csv')) {
+      const rows = data.map((s: any) => ({
+        id: s.id,
+        name: s.name,
+        address: s.address,
+        city: s.city,
+        postalCode: s.postalCode,
+        createdAt: new Date(s.createdAt).toISOString(),
+        updatedAt: new Date(s.updatedAt).toISOString(),
+      }));
+      const header = Object.keys(rows[0] || {
+        id: '',
+        name: '',
+        address: '',
+        city: '',
+        postalCode: '',
+        createdAt: '',
+        updatedAt: '',
+      });
+      const escape = (v: any) => {
+        const s = String(v ?? '');
+        if (/[",\n]/.test(s)) return '"' + s.replace(/"/g, '""') + '"';
+        return s;
+      };
+      const csv = [header.join(','), ...rows.map((r) => header.map((h) => escape((r as any)[h])).join(','))].join('\n');
+      res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+      res.setHeader('Content-Disposition', 'attachment; filename="sites.csv"');
+      res.status(200).send(csv);
+      return;
+    }
+    if (accept.includes('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')) {
+      const wb = new ExcelJS.Workbook();
+      const ws = wb.addWorksheet('sites');
+      const header = ['id', 'name', 'address', 'city', 'postalCode', 'createdAt', 'updatedAt'];
+      ws.addRow(header);
+      for (const s of data as any[]) {
+        ws.addRow([
+          s.id,
+          s.name,
+          s.address,
+          s.city,
+          s.postalCode,
+          new Date(s.createdAt).toISOString(),
+          new Date(s.updatedAt).toISOString(),
+        ]);
+      }
+      const buffer = await wb.xlsx.writeBuffer();
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      res.setHeader('Content-Disposition', 'attachment; filename="sites.xlsx"');
+      res.status(200).send(Buffer.from(buffer));
+      return;
+    }
 
     res.json({
       data,
