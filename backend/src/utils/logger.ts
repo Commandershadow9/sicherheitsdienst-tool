@@ -32,10 +32,11 @@ const logger = createLogger({
   ],
 });
 
-if (process.env.NODE_ENV !== 'production') {
+const useJsonConsole = String(process.env.LOG_FORMAT || '').toLowerCase() === 'json';
+if (process.env.NODE_ENV !== 'production' || useJsonConsole) {
   logger.add(
     new transports.Console({
-      format: combine(colorize(), logFormat),
+      format: useJsonConsole ? combine(timestamp(), errors({ stack: true }), splat(), json()) : combine(colorize(), logFormat),
     }),
   );
 }

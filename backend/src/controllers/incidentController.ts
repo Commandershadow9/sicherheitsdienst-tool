@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import prisma from '../utils/prisma';
 import ExcelJS from 'exceljs';
+import { streamCsv } from '../utils/csv';
 
 export const listIncidents = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -51,16 +52,8 @@ export const listIncidents = async (req: Request, res: Response, next: NextFunct
         createdAt: new Date(i.createdAt).toISOString(),
         updatedAt: new Date(i.updatedAt).toISOString(),
       }));
-      const header = Object.keys(rows[0] || { id: '', title: '', description: '', severity: '', status: '', location: '', occurredAt: '', reportedBy: '', createdAt: '', updatedAt: '' });
-      const escape = (v: any) => {
-        const s = String(v ?? '');
-        if (/[",\n]/.test(s)) return '"' + s.replace(/"/g, '""') + '"';
-        return s;
-      };
-      const csv = [header.join(','), ...rows.map((r) => header.map((h) => escape((r as any)[h])).join(','))].join('\n');
-      res.setHeader('Content-Type', 'text/csv; charset=utf-8');
-      res.setHeader('Content-Disposition', 'attachment; filename="incidents.csv"');
-      res.status(200).send(csv);
+      const header = rows.length ? Object.keys(rows[0]) : ['id','title','description','severity','status','location','occurredAt','reportedBy','createdAt','updatedAt'];
+      streamCsv(res, 'incidents.csv', header, rows);
       return;
     }
     if (accept.includes('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')) {
@@ -161,4 +154,3 @@ export const deleteIncident = async (req: Request, res: Response, next: NextFunc
     next(err);
   }
 };
-

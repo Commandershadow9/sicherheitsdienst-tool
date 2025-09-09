@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import prisma from '../utils/prisma';
 import ExcelJS from 'exceljs';
+import { streamCsv } from '../utils/csv';
 import bcrypt from 'bcryptjs';
 
 
@@ -78,30 +79,11 @@ export const getAllUsers = async (req: Request, res: Response, next: NextFunctio
         createdAt: new Date(u.createdAt).toISOString(),
         updatedAt: new Date(u.updatedAt).toISOString(),
       }));
-      const header = Object.keys(rows[0] || {
-        id: '',
-        email: '',
-        firstName: '',
-        lastName: '',
-        phone: '',
-        role: '',
-        employeeId: '',
-        isActive: '',
-        hireDate: '',
-        qualifications: '',
-        createdAt: '',
-        updatedAt: '',
-      });
-      const escape = (v: any) => {
-        const s = String(v ?? '');
-        if (/[",\n]/.test(s)) return '"' + s.replace(/"/g, '""') + '"';
-        return s;
-      };
-      const csv = [header.join(','), ...rows.map((r) => header.map((h) => escape((r as any)[h])).join(','))].join('\n');
-      res.setHeader('Content-Type', 'text/csv; charset=utf-8');
-      res.setHeader('Content-Disposition', 'attachment; filename="users.csv"');
-      res.status(200).send(csv);
-      return;
+      const header = rows.length
+        ? Object.keys(rows[0])
+        : ['id','email','firstName','lastName','phone','role','employeeId','isActive','hireDate','qualifications','createdAt','updatedAt'];
+      streamCsv(res, 'users.csv', header, rows);
+      return; 
     }
     if (accept.includes('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')) {
       const wb = new ExcelJS.Workbook();

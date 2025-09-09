@@ -1,5 +1,6 @@
 import logger from '../utils/logger';
 import prisma from '../utils/prisma';
+import { incrPushSuccess, incrPushFail } from '../utils/notifyStats';
 
 let firebase: any | null = null;
 
@@ -54,6 +55,7 @@ export async function sendPushToUsers(userIds: string[], title: string, body: st
 
   if (!isFCMConfigured()) {
     logger.info('PUSH (mock, ohne FCM): tokens=%d title=%s body=%s', tokens.length, title, body);
+    incrPushSuccess(tokens.length);
     return { success: true, count: tokens.length };
   }
   initFCM();
@@ -72,9 +74,12 @@ export async function sendPushToUsers(userIds: string[], title: string, body: st
         logger.warn('PUSH: %d Tokens deaktiviert', toDisable.length);
       }
     }
+    incrPushSuccess(tokens.length - resp.failureCount);
+    if (resp.failureCount > 0) incrPushFail();
     return { success: true, count: tokens.length, result: resp }; 
   } catch (err) {
     logger.error('PUSH Fehler: %o', err);
+    incrPushFail();
     return { success: false, count: 0 };
   }
 }

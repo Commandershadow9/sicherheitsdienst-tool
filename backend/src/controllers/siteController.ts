@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import prisma from '../utils/prisma';
 import ExcelJS from 'exceljs';
+import { streamCsv } from '../utils/csv';
 
 
 // GET /api/sites - Alle Sites
@@ -49,24 +50,8 @@ export const getAllSites = async (req: Request, res: Response, next: NextFunctio
         createdAt: new Date(s.createdAt).toISOString(),
         updatedAt: new Date(s.updatedAt).toISOString(),
       }));
-      const header = Object.keys(rows[0] || {
-        id: '',
-        name: '',
-        address: '',
-        city: '',
-        postalCode: '',
-        createdAt: '',
-        updatedAt: '',
-      });
-      const escape = (v: any) => {
-        const s = String(v ?? '');
-        if (/[",\n]/.test(s)) return '"' + s.replace(/"/g, '""') + '"';
-        return s;
-      };
-      const csv = [header.join(','), ...rows.map((r) => header.map((h) => escape((r as any)[h])).join(','))].join('\n');
-      res.setHeader('Content-Type', 'text/csv; charset=utf-8');
-      res.setHeader('Content-Disposition', 'attachment; filename="sites.csv"');
-      res.status(200).send(csv);
+      const header = rows.length ? Object.keys(rows[0]) : ['id','name','address','city','postalCode','createdAt','updatedAt'];
+      streamCsv(res, 'sites.csv', header, rows);
       return;
     }
     if (accept.includes('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')) {

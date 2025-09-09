@@ -1,4 +1,5 @@
 import logger from '../utils/logger';
+import { incrEmailSuccess, incrEmailFail } from '../utils/notifyStats';
 
 const smtpHost = process.env.SMTP_HOST;
 const smtpPort = process.env.SMTP_PORT ? parseInt(process.env.SMTP_PORT, 10) : 587;
@@ -59,6 +60,7 @@ export async function sendEmail(to: string, subject: string, text?: string, html
       }
       const info = await transport.sendMail({ from: smtpFrom, to, subject, text, html });
       logger.info('E-Mail erfolgreich gesendet: %o', { to, messageId: info.messageId });
+      incrEmailSuccess();
       return info;
     } catch (err) {
       const transient = isTransientError(err);
@@ -69,6 +71,7 @@ export async function sendEmail(to: string, subject: string, text?: string, html
         continue;
       }
       logger.error('E-Mail-Versand fehlgeschlagen: %o', err);
+      incrEmailFail();
       throw err;
     }
   }

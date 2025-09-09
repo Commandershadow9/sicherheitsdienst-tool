@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import prisma from '../utils/prisma';
 import { getCounters } from '../utils/stats';
+import { getNotifyCounters } from '../utils/notifyStats';
 
 // GET /api/health - System Health Check
 export const healthCheck = async (_req: Request, res: Response, _next: NextFunction) => {
@@ -101,6 +102,7 @@ export const getSystemStats = async (req: Request, res: Response, next: NextFunc
           testRateLimit: rateLimit,
           smtpConfigured: Boolean(process.env.SMTP_HOST),
           pushConfigured,
+          counters: getNotifyCounters(),
         },
         authRateLimit,
         auth: authCfg,

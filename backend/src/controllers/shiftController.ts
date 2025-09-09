@@ -3,6 +3,7 @@ import prisma from '../utils/prisma';
 import ExcelJS from 'exceljs';
 import logger from '../utils/logger';
 import { sendShiftChangedEmail } from '../services/emailService';
+import { streamCsv } from '../utils/csv';
 
 const EMAIL_FLAG = 'EMAIL_NOTIFY_SHIFTS';
 
@@ -103,27 +104,8 @@ export const getAllShifts = async (req: Request, res: Response, next: NextFuncti
         createdAt: new Date(sh.createdAt).toISOString(),
         updatedAt: new Date(sh.updatedAt).toISOString(),
       }));
-      const header = Object.keys(rows[0] || {
-        id: '',
-        siteId: '',
-        title: '',
-        location: '',
-        startTime: '',
-        endTime: '',
-        requiredEmployees: '',
-        status: '',
-        createdAt: '',
-        updatedAt: '',
-      });
-      const escape = (v: any) => {
-        const s = String(v ?? '');
-        if (/[",\n]/.test(s)) return '"' + s.replace(/"/g, '""') + '"';
-        return s;
-      };
-      const csv = [header.join(','), ...rows.map((r) => header.map((h) => escape((r as any)[h])).join(','))].join('\n');
-      res.setHeader('Content-Type', 'text/csv; charset=utf-8');
-      res.setHeader('Content-Disposition', 'attachment; filename="shifts.csv"');
-      res.status(200).send(csv);
+      const header = rows.length ? Object.keys(rows[0]) : ['id','siteId','title','location','startTime','endTime','requiredEmployees','status','createdAt','updatedAt'];
+      streamCsv(res, 'shifts.csv', header, rows);
       return;
     }
     if (accept.includes('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')) {
