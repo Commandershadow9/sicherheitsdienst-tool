@@ -280,6 +280,12 @@ Weitere Details siehe: `docs/ops/system-health.md`
   ```
 - Grafana Login: admin / admin (Standard, bitte ändern)
 
+#### Alertmanager → Discord (optional)
+- Beispiel‑Konfiguration: `docs/ops/alertmanager.discord.example.yml`
+  - Ersetze die Webhook‑URL (Slack‑kompatibler Discord‑Webhook: `/slack` Suffix)
+  - Kopiere anschließend nach `docs/ops/alertmanager.yml`
+- Prometheus Regeln enthalten Readiness/429/5xx‑Alerts; Alertmanager versendet sie an Discord.
+
 - Kubernetes Probes:
   - Liveness: `GET /healthz`
   - Readiness: `GET /readyz`

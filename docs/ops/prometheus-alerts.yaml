@@ -22,3 +22,12 @@ groups:
           summary: "Erhöhte 5xx-Fehler"
           description: "Mehr als 10 5xx-Antworten in 5 Minuten. Prüfe Logs / Health."
 
+      - alert: ApiReadinessDown
+        expr: probe_success{job="blackbox-readyz"} == 0
+        for: 2m
+        labels:
+          severity: critical
+          service: sicherheitsdienst-api
+        annotations:
+          summary: "Readiness Probe fehlgeschlagen"
+          description: "Blackbox Probe auf /readyz ist seit >2m nicht erfolgreich."
