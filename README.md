@@ -193,6 +193,43 @@ Weitere Details siehe: `docs/ops/system-health.md`
           retries: 10
     ```
 
+### Release (GHCR)
+
+- Build & Push: automatisiert via GitHub Actions bei Tag `v*` (`.github/workflows/docker-release.yml`).
+  - Images:
+    - `ghcr.io/<owner>/<repo>:<tag>`
+    - `ghcr.io/<owner>/<repo>:latest`
+  - Voraussetzung: Packages‑Write‑Permission für `GITHUB_TOKEN`.
+
+- Runbook: Tag setzen und pushen (Beispiel `v1.2.0-rc.1`)
+  ```bash
+  npm --workspace backend version 1.2.0-rc.1 --no-git-tag-version
+  git add backend/package.json CHANGELOG.md
+  git commit -m "chore(release): v1.2.0-rc.1"
+  git tag -a v1.2.0-rc.1 -m "Release v1.2.0-rc.1"
+  git push origin main --tags
+  ```
+
+- Compose (Image verwenden)
+  ```yaml
+  services:
+    api:
+      image: ghcr.io/<owner>/<repo>:latest
+      environment:
+        NODE_ENV: production
+        PORT: 3001
+        DATABASE_URL: ${DATABASE_URL}
+        JWT_SECRET: ${JWT_SECRET}
+        FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
+        MOBILE_APP_URL: ${MOBILE_APP_URL:-http://localhost:19000}
+      ports: ["3001:3001"]
+      healthcheck:
+        test: ["CMD-SHELL", "wget -qO- http://localhost:3001/readyz || exit 1"]
+        interval: 15s
+        timeout: 5s
+        retries: 10
+  ```
+
 - Kubernetes Probes:
   - Liveness: `GET /healthz`
   - Readiness: `GET /readyz`
