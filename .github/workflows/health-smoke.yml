@@ -61,6 +61,23 @@ jobs:
         run: |
           curl -sS http://localhost:3000/readyz | tee readyz.json | jq -e '.status=="ready" or .status=="not-ready"'
 
+      - name: SLA check: /healthz latency < 500ms (20x)
+        run: |
+          set -euo pipefail
+          max_ms=500
+          for i in $(seq 1 20); do
+            t=$(curl -s -o /dev/null -w '%{time_total}' http://localhost:3000/healthz)
+            ms=$(python3 - <<PY
+val = float("$t") * 1000
+print(int(val))
+PY
+)
+            echo "healthz time: ${ms}ms"
+            if [ "$ms" -gt "$max_ms" ]; then
+              echo "::error::/healthz SLA breach: ${ms}ms > ${max_ms}ms"; exit 1
+            fi
+          done
+
       - name: Upload health-smoke artifacts
         if: always()
         uses: actions/upload-artifact@v4

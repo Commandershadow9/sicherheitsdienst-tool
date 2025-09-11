@@ -31,3 +31,13 @@ groups:
         annotations:
           summary: "Readiness Probe fehlgeschlagen"
           description: "Blackbox Probe auf /readyz ist seit >2m nicht erfolgreich."
+
+      - alert: ApiLatencyP95High
+        expr: histogram_quantile(0.95, sum by (le) (rate(http_request_duration_seconds_bucket[5m]))) > 0.5
+        for: 5m
+        labels:
+          severity: warning
+          service: sicherheitsdienst-api
+        annotations:
+          summary: "Hohe Latenz p95"
+          description: "p95 der HTTP‑Latenz > 500ms über 5 Minuten."
