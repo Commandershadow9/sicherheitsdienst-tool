@@ -7,6 +7,7 @@ jest.mock('../middleware/auth', () => {
   return {
     authenticate: (req: any, _res: any, next: any) => { req.user = currentUser || { id: 'u', role: 'EMPLOYEE', isActive: true }; next(); },
     authorize: (..._roles: string[]) => (_req: any, _res: any, next: any) => next(),
+    authorizeSelfOr: (..._roles: string[]) => (_req: any, _res: any, next: any) => next(),
   };
 });
 
@@ -61,4 +62,3 @@ describe('Incidents routes', () => {
     expect([200,201]).toContain(res.status);
   });
 });
-

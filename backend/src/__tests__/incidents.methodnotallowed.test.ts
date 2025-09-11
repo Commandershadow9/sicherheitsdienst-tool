@@ -5,6 +5,7 @@ import app from '../app';
 jest.mock('../middleware/auth', () => ({
   authenticate: (req: any, _res: any, next: any) => { req.user = { id: 'u1', role: 'EMPLOYEE', isActive: true }; next(); },
   authorize: () => (_req: any, _res: any, next: any) => next(),
+  authorizeSelfOr: () => (_req: any, _res: any, next: any) => next(),
 }));
 
 // Minimal Prisma mock
@@ -24,4 +25,3 @@ describe('Incidents Method Not Allowed (405)', () => {
     expect(res.headers['allow']).toBe('GET, PUT, DELETE');
   });
 });
-

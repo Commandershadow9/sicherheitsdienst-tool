@@ -5,6 +5,7 @@ import app from '../app';
 jest.mock('../middleware/auth', () => ({
   authenticate: (req: any, _res: any, next: any) => { req.user = { id: 'u1', role: 'EMPLOYEE', isActive: true }; next(); },
   authorize: () => (_req: any, _res: any, next: any) => next(),
+  authorizeSelfOr: () => (_req: any, _res: any, next: any) => next(),
 }));
 
 // Mock Prisma
@@ -49,4 +50,3 @@ describe('TimeTracking warnings', () => {
     expect(res.body.warnings).toEqual(expect.arrayContaining(['WARN_SHIFT_GT_10H', 'WARN_SHIFT_GT_12H']));
   });
 });
-

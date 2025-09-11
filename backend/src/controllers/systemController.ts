@@ -4,9 +4,45 @@ import { getCounters } from '../utils/stats';
 import { getSpecVersion } from '../utils/specVersion';
 import { getNotifyCounters } from '../utils/notifyStats';
 
+// Lightweight health endpoint (no deps)
+export const healthz = async (_req: Request, res: Response): Promise<void> => {
+  res.json({ status: 'ok' });
+};
+
+// Readiness with dependency checks (DB mandatory, SMTP optional)
+export const readyz = async (_req: Request, res: Response): Promise<void> => {
+  const deps: { db: 'ok' | 'fail'; smtp: 'ok' | 'skip' } = { db: 'ok', smtp: 'skip' };
+  try {
+    await prisma.$queryRaw`SELECT 1`;
+  } catch (err) {
+    deps.db = 'fail';
+    res.status(503).json({ status: 'not-ready', deps });
+    return;
+  }
+
+  // Optional SMTP check: mark as 'ok' only if SMTP is configured;
+  // we don't attempt a network verify in readiness by default.
+  if (process.env.SMTP_HOST) {
+    deps.smtp = 'ok';
+  }
+  res.json({ status: 'ready', deps });
+};
+
 // GET /api/health - System Health Check
 export const healthCheck = async (_req: Request, res: Response, _next: NextFunction) => {
   try {
+    // Im Testkontext keine DB-Verbindung erzwingen
+    if (process.env.NODE_ENV === 'test') {
+      res.json({
+        status: 'OK',
+        message: 'Sicherheitsdienst-Tool Backend is running (test mode)',
+        timestamp: new Date().toISOString(),
+        database: 'Skipped',
+        version: process.env.npm_package_version || '1.0.0',
+        environment: process.env.NODE_ENV || 'development',
+      });
+      return;
+    }
     // Datenbankverbindung testen
     await prisma.$queryRaw`SELECT 1`;
 

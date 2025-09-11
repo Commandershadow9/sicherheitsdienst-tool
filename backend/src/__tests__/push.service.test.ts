@@ -9,9 +9,10 @@ jest.mock('../utils/notifyStats', () => {
   };
 });
 
-jest.mock('@prisma/client', () => ({ PrismaClient: jest.fn(() => ({
-  deviceToken: { updateMany: jest.fn(), findMany: jest.fn() },
-})) }));
+jest.mock('@prisma/client', () => {
+  const prisma = { deviceToken: { updateMany: jest.fn(), findMany: jest.fn() } };
+  return { PrismaClient: jest.fn(() => prisma) };
+});
 
 describe('pushService', () => {
   beforeEach(() => {
@@ -33,6 +34,15 @@ describe('pushService', () => {
     process.env.FCM_CLIENT_EMAIL = 'c';
     process.env.FCM_PRIVATE_KEY = 'k';
     jest.resetModules();
+    // Remock Prisma to ensure singleton instance after resetModules
+    jest.doMock('@prisma/client', () => {
+      const prisma = { deviceToken: { updateMany: jest.fn(), findMany: jest.fn() } };
+      return { PrismaClient: jest.fn(() => prisma) };
+    });
+    // Reset global prisma singleton used by utils/prisma
+    // so that a new mock instance is picked up after resetModules
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (global as any).prisma = undefined;
     const adminMock = {
       credential: { cert: jest.fn(() => ({})) },
       initializeApp: jest.fn(),
@@ -52,4 +62,3 @@ describe('pushService', () => {
     expect(pm.deviceToken.updateMany).toHaveBeenCalled();
   });
 });
-
