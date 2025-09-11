@@ -154,3 +154,7 @@ All notable changes to this project will be documented in this file.
 
 ### Ops
 - CI nutzt gebündelte OpenAPI und `dredd@14` mit robusten Flags; Node-Heap limitiert (`NODE_OPTIONS=--max-old-space-size=512`).
+## v1.1.1 – Health/Readiness
+- Added: `/healthz` (liveness), `/readyz` (readiness mit deps: `db`, `smtp`).
+- Docs: README Abschnitt „System-Health“, `.env.example` Variablen (`READINESS_*`).
+- CI: Health‑Smoke‑Job (curl `/healthz`, `/readyz`).
