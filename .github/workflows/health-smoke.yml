@@ -1,0 +1,70 @@
+name: health-smoke
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch: {}
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install & Build (backend)
+        working-directory: backend
+        run: |
+          (npm ci --no-audit --prefer-offline || npm install --no-audit)
+          npm run build --if-present
+
+      - name: Ensure jq
+        run: |
+          if ! command -v jq >/dev/null 2>&1; then
+            sudo apt-get update
+            sudo apt-get install -y jq
+          fi
+
+      - name: Start app (PORT 3000)
+        working-directory: backend
+        run: |
+          set -euo pipefail
+          PORT=3000 node dist/server.js > server.log 2>&1 & echo $! > server.pid
+          for i in $(seq 1 30); do
+            if curl -fsS http://localhost:3000/healthz >/dev/null; then
+              echo "App is up"
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "App failed to start in time" >&2
+          exit 1
+
+      - name: Smoke: /healthz
+        run: |
+          curl -sSf http://localhost:3000/healthz | jq -e '.status=="ok"'
+
+      - name: Smoke: /readyz
+        run: |
+          curl -sSf http://localhost:3000/readyz | jq -e '.status=="ready" or .status=="not-ready"'
+
+      - name: Dump server logs on failure
+        if: failure()
+        working-directory: backend
+        run: |
+          echo '======= server.log (last 300 lines) ======='
+          tail -n 300 server.log || true
+          echo '==========================================='
+
+      - name: Stop app
+        if: always()
+        working-directory: backend
+        run: |
+          kill $(cat server.pid) || true

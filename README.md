@@ -1,6 +1,8 @@
 # Sicherheitsdienst-Tool Backend
 
 [![CI](https://github.com/Commandershadow9/sicherheitsdienst-tool/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/Commandershadow9/sicherheitsdienst-tool/actions/workflows/ci.yml)
+[![health-smoke](https://github.com/Commandershadow9/sicherheitsdienst-tool/actions/workflows/health-smoke.yml/badge.svg?branch=main)](https://github.com/Commandershadow9/sicherheitsdienst-tool/actions/workflows/health-smoke.yml)
+
 
 This is the backend for a comprehensive management tool for security services. It provides a REST API to manage employees, shifts, time tracking, and other operational data. The project is built with Node.js, Express, TypeScript, and Prisma, using a PostgreSQL database.
 It follows consistent coding standards (EditorConfig, Prettier, ESLint v9) and includes smoke tests.
@@ -173,6 +175,8 @@ REDIS_URL=redis://localhost:6379/0
 Hinweis: SMTP wird nur als `ok/skip` signalisiert. Ein echter Netzwerk‑Verify kann optional über ENV aktiviert werden:
 - `READINESS_CHECK_SMTP` (default `false`)
 - `READINESS_SMTP_TIMEOUT_MS` (default `1500`)
+
+Weitere Details siehe: `docs/ops/system-health.md`
 
 ### Monitoring/Probes
 
