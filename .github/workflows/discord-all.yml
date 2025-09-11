@@ -9,8 +9,8 @@ on:
       - 'v*'                         # Releases per Tag
   pull_request:
     types: [opened, synchronize, reopened, closed, ready_for_review, converted_to_draft]
-  workflow_run:                      # CI-Ergebnisse melden
-    workflows: [ "ci", "CI", "build", "test" ]   # muss den Workflow-Namen(en) entsprechen
+  workflow_run:                      # CI/Smoke-Ergebnisse melden
+    workflows: [ "ci", "CI", "build", "test", "health-smoke" ]   # muss den Workflow-Namen(en) entsprechen
     types: [completed]
   release:
     types: [published]

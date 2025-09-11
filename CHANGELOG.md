@@ -155,6 +155,18 @@ All notable changes to this project will be documented in this file.
 ### Ops
 - CI nutzt gebündelte OpenAPI und `dredd@14` mit robusten Flags; Node-Heap limitiert (`NODE_OPTIONS=--max-old-space-size=512`).
 ## v1.1.1 – Health/Readiness
-- Added: `/healthz` (liveness), `/readyz` (readiness mit deps: `db`, `smtp`).
-- Docs: README Abschnitt „System-Health“, `.env.example` Variablen (`READINESS_*`).
-- CI: Health‑Smoke‑Job (curl `/healthz`, `/readyz`).
+
+### Added
+- Endpunkte: `/healthz` (Liveness), `/readyz` (Readiness mit `deps.db`, `deps.smtp`).
+- CI: Health‑Smoke‑Job (baut, startet App, prüft `/healthz`/`/readyz`, lädt Artefakte hoch).
+- Doku: README Abschnitt „System-Health“, detaillierte Ops‑Doku unter `docs/ops/system-health.md`.
+- Release‑Notes: `docs/releases/v1.1.1.md` (Details & Migration).
+
+### Changed
+- Security: `helmet()` aktiv, CORS strikt via Allowlist (`CORS_ORIGINS`, Fallbacks).
+- OpenAPI: interne Endpunkte dokumentiert (Tag `internal`, `x-internal: true`), `operationId` konsolidiert, Beispiele bereinigt.
+
+### Fixed
+- Minor: OpenAPI‑Warnungen bereinigt (nullable Felder in `TimeEntry`, ungültige Beispiele, ungenutzte Parameter entfernt).
+
+Siehe auch: [Release v1.1.1](docs/releases/v1.1.1.md)
