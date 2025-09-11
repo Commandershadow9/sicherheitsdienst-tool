@@ -1,0 +1,24 @@
+groups:
+  - name: sicherheitsdienst-api.alerts
+    interval: 30s
+    rules:
+      - alert: ApiHighAuthRateLimit429
+        expr: increase(app_auth_ratelimit_ip_429_total[5m]) > 50 or increase(app_auth_ratelimit_user_429_total[5m]) > 20
+        for: 2m
+        labels:
+          severity: warning
+          service: sicherheitsdienst-api
+        annotations:
+          summary: "Hohe 429-Rate (Auth Rate Limit)"
+          description: "Auth Rate-Limit 429-Spike in den letzten 5m. Prüfe Anmeldeversuche/Bruteforce."
+
+      - alert: ApiErrors5xx
+        expr: increase(app_responses_5xx_total[5m]) > 10
+        for: 2m
+        labels:
+          severity: critical
+          service: sicherheitsdienst-api
+        annotations:
+          summary: "Erhöhte 5xx-Fehler"
+          description: "Mehr als 10 5xx-Antworten in 5 Minuten. Prüfe Logs / Health."
+

@@ -263,6 +263,9 @@ Weitere Details siehe: `docs/ops/system-health.md`
       metrics_path: /metrics
   ```
 
+- Alerts: Beispiel Prometheus‑Regeln unter `docs/ops/prometheus-alerts.yaml` (u. a. 429‑Spikes, 5xx‑Fehler).
+- Grafana: Beispiel‑Dashboard unter `docs/ops/grafana-dashboard.json`.
+
 - Kubernetes Probes:
   - Liveness: `GET /healthz`
   - Readiness: `GET /readyz`
