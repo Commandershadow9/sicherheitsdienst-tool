@@ -6,7 +6,7 @@ import logger from './utils/logger';
 import requestId from './middleware/requestId';
 import { onRequestStart, onResponseStatus } from './utils/stats';
 import { applySecurity } from './middleware/security';
-import { httpRequestDurationSeconds } from './utils/metrics';
+import { httpRequestDurationSeconds, httpRequestsTotal } from './utils/metrics';
 
 // Load environment variables
 dotenv.config();
@@ -40,6 +40,9 @@ app.use((req, res, next) => {
     httpRequestDurationSeconds
       .labels(req.method, route, String(res.statusCode))
       .observe(durSec);
+    httpRequestsTotal
+      .labels(req.method, route, String(res.statusCode))
+      .inc();
   });
   next();
 });

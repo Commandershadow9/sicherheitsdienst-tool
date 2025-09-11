@@ -253,6 +253,8 @@ Weitere Details siehe: `docs/ops/system-health.md`
 - Enthält Default‑Metriken (Node.js/Process) und App‑Metriken:
   - `app_requests_total`, `app_responses_4xx_total`, `app_responses_5xx_total`
   - `app_auth_ratelimit_ip_429_total`, `app_auth_ratelimit_user_429_total`
+  - `http_requests_total{method,route,status_code}`
+  - `http_request_duration_seconds_bucket` (Histogram für Latenzen)
 - Beispiel Scrape‑Config (Prometheus):
   ```yaml
   scrape_configs:
