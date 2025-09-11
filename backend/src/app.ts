@@ -6,6 +6,7 @@ import logger from './utils/logger';
 import requestId from './middleware/requestId';
 import { onRequestStart, onResponseStatus } from './utils/stats';
 import { applySecurity } from './middleware/security';
+import { httpRequestDurationSeconds } from './utils/metrics';
 
 // Load environment variables
 dotenv.config();
@@ -26,6 +27,20 @@ app.use(requestId());
 app.use((req, res, next) => {
   onRequestStart();
   res.on('finish', () => onResponseStatus(res.statusCode));
+  next();
+});
+
+// Metrics: measure request duration
+app.use((req, res, next) => {
+  const start = process.hrtime.bigint();
+  res.on('finish', () => {
+    const end = process.hrtime.bigint();
+    const durSec = Number(end - start) / 1e9;
+    const route = (req as any).route?.path || req.path || 'unknown';
+    httpRequestDurationSeconds
+      .labels(req.method, route, String(res.statusCode))
+      .observe(durSec);
+  });
   next();
 });
 

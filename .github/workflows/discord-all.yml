@@ -134,7 +134,8 @@ jobs:
             FIELDS=$(jq -n --arg name "$name" --arg repo_url "$repo_url" --arg run "$run_url" \
               '[{"name":"Workflow","value":$name},{"name":"Repository","value":$repo_url}]' \
               | jq --arg name "$name" --arg note "Image Scan (SARIF) & SBOM als Artefakte im Run verfügbar." \
-                'if $name == "docker-release" then . + [{"name":"Artefakte","value":$note}] else . end')
+                   --arg note2 "Health-Smoke Artefakte (server.log, healthz.json, readyz.json) im Run verfügbar." \
+                'if $name == "docker-release" then . + [{"name":"Artefakte","value":$note}] elif $name == "health-smoke" then . + [{"name":"Artefakte","value":$note2}] else . end')
           elif [ "$event" = "release" ]; then
             tag='${{ github.event.release.tag_name }}'
             rname='${{ github.event.release.name }}'

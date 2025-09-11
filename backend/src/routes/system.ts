@@ -3,6 +3,7 @@ import { healthz, readyz } from '../controllers/systemController';
 import client from 'prom-client';
 import { getCounters } from '../utils/stats';
 import { getAuthLimitCounters } from '../utils/rateLimitStats';
+import { register } from '../utils/metrics';
 
 const router = Router();
 
@@ -11,7 +12,6 @@ router.get('/healthz', healthz);
 router.get('/readyz', readyz);
 
 // Prometheus metrics
-client.collectDefaultMetrics();
 const reqTotal = new client.Gauge({ name: 'app_requests_total', help: 'Total requests' });
 const resp4xx = new client.Gauge({ name: 'app_responses_4xx_total', help: 'Total 4xx responses' });
 const resp5xx = new client.Gauge({ name: 'app_responses_5xx_total', help: 'Total 5xx responses' });
@@ -26,8 +26,8 @@ router.get('/metrics', async (_req: Request, res: Response) => {
   resp5xx.set(c.responses5xx);
   authIp429.set(rl.ip429);
   authUser429.set(rl.user429);
-  res.set('Content-Type', client.register.contentType);
-  res.end(await client.register.metrics());
+  res.set('Content-Type', register.contentType);
+  res.end(await register.metrics());
 });
 
 export default router;
