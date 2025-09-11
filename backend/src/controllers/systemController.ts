@@ -1,5 +1,4 @@
 import { Request, Response, NextFunction } from 'express';
-import type { Transporter } from 'nodemailer';
 import prisma from '../utils/prisma';
 import { getCounters } from '../utils/stats';
 import { getSpecVersion } from '../utils/specVersion';
@@ -36,7 +35,7 @@ export const readyz = async (_req: Request, res: Response): Promise<void> => {
     try {
       // eslint-disable-next-line @typescript-eslint/no-var-requires
       const nodemailer = require('nodemailer');
-      const transport: Transporter = nodemailer.createTransport({
+      const transport = nodemailer.createTransport({
         host,
         port,
         secure,
