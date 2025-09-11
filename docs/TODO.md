@@ -28,7 +28,7 @@ Erledigt:
 ## Mittelfristig (P2)
 - [x] XLSX‑Exports lokal stabilisieren
   - Akzeptanz: Tests für XLSX‑Exports erkennen Buffer zuverlässig (lokal/CI); ggf. Content‑Type/Body‑Parser‑Setup prüfen.
-- [ ] Reporting/Exports: CSV/Excel für Listen (Employees/Sites/Shifts)
+- [x] Reporting/Exports: CSV/Excel für Listen (Employees/Sites/Shifts)
   - [x] Employees: CSV/XLSX via `Accept` (Filter/Sort unterstützt; README/OpenAPI ergänzt)
   - [x] Sites: CSV/XLSX
   - [x] Shifts: CSV/XLSX

@@ -101,12 +101,27 @@ See CHANGELOG.md for details.
 - Healthchecks:
   - API: `GET /api/health` → 200/503
   - Stats: `GET /api/stats` → Aggregierte Zahlen und Konfiguration
+    - `data.env.specVersion`: Version aus OpenAPI (`docs/openapi.yaml info.version`) oder via `SPEC_VERSION` (Build‑Step)
+    - `data.env.buildSha`: Git Commit SHA aus `BUILD_SHA` (oder `null`)
 - Logs: Winston (level via `LOG_LEVEL`), HTTP-Logs via morgan; jeder Request hat `X-Request-ID` (Header und Logs)
   - Optional: `LOG_FORMAT=json` für strukturierte Console-Logs (JSON)
+  
+### Security & CORS
+- Headers: `helmet` setzt u. a. `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, `Referrer-Policy: no-referrer` (CSP in Dev aus, in Prod an).
+- CORS-Allowlist:
+  - `CORS_ORIGINS` (Komma-getrennt) hat Vorrang; ansonsten `FRONTEND_URL`/`MOBILE_APP_URL`; Standard lokal: `http://localhost:3000`, `http://localhost:19000`.
+  - Nicht gelistete Origins erhalten keinen `Access-Control-Allow-Origin`-Header.
+  - Preflight wird über `OPTIONS *` beantwortet.
 - Rate Limiting:
   - Notifications-Testendpoint per `NOTIFICATIONS_TEST_RATE_LIMIT_*`
   - Auth (Login/Refresh) per `AUTH_RATE_LIMIT_*`
   - Optional Write-Limits (POST/PUT/DELETE) per `WRITE_RATE_LIMIT_*`
+  
+### Contract-Tests (OpenAPI)
+- Manuell (on-demand): GitHub Actions → "contract-tests (optional)" → Run workflow.
+  - Startet Prism-Mock (separater Job) und Compose-Stack (db + api), wartet auf Health, führt Dredd gegen `/api/v1` aus, zeigt vollständige Logs und fährt die Services kontrolliert herunter.
+- Nightly: "contract-tests-nightly" läuft täglich um 03:00 UTC.
+  - Nutzt den gleichen Compose/Health/Dredd-Flow, um Spezifikation und Implementierung regelmäßig gegenzuprüfen.
 - E-Mail Zustellung:
   - SMTP via `SMTP_*`; einfacher Retry (`SMTP_RETRY_MAX`, `SMTP_RETRY_DELAY_MS`)
 - Push:
@@ -145,6 +160,50 @@ See CHANGELOG.md for details.
 - Events: Erstellen/Aktualisieren → ADMIN, DISPATCHER; Lesen → AUTH; Löschen → ADMIN
 - Incidents: Erstellen/Aktualisieren/Löschen → ADMIN, MANAGER; Lesen → AUTH
 - Notifications (Test): Senden → ADMIN, MANAGER (Rate-Limit aktivierbar)
+
+### RBAC Matrix (Detailliert)
+- Quelle (Middleware/Routes):
+  - `backend/src/middleware/auth.ts` (`authorize`, `authorizeSelfOr`), `backend/src/middleware/rbac.ts` (Notifications)
+  - `backend/src/routes/siteRoutes.ts`, `backend/src/routes/shiftRoutes.ts`, `backend/src/routes/incidentRoutes.ts`, `backend/src/routes/notificationRoutes.ts`
+- Notation:
+  - ✓ erlaubt
+  - ✗ 403 FORBIDDEN (authentifiziert, aber Rolle nicht berechtigt)
+  - Lesen schließt List/Detail und, falls vorhanden, Exporte (CSV/XLSX via `Accept`) ein; anonyme Zugriffe → 401
+
+| Ressource / Aktion | ADMIN | MANAGER | DISPATCHER | EMPLOYEE | Relevanter Code |
+|---|---:|---:|---:|---:|---|
+| Sites – Create (`POST /api/sites`) | ✓ | ✗ | ✓ | ✗ | `backend/src/routes/siteRoutes.ts` |
+| Sites – Read (`GET /api/sites`, `GET /api/sites/:id`) | ✓ | ✓ | ✓ | ✓ | `backend/src/routes/siteRoutes.ts` |
+| Sites – Update (`PUT /api/sites/:id`) | ✓ | ✗ | ✓ | ✗ | `backend/src/routes/siteRoutes.ts` |
+| Sites – Delete (`DELETE /api/sites/:id`) | ✓ | ✗ | ✗ | ✗ | `backend/src/routes/siteRoutes.ts` |
+| Sites – Export (CSV/XLSX via `Accept`) | ✓ | ✓ | ✓ | ✓ | Controller: `backend/src/controllers/siteController.ts` |
+| Shifts – Create (`POST /api/shifts`) | ✓ | ✗ | ✓ | ✗ | `backend/src/routes/shiftRoutes.ts` |
+| Shifts – Read (`GET /api/shifts`, `GET /api/shifts/:id`) | ✓ | ✓ | ✓ | ✓ | `backend/src/routes/shiftRoutes.ts` |
+| Shifts – Update (`PUT /api/shifts/:id`) | ✓ | ✗ | ✓ | ✗ | `backend/src/routes/shiftRoutes.ts` |
+| Shifts – Delete (`DELETE /api/shifts/:id`) | ✓ | ✗ | ✗ | ✗ | `backend/src/routes/shiftRoutes.ts` |
+| Shifts – Export (CSV/XLSX via `Accept`) | ✓ | ✓ | ✓ | ✓ | Controller: `backend/src/controllers/shiftController.ts` |
+| Incidents – Create (`POST /api/incidents`) | ✓ | ✓ | ✗ | ✗ | `backend/src/routes/incidentRoutes.ts` |
+| Incidents – Read (`GET /api/incidents`, `GET /api/incidents/:id`) | ✓ | ✓ | ✓ | ✓ | `backend/src/routes/incidentRoutes.ts` |
+| Incidents – Update (`PUT /api/incidents/:id`) | ✓ | ✓ | ✗ | ✗ | `backend/src/routes/incidentRoutes.ts` |
+| Incidents – Delete (`DELETE /api/incidents/:id`) | ✓ | ✓ | ✗ | ✗ | `backend/src/routes/incidentRoutes.ts` |
+| Incidents – Export (CSV/XLSX via `Accept`) | ✓ | ✓ | ✓ | ✓ | Controller: `backend/src/controllers/incidentController.ts` |
+| Notifications – Send Test (`POST /api/notifications/test`) | ✓ | ✓ | ✗ | ✗ | `backend/src/middleware/rbac.ts`, `backend/src/routes/notificationRoutes.ts` |
+
+- Exporte (zusammengefasst):
+  - Sites/Shifts/Incidents: Exporte folgen der Read‑Berechtigung (alle authentifizierten Rollen). Siehe Controller in `backend/src/controllers/*Controller.ts` und Export‑Tests (z. B. `backend/src/__tests__/sites.export.csv.test.ts`, `...xlsx.test.ts`, `shifts.*.test.ts`, `site.shifts.export.*.test.ts`).
+  - Users (außerhalb dieser Matrix): `GET /api/users` (inkl. CSV/XLSX via `Accept`) erfordert `ADMIN` oder `DISPATCHER`. Siehe `backend/src/routes/userRoutes.ts` sowie `backend/src/__tests__/users.export.*.test.ts`.
+
+### 403 Negativbeispiele (Tests)
+- Sites (EMPLOYEE): 403 bei Create/Update/Delete
+  - Tests: `backend/src/__tests__/rbac.negative.employee.test.ts`
+- Shifts (EMPLOYEE): 403 bei Create/Update/Delete
+  - Tests: `backend/src/__tests__/rbac.negative.employee.test.ts`
+- Incidents (EMPLOYEE): 403 bei Create/Update/Delete
+  - Tests: `backend/src/__tests__/rbac.incidents.negative.employee.test.ts`
+- Notifications (EMPLOYEE): 403 bei `POST /api/notifications/test`
+  - Tests: `backend/src/__tests__/notifications.rbac.test.ts`
+
+Hinweis: Anonyme Zugriffe auf geschützte Routen führen zu 401 (z. B. Notifications‑Test ohne Token). Siehe ebenfalls `backend/src/__tests__/notifications.rbac.test.ts`.
 
 ## Error Responses
 
@@ -289,23 +348,12 @@ Follow these steps to set up and run the project locally:
 - Tests: Unit-Tests mocken `emailService` und prüfen Aufruf abhängig vom Flag; Routen-Tests decken 201/200/404/400-Fälle ab.
 
 ### RBAC Übersicht
-- Notifications:
-  - ADMIN: erlaubt, MANAGER: erlaubt, EMPLOYEE: 403, anonym: 401
-- Sites:
-  - GET/Liste/Details: Auth erforderlich (alle Rollen)
-  - POST/PUT: ADMIN, DISPATCHER
-  - DELETE: ADMIN
-- Shifts:
-  - GET/Liste/Details: Auth erforderlich (alle Rollen)
-  - POST/PUT: ADMIN, DISPATCHER
-  - DELETE: ADMIN
-- Users:
-  - GET Liste: ADMIN, DISPATCHER
-  - Detail (GET `/api/users/:id`): ADMIN oder Self‑Access (eigene ID)
-  - Update (PUT `/api/users/:id`): ADMIN oder Self‑Access; bei Self sind nur Basisfelder erlaubt (`email`, `firstName`, `lastName`, `phone`)
-  - Delete: ADMIN
-  - CSV-Export: `GET /api/users` mit `Accept: text/csv` (gleiche Query‑Parameter)
-  - XLSX-Export: `GET /api/users` mit `Accept: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet`
+- Kurzüberblick: Detailregeln siehe Abschnitt „RBAC Matrix (Detailliert)“ weiter oben.
+- Users – Self‑Access: Detail/Update erlaubt für eigene ID; bei Self sind nur Basisfelder erlaubt (`email`, `firstName`, `lastName`, `phone`).
+- Shifts – Spezialaktionen:
+  - Assign (`POST /api/shifts/:id/assign`): Authentifizierung erforderlich; aktuell keine Rollenprüfung (nur Auth). Route: `backend/src/routes/shiftRoutes.ts`, Controller: `backend/src/controllers/shiftController.ts`.
+  - Clock‑In/Out (`POST /api/shifts/:id/clock-in|clock-out`): Authentifizierung + Schichtzuweisung erforderlich (sonst 403). Siehe Tests: `backend/src/__tests__/timetracking.routes.test.ts`.
+  - Empfehlung: Assign künftig auf `ADMIN`, `DISPATCHER` einschränken (z. B. `authorize('ADMIN','DISPATCHER')` in `backend/src/routes/shiftRoutes.ts`) und 403‑Negativtests ergänzen.
 
 ### Listen-Exporte (Sites, Shifts)
 - Sites:

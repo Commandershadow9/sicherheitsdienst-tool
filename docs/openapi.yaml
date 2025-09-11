@@ -2,10 +2,15 @@ openapi: 3.1.0
 info:
   title: Sicherheitsdienst-Tool API
   version: 1.0.0
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
   description: API v1 für Auth, Mitarbeiter, Sites, Schichten, Zuweisungen, Zeiterfassung, Vorfälle, Benachrichtigungen.
 servers:
   - url: http://localhost:3000/api/v1
   - url: http://localhost:3001/api/v1
+security:
+  - BearerAuth: []
 components:
   securitySchemes:
     BearerAuth:
@@ -65,7 +70,6 @@ components:
                 example: "Muss eine gültige E-Mail sein."
               code:
                 type: string
-                nullable: true
                 example: "invalid_email"
       required: [message]
     PageMeta:
@@ -119,9 +123,101 @@ components:
       properties:
         isActive:
           type: boolean
+
         notificationsEnabled:
           type: boolean
       additionalProperties: false
+    
+    # Added to ensure refs resolve in paths using Event status
+    EventStatus:
+      type: string
+      description: "Status eines Events; Werte gemäß Backend-Enum."
+      enum: [PLANNED, ACTIVE, DONE, CANCELLED]
+    Event:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        description:
+          type: string
+        siteId:
+          type: string
+          format: uuid
+        startTime:
+          type: string
+          format: date-time
+        endTime:
+          type: string
+          format: date-time
+        serviceInstructions:
+          type: string
+          description: Dienstanweisungen (Markdown/Text)
+        assignedEmployeeIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+        status:
+          $ref: '#/components/schemas/EventStatus'
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required: [id, title, startTime, endTime, serviceInstructions, status, createdAt, updatedAt]
+    EventCreate:
+      type: object
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        siteId:
+          type: string
+          format: uuid
+        startTime:
+          type: string
+          format: date-time
+        endTime:
+          type: string
+          format: date-time
+        serviceInstructions:
+          type: string
+        assignedEmployeeIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+      required: [title, startTime, endTime, serviceInstructions]
+    EventUpdate:
+      type: object
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        siteId:
+          type: string
+          format: uuid
+        startTime:
+          type: string
+          format: date-time
+        endTime:
+          type: string
+          format: date-time
+        serviceInstructions:
+          type: string
+        assignedEmployeeIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+        status:
+          $ref: '#/components/schemas/EventStatus'
     PushOptRequest:
       type: object
       properties:
@@ -174,18 +270,15 @@ components:
           type: string
         phone:
           type: string
-          nullable: true
         role:
           $ref: '#/components/schemas/UserRole'
         isActive:
           type: boolean
         employeeId:
           type: string
-          nullable: true
         hireDate:
           type: string
           format: date-time
-          nullable: true
         qualifications:
           type: array
           items:
@@ -212,16 +305,13 @@ components:
           type: string
         phone:
           type: string
-          nullable: true
         role:
           $ref: '#/components/schemas/UserRole'
         employeeId:
           type: string
-          nullable: true
         hireDate:
           type: string
           format: date-time
-          nullable: true
         qualifications:
           type: array
           items:
@@ -239,16 +329,13 @@ components:
           type: string
         phone:
           type: string
-          nullable: true
         role:
           $ref: '#/components/schemas/UserRole'
         employeeId:
           type: string
-          nullable: true
         hireDate:
           type: string
           format: date-time
-          nullable: true
         qualifications:
           type: array
           items:
@@ -311,12 +398,10 @@ components:
         siteId:
           type: string
           format: uuid
-          nullable: true
         title:
           type: string
         description:
           type: string
-          nullable: true
         location:
           type: string
         startTime:
@@ -351,7 +436,6 @@ components:
           type: string
         description:
           type: string
-          nullable: true
         location:
           type: string
         startTime:
@@ -375,7 +459,6 @@ components:
           type: string
         description:
           type: string
-          nullable: true
         location:
           type: string
         startTime:
@@ -441,20 +524,15 @@ components:
         endTime:
           type: string
           format: date-time
-          nullable: true
         breakTime:
           type: integer
           format: int32
-          nullable: true
         startLocation:
           type: string
-          nullable: true
         endLocation:
           type: string
-          nullable: true
         notes:
           type: string
-          nullable: true
         createdAt:
           type: string
           format: date-time
@@ -470,10 +548,8 @@ components:
           format: date-time
         location:
           type: string
-          nullable: true
         notes:
           type: string
-          nullable: true
       required: [at]
     ClockOutRequest:
       type: object
@@ -484,13 +560,10 @@ components:
         breakTime:
           type: integer
           format: int32
-          nullable: true
         location:
           type: string
-          nullable: true
         notes:
           type: string
-          nullable: true
       required: [at]
     IncidentSeverity:
       type: string
@@ -792,6 +865,8 @@ paths:
           $ref: '#/components/responses/ValidationError'
         '429':
           $ref: '#/components/responses/TooManyRequests'
+        '405':
+          $ref: '#/components/responses/MethodNotAllowed'
         '500':
           $ref: '#/components/responses/InternalServerError'
         '503':
@@ -825,6 +900,8 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '429':
           $ref: '#/components/responses/TooManyRequests'
+        '405':
+          $ref: '#/components/responses/MethodNotAllowed'
         '500':
           $ref: '#/components/responses/InternalServerError'
         '503':
@@ -861,6 +938,8 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '429':
           $ref: '#/components/responses/TooManyRequests'
+        '405':
+          $ref: '#/components/responses/MethodNotAllowed'
         '500':
           $ref: '#/components/responses/InternalServerError'
         '503':
@@ -1003,112 +1082,6 @@ paths:
                 type: string
                 format: binary
               example: (xlsx)
-    EventStatus:
-      type: string
-      enum: [PLANNED, ACTIVE, DONE, CANCELLED]
-    Event:
-      type: object
-      properties:
-        id:
-          type: string
-          format: uuid
-        title:
-          type: string
-        description:
-          type: string
-          nullable: true
-        siteId:
-          type: string
-          format: uuid
-          nullable: true
-        startTime:
-          type: string
-          format: date-time
-        endTime:
-          type: string
-          format: date-time
-        serviceInstructions:
-          type: string
-          description: Dienstanweisungen (Markdown/Text)
-        assignedEmployeeIds:
-          type: array
-          items:
-            type: string
-            format: uuid
-        status:
-          $ref: '#/components/schemas/EventStatus'
-        createdAt:
-          type: string
-          format: date-time
-        updatedAt:
-          type: string
-          format: date-time
-      required: [id, title, startTime, endTime, serviceInstructions, status, createdAt, updatedAt]
-    EventCreate:
-      type: object
-      properties:
-        title:
-          type: string
-        description:
-          type: string
-          nullable: true
-        siteId:
-          type: string
-          format: uuid
-          nullable: true
-        startTime:
-          type: string
-          format: date-time
-        endTime:
-          type: string
-          format: date-time
-        serviceInstructions:
-          type: string
-        assignedEmployeeIds:
-          type: array
-          items:
-            type: string
-            format: uuid
-      required: [title, startTime, endTime, serviceInstructions]
-    EventUpdate:
-      type: object
-      properties:
-        title:
-          type: string
-        description:
-          type: string
-          nullable: true
-        siteId:
-          type: string
-          format: uuid
-          nullable: true
-        startTime:
-          type: string
-          format: date-time
-        endTime:
-          type: string
-          format: date-time
-        serviceInstructions:
-          type: string
-        assignedEmployeeIds:
-          type: array
-          items:
-            type: string
-            format: uuid
-        status:
-          $ref: '#/components/schemas/EventStatus'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '429':
-          $ref: '#/components/responses/TooManyRequests'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-        '503':
-          $ref: '#/components/responses/ServiceUnavailable'
     post:
       operationId: createEmployee
       summary: Mitarbeiter anlegen
@@ -1137,35 +1110,15 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Employee'
-              example:
-                id: "a3f1c5d2-1234-4a56-9b8c-0d1e2f3a4b5c"
-                email: "jane.doe@example.com"
-                firstName: "Jane"
-                lastName: "Doe"
-                phone: "+49 151 23456789"
-                role: "EMPLOYEE"
-                isActive: true
-                employeeId: "E-1024"
-                hireDate: "2024-01-15T00:00:00Z"
-                qualifications: ["Sicherheitskraft"]
-                createdAt: "2024-08-01T12:00:00Z"
-                updatedAt: "2024-08-15T12:00:00Z"
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '409':
-          $ref: '#/components/responses/Conflict'
-        '422':
-          $ref: '#/components/responses/ValidationError'
-        '429':
-          $ref: '#/components/responses/TooManyRequests'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-        '503':
-          $ref: '#/components/responses/ServiceUnavailable'
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+        '500': { $ref: '#/components/responses/InternalServerError' }
+        '503': { $ref: '#/components/responses/ServiceUnavailable' }
+      
   /employees/{id}:
     get:
       operationId: getEmployee
@@ -1424,6 +1377,8 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '429':
           $ref: '#/components/responses/TooManyRequests'
+        '405':
+          $ref: '#/components/responses/MethodNotAllowed'
         '500':
           $ref: '#/components/responses/InternalServerError'
         '503':
@@ -1475,6 +1430,8 @@ paths:
           $ref: '#/components/responses/ValidationError'
         '429':
           $ref: '#/components/responses/TooManyRequests'
+        '405':
+          $ref: '#/components/responses/MethodNotAllowed'
         '500':
           $ref: '#/components/responses/InternalServerError'
         '503':
@@ -1517,6 +1474,8 @@ paths:
           $ref: '#/components/responses/NotFound'
         '429':
           $ref: '#/components/responses/TooManyRequests'
+        '405':
+          $ref: '#/components/responses/MethodNotAllowed'
         '500':
           $ref: '#/components/responses/InternalServerError'
         '503':
@@ -1575,6 +1534,8 @@ paths:
           $ref: '#/components/responses/ValidationError'
         '429':
           $ref: '#/components/responses/TooManyRequests'
+        '405':
+          $ref: '#/components/responses/MethodNotAllowed'
         '500':
           $ref: '#/components/responses/InternalServerError'
         '503':
@@ -1607,6 +1568,8 @@ paths:
           $ref: '#/components/responses/NotFound'
         '429':
           $ref: '#/components/responses/TooManyRequests'
+        '405':
+          $ref: '#/components/responses/MethodNotAllowed'
         '500':
           $ref: '#/components/responses/InternalServerError'
         '503':
@@ -1667,6 +1630,8 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '429':
           $ref: '#/components/responses/TooManyRequests'
+        '405':
+          $ref: '#/components/responses/MethodNotAllowed'
         '500':
           $ref: '#/components/responses/InternalServerError'
         '503':
@@ -1732,6 +1697,8 @@ paths:
           $ref: '#/components/responses/ValidationError'
         '429':
           $ref: '#/components/responses/TooManyRequests'
+        '405':
+          $ref: '#/components/responses/MethodNotAllowed'
         '500':
           $ref: '#/components/responses/InternalServerError'
         '503':
@@ -1861,6 +1828,8 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '429':
           $ref: '#/components/responses/TooManyRequests'
+        '405':
+          $ref: '#/components/responses/MethodNotAllowed'
         '500':
           $ref: '#/components/responses/InternalServerError'
         '503':
@@ -1908,6 +1877,8 @@ paths:
           $ref: '#/components/responses/NotFound'
         '429':
           $ref: '#/components/responses/TooManyRequests'
+        '405':
+          $ref: '#/components/responses/MethodNotAllowed'
         '500':
           $ref: '#/components/responses/InternalServerError'
         '503':
@@ -1970,6 +1941,8 @@ paths:
           $ref: '#/components/responses/ValidationError'
         '429':
           $ref: '#/components/responses/TooManyRequests'
+        '405':
+          $ref: '#/components/responses/MethodNotAllowed'
         '500':
           $ref: '#/components/responses/InternalServerError'
         '503':
@@ -2024,6 +1997,8 @@ paths:
           $ref: '#/components/responses/NotFound'
         '429':
           $ref: '#/components/responses/TooManyRequests'
+        '405':
+          $ref: '#/components/responses/MethodNotAllowed'
         '500':
           $ref: '#/components/responses/InternalServerError'
         '503':
@@ -2076,6 +2051,8 @@ paths:
           $ref: '#/components/responses/ValidationError'
         '429':
           $ref: '#/components/responses/TooManyRequests'
+        '405':
+          $ref: '#/components/responses/MethodNotAllowed'
         '500':
           $ref: '#/components/responses/InternalServerError'
         '503':
@@ -2170,6 +2147,8 @@ paths:
           $ref: '#/components/responses/ValidationError'
         '429':
           $ref: '#/components/responses/TooManyRequests'
+        '405':
+          $ref: '#/components/responses/MethodNotAllowed'
         '500':
           $ref: '#/components/responses/InternalServerError'
         '503':
@@ -2230,6 +2209,8 @@ paths:
           $ref: '#/components/responses/ValidationError'
         '429':
           $ref: '#/components/responses/TooManyRequests'
+        '405':
+          $ref: '#/components/responses/MethodNotAllowed'
         '500':
           $ref: '#/components/responses/InternalServerError'
         '503':
@@ -2589,6 +2570,8 @@ paths:
                 success: false
                 code: INTERNAL_SERVER_ERROR
                 message: SMTP nicht verfügbar oder Zeitüberschreitung.
+        '405':
+          $ref: '#/components/responses/MethodNotAllowed'
         '503':
           $ref: '#/components/responses/ServiceUnavailable'
   /users:
@@ -2707,6 +2690,8 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '429':
           $ref: '#/components/responses/TooManyRequests'
+        '405':
+          $ref: '#/components/responses/MethodNotAllowed'
         '500':
           $ref: '#/components/responses/InternalServerError'
         '503':
@@ -2749,6 +2734,8 @@ paths:
           $ref: '#/components/responses/ValidationError'
         '429':
           $ref: '#/components/responses/TooManyRequests'
+        '405':
+          $ref: '#/components/responses/MethodNotAllowed'
         '500':
           $ref: '#/components/responses/InternalServerError'
         '503':
@@ -2783,6 +2770,8 @@ paths:
           $ref: '#/components/responses/NotFound'
         '429':
           $ref: '#/components/responses/TooManyRequests'
+        '405':
+          $ref: '#/components/responses/MethodNotAllowed'
         '500':
           $ref: '#/components/responses/InternalServerError'
         '503':
@@ -2830,6 +2819,8 @@ paths:
           $ref: '#/components/responses/ValidationError'
         '429':
           $ref: '#/components/responses/TooManyRequests'
+        '405':
+          $ref: '#/components/responses/MethodNotAllowed'
         '500':
           $ref: '#/components/responses/InternalServerError'
         '503':
@@ -2873,6 +2864,8 @@ paths:
           $ref: '#/components/responses/NotFound'
         '429':
           $ref: '#/components/responses/TooManyRequests'
+        '405':
+          $ref: '#/components/responses/MethodNotAllowed'
         '500':
           $ref: '#/components/responses/InternalServerError'
         '503':
@@ -2925,6 +2918,7 @@ paths:
               example: (xlsx)
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
+        '405': { $ref: '#/components/responses/MethodNotAllowed' }
     post:
       operationId: createEvent
       summary: Einsatz/Event anlegen
@@ -2975,6 +2969,7 @@ paths:
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
+        '405': { $ref: '#/components/responses/MethodNotAllowed' }
     put:
       operationId: updateEvent
       summary: Einsatz/Event aktualisieren
@@ -3004,6 +2999,7 @@ paths:
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
         '422': { $ref: '#/components/responses/ValidationError' }
+        '405': { $ref: '#/components/responses/MethodNotAllowed' }
     delete:
       operationId: deleteEvent
       summary: Einsatz/Event löschen
@@ -3019,6 +3015,7 @@ paths:
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
+        '405': { $ref: '#/components/responses/MethodNotAllowed' }
 
   /push/tokens:
     get:
@@ -3348,3 +3345,4 @@ paths:
                   auth: { jwtExpiresIn: 7d, refreshExpiresIn: 30d }
                   env: { nodeEnv: development, version: 1.0.0 }
         '503': { $ref: '#/components/responses/ServiceUnavailable' }
+        '405': { $ref: '#/components/responses/MethodNotAllowed' }

@@ -139,3 +139,18 @@ All notable changes to this project will be documented in this file.
 - docs(openapi): Incidents-List-Antwort vereinheitlicht (data/pagination/sort/filters) und CSV/XLSX Accept dokumentiert; 405 `MethodNotAllowed`-Komponente ergänzt.
 - tests: RBAC-Tests für Incidents (anonymous/employee negative), TimeTracking-Warnungen (Restzeit <11h, Dauer >10h/>12h) ergänzt.
 - auth/jwt: Optional `JWT_ISSUER`/`JWT_AUDIENCE` in Signatur/Verifikation berücksichtigt (konfigurierbar via ENV).
+## v1.1.0 – Contracts & Streaming
+
+### Added
+- Contract-Tests: Prism-Mock + Dredd (nightly & manual) via GitHub Actions (bundle, mock, run, Artefakte).
+- /api/stats: neue Felder `specVersion` (aus OpenAPI `info.version` bzw. `SPEC_VERSION`) und `buildSha` (über `BUILD_SHA`).
+
+### Changed
+- CSV-/XLSX-Exporte auf Streaming umgestellt (100k+ Zeilen ohne Heap-Peak; korrekte Headers/Accept/Disposition).
+- OpenAPI: konsistente 405-Responses an allen nicht erlaubten Methoden (Events, Events/{id}, Notifications/Test, Stats); Redocly-Lint grün.
+
+### Docs
+- README: RBAC-Matrix inkl. 403-Negativbeispielen; `/api/stats` Felder dokumentiert.
+
+### Ops
+- CI nutzt gebündelte OpenAPI und `dredd@14` mit robusten Flags; Node-Heap limitiert (`NODE_OPTIONS=--max-old-space-size=512`).

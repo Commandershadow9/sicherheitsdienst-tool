@@ -38,11 +38,14 @@ Alle Änderungen sind auf `main` gemergt.
 
 ## Nächste Schritte (Backlog, kurz)
 
-- Contract‑Tests gegen OpenAPI (z. B. Prism/Dredd) für Kernpfade.
-- Export‑Streaming (CSV) für große Resultsets; Timeouts/Size‑Limits.
-- Weitere 405‑Referenzen in Paths; konsistente Beispieldaten (Incidents/Events).
-- RBAC Matrix in README konsolidieren (inkl. Incidents/Push/Events); zusätzliche negative Tests.
 - CI: Optional lokaler Prisma‑Mock/Generate‑Step verbessern; OpenAPI validate/lint bleibt Pflicht.
+
+## Abgeschlossen (aktualisiert)
+
+- Contract‑Tests gegen OpenAPI (Prism/Dredd) für Kernpfade.
+- Export‑Streaming (CSV/XLSX) für große Resultsets; Headers/Accept/Disposition geprüft.
+- 405‑Referenzen in Paths ergänzt (Events/Notifications/Stats) und Beispiele konsolidiert.
+- RBAC‑Matrix in README konsolidiert (inkl. Negativbeispiele; Verweise auf Middleware/Tests).
 
 ## Historie (bereits umgesetzt)
 
