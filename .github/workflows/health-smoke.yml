@@ -3,7 +3,13 @@ name: health-smoke
 on:
   push:
     branches: [ main ]
+  schedule:
+    - cron: '17 03 * * *'
   workflow_dispatch: {}
+
+concurrency:
+  group: health-smoke
+  cancel-in-progress: true
 
 jobs:
   smoke:
@@ -49,11 +55,21 @@ jobs:
 
       - name: Smoke: /healthz
         run: |
-          curl -sSf http://localhost:3000/healthz | jq -e '.status=="ok"'
+          curl -sS http://localhost:3000/healthz | tee healthz.json | jq -e '.status=="ok"'
 
       - name: Smoke: /readyz
         run: |
-          curl -sSf http://localhost:3000/readyz | jq -e '.status=="ready" or .status=="not-ready"'
+          curl -sS http://localhost:3000/readyz | tee readyz.json | jq -e '.status=="ready" or .status=="not-ready"'
+
+      - name: Upload health-smoke artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: health-smoke-report
+          path: |
+            backend/server.log
+            healthz.json
+            readyz.json
 
       - name: Dump server logs on failure
         if: failure()

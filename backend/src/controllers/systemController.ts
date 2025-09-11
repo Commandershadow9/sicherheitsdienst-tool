@@ -11,7 +11,7 @@ export const healthz = async (_req: Request, res: Response): Promise<void> => {
 
 // Readiness with dependency checks (DB mandatory, SMTP optional)
 export const readyz = async (_req: Request, res: Response): Promise<void> => {
-  const deps: { db: 'ok' | 'fail'; smtp: 'ok' | 'skip' } = { db: 'ok', smtp: 'skip' };
+  const deps: { db: 'ok' | 'fail'; smtp: 'ok' | 'fail' | 'skip' } = { db: 'ok', smtp: 'skip' };
   try {
     await prisma.$queryRaw`SELECT 1`;
   } catch (err) {
@@ -20,10 +20,40 @@ export const readyz = async (_req: Request, res: Response): Promise<void> => {
     return;
   }
 
-  // Optional SMTP check: mark as 'ok' only if SMTP is configured;
-  // we don't attempt a network verify in readiness by default.
-  if (process.env.SMTP_HOST) {
-    deps.smtp = 'ok';
+  // Optional SMTP check: if enabled and configured, perform a lightweight verify with timeout
+  const checkSmtp = String(process.env.READINESS_CHECK_SMTP || 'false').toLowerCase();
+  const wantSmtp = !['false','0','off','no'].includes(checkSmtp);
+  const smtpConfigured = Boolean(process.env.SMTP_HOST);
+  if (wantSmtp && smtpConfigured) {
+    const host = process.env.SMTP_HOST as string;
+    const port = process.env.SMTP_PORT ? parseInt(process.env.SMTP_PORT, 10) : 587;
+    const secure = String(process.env.SMTP_SECURE || 'false').toLowerCase() === 'true';
+    const user = process.env.SMTP_USER;
+    const pass = process.env.SMTP_PASS;
+    const timeoutMs = Math.max(parseInt(String(process.env.READINESS_SMTP_TIMEOUT_MS || '1500'), 10) || 1500, 0);
+
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      const nodemailer = require('nodemailer');
+      const transport = nodemailer.createTransport({
+        host,
+        port,
+        secure,
+        auth: user && pass ? { user, pass } : undefined,
+      });
+      const verify = async () => {
+        await transport.verify();
+      };
+      await Promise.race([
+        verify(),
+        new Promise((_, rej) => setTimeout(() => rej(new Error('SMTP readiness timeout')), timeoutMs)),
+      ]);
+      deps.smtp = 'ok';
+    } catch (_e) {
+      deps.smtp = 'fail';
+    }
+  } else {
+    deps.smtp = 'skip';
   }
   res.json({ status: 'ready', deps });
 };

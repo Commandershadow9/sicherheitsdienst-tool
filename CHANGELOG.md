@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## v1.2.0-rc.1 – Phase 1 Hardening & Release-Readiness
+
+### Added
+- Readiness: optionaler SMTP-Verify in `/readyz` (Flag `READINESS_CHECK_SMTP`, Timeout `READINESS_SMTP_TIMEOUT_MS`), Unit-Tests für `ok`/`fail`/`skip`.
+- CI/Release: Docker Build & Push nach GHCR bei Tags `v*` (`.github/workflows/docker-release.yml`), Images `:latest` und `:<tag>`.
+- Tests: Verschärfte Security-/CORS-Header-Tests (Helmet-Header, Allowlist, FRONTEND_URL-Fallback).
+
+### Changed
+- README: Release-Runbook (GHCR) + Compose‑Snippet ergänzt; System‑Health verlinkt.
+
 ## 2025-09-06
 
 ### Added
@@ -155,6 +165,18 @@ All notable changes to this project will be documented in this file.
 ### Ops
 - CI nutzt gebündelte OpenAPI und `dredd@14` mit robusten Flags; Node-Heap limitiert (`NODE_OPTIONS=--max-old-space-size=512`).
 ## v1.1.1 – Health/Readiness
-- Added: `/healthz` (liveness), `/readyz` (readiness mit deps: `db`, `smtp`).
-- Docs: README Abschnitt „System-Health“, `.env.example` Variablen (`READINESS_*`).
-- CI: Health‑Smoke‑Job (curl `/healthz`, `/readyz`).
+
+### Added
+- Endpunkte: `/healthz` (Liveness), `/readyz` (Readiness mit `deps.db`, `deps.smtp`).
+- CI: Health‑Smoke‑Job (baut, startet App, prüft `/healthz`/`/readyz`, lädt Artefakte hoch).
+- Doku: README Abschnitt „System-Health“, detaillierte Ops‑Doku unter `docs/ops/system-health.md`.
+- Release‑Notes: `docs/releases/v1.1.1.md` (Details & Migration).
+
+### Changed
+- Security: `helmet()` aktiv, CORS strikt via Allowlist (`CORS_ORIGINS`, Fallbacks).
+- OpenAPI: interne Endpunkte dokumentiert (Tag `internal`, `x-internal: true`), `operationId` konsolidiert, Beispiele bereinigt.
+
+### Fixed
+- Minor: OpenAPI‑Warnungen bereinigt (nullable Felder in `TimeEntry`, ungültige Beispiele, ungenutzte Parameter entfernt).
+
+Siehe auch: [Release v1.1.1](docs/releases/v1.1.1.md)

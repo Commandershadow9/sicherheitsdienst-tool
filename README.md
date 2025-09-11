@@ -3,6 +3,12 @@
 [![CI](https://github.com/Commandershadow9/sicherheitsdienst-tool/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/Commandershadow9/sicherheitsdienst-tool/actions/workflows/ci.yml)
 [![health-smoke](https://github.com/Commandershadow9/sicherheitsdienst-tool/actions/workflows/health-smoke.yml/badge.svg?branch=main)](https://github.com/Commandershadow9/sicherheitsdienst-tool/actions/workflows/health-smoke.yml)
 
+## Inhalt
+- [Quickstart (Docker Compose)](#quickstart-docker-compose)
+- [Operations / Runbook](#operations--runbook)
+- [System-Health (Liveness/Readiness)](#system-health)
+- [Release (GHCR)](#release-ghcr)
+
 
 This is the backend for a comprehensive management tool for security services. It provides a REST API to manage employees, shifts, time tracking, and other operational data. The project is built with Node.js, Express, TypeScript, and Prisma, using a PostgreSQL database.
 It follows consistent coding standards (EditorConfig, Prettier, ESLint v9) and includes smoke tests.
@@ -192,6 +198,53 @@ Weitere Details siehe: `docs/ops/system-health.md`
           timeout: 5s
           retries: 10
     ```
+
+### Release (GHCR)
+
+- Build & Push: automatisiert via GitHub Actions bei Tag `v*` (`.github/workflows/docker-release.yml`).
+  - Images:
+    - `ghcr.io/<owner>/<repo>:<tag>`
+    - `ghcr.io/<owner>/<repo>:latest`
+  - Voraussetzung: Packages‑Write‑Permission für `GITHUB_TOKEN`.
+
+- Runbook: Tag setzen und pushen (Beispiel `v1.2.0-rc.1`)
+  ```bash
+  npm --workspace backend version 1.2.0-rc.1 --no-git-tag-version
+  git add backend/package.json CHANGELOG.md
+  git commit -m "chore(release): v1.2.0-rc.1"
+  git tag -a v1.2.0-rc.1 -m "Release v1.2.0-rc.1"
+  git push origin main --tags
+  ```
+
+- Compose (Image verwenden)
+  ```yaml
+  services:
+    api:
+      image: ghcr.io/<owner>/<repo>:latest
+      environment:
+        NODE_ENV: production
+        PORT: 3001
+        DATABASE_URL: ${DATABASE_URL}
+        JWT_SECRET: ${JWT_SECRET}
+        FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
+        MOBILE_APP_URL: ${MOBILE_APP_URL:-http://localhost:19000}
+      ports: ["3001:3001"]
+      healthcheck:
+        test: ["CMD-SHELL", "wget -qO- http://localhost:3001/readyz || exit 1"]
+        interval: 15s
+        timeout: 5s
+        retries: 10
+  ```
+
+#### GitHub Release veröffentlichen (Release Notes)
+
+- Release-Workflow: `.github/workflows/release.yml` erstellt bei Tag‑Push (oder manuell) ein GitHub‑Release mit Body aus `docs/releases/<tag>.md` (Fallback: `CHANGELOG.md`).
+- Schritte (RC‑Beispiel `v1.2.0-rc.1`):
+  1) Release Notes anlegen: `docs/releases/v1.2.0-rc.1.md`
+  2) Tag pushen (siehe oben) – oder Workflow manuell auslösen:
+     - Actions → "release" → Run workflow → Input `tag: v1.2.0-rc.1`
+     - CLI: `gh workflow run release.yml -f tag=v1.2.0-rc.1`
+  3) Discord‑Benachrichtigung (sofern `DISCORD_WEBHOOK` Secret gesetzt) kommt automatisch zum Event `release: published`.
 
 - Kubernetes Probes:
   - Liveness: `GET /healthz`
