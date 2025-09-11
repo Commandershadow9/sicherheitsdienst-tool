@@ -94,6 +94,49 @@ See CHANGELOG.md for details.
   - `curl -s http://localhost:3001/api/health`
   - `curl -s http://localhost:3001/api/stats`
 
+### Security & Rate Limiting
+
+- Helmet ist aktiviert (sichere Default‑Header). In Nicht‑Production wird die CSP für die lokale Swagger‑UI deaktiviert.
+- CORS ist streng per Allowlist konfiguriert:
+  - `CORS_ORIGINS` (Komma‑separiert) – z. B. `https://app.example.com,https://m.example.com`
+  - Fallbacks: `FRONTEND_URL`, `MOBILE_APP_URL`, sonst `http://localhost:3000` und `http://localhost:19000`
+  - Nicht gelistete Origins erhalten keine ACAO‑Header (kein 500)
+- Auth‑Rate‑Limits:
+  - IP‑basiert für alle `/api/auth/*`: Standard 10 Req/Minute → 429
+    - ENV: `RATE_LIMIT_MAX` (Default `10`), `RATE_LIMIT_WINDOW` in Sekunden (Default `60`)
+  - Bruteforce‑Limiter pro User/Email für `POST /api/auth/login`: 5 Versuche / 15 Minuten
+  - Store: Memory (Default) oder Redis, wenn `REDIS_URL` gesetzt ist (siehe Compose)
+- Response bei Limit‑Verstößen: HTTP 429 + Header `Retry-After`, `RateLimit-Limit`, `RateLimit-Remaining`, `RateLimit-Reset`.
+
+### Empfohlene .env (Auszug)
+
+```env
+# Auth / Tokens
+JWT_SECRET=please-change-me
+REFRESH_SECRET=please-change-me
+JWT_EXPIRES_IN=7d
+REFRESH_EXPIRES_IN=30d
+
+# CORS
+CORS_ORIGINS=https://app.example.com,https://m.example.com
+FRONTEND_URL=http://localhost:3000
+MOBILE_APP_URL=http://localhost:19000
+
+# Rate Limits (Auth)
+RATE_LIMIT_MAX=10
+RATE_LIMIT_WINDOW=60
+
+# Optional: Redis Store
+REDIS_URL=redis://localhost:6379/0
+```
+
+### Redis im Docker‑Compose (optional)
+
+- In `docker-compose.yml` ist ein optionaler `redis`‑Service enthalten. Die API liest `REDIS_URL` und nutzt automatisch den Redis‑Store für Rate‑Limits.
+- Start (lokal):
+  - `docker-compose up -d --build`
+  - Test: `curl -i http://localhost:3001/api/auth/login` (nach 10 schnellen Aufrufen folgt 429)
+
 ## Operations / Runbook
 
 - Start (Dev): `npm run dev` im `backend/` (setzt lokale .env voraus)
@@ -105,6 +148,68 @@ See CHANGELOG.md for details.
     - `data.env.buildSha`: Git Commit SHA aus `BUILD_SHA` (oder `null`)
 - Logs: Winston (level via `LOG_LEVEL`), HTTP-Logs via morgan; jeder Request hat `X-Request-ID` (Header und Logs)
   - Optional: `LOG_FORMAT=json` für strukturierte Console-Logs (JSON)
+
+## System-Health
+
+- `GET /healthz` (Liveness)
+  - Response 200
+    ```json
+    { "status": "ok" }
+    ```
+
+- `GET /readyz` (Readiness)
+  - Response 200 (bereit)
+    ```json
+    { "status": "ready", "deps": { "db": "ok", "smtp": "skip" } }
+    ```
+    - `deps.db`: Datenbank erreichbar (`ok`)
+    - `deps.smtp`: SMTP wird standardmäßig nicht aktiv geprüft und als `skip` signalisiert.
+  - Response 503 (nicht bereit)
+    ```json
+    { "status": "not-ready", "deps": { "db": "fail", "smtp": "skip" } }
+    ```
+    - Bei DB‑Fehler wird 503 zurückgegeben und `deps.db` auf `fail` gesetzt.
+
+Hinweis: SMTP wird nur als `ok/skip` signalisiert. Ein echter Netzwerk‑Verify kann optional über ENV aktiviert werden:
+- `READINESS_CHECK_SMTP` (default `false`)
+- `READINESS_SMTP_TIMEOUT_MS` (default `1500`)
+
+### Monitoring/Probes
+
+- Docker Compose/Container (HEALTHCHECK):
+  - API: `GET /readyz` (Readiness) eignet sich gut für Container‑Healthchecks, da DB‑Erreichbarkeit berücksichtigt wird.
+  - Beispiel (Compose):
+    ```yaml
+    services:
+      api:
+        healthcheck:
+          test: ["CMD-SHELL", "wget -qO- http://localhost:3001/readyz || exit 1"]
+          interval: 15s
+          timeout: 5s
+          retries: 10
+    ```
+
+- Kubernetes Probes:
+  - Liveness: `GET /healthz`
+  - Readiness: `GET /readyz`
+  - Beispiel (Deployment Auszug):
+    ```yaml
+    livenessProbe:
+      httpGet:
+        path: /healthz
+        port: 3001
+      initialDelaySeconds: 5
+      periodSeconds: 15
+      timeoutSeconds: 2
+    readinessProbe:
+      httpGet:
+        path: /readyz
+        port: 3001
+      initialDelaySeconds: 5
+      periodSeconds: 15
+      timeoutSeconds: 3
+      failureThreshold: 3
+    ```
   
 ### Security & CORS
 - Headers: `helmet` setzt u. a. `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, `Referrer-Policy: no-referrer` (CSP in Dev aus, in Prod an).

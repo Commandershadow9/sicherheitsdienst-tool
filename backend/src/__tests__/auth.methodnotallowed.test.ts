@@ -3,6 +3,8 @@ import app from '../app';
 
 jest.mock('../middleware/auth', () => ({
   authenticate: (req: any, _res: any, next: any) => { req.user = { id: 'u', role: 'EMPLOYEE', isActive: true }; next(); },
+  authorize: () => (_req: any, _res: any, next: any) => next(),
+  authorizeSelfOr: () => (_req: any, _res: any, next: any) => next(),
 }));
 
 jest.mock('@prisma/client', () => ({ PrismaClient: jest.fn(() => ({})) }));
@@ -26,4 +28,3 @@ describe('Auth 405 Method Not Allowed', () => {
     expect(res.headers['allow']).toBe('GET');
   });
 });
-

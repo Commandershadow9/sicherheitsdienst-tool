@@ -4,10 +4,11 @@ import app from '../app';
 jest.mock('../middleware/auth', () => ({
   authenticate: (req: any, _res: any, next: any) => { req.user = { id: 'u1', role: 'EMPLOYEE', isActive: true }; next(); },
   authorize: () => (_req: any, _res: any, next: any) => next(),
+  authorizeSelfOr: () => (_req: any, _res: any, next: any) => next(),
 }));
 
 jest.mock('@prisma/client', () => ({ PrismaClient: jest.fn(() => ({
-  deviceToken: { findMany: jest.fn(), create: jest.fn(async (d: any) => ({ id: 'dt1', ...d.data })), update: jest.fn(), delete: jest.fn() },
+  deviceToken: { findUnique: jest.fn(), findMany: jest.fn(), create: jest.fn(async (d: any) => ({ id: 'dt1', ...d.data })), update: jest.fn(), delete: jest.fn() },
 })) }));
 
 describe('Write rate limit on push tokens', () => {
@@ -30,4 +31,3 @@ describe('Write rate limit on push tokens', () => {
     expect(r2.status).toBe(429);
   });
 });
-

@@ -34,7 +34,7 @@ function initFCM() {
 
 async function getActiveTokens(userIds: string[]): Promise<string[]> {
   if (!userIds.length) return [];
-  const tokens = await (prisma as any).deviceToken.findMany({
+  const tokens = (await (prisma as any).deviceToken.findMany({
     where: {
       userId: { in: userIds },
       isActive: true,
@@ -42,7 +42,7 @@ async function getActiveTokens(userIds: string[]): Promise<string[]> {
       user: { pushOptIn: true },
     },
     select: { token: true },
-  });
+  })) || [];
   return (tokens as any[]).map((t: any) => t.token);
 }
 

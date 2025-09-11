@@ -48,11 +48,18 @@ services:
       SMTP_FROM: ${SMTP_FROM:-}
       FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
       MOBILE_APP_URL: ${MOBILE_APP_URL:-http://localhost:19000}
+      # Optional: Redis für Rate-Limiting-Store
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+      # Auth-Rate-Limits (IP-basiert)
+      RATE_LIMIT_MAX: ${RATE_LIMIT_MAX:-10}
+      RATE_LIMIT_WINDOW: ${RATE_LIMIT_WINDOW:-60}
     ports:
       - '3001:3001'
     depends_on:
       db:
         condition: service_healthy
+      redis:
+        condition: service_started
     networks:
       - sicherheitsdienst-network
     healthcheck:
@@ -64,6 +71,16 @@ services:
     command: >
       sh -c "npx prisma migrate deploy &&
              node dist/server.js"
+
+  # Redis (optional, Rate-Limit Store)
+  redis:
+    image: redis:7-alpine
+    container_name: sicherheitsdienst-redis
+    restart: unless-stopped
+    ports:
+      - '6379:6379'
+    networks:
+      - sicherheitsdienst-network
 
   # pgAdmin (Datenbank-Verwaltung)
   pgadmin:

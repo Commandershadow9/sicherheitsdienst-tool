@@ -1,11 +1,13 @@
 import { sendEmail, sendShiftChangedEmail } from '../services/emailService';
 import logger from '../utils/logger';
 
-jest.mock('nodemailer', () => ({
-  createTransport: jest.fn(() => ({
-    sendMail: jest.fn(async () => ({ messageId: 'msg-1' })),
-  })),
-}), { virtual: true } as any);
+// Singleton-Transport, damit Test die Instanz manipulieren kann, die auch der Code nutzt
+jest.mock('nodemailer', () => {
+  const transport = { sendMail: jest.fn(async () => ({ messageId: 'msg-1' })) };
+  return {
+    createTransport: jest.fn(() => transport),
+  };
+}, { virtual: true } as any);
 
 describe('emailService', () => {
   it('sendEmail logs success', async () => {
