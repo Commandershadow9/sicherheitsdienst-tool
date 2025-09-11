@@ -265,8 +265,8 @@ Weitere Details siehe: `docs/ops/system-health.md`
       metrics_path: /metrics
   ```
 
-- Alerts: Beispiel Prometheus‑Regeln unter `docs/ops/prometheus-alerts.yaml` (u. a. 429‑Spikes, 5xx‑Fehler).
-- Grafana: Beispiel‑Dashboard unter `docs/ops/grafana-dashboard.json`.
+- Alerts: Beispiel Prometheus‑Regeln unter `docs/ops/prometheus-alerts.yaml` (u. a. 429‑Spikes, 5xx‑Fehler, Readiness, p95‑Latenz).
+- Grafana: Beispiel‑Dashboard unter `docs/ops/grafana-dashboard.json` (Top‑Routes nach Traffic & p95, Status‑Rates, Latenz‑Heatmap).
 
 ### Monitoring Stack (Prometheus/Alertmanager/Grafana)
 

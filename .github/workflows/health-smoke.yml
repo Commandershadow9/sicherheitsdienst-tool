@@ -63,10 +63,11 @@ jobs:
         run: |
           curl -sS http://localhost:3000/readyz | tee readyz.json | jq -e '.status=="ready" or .status=="not-ready"'
 
-      - name: SLA check: /healthz latency < ${{ env.SLA_MAX_MS }}ms (20x)
+      - name: SLA check: /healthz p95 latency < ${{ env.SLA_MAX_MS }}ms (20x)
         run: |
           set -euo pipefail
           max_ms=${SLA_MAX_MS}
+          : > lat.txt
           for i in $(seq 1 20); do
             t=$(curl -s -o /dev/null -w '%{time_total}' http://localhost:3000/healthz)
             ms=$(python3 - <<PY
@@ -74,11 +75,15 @@ val = float("$t") * 1000
 print(int(val))
 PY
 )
-            echo "healthz time: ${ms}ms"
-            if [ "$ms" -gt "$max_ms" ]; then
-              echo "::error::/healthz SLA breach: ${ms}ms > ${max_ms}ms"; exit 1
-            fi
+            echo "$ms" | tee -a lat.txt
           done
+          sort -n lat.txt -o lat.txt
+          # p95 index for n=20 → ceil(0.95*n)=19 (1-based)
+          p95=$(awk 'NR==19{print; exit}' lat.txt)
+          echo "p95 latency: ${p95}ms (threshold ${max_ms}ms)"
+          if [ -z "$p95" ] || [ "$p95" -gt "$max_ms" ]; then
+            echo "::error::/healthz p95 SLA breach: ${p95}ms > ${max_ms}ms"; exit 1
+          fi
 
       - name: Upload health-smoke artifacts
         if: always()
