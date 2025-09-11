@@ -19,6 +19,13 @@
 - DX: Swagger UI (nur Dev) unter `/api-docs` verfügbar.
 - Observability: `/api/stats` erweitert (Features/Notifications/Auth/System/Env) und dokumentiert (README + OpenAPI).
 
+### Neu seit v1.1.1 (Health/Readiness)
+- Endpunkte: `/healthz` (Liveness) und `/readyz` (Readiness mit `deps.db`, `deps.smtp`).
+- Security: `helmet()` aktiv; CORS strikt per Allowlist (`CORS_ORIGINS`, Fallbacks).
+- Auth Rate-Limits: IP‑basiert (ENV: `RATE_LIMIT_MAX`, `RATE_LIMIT_WINDOW`) + pro User/Email (Login) 5/15min; optional Redis‑Store (`REDIS_URL`).
+- OpenAPI: interne Endpunkte dokumentiert (Tag `internal`, `x-internal: true`), operationId‑Konvention vereinheitlicht, ungenutzte Komponenten entfernt, Beispiele korrigiert.
+- CI: Health‑Smoke‑Job (baut, startet, prüft `/healthz`/`/readyz`, Log‑Dump bei Fehler).
+
 Alle Änderungen sind auf `main` gemergt.
 
 ## Milestone 2025‑09‑09 (Planning Phases 1–5) – abgeschlossen (Branch: planning/analysis-20250909)
@@ -38,7 +45,10 @@ Alle Änderungen sind auf `main` gemergt.
 
 ## Nächste Schritte (Backlog, kurz)
 
-- CI: Optional lokaler Prisma‑Mock/Generate‑Step verbessern; OpenAPI validate/lint bleibt Pflicht.
+- Readiness: Optionalen SMTP‑Verify implementieren, falls `READINESS_CHECK_SMTP=true` (Timeout konfigurierbar über `READINESS_SMTP_TIMEOUT_MS`).
+- Rate‑Limits: Metriken/Monitoring (z. B. Exposition der Rate‑Limit‑Header in /stats oder Prometheus‑Endpoint evaluieren).
+- CI: Prisma‑Setup und Caching weiter beschleunigen; Smoke um Basis‑Auth/CORS‑Checks ergänzen.
+- OpenAPI: Kontinuierliche Pflege der Beispiele und operationIds bei neuen Endpunkten.
 
 ## Abgeschlossen (aktualisiert)
 
@@ -80,6 +90,7 @@ Erweiterung (konzepttreu, dokumentarisch):
 - Reporting/Exports (CSV/Excel) für Listenendpunkte; Filter‑Preset‑Doku.
 - Performance: sinnvolle Indexe (Users.email, Sites.name+address, Shifts.startTime/status) prüfen; Migrationsvorschläge.
 - Sicherheit: Optionales Rate‑Limit für `/notifications/test`; Env‑Flag für Aktivierung.
+  (Status: umgesetzt; weitere Parametrisierung/Monitoring evaluieren.)
 
 2) Zod-DTOs für Auth und Site ableiten
 - Akzeptanzkriterien:
