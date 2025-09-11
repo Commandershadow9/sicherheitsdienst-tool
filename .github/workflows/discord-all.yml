@@ -10,7 +10,7 @@ on:
   pull_request:
     types: [opened, synchronize, reopened, closed, ready_for_review, converted_to_draft]
   workflow_run:                      # CI/Smoke-Ergebnisse melden
-    workflows: [ "ci", "CI", "build", "test", "health-smoke", "docker-release" ]   # muss den Workflow-Namen(en) entsprechen
+    workflows: [ "ci", "CI", "build", "test", "health-smoke", "metrics-smoke", "docker-release" ]   # muss den Workflow-Namen(en) entsprechen
     types: [completed]
   release:
     types: [published]
@@ -135,7 +135,8 @@ jobs:
               '[{"name":"Workflow","value":$name},{"name":"Repository","value":$repo_url}]' \
               | jq --arg name "$name" --arg note "Image Scan (SARIF) & SBOM als Artefakte im Run verfügbar." \
                    --arg note2 "Health-Smoke Artefakte (server.log, healthz.json, readyz.json) im Run verfügbar." \
-                'if $name == "docker-release" then . + [{"name":"Artefakte","value":$note}] elif $name == "health-smoke" then . + [{"name":"Artefakte","value":$note2}] else . end')
+                    --arg note3 "Metrics-Smoke Artefakte (server.log, metrics.txt) im Run verfügbar." \
+                'if $name == "docker-release" then . + [{"name":"Artefakte","value":$note}] elif $name == "health-smoke" then . + [{"name":"Artefakte","value":$note2}] elif $name == "metrics-smoke" then . + [{"name":"Artefakte","value":$note3}] else . end')
           elif [ "$event" = "release" ]; then
             tag='${{ github.event.release.tag_name }}'
             rname='${{ github.event.release.name }}'

@@ -1,0 +1,67 @@
+name: metrics-smoke
+
+on:
+  push:
+    branches: [ main ]
+  schedule:
+    - cron: '23 03 * * *'
+  workflow_dispatch: {}
+
+concurrency:
+  group: metrics-smoke
+  cancel-in-progress: true
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install & Build (backend)
+        working-directory: backend
+        run: |
+          (npm ci --no-audit --prefer-offline || npm install --no-audit)
+          npm run build --if-present
+
+      - name: Start app (PORT 3000)
+        working-directory: backend
+        run: |
+          set -euo pipefail
+          PORT=3000 node dist/server.js > server.log 2>&1 & echo $! > server.pid
+          # Wait for /metrics
+          for i in $(seq 1 30); do
+            if curl -fsS http://localhost:3000/metrics >/dev/null; then
+              echo "App/metrics is up"; break
+            fi
+            sleep 1
+          done
+
+      - name: Smoke: /metrics contains expected metrics
+        run: |
+          set -euo pipefail
+          curl -sS http://localhost:3000/metrics | tee metrics.txt | grep -q 'app_requests_total'
+          grep -q 'http_request_duration_seconds' metrics.txt
+
+      - name: Upload metrics artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: metrics-smoke-report
+          path: |
+            backend/server.log
+            metrics.txt
+
+      - name: Stop app
+        if: always()
+        working-directory: backend
+        run: |
+          kill $(cat server.pid) || true
+
