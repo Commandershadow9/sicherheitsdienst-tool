@@ -1,0 +1,77 @@
+name: create-followup-issues
+
+on:
+  workflow_dispatch:
+    inputs:
+      close_milestone:
+        description: 'Close milestone named "Health/Readiness" if it exists'
+        required: false
+        default: 'true'
+
+jobs:
+  followups:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create Issue – Readiness SMTP verify
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { data: issue } = await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: 'Readiness: optional SMTP verify (+ timeout flag)',
+              body: [
+                'Implement optional SMTP verify in /readyz controlled by ENV:',
+                '- `READINESS_CHECK_SMTP` (boolean, default false)',
+                '- `READINESS_SMTP_TIMEOUT_MS` (default 1500)',
+                '',
+                'Acceptance:',
+                '- If enabled, readiness attempts a lightweight verify (timeout-safe)',
+                '- Tests for both enabled/disabled behavior',
+              ].join('\n'),
+              labels: ['type:enhancement','area:ops']
+            });
+            core.info(`Created issue #${issue.number}`);
+
+      - name: Create Issue – Rate-limit monitoring
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { data: issue } = await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: 'Monitoring: Rate-limit metrics and alerts',
+              body: [
+                'Expose and/or collect rate-limit metrics (IP + per-user for auth):',
+                '- Consider Prometheus endpoint or /stats extensions',
+                '- Dashboards + alerting for 429 spikes',
+                '',
+                'Acceptance:',
+                '- Metrics exposed/collected and visible in dashboards',
+                '- Basic alert for sustained 429 rates',
+              ].join('\n'),
+              labels: ['type:enhancement','area:ops']
+            });
+            core.info(`Created issue #${issue.number}`);
+
+      - name: Close milestone (if exists)
+        if: ${{ github.event.inputs.close_milestone == 'true' }}
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const name = 'Health/Readiness';
+            const { data: milestones } = await github.rest.issues.listMilestones({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open'
+            });
+            const ms = milestones.find(m => m.title === name);
+            if (!ms) { core.info('Milestone not found (nothing to close)'); return; }
+            await github.rest.issues.updateMilestone({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              milestone_number: ms.number,
+              state: 'closed'
+            });
+            core.info(`Closed milestone "${name}"`);
+

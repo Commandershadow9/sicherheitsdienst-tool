@@ -1,0 +1,52 @@
+name: release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag name (e.g., v1.1.1)'
+        required: true
+
+jobs:
+  create-release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Determine tag
+        id: tag
+        run: |
+          if [ -n "${{ github.event.inputs.tag }}" ]; then
+            echo "name=${{ github.event.inputs.tag }}" >> $GITHUB_OUTPUT
+          else
+            echo "name=${GITHUB_REF_NAME}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Prepare release notes body
+        id: body
+        run: |
+          TAG='${{ steps.tag.outputs.name }}'
+          FILE="docs/releases/${TAG}.md"
+          if [ -f "$FILE" ]; then
+            echo "Using $FILE as release body"
+            echo "path=$FILE" >> $GITHUB_OUTPUT
+          else
+            echo "Using CHANGELOG.md as release body"
+            echo "path=CHANGELOG.md" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ steps.tag.outputs.name }}
+          name: Release ${{ steps.tag.outputs.name }}
+          body_path: ${{ steps.body.outputs.path }}
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
