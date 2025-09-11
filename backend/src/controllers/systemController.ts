@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import prisma from '../utils/prisma';
 import { getCounters } from '../utils/stats';
+import { getSpecVersion } from '../utils/specVersion';
 import { getNotifyCounters } from '../utils/notifyStats';
 
 // GET /api/health - System Health Check
@@ -109,6 +110,8 @@ export const getSystemStats = async (req: Request, res: Response, next: NextFunc
         env: {
           nodeEnv: process.env.NODE_ENV || 'development',
           version: process.env.npm_package_version || '1.0.0',
+          specVersion: getSpecVersion(),
+          buildSha: process.env.BUILD_SHA || null,
         },
       },
       timestamp: new Date().toISOString(),

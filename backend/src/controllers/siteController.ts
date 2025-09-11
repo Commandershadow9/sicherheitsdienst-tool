@@ -41,17 +41,21 @@ export const getAllSites = async (req: Request, res: Response, next: NextFunctio
 
     const accept = (req.headers['accept'] as string) || '';
     if (accept.includes('text/csv')) {
-      const rows = data.map((s: any) => ({
-        id: s.id,
-        name: s.name,
-        address: s.address,
-        city: s.city,
-        postalCode: s.postalCode,
-        createdAt: new Date(s.createdAt).toISOString(),
-        updatedAt: new Date(s.updatedAt).toISOString(),
-      }));
-      const header = rows.length ? Object.keys(rows[0]) : ['id','name','address','city','postalCode','createdAt','updatedAt'];
-      streamCsv(res, 'sites.csv', header, rows);
+      const header = ['id','name','address','city','postalCode','createdAt','updatedAt'];
+      async function* rows() {
+        for (const s of data as any[]) {
+          yield {
+            id: s.id,
+            name: s.name,
+            address: s.address,
+            city: s.city,
+            postalCode: s.postalCode,
+            createdAt: new Date(s.createdAt).toISOString(),
+            updatedAt: new Date(s.updatedAt).toISOString(),
+          } as Record<string, unknown>;
+        }
+      }
+      await streamCsv(res, 'sites.csv', header, rows());
       return;
     }
     if (accept.includes('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')) {

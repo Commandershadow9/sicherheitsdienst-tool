@@ -65,24 +65,26 @@ export const getAllUsers = async (req: Request, res: Response, next: NextFunctio
     // CSV/XLSX-Export unterstützen via Accept-Header
     const accept = (req.headers['accept'] as string) || '';
     if (accept.includes('text/csv')) {
-      const rows = data.map((u: any) => ({
-        id: u.id,
-        email: u.email,
-        firstName: u.firstName,
-        lastName: u.lastName,
-        phone: u.phone ?? '',
-        role: u.role,
-        employeeId: u.employeeId ?? '',
-        isActive: u.isActive ? 'true' : 'false',
-        hireDate: u.hireDate ? new Date(u.hireDate).toISOString() : '',
-        qualifications: Array.isArray(u.qualifications) ? u.qualifications.join('|') : '',
-        createdAt: new Date(u.createdAt).toISOString(),
-        updatedAt: new Date(u.updatedAt).toISOString(),
-      }));
-      const header = rows.length
-        ? Object.keys(rows[0])
-        : ['id','email','firstName','lastName','phone','role','employeeId','isActive','hireDate','qualifications','createdAt','updatedAt'];
-      streamCsv(res, 'users.csv', header, rows);
+      const header = ['id','email','firstName','lastName','phone','role','employeeId','isActive','hireDate','qualifications','createdAt','updatedAt'];
+      async function* rows() {
+        for (const u of data as any[]) {
+          yield {
+            id: u.id,
+            email: u.email,
+            firstName: u.firstName,
+            lastName: u.lastName,
+            phone: u.phone ?? '',
+            role: u.role,
+            employeeId: u.employeeId ?? '',
+            isActive: u.isActive ? 'true' : 'false',
+            hireDate: u.hireDate ? new Date(u.hireDate).toISOString() : '',
+            qualifications: Array.isArray(u.qualifications) ? u.qualifications.join('|') : '',
+            createdAt: new Date(u.createdAt).toISOString(),
+            updatedAt: new Date(u.updatedAt).toISOString(),
+          } as Record<string, unknown>;
+        }
+      }
+      await streamCsv(res, 'users.csv', header, rows());
       return; 
     }
     if (accept.includes('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')) {

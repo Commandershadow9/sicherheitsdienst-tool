@@ -40,20 +40,24 @@ export const listIncidents = async (req: Request, res: Response, next: NextFunct
 
     const accept = (req.headers['accept'] as string) || '';
     if (accept.includes('text/csv')) {
-      const rows = data.map((i: any) => ({
-        id: i.id,
-        title: i.title,
-        description: i.description || '',
-        severity: i.severity,
-        status: i.status,
-        location: i.location,
-        occurredAt: new Date(i.occurredAt).toISOString(),
-        reportedBy: i.reportedBy,
-        createdAt: new Date(i.createdAt).toISOString(),
-        updatedAt: new Date(i.updatedAt).toISOString(),
-      }));
-      const header = rows.length ? Object.keys(rows[0]) : ['id','title','description','severity','status','location','occurredAt','reportedBy','createdAt','updatedAt'];
-      streamCsv(res, 'incidents.csv', header, rows);
+      const header = ['id','title','description','severity','status','location','occurredAt','reportedBy','createdAt','updatedAt'];
+      async function* rows() {
+        for (const i of data as any[]) {
+          yield {
+            id: i.id,
+            title: i.title,
+            description: i.description || '',
+            severity: i.severity,
+            status: i.status,
+            location: i.location,
+            occurredAt: new Date(i.occurredAt).toISOString(),
+            reportedBy: i.reportedBy,
+            createdAt: new Date(i.createdAt).toISOString(),
+            updatedAt: new Date(i.updatedAt).toISOString(),
+          } as Record<string, unknown>;
+        }
+      }
+      await streamCsv(res, 'incidents.csv', header, rows());
       return;
     }
     if (accept.includes('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')) {

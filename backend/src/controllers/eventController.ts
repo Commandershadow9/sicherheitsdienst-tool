@@ -51,16 +51,20 @@ export const listEvents = async (req: Request, res: Response, next: NextFunction
 
     const accept = acceptHeader(req);
     if (accept.includes('text/csv')) {
-      const rows = (data as any[]).map((e: any) => ({
-        id: e.id,
-        title: e.title,
-        siteId: e.siteId || '',
-        startTime: e.startTime.toISOString(),
-        endTime: e.endTime.toISOString(),
-        status: e.status,
-      }));
-      const header = rows.length ? Object.keys(rows[0]) : ['id','title','siteId','startTime','endTime','status'];
-      streamCsv(res, 'events.csv', header, rows);
+      const header = ['id','title','siteId','startTime','endTime','status'];
+      async function* rows() {
+        for (const e of data as any[]) {
+          yield {
+            id: e.id,
+            title: e.title,
+            siteId: e.siteId || '',
+            startTime: e.startTime.toISOString(),
+            endTime: e.endTime.toISOString(),
+            status: e.status,
+          } as Record<string, unknown>;
+        }
+      }
+      await streamCsv(res, 'events.csv', header, rows());
       return;
     }
     if (accept.includes('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')) {

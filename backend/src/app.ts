@@ -1,5 +1,6 @@
 import express, { Request, Response, ErrorRequestHandler } from 'express'; // ErrorRequestHandler importiert
 import cors from 'cors';
+import type { CorsOptions } from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
 import dotenv from 'dotenv';
@@ -18,16 +19,35 @@ const app = express();
 // Port-Konstante wird hier nicht benötigt (Server-Start in server.ts)
 
 // Middleware
-app.use(helmet());
+// Helmet: verfeinerte Defaults; in Development CSP deaktivieren (Swagger UI)
 app.use(
-  cors({
-    origin: [
-      process.env.FRONTEND_URL || 'http://localhost:3000',
-      process.env.MOBILE_APP_URL || 'http://localhost:19000',
-    ],
-    credentials: true,
+  helmet({
+    contentSecurityPolicy: process.env.NODE_ENV === 'production' ? undefined : false,
+    referrerPolicy: { policy: 'no-referrer' },
+    frameguard: { action: 'deny' },
   }),
 );
+// CORS: Allowlist aus CORS_ORIGINS (Komma-Liste) oder Fallback auf FRONTEND_URL/MOBILE_APP_URL
+const corsAllowlist = (process.env.CORS_ORIGINS || '')
+  .split(',')
+  .map((s) => s.trim())
+  .filter(Boolean);
+if (!corsAllowlist.length) {
+  if (process.env.FRONTEND_URL) corsAllowlist.push(process.env.FRONTEND_URL);
+  if (process.env.MOBILE_APP_URL) corsAllowlist.push(process.env.MOBILE_APP_URL);
+  if (!corsAllowlist.length) {
+    corsAllowlist.push('http://localhost:3000', 'http://localhost:19000');
+  }
+}
+const corsOptions: CorsOptions = {
+  origin: (origin, callback) => {
+    if (!origin) return callback(null, true); // z. B. curl/healthchecks
+    const ok = corsAllowlist.includes(origin);
+    return ok ? callback(null, true) : callback(new Error('CORS: Origin not allowed'));
+  },
+  credentials: true,
+};
+app.use(cors(corsOptions));
 // Request ID middleware before logging
 app.use(requestId());
 

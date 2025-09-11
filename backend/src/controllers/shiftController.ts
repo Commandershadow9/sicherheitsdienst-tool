@@ -92,20 +92,24 @@ export const getAllShifts = async (req: Request, res: Response, next: NextFuncti
 
     const accept = (req.headers['accept'] as string) || '';
     if (accept.includes('text/csv')) {
-      const rows = (data as any[]).map((sh) => ({
-        id: sh.id,
-        siteId: sh.siteId || '',
-        title: sh.title,
-        location: sh.location,
-        startTime: new Date(sh.startTime).toISOString(),
-        endTime: new Date(sh.endTime).toISOString(),
-        requiredEmployees: sh.requiredEmployees,
-        status: sh.status,
-        createdAt: new Date(sh.createdAt).toISOString(),
-        updatedAt: new Date(sh.updatedAt).toISOString(),
-      }));
-      const header = rows.length ? Object.keys(rows[0]) : ['id','siteId','title','location','startTime','endTime','requiredEmployees','status','createdAt','updatedAt'];
-      streamCsv(res, 'shifts.csv', header, rows);
+      const header = ['id','siteId','title','location','startTime','endTime','requiredEmployees','status','createdAt','updatedAt'];
+      async function* rows() {
+        for (const sh of data as any[]) {
+          yield {
+            id: sh.id,
+            siteId: sh.siteId || '',
+            title: sh.title,
+            location: sh.location,
+            startTime: new Date(sh.startTime).toISOString(),
+            endTime: new Date(sh.endTime).toISOString(),
+            requiredEmployees: sh.requiredEmployees,
+            status: sh.status,
+            createdAt: new Date(sh.createdAt).toISOString(),
+            updatedAt: new Date(sh.updatedAt).toISOString(),
+          } as Record<string, unknown>;
+        }
+      }
+      await streamCsv(res, 'shifts.csv', header, rows());
       return;
     }
     if (accept.includes('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')) {
@@ -167,26 +171,22 @@ export const getShiftsForSite = async (req: Request, res: Response, next: NextFu
 
     const accept = (req.headers['accept'] as string) || '';
     if (accept.includes('text/csv')) {
-      const rows = (data as any[]).map((sh) => ({
-        id: sh.id,
-        siteId: sh.siteId || '',
-        title: sh.title,
-        location: sh.location,
-        startTime: new Date(sh.startTime).toISOString(),
-        endTime: new Date(sh.endTime).toISOString(),
-        requiredEmployees: sh.requiredEmployees,
-        status: sh.status,
-      }));
-      const header = Object.keys(rows[0] || { id: '', siteId: '', title: '', location: '', startTime: '', endTime: '', requiredEmployees: '', status: '' });
-      const escape = (v: any) => {
-        const s = String(v ?? '');
-        if (/[",\n]/.test(s)) return '"' + s.replace(/"/g, '""') + '"';
-        return s;
-      };
-      const csv = [header.join(','), ...rows.map((r) => header.map((h) => escape((r as any)[h])).join(','))].join('\n');
-      res.setHeader('Content-Type', 'text/csv; charset=utf-8');
-      res.setHeader('Content-Disposition', `attachment; filename="site_${siteId}_shifts.csv"`);
-      res.status(200).send(csv);
+      const header = ['id','siteId','title','location','startTime','endTime','requiredEmployees','status'];
+      async function* rows() {
+        for (const sh of data as any[]) {
+          yield {
+            id: sh.id,
+            siteId: sh.siteId || '',
+            title: sh.title,
+            location: sh.location,
+            startTime: new Date(sh.startTime).toISOString(),
+            endTime: new Date(sh.endTime).toISOString(),
+            requiredEmployees: sh.requiredEmployees,
+            status: sh.status,
+          } as Record<string, unknown>;
+        }
+      }
+      await streamCsv(res, `site_${siteId}_shifts.csv`, header, rows());
       return;
     }
     if (accept.includes('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')) {
