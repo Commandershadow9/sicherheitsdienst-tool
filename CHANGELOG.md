@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## v1.2.0-rc.1 – Phase 1 Hardening & Release-Readiness
+
+### Added
+- Readiness: optionaler SMTP-Verify in `/readyz` (Flag `READINESS_CHECK_SMTP`, Timeout `READINESS_SMTP_TIMEOUT_MS`), Unit-Tests für `ok`/`fail`/`skip`.
+- CI/Release: Docker Build & Push nach GHCR bei Tags `v*` (`.github/workflows/docker-release.yml`), Images `:latest` und `:<tag>`.
+- Tests: Verschärfte Security-/CORS-Header-Tests (Helmet-Header, Allowlist, FRONTEND_URL-Fallback).
+
+### Changed
+- README: Release-Runbook (GHCR) + Compose‑Snippet ergänzt; System‑Health verlinkt.
+
 ## 2025-09-06
 
 ### Added
