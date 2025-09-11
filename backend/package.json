@@ -59,6 +59,7 @@
     "nodemailer": "^6.9.13",
     "prisma": "^6.8.2",
     "winston": "^3.17.0",
+    "prom-client": "^15.1.2",
     "zod": "^3.25.33"
   },
   "devDependencies": {

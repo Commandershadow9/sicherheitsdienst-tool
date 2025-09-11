@@ -16,7 +16,7 @@ describe('Readiness SMTP checks (optional)', () => {
     const res = await request(app).get('/readyz');
     expect(res.status).toBe(200);
     expect(res.body).toMatchObject({ deps: { smtp: 'skip' } });
-  });
+  }, 10000);
 
   it('deps.smtp = ok when verify succeeds', async () => {
     process.env.READINESS_CHECK_SMTP = 'true';

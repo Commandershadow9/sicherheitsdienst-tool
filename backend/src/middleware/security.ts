@@ -3,6 +3,7 @@ import helmet from 'helmet';
 import cors, { CorsOptions } from 'cors';
 import rateLimit from 'express-rate-limit';
 import Redis from 'ioredis';
+import { incrAuthIp429, incrAuthUser429 } from '../utils/rateLimitStats';
 
 // --- Security: Helmet + CORS (ENV allowlist) ---
 export function applySecurity(app: Express): void {
@@ -131,7 +132,12 @@ function createExpressLimiter(opts: {
     legacyHeaders: false,
     keyGenerator: opts.keyGenerator as any,
     store: store as any,
-    handler,
+    handler: (req, res) => {
+      const key = opts.keyGenerator(req as any);
+      if (key.startsWith('ip:')) incrAuthIp429();
+      else if (key.startsWith('user:')) incrAuthUser429();
+      return handler(req, res);
+    },
   }) as unknown as RequestHandler;
 }
 

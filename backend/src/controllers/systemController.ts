@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import prisma from '../utils/prisma';
 import { getCounters } from '../utils/stats';
+import { getAuthLimitCounters } from '../utils/rateLimitStats';
 import { getSpecVersion } from '../utils/specVersion';
 import { getNotifyCounters } from '../utils/notifyStats';
 
@@ -164,6 +165,7 @@ export const getSystemStats = async (req: Request, res: Response, next: NextFunc
           logLevel: process.env.LOG_LEVEL || (process.env.NODE_ENV === 'development' ? 'debug' : 'info'),
         },
         requests: getCounters(),
+        rateLimitAuth: getAuthLimitCounters(),
         features: featureFlags,
         notifications: {
           testRateLimit: rateLimit,

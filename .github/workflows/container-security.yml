@@ -1,0 +1,36 @@
+name: container-security
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch: {}
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Trivy FS scan (repo)
+        uses: aquasecurity/trivy-action@0.20.0
+        with:
+          scan-type: fs
+          scanners: 'vuln,secret,misc,config'
+          ignore-unfixed: true
+          format: sarif
+          output: trivy-fs.sarif
+
+      - name: Upload Trivy SARIF
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: trivy-fs.sarif
+
+      - name: SBOM (Syft)
+        uses: anchore/sbom-action@v0
+        with:
+          path: .
+          artifact-name: sbom-repo
+

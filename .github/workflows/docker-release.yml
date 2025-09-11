@@ -39,3 +39,22 @@ jobs:
             ghcr.io/${{ steps.meta.outputs.lower_repo }}:${{ steps.meta.outputs.tag }}
             ghcr.io/${{ steps.meta.outputs.lower_repo }}:latest
 
+      - name: Trivy Image Scan (GHCR tag)
+        uses: aquasecurity/trivy-action@0.20.0
+        with:
+          image-ref: ghcr.io/${{ steps.meta.outputs.lower_repo }}:${{ steps.meta.outputs.tag }}
+          format: sarif
+          output: trivy-image.sarif
+          ignore-unfixed: true
+          vuln-type: 'os,library'
+
+      - name: Upload Trivy SARIF
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: trivy-image.sarif
+
+      - name: SBOM for image (Syft)
+        uses: anchore/sbom-action@v0
+        with:
+          image: ghcr.io/${{ steps.meta.outputs.lower_repo }}:${{ steps.meta.outputs.tag }}
+          artifact-name: sbom-image-${{ steps.meta.outputs.tag }}

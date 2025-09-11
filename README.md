@@ -151,9 +151,10 @@ REDIS_URL=redis://localhost:6379/0
 - Start (Compose): `docker-compose up -d --build` (führt `prisma migrate deploy` aus)
 - Healthchecks:
   - API: `GET /api/health` → 200/503
-  - Stats: `GET /api/stats` → Aggregierte Zahlen und Konfiguration
+- Stats: `GET /api/stats` → Aggregierte Zahlen und Konfiguration
     - `data.env.specVersion`: Version aus OpenAPI (`docs/openapi.yaml info.version`) oder via `SPEC_VERSION` (Build‑Step)
     - `data.env.buildSha`: Git Commit SHA aus `BUILD_SHA` (oder `null`)
+    - `data.rateLimitAuth`: Zähler der Auth‑Rate‑Limit‑429 (ip429, user429)
 - Logs: Winston (level via `LOG_LEVEL`), HTTP-Logs via morgan; jeder Request hat `X-Request-ID` (Header und Logs)
   - Optional: `LOG_FORMAT=json` für strukturierte Console-Logs (JSON)
 
@@ -245,6 +246,22 @@ Weitere Details siehe: `docs/ops/system-health.md`
      - Actions → "release" → Run workflow → Input `tag: v1.2.0-rc.1`
      - CLI: `gh workflow run release.yml -f tag=v1.2.0-rc.1`
   3) Discord‑Benachrichtigung (sofern `DISCORD_WEBHOOK` Secret gesetzt) kommt automatisch zum Event `release: published`.
+
+## Metrics (/metrics)
+
+- Endpoint: `GET /metrics` (Prometheus‑Format)
+- Enthält Default‑Metriken (Node.js/Process) und App‑Metriken:
+  - `app_requests_total`, `app_responses_4xx_total`, `app_responses_5xx_total`
+  - `app_auth_ratelimit_ip_429_total`, `app_auth_ratelimit_user_429_total`
+- Beispiel Scrape‑Config (Prometheus):
+  ```yaml
+  scrape_configs:
+    - job_name: sicherheitsdienst-api
+      scrape_interval: 15s
+      static_configs:
+        - targets: ['api:3001']
+      metrics_path: /metrics
+  ```
 
 - Kubernetes Probes:
   - Liveness: `GET /healthz`
