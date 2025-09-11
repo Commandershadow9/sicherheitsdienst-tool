@@ -44,11 +44,63 @@ jobs:
             sleep 1
           done
 
+      - name: Warm-up /healthz for histogram/counter
+        run: |
+          for i in $(seq 1 40); do curl -s -o /dev/null http://localhost:3000/healthz; done
+
       - name: Smoke: /metrics contains expected metrics
         run: |
           set -euo pipefail
           curl -sS http://localhost:3000/metrics | tee metrics.txt | grep -q 'app_requests_total'
           grep -q 'http_request_duration_seconds' metrics.txt
+
+      - name: Validate p95 latency via histogram buckets (healthz)
+        env:
+          SLA_MAX_MS: 500
+        run: |
+          python3 - << 'PY'
+import re, sys
+import math
+max_ms = int("${SLA_MAX_MS}")
+lines = open('metrics.txt','r',encoding='utf-8',errors='ignore').read().splitlines()
+pat = re.compile(r'^http_request_duration_seconds_bucket\{([^}]*)\}\s+(\d+(?:\.\d+)?)$')
+def parse_labels(s):
+  d={}
+  for part in re.findall(r'(\w+)="([^"]*)"', s):
+    d[part[0]]=part[1]
+  return d
+samples=[]
+for ln in lines:
+  m=pat.match(ln)
+  if not m: continue
+  labels=parse_labels(m.group(1))
+  if labels.get('method')=='GET' and labels.get('route')=='/healthz' and labels.get('status_code')=='200':
+    le=labels.get('le')
+    if le is None: continue
+    try:
+      edge=float(le) if le!='+Inf' else math.inf
+    except: continue
+    val=float(m.group(2))
+    samples.append((edge,val))
+if not samples:
+  print('No histogram buckets for /healthz found'); sys.exit(1)
+samples.sort(key=lambda x:x[0])
+total=samples[-1][1]
+if total<=0:
+  print('No observations for /healthz'); sys.exit(1)
+target=0.95*total
+p95_edge=None
+for edge,val in samples:
+  if val>=target:
+    p95_edge=edge
+    break
+if p95_edge is None:
+  p95_edge=samples[-1][0]
+p95_ms= (p95_edge if math.isfinite(p95_edge) else max_ms+1)*1000
+print(f'Computed p95 edge ~ {p95_edge}s => {int(p95_ms)}ms; total obs={total}')
+if p95_ms>max_ms:
+  print(f'::error::/metrics p95 SLA breach: {int(p95_ms)}ms > {max_ms}ms'); sys.exit(1)
+PY
 
       - name: Upload metrics artifacts
         if: always()
@@ -64,4 +116,3 @@ jobs:
         working-directory: backend
         run: |
           kill $(cat server.pid) || true
-
