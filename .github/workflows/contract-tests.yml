@@ -1,75 +1,115 @@
-name: contract-tests (optional)
+name: contract-tests
 
 on:
   workflow_dispatch:
+  schedule:
+    - cron: '0 1 * * *'
 
 jobs:
-  prism-mock:
+  lint-openapi:
     runs-on: ubuntu-latest
+    env:
+      NODE_OPTIONS: --max-old-space-size=512
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
           node-version: 20
-      - name: Validate OpenAPI
-        run: npx --yes swagger-cli@latest validate docs/openapi.yaml
-      - name: Start Prism mock
-        run: npx --yes @stoplight/prism-cli@latest mock docs/openapi.yaml &
-      - name: Wait and probe mock
-        run: |
-          sleep 3
-          curl -fsSL http://127.0.0.1:4010/ || true
+      - name: Bundle OpenAPI (json)
+        run: npx --yes swagger-cli@latest bundle -t json docs/openapi.yaml -o docs/openapi.bundled.json
+      - name: Lint OpenAPI (Redocly)
+        run: npx --yes @redocly/cli@latest lint docs/openapi.yaml --format=stylish
+      - name: Upload bundle artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: openapi-bundle
+          path: docs/openapi.bundled.json
 
-  dredd-proxy:
+  prism-mock:
+    needs: [lint-openapi]
     runs-on: ubuntu-latest
+    env:
+      NODE_OPTIONS: --max-old-space-size=512
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
           node-version: 20
-      - name: Start stack (db + api) via docker compose
-        env:
-          COMPOSE_DOCKER_CLI_BUILD: 1
-          DOCKER_BUILDKIT: 1
+      - name: Download bundle artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: openapi-bundle
+          path: docs
+      - name: Start Prism mock (background) and probe
+        shell: bash
         run: |
-          set -euxo pipefail
-          if docker compose version >/dev/null 2>&1; then
-            DOCKER_COMPOSE="docker compose"
-          else
-            DOCKER_COMPOSE="docker-compose"
-          fi
-          $DOCKER_COMPOSE version
-          $DOCKER_COMPOSE up -d --build db api
-      - name: Wait for API health
-        run: |
-          set -e
-          for i in $(seq 1 40); do
-            if curl -fsS http://localhost:3001/api/health >/dev/null; then
-              echo "API is healthy"; exit 0; fi
-            sleep 3
+          set -euo pipefail
+          npx --yes @stoplight/prism-cli@latest mock docs/openapi.bundled.json --port 4010 --host 127.0.0.1 > prism.log 2>&1 &
+          echo $! > prism.pid
+          for i in $(seq 1 20); do
+            if curl -fsS http://127.0.0.1:4010/ >/dev/null; then
+              echo "Prism mock is up"; break; fi
+            sleep 2
           done
-          echo "API did not become healthy in time" >&2
-          curl -s http://localhost:3001/api/health || true
-          exit 1
-      - name: Run Dredd against API
-        run: npx --yes dredd@latest docs/openapi.yaml http://localhost:3001/api/v1
-      - name: Show compose status and full logs (always)
+          # stop mock (this job only validates it can start)
+          kill -TERM "$(cat prism.pid)" || true
+      - name: Upload Prism log
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: prism-log
+          path: prism.log
+
+  dredd-run:
+    needs: [lint-openapi]
+    runs-on: ubuntu-latest
+    env:
+      NODE_OPTIONS: --max-old-space-size=512
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Download bundle artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: openapi-bundle
+          path: docs
+      - name: Start Prism mock (background)
+        shell: bash
+        run: |
+          set -euo pipefail
+          npx --yes @stoplight/prism-cli@latest mock docs/openapi.bundled.json --port 4010 --host 127.0.0.1 > prism.log 2>&1 &
+          echo $! > prism.pid
+          for i in $(seq 1 20); do
+            if curl -fsS http://127.0.0.1:4010/ >/dev/null; then
+              echo "Prism mock is up"; break; fi
+            sleep 2
+          done
+      - name: Run Dredd (inline errors)
+        shell: bash
+        run: |
+          set -euo pipefail
+          npx --yes dredd@14 \
+            --path=docs/openapi.bundled.json \
+            --endpoint=http://127.0.0.1:4010 \
+            --inline-errors --color > reports/dredd-run.log 2>&1 || true
+      - name: Stop Prism (always)
         if: ${{ always() }}
         run: |
-          set +e
-          if docker compose version >/dev/null 2>&1; then
-            DOCKER_COMPOSE="docker compose"
-          else
-            DOCKER_COMPOSE="docker-compose"
-          fi
-          $DOCKER_COMPOSE ps
-          $DOCKER_COMPOSE logs --no-color db api || true
-      - name: Teardown stack (always)
+          kill -TERM "$(cat prism.pid)" 2>/dev/null || true
+      - name: Upload artifacts (bundle + logs)
         if: ${{ always() }}
-        run: |
-          if docker compose version >/dev/null 2>&1; then
-            DOCKER_COMPOSE="docker compose"
-          else
-            DOCKER_COMPOSE="docker-compose"
-          fi
-          $DOCKER_COMPOSE down -v || true
+        uses: actions/upload-artifact@v4
+        with:
+          name: contract-tests-artifacts
+          path: |
+            docs/openapi.bundled.json
+            prism.log
+            reports/**/*.log
