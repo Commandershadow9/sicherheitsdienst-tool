@@ -266,6 +266,20 @@ Weitere Details siehe: `docs/ops/system-health.md`
 - Alerts: Beispiel Prometheus‑Regeln unter `docs/ops/prometheus-alerts.yaml` (u. a. 429‑Spikes, 5xx‑Fehler).
 - Grafana: Beispiel‑Dashboard unter `docs/ops/grafana-dashboard.json`.
 
+### Monitoring Stack (Prometheus/Alertmanager/Grafana)
+
+- Compose: `docs/ops/monitoring-compose.yml`
+  - Prometheus (9090), Alertmanager (9093), Grafana (3002)
+  - Prometheus config: `docs/ops/prometheus.yml` (scrape `/metrics`, Blackbox Probe auf `/readyz`)
+  - Alert‑Rules: `docs/ops/prometheus-alerts.yaml`
+  - Alertmanager: `docs/ops/alertmanager.yml` (Null‑Receiver als Platzhalter)
+- Start:
+  ```bash
+  cd docs/ops
+  docker compose -f monitoring-compose.yml up -d
+  ```
+- Grafana Login: admin / admin (Standard, bitte ändern)
+
 - Kubernetes Probes:
   - Liveness: `GET /healthz`
   - Readiness: `GET /readyz`

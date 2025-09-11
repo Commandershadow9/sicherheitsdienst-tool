@@ -10,7 +10,7 @@ on:
   pull_request:
     types: [opened, synchronize, reopened, closed, ready_for_review, converted_to_draft]
   workflow_run:                      # CI/Smoke-Ergebnisse melden
-    workflows: [ "ci", "CI", "build", "test", "health-smoke" ]   # muss den Workflow-Namen(en) entsprechen
+    workflows: [ "ci", "CI", "build", "test", "health-smoke", "docker-release" ]   # muss den Workflow-Namen(en) entsprechen
     types: [completed]
   release:
     types: [published]
@@ -131,7 +131,10 @@ jobs:
             DESC="**Akteur:** ${actor}\n**Ergebnis:** ${status}\n${run_url}"
             ICON="https://raw.githubusercontent.com/primer/octicons/main/icons/checklist-24.svg"
             embed_url="$run_url"
-            FIELDS=$(jq -n --arg name "$name" --arg repo_url "$repo_url" '[{"name":"Workflow","value":$name},{"name":"Repository","value":$repo_url}]')
+            FIELDS=$(jq -n --arg name "$name" --arg repo_url "$repo_url" --arg run "$run_url" \
+              '[{"name":"Workflow","value":$name},{"name":"Repository","value":$repo_url}]' \
+              | jq --arg name "$name" --arg note "Image Scan (SARIF) & SBOM als Artefakte im Run verfügbar." \
+                'if $name == "docker-release" then . + [{"name":"Artefakte","value":$note}] else . end')
           elif [ "$event" = "release" ]; then
             tag='${{ github.event.release.tag_name }}'
             rname='${{ github.event.release.name }}'
