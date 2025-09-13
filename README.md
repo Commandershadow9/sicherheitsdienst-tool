@@ -58,6 +58,31 @@ WEB (Frontend)
 ## Export (CSV/XLSX)
 - Streaming‑Download (100k+ Zeilen) via Accept: `text/csv` oder XLSX MIME‑Type
 
+## Users – Listen‑API (Suche/Filter/Sort/Pagination)
+- Endpoint: `GET /api/users`
+- Parameter (Query)
+  - `page` (number, default 1)
+  - `pageSize` oder `pagesize` (number, default 25, max 100)
+  - `sortBy` (one of: `firstName`, `lastName`, `email`, `createdAt`, `updatedAt`, `role`, `isActive`; default `firstName`)
+  - `sortDir` (`asc` | `desc`, default `asc`)
+  - `query` (string, Freitextsuche über `email|firstName|lastName`)
+  - `role` (`ADMIN|MANAGER|DISPATCHER|EMPLOYEE`)
+  - `isActive` (`true|false`)
+  - `filter[...]` (zusätzliche Filter, z. B. `filter[email]=john`)
+- Antworten (JSON)
+  - `{ data: User[], pagination: { page, pageSize, total, totalPages }, sort: { by, dir }, filters? }`
+- Fehlersemantik
+  - 400 bei Domain‑Fehlern (z. B. unbekanntes `sortBy`)
+  - 422 bei Typvalidierungsfehlern (Zod), z. B. nicht‑numerisches `page`
+- Export
+  - CSV/XLSX via `Accept: text/csv` bzw. XLSX MIME; es gelten dieselben Filter/Sortierungen wie bei JSON.
+  - Export liefert das vollständige (ungepaginierte) Ergebnis‑Set.
+
+Beispiele
+- `GET /api/users?page=1&pageSize=25&sortBy=lastName&sortDir=asc&query=anna`
+- `GET /api/users?role=EMPLOYEE&isActive=true&filter[email]=@firma.de`
+- `GET /api/users?role=DISPATCHER` mit `Accept: text/csv` → gefiltertes CSV
+
 ## Monitoring (optional)
 - `docker compose -f monitoring/docker-compose.monitoring.yml up -d`
 - Prometheus: `http://<SERVER_IP>:9090`, Grafana: `http://<SERVER_IP>:3000` (admin/admin)

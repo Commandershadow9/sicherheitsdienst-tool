@@ -17,6 +17,9 @@ Aktionen (API – Auszug)
 - Notifications Test (`POST /api/notifications/test`): ADMIN, MANAGER
 
 Hinweise
-- 403 löst keinen Token‑Refresh aus; UI zeigt 403‑Karte und Toast.
+- 403 löst keinen Token‑Refresh aus; UI zeigt 403‑Karte.
 - Exporte (CSV/XLSX) folgen den Read‑Rechten.
 
+Users‑Route (API)
+- `GET /api/users` darf nur von `ADMIN` und `DISPATCHER` aufgerufen werden.
+- Serverseitige Paginierung/Sortierung/Filterung (inkl. `query`, `role`, `isActive`); Export verwendet die gleichen Filter.
