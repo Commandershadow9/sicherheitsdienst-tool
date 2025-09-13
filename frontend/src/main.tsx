@@ -6,6 +6,7 @@ import { ThemeProvider } from '@/components/theme/ThemeProvider'
 import { Toaster } from '@/components/ui/toaster'
 import { router } from '@/router'
 import '@/index.css'
+import { AuthProvider } from '@/features/auth/AuthProvider'
 
 const qc = new QueryClient()
 
@@ -13,10 +14,11 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <ThemeProvider>
       <QueryClientProvider client={qc}>
-        <RouterProvider router={router} />
-        <Toaster />
+        <AuthProvider>
+          <RouterProvider router={router} />
+          <Toaster />
+        </AuthProvider>
       </QueryClientProvider>
     </ThemeProvider>
   </React.StrictMode>
 )
-

@@ -1,11 +1,12 @@
 import { NavLink } from 'react-router-dom'
-import { LayoutDashboard, Users, CalendarDays } from 'lucide-react'
+import { LayoutDashboard, Users, CalendarDays, AlertTriangle } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const nav = [
-  { to: '/', label: 'Dashboard', icon: LayoutDashboard },
-  { to: '/shifts', label: 'Schichten', icon: CalendarDays },
+  { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { to: '/sites', label: 'Standorte', icon: CalendarDays },
   { to: '/users', label: 'Benutzer', icon: Users },
+  { to: '/incidents', label: 'Vorfälle', icon: AlertTriangle },
 ]
 
 export function Sidebar() {
@@ -32,4 +33,3 @@ export function Sidebar() {
     </aside>
   )
 }
-

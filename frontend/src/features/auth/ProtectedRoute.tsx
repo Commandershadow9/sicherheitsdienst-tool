@@ -4,9 +4,7 @@ import { useAuth } from './AuthProvider'
 export function ProtectedRoute() {
   const { isAuthenticated } = useAuth()
   const loc = useLocation()
-  if (!isAuthenticated) {
-    return <Navigate to="/login" replace state={{ from: loc }} />
-  }
-  return <Outlet />
+  return isAuthenticated ? <Outlet /> : <Navigate to="/login" replace state={{ from: loc }} />
 }
 
+export default ProtectedRoute
