@@ -1,10 +1,14 @@
 import { useQuery } from '@tanstack/react-query'
+import React from 'react'
 import { api } from '@/lib/api'
 import { useListParams } from '@/features/common/useQueryParams'
 import { toSearchParams } from '@/features/common/listParams'
 import { DebouncedInput } from '@/components/inputs/DebouncedInput'
 import { DataTable } from '@/components/table/DataTable'
 import { useAuth } from '@/features/auth/AuthProvider'
+import { exportFile } from '@/features/common/export'
+import { toast } from 'sonner'
+import { useNavigate } from 'react-router-dom'
 
 type User = { id: string; email: string; firstName: string; lastName: string; role: string; isActive: boolean }
 type ListResp = { data: User[]; pagination: { page: number; pageSize: number; total: number; totalPages: number } }
@@ -13,6 +17,8 @@ export default function UsersList() {
   const { params, update } = useListParams({ page: 1, pageSize: 25, sortBy: 'firstName', sortDir: 'asc' })
   const qk = ['users', params]
   const { tokens } = useAuth()
+  const nav = useNavigate()
+  const [downloading, setDownloading] = React.useState<null | { type: 'csv'|'xlsx'; progress?: number }>(null)
   const { data, isLoading, isError } = useQuery({
     queryKey: qk,
     queryFn: async () => {
@@ -23,24 +29,29 @@ export default function UsersList() {
     keepPreviousData: true,
   })
 
-  const exportCsv = async () => {
-    const url = `${api.defaults.baseURL}/users`
-    const res = await fetch(url!, {
-      headers: {
-        'Accept': 'text/csv',
-        ...(tokens?.accessToken ? { 'Authorization': `Bearer ${tokens.accessToken}` } : {}),
-      },
-      credentials: 'include',
-    })
-    const blob = await res.blob()
-    const href = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = href
-    a.download = `users.csv`
-    document.body.appendChild(a)
-    a.click()
-    a.remove()
-    URL.revokeObjectURL(href)
+  const currentExportParams = React.useMemo(() => {
+    const sp = toSearchParams(params)
+    sp.delete('page'); sp.delete('pageSize')
+    return sp
+  }, [params])
+
+  const doExport = async (type: 'csv'|'xlsx') => {
+    try {
+      setDownloading({ type, progress: undefined })
+      await exportFile({
+        path: '/users',
+        accept: type === 'csv' ? 'text/csv' : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        token: tokens?.accessToken,
+        filenameHint: type === 'csv' ? 'users.csv' : 'users.xlsx',
+        params: currentExportParams,
+        onProgress: ({ percent }) => setDownloading((s)=> s ? { ...s, progress: percent } : s),
+        onUnauthorized: () => nav('/login'),
+      })
+    } catch (e: any) {
+      toast.error(e?.message || 'Export fehlgeschlagen')
+    } finally {
+      setDownloading(null)
+    }
   }
 
   return (
@@ -72,8 +83,13 @@ export default function UsersList() {
             <option value="false">Nein</option>
           </select>
         </div>
-        <div className="ml-auto">
-          <button className="underline" onClick={exportCsv}>CSV Export</button>
+        <div className="ml-auto inline-flex gap-2">
+          <button disabled={!!downloading} className="underline" onClick={()=>doExport('csv')}>
+            Export CSV{downloading?.type==='csv' && (downloading.progress ? ` ${downloading.progress}%` : ' …')}
+          </button>
+          <button disabled={!!downloading} className="underline" onClick={()=>doExport('xlsx')}>
+            Export XLSX{downloading?.type==='xlsx' && (downloading.progress ? ` ${downloading.progress}%` : ' …')}
+          </button>
         </div>
       </div>
 

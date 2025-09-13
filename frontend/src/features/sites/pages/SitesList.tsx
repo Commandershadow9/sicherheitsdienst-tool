@@ -4,6 +4,11 @@ import { useListParams } from '@/features/common/useQueryParams'
 import { toSearchParams } from '@/features/common/listParams'
 import { DebouncedInput } from '@/components/inputs/DebouncedInput'
 import { DataTable } from '@/components/table/DataTable'
+import React from 'react'
+import { exportFile } from '@/features/common/export'
+import { useAuth } from '@/features/auth/AuthProvider'
+import { toast } from 'sonner'
+import { useNavigate } from 'react-router-dom'
 import { Link } from 'react-router-dom'
 
 type Site = { id: string; name: string; city?: string; postalCode?: string }
@@ -11,6 +16,9 @@ type ListResp = { data: Site[]; pagination: { page: number; pageSize: number; to
 
 export default function SitesList() {
   const { params, update } = useListParams({ page: 1, pageSize: 25, sortBy: 'name', sortDir: 'asc' })
+  const { tokens } = useAuth()
+  const nav = useNavigate()
+  const [downloading, setDownloading] = React.useState<null | { type: 'csv'|'xlsx'; progress?: number }>(null)
   const qk = ['sites', params]
   const { data, isLoading, isError, error } = useQuery({
     queryKey: qk,
@@ -21,6 +29,31 @@ export default function SitesList() {
     },
     keepPreviousData: true,
   })
+
+  const currentExportParams = React.useMemo(() => {
+    const sp = toSearchParams(params)
+    sp.delete('page'); sp.delete('pageSize')
+    return sp
+  }, [params])
+
+  const doExport = async (type: 'csv'|'xlsx') => {
+    try {
+      setDownloading({ type, progress: undefined })
+      await exportFile({
+        path: '/sites',
+        accept: type === 'csv' ? 'text/csv' : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        token: tokens?.accessToken,
+        filenameHint: type === 'csv' ? 'sites.csv' : 'sites.xlsx',
+        params: currentExportParams,
+        onProgress: ({ percent }) => setDownloading((s)=> s ? { ...s, progress: percent } : s),
+        onUnauthorized: () => nav('/login'),
+      })
+    } catch (e: any) {
+      toast.error(e?.message || 'Export fehlgeschlagen')
+    } finally {
+      setDownloading(null)
+    }
+  }
 
   return (
     <div className="space-y-4">
@@ -37,6 +70,17 @@ export default function SitesList() {
         <div>
           <label className="text-xs">PLZ</label>
           <DebouncedInput className="border rounded px-2 py-1 block" value={params.filters.postalCode||''} onChange={(v)=>update({filters:{postalCode:v}})} />
+        </div>
+      </div>
+
+      <div className="flex items-center justify-end gap-2">
+        <div className="inline-flex gap-2">
+          <button disabled={!!downloading} className="underline" onClick={()=>doExport('csv')}>
+            Export CSV{downloading?.type==='csv' && (downloading.progress ? ` ${downloading.progress}%` : ' …')}
+          </button>
+          <button disabled={!!downloading} className="underline" onClick={()=>doExport('xlsx')}>
+            Export XLSX{downloading?.type==='xlsx' && (downloading.progress ? ` ${downloading.progress}%` : ' …')}
+          </button>
         </div>
       </div>
 
