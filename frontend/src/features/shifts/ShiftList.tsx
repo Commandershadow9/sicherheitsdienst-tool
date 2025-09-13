@@ -22,11 +22,21 @@ export default function ShiftList() {
   return (
     <div className="space-y-4">
       <h1 className="text-xl font-semibold">Schichten</h1>
-      {!!params.sortBy && (
-        <div className="flex justify-end">
-          <button className="underline text-sm" onClick={()=>update({ sortBy: '', page: 1 })}>
-            Sortierung zurücksetzen
-          </button>
+      {(Object.keys(params.filters).length > 0 || !!params.sortBy) && (
+        <div className="flex justify-end gap-4">
+          {Object.keys(params.filters).length > 0 && (
+            <button
+              className="underline text-sm"
+              onClick={() => update({ filters: Object.fromEntries(Object.keys(params.filters).map(k => [k, undefined])), page: 1 })}
+            >
+              Filter zurücksetzen
+            </button>
+          )}
+          {!!params.sortBy && (
+            <button className="underline text-sm" onClick={()=>update({ sortBy: '', page: 1 })}>
+              Sortierung zurücksetzen
+            </button>
+          )}
         </div>
       )}
 
