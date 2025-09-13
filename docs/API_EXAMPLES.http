@@ -35,3 +35,24 @@ GET {{server}}/api/events/{{eventId}}
 Accept: application/pdf
 Authorization: Bearer {{accessToken}}
 
+### Users: 400 unknown sortBy
+# @name usersBadSort
+GET {{server}}/api/users?sortBy=doesNotExist
+Authorization: Bearer {{accessToken}}
+
+> {%
+client.test("400 unknown sortBy", function() {
+  client.assert(response.status === 400, 'status should be 400');
+});
+%}
+
+### Users: 422 invalid page
+# @name usersInvalidPage
+GET {{server}}/api/users?page=abc
+Authorization: Bearer {{accessToken}}
+
+> {%
+client.test("422 invalid page", function() {
+  client.assert(response.status === 422, 'status should be 422');
+});
+%}

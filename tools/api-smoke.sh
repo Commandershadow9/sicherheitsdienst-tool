@@ -60,5 +60,59 @@ else
 fi
 echo "[SMOKE] /api/sites ok"
 
-echo "[SMOKE] DONE"
+# 5) Events list (get one id), CSV and PDF
+if have_httpie; then
+  EV_JSON=$(http --ignore-stdin --check-status GET "$BASE/api/events?page=1&pageSize=1" "${AUTH[@]}")
+else
+  EV_JSON=$(curl -sS -f -H "${AUTH[@]}" "$BASE/api/events?page=1&pageSize=1")
+fi
+if have_jq; then
+  EV_ID=$(echo "$EV_JSON" | jq -r '.data[0].id // empty')
+else
+  EV_ID=""
+fi
+echo "[SMOKE] /api/events ok (id=${EV_ID:-none})"
 
+# CSV export
+if have_httpie; then
+  http --ignore-stdin --check-status GET "$BASE/api/events?page=1&pageSize=1" "${AUTH[@]}" Accept:text/csv >/dev/null
+else
+  curl -sS -f -H "${AUTH[@]}" -H 'Accept: text/csv' "$BASE/api/events?page=1&pageSize=1" >/dev/null
+fi
+echo "[SMOKE] /api/events CSV ok"
+
+# PDF (only when id available)
+if [ -n "${EV_ID:-}" ]; then
+  if have_httpie; then
+    http --ignore-stdin --check-status GET "$BASE/api/events/$EV_ID" "${AUTH[@]}" Accept:'application/pdf' >/dev/null
+  else
+    curl -sS -f -H "${AUTH[@]}" -H 'Accept: application/pdf' "$BASE/api/events/$EV_ID" >/dev/null
+  fi
+  echo "[SMOKE] /api/events/{id} PDF ok"
+else
+  echo "[SMOKE] Skipping events PDF (no id)"
+fi
+
+# 6) Incidents RBAC 403 (EMPLOYEE)
+if have_httpie; then
+  EMP_LOGIN=$(http --ignore-stdin --check-status POST "$BASE/api/auth/login" email='thomas.mueller@sicherheitsdienst.de' password='password123')
+else
+  EMP_LOGIN=$(curl -sS -f -H 'Content-Type: application/json' -d '{"email":"thomas.mueller@sicherheitsdienst.de","password":"password123"}' "$BASE/api/auth/login")
+end
+if have_jq; then EMP_TOKEN=$(echo "$EMP_LOGIN" | jq -r '.accessToken // .token'); else EMP_TOKEN=""; fi
+if [ -n "$EMP_TOKEN" ]; then
+  if have_httpie; then
+    set +e
+    http --ignore-stdin --check-status -v POST "$BASE/api/incidents" "Authorization: Bearer $EMP_TOKEN" title='x' 2>&1 | grep -q 'HTTP/1.1 403'
+    RES=$?
+    set -e
+  else
+    RES=$(curl -s -o /dev/null -w '%{http_code}' -H "Authorization: Bearer $EMP_TOKEN" -H 'Content-Type: application/json' -d '{"title":"x"}' "$BASE/api/incidents")
+    [ "$RES" = "403" ] && RES=0 || RES=1
+  fi
+  if [ "$RES" -eq 0 ]; then echo "[SMOKE] incidents RBAC (EMPLOYEE→403) ok"; else echo "[SMOKE] ERROR: incidents RBAC check failed"; exit 1; fi
+else
+  echo "[SMOKE] WARN: could not obtain employee token; skipping incidents RBAC"
+fi
+
+echo "[SMOKE] DONE"
