@@ -2,7 +2,7 @@
 
 Schneller Einstieg für lokale/remote Entwicklung mit Docker Compose und Vite.
 
-Siehe auch: `docs/API_CHEATSHEET.md` für eine kompakte Befehls‑Übersicht.
+Siehe auch: `docs/API_CHEATSHEET.md` für eine kompakte Befehls‑Übersicht (Bash/cURL, HTTPie und PowerShell‑Hinweise).
 
 ## 1) Voraussetzungen
 - Docker + Docker Compose
