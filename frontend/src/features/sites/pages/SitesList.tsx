@@ -10,6 +10,7 @@ import { useAuth } from '@/features/auth/AuthProvider'
 import { toast } from 'sonner'
 import { useNavigate } from 'react-router-dom'
 import { Link } from 'react-router-dom'
+import RbacForbidden from '@/components/RbacForbidden'
 
 type Site = { id: string; name: string; city?: string; postalCode?: string }
 type ListResp = { data: Site[]; pagination: { page: number; pageSize: number; total: number; totalPages: number } }
@@ -99,6 +100,10 @@ export default function SitesList() {
             </button>
           )}
         </div>
+      )}
+
+      {isError && (error as any)?.response?.status === 403 && (
+        <RbacForbidden />
       )}
 
       <DataTable

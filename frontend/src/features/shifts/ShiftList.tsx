@@ -8,6 +8,7 @@ import { exportFile } from '@/features/common/export'
 import { useAuth } from '@/features/auth/AuthProvider'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
+import RbacForbidden from '@/components/RbacForbidden'
 
 type Shift = { id: string; title: string; site?: { name: string } | null; startTime: string; endTime: string; status: string }
 type ListResp = { data: Shift[]; pagination: { page: number; pageSize: number; total: number; totalPages: number } }
@@ -24,7 +25,7 @@ export default function ShiftList() {
     return params
   }, [params, user?.role, user?.id])
 
-  const { data, isLoading, isError } = useQuery({
+  const { data, isLoading, isError, error } = useQuery({
     queryKey: ['shifts', effectiveParams],
     queryFn: async () => {
       const sp = toSearchParams(effectiveParams)
@@ -101,6 +102,10 @@ export default function ShiftList() {
             </button>
           )}
         </div>
+      )}
+
+      {isError && (error as any)?.response?.status === 403 && (
+        <RbacForbidden />
       )}
 
       <DataTable

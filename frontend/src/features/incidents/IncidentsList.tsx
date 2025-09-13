@@ -9,6 +9,7 @@ import { useAuth } from '@/features/auth/AuthProvider'
 import { toast } from 'sonner'
 import { exportFile } from '@/features/common/export'
 import { useState } from 'react'
+import RbacForbidden from '@/components/RbacForbidden'
 
 type Incident = { id: string; title: string; severity: string; status: string; occurredAt: string }
 type ListResp = { data: Incident[]; pagination: { page: number; pageSize: number; total: number; totalPages: number } }
@@ -18,7 +19,7 @@ export default function IncidentsList() {
   const { tokens, user } = useAuth()
   const nav = useNavigate()
   const [downloading, setDownloading] = useState<null | { type: 'csv'|'xlsx'; progress?: number }>(null)
-  const { data, isLoading, isError } = useQuery({
+  const { data, isLoading, isError, error } = useQuery({
     queryKey: ['incidents', params],
     queryFn: async () => {
       const sp = toSearchParams(params)
@@ -101,6 +102,10 @@ export default function IncidentsList() {
           )}
         </div>
       )}
+      {isError && (error as any)?.response?.status === 403 && (
+        <RbacForbidden />
+      )}
+
       <div className="flex justify-between items-center">
         <div />
         {(user?.role === 'ADMIN' || user?.role === 'MANAGER') && (

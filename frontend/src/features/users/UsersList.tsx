@@ -6,6 +6,7 @@ import { toSearchParams } from '@/features/common/listParams'
 import { DebouncedInput } from '@/components/inputs/DebouncedInput'
 import { DataTable } from '@/components/table/DataTable'
 import { useAuth } from '@/features/auth/AuthProvider'
+import RbacForbidden from '@/components/RbacForbidden'
 import { exportFile } from '@/features/common/export'
 import { toast } from 'sonner'
 import { useNavigate } from 'react-router-dom'
@@ -19,7 +20,7 @@ export default function UsersList() {
   const { tokens } = useAuth()
   const nav = useNavigate()
   const [downloading, setDownloading] = React.useState<null | { type: 'csv'|'xlsx'; progress?: number }>(null)
-  const { data, isLoading, isError } = useQuery({
+  const { data, isLoading, isError, error } = useQuery({
     queryKey: qk,
     queryFn: async () => {
       const sp = toSearchParams(params)
@@ -109,6 +110,10 @@ export default function UsersList() {
           )}
         </div>
       )}
+      {isError && (error as any)?.response?.status === 403 && (
+        <RbacForbidden />
+      )}
+
       <DataTable
         columns={[
           { key: 'name', header: 'Name', sortable: true, render: (u: User) => `${u.firstName} ${u.lastName}` },
