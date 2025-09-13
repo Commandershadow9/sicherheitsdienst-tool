@@ -76,6 +76,11 @@ export default function SystemPage() {
       {auto > 0 && (
         <div className="text-xs text-muted-foreground">Aktualisierung alle {auto}s</div>
       )}
+      {data?.timestamp && (
+        <div className="text-xs text-muted-foreground">
+          Letzte Aktualisierung: {new Date(data.timestamp).toLocaleString()}
+        </div>
+      )}
 
       {isLoading && <div>Lade…</div>}
       {isError && (
