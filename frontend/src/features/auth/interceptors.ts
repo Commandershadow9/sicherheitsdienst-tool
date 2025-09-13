@@ -21,7 +21,16 @@ export function installAuthInterceptors(
   }
 
   api.interceptors.request.use((config: AxiosRequestConfig) => {
-    const tokens = opts.getTokens()
+    let tokens = opts.getTokens()
+    if (!tokens?.accessToken) {
+      try {
+        const raw = localStorage.getItem('auth')
+        if (raw) {
+          const parsed = JSON.parse(raw)
+          if (parsed?.tokens?.accessToken) tokens = parsed.tokens
+        }
+      } catch {}
+    }
     if (tokens?.accessToken) {
       config.headers = config.headers || {}
       ;(config.headers as any)['Authorization'] = `Bearer ${tokens.accessToken}`
@@ -34,7 +43,8 @@ export function installAuthInterceptors(
     async (error) => {
       const original: AxiosRequestConfig & { _retry?: boolean } = error.config || {}
       const status = error?.response?.status
-      if (status === 401 && !original._retry) {
+      const urlPath = String(original.url || '')
+      if (status === 401 && !original._retry && !/\/auth\/(login|refresh)/.test(urlPath)) {
         original._retry = true
         try {
           if (!isRefreshing) {

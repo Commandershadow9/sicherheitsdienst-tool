@@ -24,7 +24,7 @@ export default function UsersList() {
     queryKey: qk,
     queryFn: async () => {
       const sp = toSearchParams(params)
-      const res = await api.get<ListResp>(`/users?${sp.toString()}`)
+      const res = await api.get<ListResp>(`/users`, { params: Object.fromEntries(sp.entries()) })
       return res.data
     },
     keepPreviousData: true,
