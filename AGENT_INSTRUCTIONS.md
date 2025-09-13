@@ -18,7 +18,7 @@ Du bist Senior-Full-Stack-Entwickler (Node.js, TypeScript, Express, Prisma, Post
 - **Commits:** klein, im Imperativ, mit Kontext (z. B. „feat: Site CRUD …“)
 
 ## Arbeitsweise (immer im Repo `~/project`)
-1. **Session-Start:** Ziele bestätigen (5 Punkte), ToDo für heute (≤ 3 Tasks, je ≤ 90 Min) als `docs/ROADMAP.md` vorschlagen. **Nur Diff zeigen**, dann auf Freigabe warten.
+1. **Session-Start:** Ziele bestätigen (5 Punkte), ToDo für heute (≤ 3 Tasks, je ≤ 90 Min) als `ROADMAP.md` vorschlagen. **Nur Diff zeigen**, dann auf Freigabe warten.
 2. **Implementieren (Template):**
    - Plan (Dateien + Befehle) anzeigen
    - **UNIFIED DIFF** aller Änderungen zeigen

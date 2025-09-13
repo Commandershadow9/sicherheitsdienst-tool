@@ -1,5 +1,39 @@
 # Roadmap (nächste 1–2 Sprints)
 
+## Roadmap – Heute (konsolidiert)
+
+Hinweis: Dieser Abschnitt fasst die tagesaktuellen Ziele aus der ehemaligen Datei `docs/ROADMAP.md` zusammen. Quelle bleibt `docs/KONZEPT.pdf` (Roadmap/DoD maßgeblich).
+
+### Heutige Ziele (Bestätigung)
+- Konzepttreu nach `docs/KONZEPT.pdf` arbeiten (Roadmap/DoD einhalten).
+- In kleinen, überprüfbaren Schritten vorgehen (max. 3 Tasks, je ≤ 90 Minuten).
+- Nur UNIFIED DIFF zeigen und Freigabe abwarten.
+- Fokus: OpenAPI v1, Auth/RBAC, Entity „Site“.
+- Jede Aufgabe mit klaren Akzeptanzkriterien hinterlegen.
+
+### Ergebnisse heute (Auszug)
+- RBAC (Users): Detail- und Update-Routen abgesichert (ADMIN oder Self-Access); Self-Updates auf Basisfelder beschränkt.
+- Validierung: 422-Fehler enthalten `code: VALIDATION_ERROR` (Middleware + Tests angepasst).
+- OpenAPI: Push-API dokumentiert (`/push/tokens`, `/push/tokens/{token}`, `/push/users/{userId}/opt`) + zusätzlicher Server `http://localhost:3001/api/v1`.
+- Doku: README Listen-Parameter vereinheitlicht (`page/pageSize/sortBy/sortDir/filter[...]`).
+- Tests/Build lokal: Typecheck/Build grün; einige Jest-Suites benötigen Prisma-Generate/Mocks (CI deckt regulär ab).
+- DX: Swagger UI (nur Dev) unter `/api-docs` verfügbar.
+- Observability: `/api/stats` erweitert (Features/Notifications/Auth/System/Env) und dokumentiert (README + OpenAPI).
+
+### Neu seit v1.1.1 (Health/Readiness)
+- Liveness/Readiness: `/healthz`, `/readyz` (mit `deps.db`, `deps.smtp`).
+- Security: `helmet()` aktiv; CORS per Allowlist (`CORS_ORIGINS`).
+- Auth Rate-Limits: IP‑basiert + pro User/Email; optional Redis‑Store (`REDIS_URL`).
+- OpenAPI: interne Endpunkte als `x-internal: true`, operationId‑Konvention vereinheitlicht, Beispiele korrigiert.
+- CI: Health‑Smoke‑Job (baut, startet, prüft `/healthz`/`/readyz`).
+
+### Nächste Schritte (Kurz-Backlog)
+- Readiness: Optionalen SMTP‑Verify implementieren (`READINESS_CHECK_SMTP=true`, Timeout via `READINESS_SMTP_TIMEOUT_MS`).
+- Rate‑Limits: Metriken/Monitoring (Exposition/Prometheus evaluieren).
+- CI: Prisma‑Setup/Caching beschleunigen; Smoke um Basis‑Auth/CORS ergänzen.
+- OpenAPI: Beispiele/operationIds pflegen, ungenutzte Komponenten abbauen.
+
+
 Ziel: Konkrete, messbare Aufgaben mit klaren Akzeptanzkriterien (Given/When/Then).
 
 ## Sprint 1
