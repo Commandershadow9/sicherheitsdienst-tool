@@ -6,6 +6,7 @@ import { DebouncedInput } from '@/components/inputs/DebouncedInput'
 import { Input } from '@/components/ui/input'
 import { Select } from '@/components/ui/select'
 import { Button } from '@/components/ui/button'
+import { FormField } from '@/components/ui/form'
 import { DataTable } from '@/components/table/DataTable'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/features/auth/AuthProvider'
@@ -38,36 +39,31 @@ export default function IncidentsList() {
     <div className="space-y-4">
       <h1 className="text-xl font-semibold">Vorfälle</h1>
       <div className="flex gap-2 items-end flex-wrap">
-        <div>
-          <label className="text-xs">Titel</label>
+        <FormField label="Titel">
           <DebouncedInput value={params.filters.title||''} onChange={(v)=>update({filters:{title:v}})} />
-        </div>
-        <div>
-          <label className="text-xs">Schwere</label>
+        </FormField>
+        <FormField label="Schwere">
           <Select defaultValue={params.filters.severity||''} onChange={(e)=>update({filters:{severity: e.target.value || undefined}})}>
             <option value="">Alle</option>
             <option>LOW</option>
             <option>MEDIUM</option>
             <option>HIGH</option>
           </Select>
-        </div>
-        <div>
-          <label className="text-xs">Status</label>
+        </FormField>
+        <FormField label="Status">
           <Select defaultValue={params.filters.status||''} onChange={(e)=>update({filters:{status: e.target.value || undefined}})}>
             <option value="">Alle</option>
             <option>OPEN</option>
             <option>IN_PROGRESS</option>
             <option>CLOSED</option>
           </Select>
-        </div>
-        <div>
-          <label className="text-xs">Datum von</label>
+        </FormField>
+        <FormField label="Datum von">
           <Input type="date" value={params.filters.occurredAtFrom||''} onChange={(e)=>update({filters:{occurredAtFrom:e.target.value||undefined}})} />
-        </div>
-        <div>
-          <label className="text-xs">Datum bis</label>
+        </FormField>
+        <FormField label="Datum bis">
           <Input type="date" value={params.filters.occurredAtTo||''} onChange={(e)=>update({filters:{occurredAtTo:e.target.value||undefined}})} />
-        </div>
+        </FormField>
         <div className="ml-auto">
           <div className="inline-flex gap-2">
             <Button variant="link" disabled={!!downloading} onClick={async ()=>{

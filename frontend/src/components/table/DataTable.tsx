@@ -2,6 +2,7 @@ import React from 'react'
 import { Button } from '@/components/ui/button'
 import { Select } from '@/components/ui/select'
 import { Table, THead, TBody, Tr, Th, Td } from '@/components/ui/table'
+import { ChevronsUpDown, ArrowUp, ArrowDown } from 'lucide-react'
 
 type Column<T> = {
   key: keyof T | string
@@ -53,9 +54,9 @@ export function DataTable<T extends Record<string, any>>({
               const icon = c.sortable
                 ? active
                   ? sortDir === 'asc'
-                    ? '▲'
-                    : '▼'
-                  : '⇅'
+                    ? 'up'
+                    : 'down'
+                  : 'both'
                 : undefined
               return (
                 <Th key={key} aria-sort={aria as any}>
@@ -66,7 +67,9 @@ export function DataTable<T extends Record<string, any>>({
                       title={active ? (sortDir === 'asc' ? 'Absteigend sortieren' : 'Aufsteigend sortieren') : 'Sortieren'}
                     >
                       <span>{c.header}</span>
-                      {icon && <span aria-hidden>{icon}</span>}
+                      {icon === 'both' && <ChevronsUpDown className="h-4 w-4" aria-hidden />}
+                      {icon === 'up' && <ArrowUp className="h-4 w-4" aria-hidden />}
+                      {icon === 'down' && <ArrowDown className="h-4 w-4" aria-hidden />}
                     </Button>
                   ) : (
                     c.header

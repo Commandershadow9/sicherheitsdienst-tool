@@ -6,6 +6,7 @@ import { DebouncedInput } from '@/components/inputs/DebouncedInput'
 import { Input } from '@/components/ui/input'
 import { Select } from '@/components/ui/select'
 import { Button } from '@/components/ui/button'
+import { FormField } from '@/components/ui/form'
 import { DataTable } from '@/components/table/DataTable'
 import React from 'react'
 import { exportFile } from '@/features/common/export'
@@ -62,18 +63,15 @@ export default function SitesList() {
     <div className="space-y-4">
       <h1 className="text-xl font-semibold">Standorte</h1>
       <div className="flex gap-2 items-end flex-wrap">
-        <div>
-          <label className="text-xs">Name</label>
+        <FormField label="Name">
           <DebouncedInput value={params.filters.name||''} onChange={(v)=>update({filters:{name:v}})} />
-        </div>
-        <div>
-          <label className="text-xs">Stadt</label>
+        </FormField>
+        <FormField label="Stadt">
           <DebouncedInput value={params.filters.city||''} onChange={(v)=>update({filters:{city:v}})} />
-        </div>
-        <div>
-          <label className="text-xs">PLZ</label>
+        </FormField>
+        <FormField label="PLZ">
           <DebouncedInput value={params.filters.postalCode||''} onChange={(v)=>update({filters:{postalCode:v}})} />
-        </div>
+        </FormField>
       </div>
 
       <div className="flex items-center justify-end gap-2">

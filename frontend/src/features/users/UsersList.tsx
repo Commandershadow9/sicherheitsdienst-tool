@@ -8,6 +8,7 @@ import { DebouncedInput } from '@/components/inputs/DebouncedInput'
 import { Input } from '@/components/ui/input'
 import { Select } from '@/components/ui/select'
 import { Button } from '@/components/ui/button'
+import { FormField } from '@/components/ui/form'
 import { DataTable } from '@/components/table/DataTable'
 import { useAuth } from '@/features/auth/AuthProvider'
 import RbacForbidden from '@/components/RbacForbidden'
@@ -79,35 +80,30 @@ export default function UsersList() {
     <div className="space-y-4">
       <h1 className="text-xl font-semibold">Benutzer</h1>
       <div className="flex gap-2 items-end flex-wrap">
-        <div className="min-w-[220px]">
-          <label className="text-xs" htmlFor="search">Suche</label>
+        <FormField className="min-w-[220px]" label="Suche" htmlFor="search">
           <Input id="search" value={search} onChange={(e)=>setSearch(e.target.value)} placeholder="Name oder E-Mail" />
-        </div>
-        <div>
-          <label className="text-xs">E-Mail</label>
+        </FormField>
+        <FormField label="E-Mail">
           <DebouncedInput value={params.filters.email||''} onChange={(v)=>update({filters:{email:v}})} />
-        </div>
-        <div>
-          <label className="text-xs">Vorname</label>
+        </FormField>
+        <FormField label="Vorname">
           <DebouncedInput value={params.filters.firstName||''} onChange={(v)=>update({filters:{firstName:v}})} />
-        </div>
-        <div>
-          <label className="text-xs">Rolle</label>
+        </FormField>
+        <FormField label="Rolle">
           <Select defaultValue={params.filters.role||''} onChange={(e)=>update({filters:{role: e.target.value || undefined}})}>
             <option value="">Alle</option>
             <option>ADMIN</option>
             <option>MANAGER</option>
             <option>EMPLOYEE</option>
           </Select>
-        </div>
-        <div>
-          <label className="text-xs">Aktiv</label>
+        </FormField>
+        <FormField label="Aktiv">
           <Select defaultValue={params.filters.isActive||''} onChange={(e)=>update({filters:{isActive: e.target.value || undefined}})}>
             <option value="">Alle</option>
             <option value="true">Ja</option>
             <option value="false">Nein</option>
           </Select>
-        </div>
+        </FormField>
         <div className="ml-auto inline-flex gap-2">
           <Button variant="link" disabled={!!downloading} onClick={()=>doExport('csv')}>
             Export CSV{downloading?.type==='csv' && (downloading.progress ? ` ${downloading.progress}%` : ' …')}
