@@ -73,6 +73,10 @@ export default function SystemPage() {
         </div>
       </div>
 
+      {auto > 0 && (
+        <div className="text-xs text-muted-foreground">Aktualisierung alle {auto}s</div>
+      )}
+
       {isLoading && <div>Lade…</div>}
       {isError && (
         <div className="border rounded p-3 text-sm">
