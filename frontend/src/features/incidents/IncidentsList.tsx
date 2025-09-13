@@ -8,6 +8,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/features/auth/AuthProvider'
 import { toast } from 'sonner'
 import { exportFile } from '@/features/common/export'
+import { useState } from 'react'
 import { useAuth } from '@/features/auth/AuthProvider'
 
 type Incident = { id: string; title: string; severity: string; status: string; occurredAt: string }
