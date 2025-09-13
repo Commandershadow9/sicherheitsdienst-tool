@@ -83,3 +83,28 @@ TOKEN=$(curl -sS 'http://<SERVER_IP>:3000/api/auth/login' \
 
 echo "Token: ${TOKEN:0:12}..."
 ```
+
+Refresh‑Token nutzen
+```bash
+# Optional: Refresh‑Token aus Login mit auslesen und neuen Access‑Token holen
+REFRESH=$(curl -sS 'http://<SERVER_IP>:3000/api/auth/login' \
+  -H 'Content-Type: application/json' \
+  -d '{"email":"admin@sicherheitsdienst.de","password":"password123"}' | jq -r '.refreshToken')
+
+NEW_ACCESS=$(curl -sS 'http://<SERVER_IP>:3000/api/auth/refresh' \
+  -H 'Content-Type: application/json' \
+  -d "{\"refreshToken\":\"$REFRESH\"}" | jq -r '.accessToken')
+echo "Neuer Access: ${NEW_ACCESS:0:12}..."
+```
+
+Mini‑Skript: Login → geschützte Route
+```bash
+# 1) Login und Token speichern
+TOKEN=$(curl -sS 'http://<SERVER_IP>:3000/api/auth/login' \
+  -H 'Content-Type: application/json' \
+  -d '{"email":"admin@sicherheitsdienst.de","password":"password123"}' | jq -r '.accessToken')
+
+# 2) Geschützte Route abrufen (z. B. Users‑Liste)
+curl -sS 'http://<SERVER_IP>:3000/api/users?page=1&pageSize=5' \
+  -H "Authorization: Bearer $TOKEN" | jq
+```
