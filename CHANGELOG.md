@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## v1.2.0 (2025-09-13)
+
+- ✨ CSV/XLSX-Export → echtes Streaming (100k+), Tests
+- 🧩 /api/stats: specVersion + buildSha
+- 🛡️ OpenAPI Fixes 405 + Lint/Clean
+- 🧪 Contract-Tests Workflow (Prism + Dredd)
+- 🚦 Health/Readiness Endpunkte (/healthz, /readyz) + Tests
+- 🧰 Dev-Compose: Frontend (Vite) + API, optional Monitoring-Profil
+- 🐛 Fixes: Token-Interceptor erzwingen, 429 bei Login in Dev entschärft
+
+Hinweis: Tag vorbereiten: `v1.2.0`
+
 ## v1.2.0 – Health & Metrics Hardening
 - Added: /healthz (liveness), /readyz (readiness mit deps: db, smtp).
 - Added: Prometheus+Grafana Provisioning, Dashboards (p50/p90/p95/p99, 5xx-Rate, Top Routes p95 & 5xx).

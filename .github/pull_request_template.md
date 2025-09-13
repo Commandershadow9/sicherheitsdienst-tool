@@ -1,5 +1,6 @@
 ## Summary
 - Kurze Beschreibung des Ziels/Problems und der Lösung.
+- Verweis: ROADMAP‑Eintrag/Issue‑ID (z. B. `ROADMAP.md#...`)
 
 ## Changes
 - Wichtige Code-/Config-/Doku-Änderungen (stichpunktartig)
@@ -20,3 +21,4 @@
 - [ ] ENV/Docker/CI angepasst (falls nötig)
 - [ ] OpenAPI konsistent zur Implementierung
 - [ ] CHANGELOG aktualisiert
+- [ ] Roadmap‑Eintrag/Task‑ID verlinkt

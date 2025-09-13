@@ -1,5 +1,9 @@
 # Sicherheitsdienst‑Tool – Dev/Ops Quickstart
 
+[![CI](https://github.com/Commandershadow9/sicherheitsdienst-tool/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/Commandershadow9/sicherheitsdienst-tool/actions/workflows/ci.yml)
+[![Contract Tests](https://github.com/Commandershadow9/sicherheitsdienst-tool/actions/workflows/contract-tests.yml/badge.svg?branch=main)](https://github.com/Commandershadow9/sicherheitsdienst-tool/actions/workflows/contract-tests.yml)
+[![Lint/OpenAPI](https://github.com/Commandershadow9/sicherheitsdienst-tool/actions/workflows/lint-openapi.yml/badge.svg?branch=main)](https://github.com/Commandershadow9/sicherheitsdienst-tool/actions/workflows/lint-openapi.yml)
+
 Kurzer Überblick, klare Quickstarts und schnelles Troubleshooting für Devs/Ops.
 
 - Komponenten
@@ -11,6 +15,8 @@ Links
 - OpenAPI: `docs/openapi.yaml` (Swagger UI im Dev: `/api-docs`)
 - Architektur: `docs/ARCHITECTURE.md`
 - RBAC: `docs/RBAC.md`
+- Changelog: `CHANGELOG.md`
+- Roadmap: `ROADMAP.md`
 - Getting Started (Schritt‑für‑Schritt): `GETTING_STARTED.md`
 - Troubleshooting: `TROUBLESHOOTING.md`
 - Monitoring: `MONITORING.md`
@@ -64,4 +70,3 @@ WEB (Frontend)
 
 Badges/CI (Platzhalter)
 - Build • Contract‑Tests • Lint
-

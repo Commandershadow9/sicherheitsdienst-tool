@@ -1,0 +1,116 @@
+name: e2e-smoke
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch: {}
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_DB: sicherheitsdienst_db
+          POSTGRES_USER: admin
+          POSTGRES_PASSWORD: admin123
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U admin -d sicherheitsdienst_db" 
+          --health-interval 10s 
+          --health-timeout 5s 
+          --health-retries 5
+    env:
+      DATABASE_URL: postgresql://admin:admin123@localhost:5432/sicherheitsdienst_db?schema=public
+      JWT_SECRET: test-secret
+      REFRESH_SECRET: test-refresh
+      RATE_LIMIT_MAX: 100
+      RATE_LIMIT_WINDOW_MS: 60000
+      CORS_ORIGIN: http://localhost:5173
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: |
+            backend/package-lock.json
+            frontend/package-lock.json
+
+      - name: Install backend deps
+        working-directory: backend
+        run: |
+          (npm ci --no-audit --prefer-offline || npm install --no-audit)
+
+      - name: Generate Prisma client & push schema
+        working-directory: backend
+        run: |
+          npx prisma generate
+          npx prisma db push
+
+      - name: Build backend
+        working-directory: backend
+        run: npm run build
+
+      - name: Seed demo data
+        working-directory: backend
+        run: npm run db:seed
+
+      - name: Start backend (3001)
+        working-directory: backend
+        run: |
+          PORT=3001 node dist/server.js > server.log 2>&1 & echo $! > server.pid
+          for i in $(seq 1 30); do
+            if curl -fsS http://localhost:3001/api/health >/dev/null; then
+              echo "API is up"; break; fi; sleep 1; done
+
+      - name: Install frontend deps
+        working-directory: frontend
+        run: |
+          (npm ci --no-audit --prefer-offline || npm install --no-audit)
+
+      - name: Build frontend
+        working-directory: frontend
+        env:
+          VITE_API_BASE_URL: http://localhost:3001
+        run: npm run build
+
+      - name: Start frontend preview (5173)
+        working-directory: frontend
+        run: |
+          npm run preview > preview.log 2>&1 & echo $! > preview.pid
+          for i in $(seq 1 30); do
+            if curl -fsS http://localhost:5173 >/dev/null; then
+              echo "FE is up"; break; fi; sleep 1; done
+
+      - name: Install Playwright Browsers
+        working-directory: frontend
+        run: npx playwright install --with-deps
+
+      - name: Run e2e tests
+        working-directory: frontend
+        env:
+          VITE_API_BASE_URL: http://localhost:3001
+        run: npm run test:e2e
+
+      - name: Upload logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-logs
+          path: |
+            backend/server.log
+            frontend/preview.log
+
+      - name: Stop services
+        if: always()
+        run: |
+          kill $(cat backend/server.pid) || true
+          kill $(cat frontend/preview.pid) || true
+
