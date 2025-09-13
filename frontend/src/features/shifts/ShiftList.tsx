@@ -62,6 +62,19 @@ export default function ShiftList() {
   return (
     <div className="space-y-4">
       <h1 className="text-xl font-semibold">Schichten</h1>
+      {user && user.role !== 'EMPLOYEE' && (
+        <div className="flex items-center justify-between">
+          <label className="inline-flex items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              className="accent-current"
+              checked={params.filters.userId === user.id}
+              onChange={(e) => update({ filters: { userId: e.target.checked ? user.id : undefined }, page: 1 })}
+            />
+            Nur eigene Schichten
+          </label>
+        </div>
+      )}
       <div className="flex items-center justify-end gap-2">
         <div className="inline-flex gap-2">
           <button disabled={!!downloading} className="underline" onClick={()=>doExport('csv')}>
