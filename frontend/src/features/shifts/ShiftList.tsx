@@ -5,6 +5,7 @@ import { toSearchParams } from '@/features/common/listParams'
 import { DataTable } from '@/components/table/DataTable'
 import React from 'react'
 import { exportFile } from '@/features/common/export'
+import { Button } from '@/components/ui/button'
 import { useAuth } from '@/features/auth/AuthProvider'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
@@ -78,28 +79,25 @@ export default function ShiftList() {
       )}
       <div className="flex items-center justify-end gap-2">
         <div className="inline-flex gap-2">
-          <button disabled={!!downloading} className="underline" onClick={()=>doExport('csv')}>
+          <Button variant="link" disabled={!!downloading} onClick={()=>doExport('csv')}>
             Export CSV{downloading?.type==='csv' && (downloading.progress ? ` ${downloading.progress}%` : ' …')}
-          </button>
-          <button disabled={!!downloading} className="underline" onClick={()=>doExport('xlsx')}>
+          </Button>
+          <Button variant="link" disabled={!!downloading} onClick={()=>doExport('xlsx')}>
             Export XLSX{downloading?.type==='xlsx' && (downloading.progress ? ` ${downloading.progress}%` : ' …')}
-          </button>
+          </Button>
         </div>
       </div>
       {(Object.keys(params.filters).length > 0 || !!params.sortBy) && (
         <div className="flex justify-end gap-4">
           {Object.keys(params.filters).length > 0 && (
-            <button
-              className="underline text-sm"
-              onClick={() => update({ filters: Object.fromEntries(Object.keys(params.filters).map(k => [k, undefined])), page: 1 })}
-            >
+            <Button variant="link" onClick={() => update({ filters: Object.fromEntries(Object.keys(params.filters).map(k => [k, undefined])), page: 1 })}>
               Filter zurücksetzen
-            </button>
+            </Button>
           )}
           {!!params.sortBy && (
-            <button className="underline text-sm" onClick={()=>update({ sortBy: '', page: 1 })}>
+            <Button variant="link" onClick={()=>update({ sortBy: '', page: 1 })}>
               Sortierung zurücksetzen
-            </button>
+            </Button>
           )}
         </div>
       )}
