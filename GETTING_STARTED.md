@@ -108,3 +108,21 @@ TOKEN=$(curl -sS 'http://<SERVER_IP>:3000/api/auth/login' \
 curl -sS 'http://<SERVER_IP>:3000/api/users?page=1&pageSize=5' \
   -H "Authorization: Bearer $TOKEN" | jq
 ```
+
+Fehlerbeispiele (400/422)
+
+400 Domain‑Fehler (unbekanntes sortBy)
+```bash
+curl -i 'http://<SERVER_IP>:3000/api/users?sortBy=doesNotExist' \
+  -H "Authorization: Bearer $TOKEN"
+# Erwartet: HTTP/1.1 400 Bad Request
+# Body enthält Hinweis auf erlaubte sortBy‑Felder
+```
+
+422 Typfehler (ungültiges page)
+```bash
+curl -i 'http://<SERVER_IP>:3000/api/users?page=abc' \
+  -H "Authorization: Bearer $TOKEN"
+# Erwartet: HTTP/1.1 422 Unprocessable Entity
+# Body: code: VALIDATION_ERROR (Zod)
+```
