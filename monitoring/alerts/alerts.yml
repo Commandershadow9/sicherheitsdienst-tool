@@ -1,0 +1,35 @@
+groups:
+  - name: api-error-budget
+    rules:
+      - alert: High5xxRateWarning
+        expr: |
+          sum(rate(http_requests_total{status_code=~"5.."}[5m]))
+            /
+          sum(rate(http_requests_total[5m]))
+          > 0.01
+        for: 5m
+        labels:
+          severity: warning
+          service: sicherheitsdienst-api
+        annotations:
+          summary: "5xx rate > 1% (5m)"
+          description: |
+            5xx error rate exceeded 1% over the last 5 minutes.
+            Investigate recent deploys, DB/redis health, and logs.
+
+      - alert: High5xxRateCritical
+        expr: |
+          sum(rate(http_requests_total{status_code=~"5.."}[5m]))
+            /
+          sum(rate(http_requests_total[5m]))
+          > 0.05
+        for: 5m
+        labels:
+          severity: critical
+          service: sicherheitsdienst-api
+        annotations:
+          summary: "5xx rate > 5% (5m)"
+          description: |
+            5xx error rate exceeded 5% over the last 5 minutes.
+            Immediate investigation required. Check API health and dependencies.
+

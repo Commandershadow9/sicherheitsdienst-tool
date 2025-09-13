@@ -1,0 +1,29 @@
+{
+  "id": null,
+  "uid": "top-routes-p95",
+  "title": "Top Routes by p95 (5m)",
+  "tags": ["sicherheitsdienst", "api"],
+  "timezone": "browser",
+  "schemaVersion": 38,
+  "version": 1,
+  "refresh": "10s",
+  "panels": [
+    {
+      "type": "barchart",
+      "title": "Top 10 Routes by p95 latency (5m)",
+      "gridPos": { "h": 18, "w": 24, "x": 0, "y": 0 },
+      "fieldConfig": { "defaults": { "unit": "s" }, "overrides": [] },
+      "options": { "displayMode": "gradient" },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "topk(10, histogram_quantile(0.95, sum by (le, route) (rate(http_request_duration_seconds_bucket[5m]))))",
+          "legendFormat": "{{route}}",
+          "instant": true
+        }
+      ]
+    }
+  ],
+  "templating": { "list": [] }
+}
+

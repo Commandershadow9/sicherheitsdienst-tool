@@ -7,7 +7,7 @@
 - [Quickstart (Docker Compose)](#quickstart-docker-compose)
 - [Operations / Runbook](#operations--runbook)
 - [System-Health (Liveness/Readiness)](#system-health)
-- [Release (GHCR)](#release-ghcr)
+ - [Metrics & Monitoring](#metrics--monitoring)
 
 
 This is the backend for a comprehensive management tool for security services. It provides a REST API to manage employees, shifts, time tracking, and other operational data. The project is built with Node.js, Express, TypeScript, and Prisma, using a PostgreSQL database.
@@ -109,10 +109,10 @@ See CHANGELOG.md for details.
   - `CORS_ORIGINS` (Komma‑separiert) – z. B. `https://app.example.com,https://m.example.com`
   - Fallbacks: `FRONTEND_URL`, `MOBILE_APP_URL`, sonst `http://localhost:3000` und `http://localhost:19000`
   - Nicht gelistete Origins erhalten keine ACAO‑Header (kein 500)
-- Auth‑Rate‑Limits:
-  - IP‑basiert für alle `/api/auth/*`: Standard 10 Req/Minute → 429
-    - ENV: `RATE_LIMIT_MAX` (Default `10`), `RATE_LIMIT_WINDOW` in Sekunden (Default `60`)
-  - Bruteforce‑Limiter pro User/Email für `POST /api/auth/login`: 5 Versuche / 15 Minuten
+- Auth‑Rate‑Limits (nur für `/api/auth/*`):
+  - IP‑basiert: Standard 10 Req/Minute → 429
+    - ENV: `RATE_LIMIT_MAX` (Default `10`), `RATE_LIMIT_WINDOW_MS` in Millisekunden (Default `60000`)
+  - Bruteforce‑Limiter pro User/Email für `POST /api/auth/login`: 5 Versuche / 15 Minuten (separat vom IP‑Limiter)
   - Store: Memory (Default) oder Redis, wenn `REDIS_URL` gesetzt ist (siehe Compose)
 - Response bei Limit‑Verstößen: HTTP 429 + Header `Retry-After`, `RateLimit-Limit`, `RateLimit-Remaining`, `RateLimit-Reset`.
 
@@ -132,7 +132,7 @@ MOBILE_APP_URL=http://localhost:19000
 
 # Rate Limits (Auth)
 RATE_LIMIT_MAX=10
-RATE_LIMIT_WINDOW=60
+RATE_LIMIT_WINDOW_MS=60000
 
 # Optional: Redis Store
 REDIS_URL=redis://localhost:6379/0
@@ -239,6 +239,45 @@ Weitere Details siehe: `docs/ops/system-health.md`
 
 #### GitHub Release veröffentlichen (Release Notes)
 
+## Metrics & Monitoring
+
+- Exportierte Prometheus‑Metriken (API):
+  - `GET /api/metrics` (Prometheus Textformat)
+  - Latenz‑Histogramm `http_request_duration_seconds` mit Buckets 0.05, 0.1, 0.25, 0.5, 1, 2.5 (Sekunden)
+  - Zähler `http_requests_total` (Labels: `method`, `route`, `status_code`)
+
+- Beispiel‑Queries:
+  - p50/p90/p95/p99 (rollierend 5m):
+    - `histogram_quantile(0.5, sum(rate(http_request_duration_seconds_bucket[5m])) by (le))`
+    - `histogram_quantile(0.9, sum(rate(http_request_duration_seconds_bucket[5m])) by (le))`
+    - `histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket[5m])) by (le))`
+    - `histogram_quantile(0.99, sum(rate(http_request_duration_seconds_bucket[5m])) by (le))`
+  - 5xx‑Rate (Error‑Budget):
+    - `sum(rate(http_requests_total{status_code=~"5.."}[5m])) / sum(rate(http_requests_total[5m]))`
+
+- Provisioning (Dateien):
+  - Prometheus: `monitoring/prometheus/prometheus.yml`
+  - Alerts (Prometheus): `monitoring/alerts/alerts.yml`
+  - Grafana Datasource: `monitoring/grafana/provisioning/datasources/datasource.yml`
+  - Grafana Dashboards:
+    - Latenz & Errors: `monitoring/grafana/dashboards/latency-and-errors.json` (enthält Panel „5xx-Rate (rolling 5m)“)
+    - Top Routes p95: `monitoring/grafana/dashboards/top-routes-p95.json`
+    - Top Routes 5xx: `monitoring/grafana/dashboards/top-routes-5xx.json`
+
+- Schnellstart (lokal):
+  - API starten (siehe Quickstart oben)
+  - Monitoring‑Stack:
+    ```bash
+    cd monitoring
+    docker compose -f docker-compose.monitoring.yml up -d
+    ```
+  - Grafana: http://localhost:3000 (admin/admin)
+  - Prometheus: http://localhost:9090
+
+Hinweise
+- Der Prometheus‑Scrape‑Target in `prometheus.yml` ist standardmäßig `api:3001` (Compose‑Service). Wenn du nur das Monitoring‑Compose startest, passe auf `host.docker.internal:3001` an (macOS/Windows). Unter Linux ggf. Netzwerk‑Alias oder Bridge‑Netzwerk verwenden.
+- Alerts sind in `monitoring/alerts/alerts.yml` definiert (ohne Benachrichtigungs‑Secrets/Webhooks). Benachrichtigungen bitte in der Alertmanager‑Konfiguration ergänzen.
+
 - Release-Workflow: `.github/workflows/release.yml` erstellt bei Tag‑Push (oder manuell) ein GitHub‑Release mit Body aus `docs/releases/<tag>.md` (Fallback: `CHANGELOG.md`).
 - Schritte (RC‑Beispiel `v1.2.0-rc.1`):
   1) Release Notes anlegen: `docs/releases/v1.2.0-rc.1.md`
@@ -281,6 +320,8 @@ Weitere Details siehe: `docs/ops/system-health.md`
   docker compose -f monitoring-compose.yml up -d
   ```
 - Grafana Login: admin / admin (Standard, bitte ändern)
+  - Autoprovisioning lädt Datasource und Dashboards (siehe `docs/ops/grafana/provisioning/*`).
+  - Enthält Panels für Top‑Routes (Traffic & p95), Status‑Rates (global & pro Route) und Latenz.
 
 #### Alertmanager → Discord (optional)
 - Beispiel‑Konfiguration: `docs/ops/alertmanager.discord.example.yml`

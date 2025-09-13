@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## v1.2.0 – Health & Metrics Hardening
+- Added: /healthz (liveness), /readyz (readiness mit deps: db, smtp).
+- Added: Prometheus+Grafana Provisioning, Dashboards (p50/p90/p95/p99, 5xx-Rate, Top Routes p95 & 5xx).
+- Changed: Health-Smoke SLA → p95 (ENV: SLA_MAX_MS).
+- Docs: README „Metrics & Monitoring“, Quickstart, PromQL, .env.example ergänzt.
+
 ## v1.2.0-rc.1 – Phase 1 Hardening & Release-Readiness
 
 ### Added

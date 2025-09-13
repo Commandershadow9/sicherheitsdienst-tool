@@ -1,0 +1,19 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+rule_files:
+  - /etc/prometheus/alerts.yml
+
+scrape_configs:
+  - job_name: 'api'
+    scrape_interval: 15s
+    static_configs:
+      # Adjust target to reach your API metrics endpoint
+      # - If running all in one compose: use 'api:3001'
+      # - If running only monitoring compose: use 'host.docker.internal:3001'
+      - targets: ['api:3001']
+        labels:
+          service: 'sicherheitsdienst-api'
+    metrics_path: /api/metrics
+

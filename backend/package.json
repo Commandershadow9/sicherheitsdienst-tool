@@ -1,6 +1,6 @@
 {
   "name": "backend",
-  "version": "1.2.0-rc.1",
+  "version": "1.2.0",
   "description": "Backend für Sicherheitsdienst-Tool",
   "main": "index.js",
   "directories": {
