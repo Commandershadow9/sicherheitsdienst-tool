@@ -84,7 +84,11 @@ export default function IncidentsList() {
         error={isError}
         sortBy={params.sortBy}
         sortDir={params.sortDir}
-        onSort={(key) => update({ sortBy: key, sortDir: params.sortBy === key && params.sortDir === 'asc' ? 'desc' : 'asc', page: 1 })}
+        onSort={(key) => {
+          if (params.sortBy !== key) return update({ sortBy: key, sortDir: 'asc', page: 1 })
+          if (params.sortDir === 'asc') return update({ sortDir: 'desc', page: 1 })
+          return update({ sortBy: '', page: 1 })
+        }}
         pagination={{ page: data?.pagination.page ?? params.page, pageSize: data?.pagination.pageSize ?? params.pageSize, totalPages: data?.pagination.totalPages ?? 1 }}
         onPageChange={(p)=>update({page: p})}
         onPageSizeChange={(s)=>update({pageSize: s, page: 1})}
