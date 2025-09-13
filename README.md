@@ -378,6 +378,61 @@ Hinweise
 - Manuell (on-demand): GitHub Actions → "contract-tests (optional)" → Run workflow.
   - Startet Prism-Mock (separater Job) und Compose-Stack (db + api), wartet auf Health, führt Dredd gegen `/api/v1` aus, zeigt vollständige Logs und fährt die Services kontrolliert herunter.
 - Nightly: "contract-tests-nightly" läuft täglich um 03:00 UTC.
+
+## Demo‑Daten
+
+- Beispiel‑Datensätze (Sites, Users, Shifts, Incidents, Events) kannst du mit dem Seed‑Script einspielen.
+- Voraussetzungen: eine erreichbare Datenbank (`DATABASE_URL` gesetzt) und generierter Prisma‑Client (`npm run db:generate`).
+- Ausführen (im `backend/` Verzeichnis):
+  ```bash
+  npm run seed
+  # oder explizit
+  npm run db:seed
+  ```
+- Enthaltene Accounts (Passwort `password123`):
+  - admin@sicherheitsdienst.de (ADMIN)
+  - dispatcher@sicherheitsdienst.de (DISPATCHER)
+  - thomas.mueller@sicherheitsdienst.de (EMPLOYEE)
+  - anna.schmidt@sicherheitsdienst.de (EMPLOYEE)
+  - michael.wagner@sicherheitsdienst.de (EMPLOYEE)
+- Nach dem Seed sollten die Frontend‑Listen (`/sites`, `/users`, `/incidents`) realistische Einträge anzeigen; unter `/sites/:id/shifts` sind Schichten und ein CSV‑Export verfügbar.
+
+## Remote Dev
+
+- Ziel: Frontend (Vite) remote erreichbar machen (HMR + API‑Zugriff)
+- Compose: `docker-compose.dev.yml` veröffentlicht Ports `5173:5173` (web) und `3000:3000` (api)
+- Vite Konfiguration (`frontend/vite.config.ts`):
+  - `server.host = true` (0.0.0.0)
+  - HMR via `ws` mit `VITE_HMR_HOST`/`VITE_HMR_CLIENT_PORT`
+- Beispiel `.env.remote` (im Frontend):
+  ```env
+  VITE_API_BASE_URL=http://SERVER_IP:3000
+  VITE_HMR_HOST=SERVER_IP
+  VITE_HMR_CLIENT_PORT=5173
+  ```
+- Backend‑CORS (ENV):
+  - `CORS_ORIGIN` kann mehrere, per Komma getrennte Origins aufnehmen, z. B. `http://localhost:5173,http://SERVER_IP:5173`.
+  - Alternativ `CORS_ORIGINS` als Allowlist nutzen.
+
+### Starten
+```bash
+docker compose -f docker-compose.dev.yml down -v
+docker compose -f docker-compose.dev.yml up -d
+curl -sSf http://localhost:3000/api/stats | jq
+curl -sI  http://localhost:5173 | head -n 1
+```
+
+Erwartung
+- Web‑Logs zeigen „VITE ready … Local/Network URLs“
+- curl auf 5173 liefert HTTP‑Header
+
+Hinweis
+- Variante A (SSH‑Forward):
+  - `ssh -L 3000:localhost:3000 -L 5173:localhost:5173 user@SERVER` → lokal erreichbar unter `http://localhost:5173`
+- Variante B (Öffentlich):
+  - Security beachten; `CORS_ORIGIN=http://SERVER_IP:5173` setzen; Firewall nur für benötigte IPs öffnen.
+  - HMR Host/Port via `.env.remote` setzen; Seite dann über `http://SERVER_IP:5173` aufrufen.
+
   - Nutzt den gleichen Compose/Health/Dredd-Flow, um Spezifikation und Implementierung regelmäßig gegenzuprüfen.
 - E-Mail Zustellung:
   - SMTP via `SMTP_*`; einfacher Retry (`SMTP_RETRY_MAX`, `SMTP_RETRY_DELAY_MS`)
