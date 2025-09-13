@@ -7,7 +7,8 @@
 - [Quickstart (Docker Compose)](#quickstart-docker-compose)
 - [Operations / Runbook](#operations--runbook)
 - [System-Health (Liveness/Readiness)](#system-health)
- - [Metrics & Monitoring](#metrics--monitoring)
+- [Metrics & Monitoring](#metrics--monitoring)
+ - [Local FE + CORS](#local-fe--cors)
 
 
 This is the backend for a comprehensive management tool for security services. It provides a REST API to manage employees, shifts, time tracking, and other operational data. The project is built with Node.js, Express, TypeScript, and Prisma, using a PostgreSQL database.
@@ -238,6 +239,17 @@ Weitere Details siehe: `docs/ops/system-health.md`
   ```
 
 #### GitHub Release veröffentlichen (Release Notes)
+
+## Local FE + CORS
+
+- Für lokale Frontends (z. B. Vite unter `http://localhost:5173`) ist CORS whitelisted.
+- Konfiguration:
+  - Einzelner Origin: `CORS_ORIGIN=http://localhost:5173`
+  - Alternativ mehrere: `CORS_ORIGINS=http://localhost:5173,http://localhost:3000`
+  - Fallbacks (wenn keine ENV gesetzt): `http://localhost:5173`, `http://localhost:3000`, `http://localhost:19000`
+- Test:
+  - `curl -I -H "Origin:http://localhost:5173" http://localhost:3000/api/stats`
+  - Header `access-control-allow-origin: http://localhost:5173` sollte gesetzt sein.
 
 ## Metrics & Monitoring
 

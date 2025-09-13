@@ -19,11 +19,16 @@ export function applySecurity(app: Express): void {
     .split(',')
     .map((s) => s.trim())
     .filter(Boolean);
+  // Optional: einzelner Origin (Vite/Local Dev)
+  if (process.env.CORS_ORIGIN) {
+    const one = process.env.CORS_ORIGIN.trim();
+    if (one && !corsAllowlist.includes(one)) corsAllowlist.push(one);
+  }
   if (!corsAllowlist.length) {
     if (process.env.FRONTEND_URL) corsAllowlist.push(process.env.FRONTEND_URL);
     if (process.env.MOBILE_APP_URL) corsAllowlist.push(process.env.MOBILE_APP_URL);
     if (!corsAllowlist.length) {
-      corsAllowlist.push('http://localhost:3000', 'http://localhost:19000');
+      corsAllowlist.push('http://localhost:5173', 'http://localhost:3000', 'http://localhost:19000');
     }
   }
 
