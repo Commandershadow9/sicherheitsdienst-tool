@@ -21,6 +21,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const initialized = useRef(false)
   const refreshAttempted = useRef(false)
+  const refreshTimer = useRef<number | null>(null)
 
   // Rehydrate from localStorage
   useEffect(() => {
@@ -50,6 +51,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const { accessToken, refreshToken: rt } = res.data
     return { accessToken, refreshToken: rt }
   }, [])
+
+  const attemptRefresh = useCallback(async () => {
+    const rt = tokens?.refreshToken
+    if (!rt) return
+    if (refreshAttempted.current) return
+    refreshAttempted.current = true
+    try {
+      const t = await refresh(rt)
+      setTokens(t)
+    } catch {
+      try { localStorage.removeItem(LS_KEY) } catch {}
+      setTokensState(null)
+      setUser(null)
+    } finally {
+      window.setTimeout(() => { refreshAttempted.current = false }, 1000)
+    }
+  }, [tokens?.refreshToken, refresh, setTokens])
 
   // Install interceptors once
   useEffect(() => {
@@ -109,27 +127,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const b64 = parts[1].replace(/-/g, '+').replace(/_/g, '/')
         const json = decodeURIComponent(atob(b64).split('').map(c=>'%'+('00'+c.charCodeAt(0).toString(16)).slice(-2)).join(''))
         const payload = JSON.parse(json)
-        if (payload?.exp && Date.now() >= payload.exp * 1000) {
-          if (refreshAttempted.current) return
-          refreshAttempted.current = true
-          try {
-            const t = await refresh(tokens.refreshToken)
-            setTokens(t)
-          } catch {
-            // fallback: logout handled by interceptor on next 401, but we can clear now
-            try { localStorage.removeItem(LS_KEY) } catch {}
-            setTokensState(null)
-            setUser(null)
-          } finally {
-            setTimeout(() => { refreshAttempted.current = false }, 1000)
-          }
+        const expMs = payload?.exp ? payload.exp * 1000 : null
+        if (expMs && Date.now() >= expMs) {
+          await attemptRefresh()
+        }
+        // schedule proactive refresh 30s before expiry
+        if (expMs) {
+          const leadMs = 30_000
+          const delay = Math.max(0, expMs - Date.now() - leadMs)
+          if (refreshTimer.current) window.clearTimeout(refreshTimer.current)
+          refreshTimer.current = window.setTimeout(() => { attemptRefresh() }, delay)
         }
       } catch {
         // ignore decode errors
       }
     }
     maybeRefresh()
-  }, [tokens?.accessToken, tokens?.refreshToken, refresh])
+    return () => { if (refreshTimer.current) { window.clearTimeout(refreshTimer.current); refreshTimer.current = null } }
+  }, [tokens?.accessToken, tokens?.refreshToken, attemptRefresh])
 
   const value: AuthCtx = useMemo(
     () => ({ tokens, isAuthenticated: Boolean(tokens?.accessToken), user, login, logout }),
