@@ -8,18 +8,24 @@ import bcrypt from 'bcryptjs';
 // GET /api/users - Alle Mitarbeiter abrufen
 export const getAllUsers = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const page = Math.max(parseInt((req.query.page as string) || '1', 10), 1);
-    const pageSizeRaw = parseInt((req.query.pageSize as string) || '20', 10);
-    const pageSize = Math.min(Math.max(pageSizeRaw || 20, 1), 100);
-    const sortBy = (req.query.sortBy as string) || 'firstName';
-    const sortDir = (req.query.sortDir as string) === 'desc' ? 'desc' : 'asc';
-    const filtersFromQueryParam = (req.query.filter as Record<string, string>) || {};
+    const q = req.query as Record<string, any>;
+    // Defaults (stabil)
+    const page = Math.max(parseInt((q.page as string) || '1', 10), 1);
+    const pageSizeRaw = parseInt((q.pageSize as string) || (q.pagesize as string) || '25', 10);
+    const pageSize = Math.min(Math.max(pageSizeRaw || 25, 1), 100);
+    const sortBy = (q.sortBy as string) || 'firstName';
+    const sortDir = (q.sortDir as string) === 'desc' ? 'desc' : 'asc';
+    const queryText = (q.query as string) || '';
+
+    // Filter sammeln (kompatibel)
+    const filtersFromQueryParam = (q.filter as Record<string, string>) || {};
     const filters: Record<string, string> = { ...filtersFromQueryParam };
-    const rawQuery = req.query as Record<string, unknown>;
-    for (const key of Object.keys(rawQuery)) {
+    for (const key of Object.keys(q)) {
       const m = key.match(/^filter\[(.+)\]$/);
-      if (m) filters[m[1]] = String(rawQuery[key] as any);
+      if (m) filters[m[1]] = String(q[key] as any);
     }
+    if (typeof q.role === 'string' && q.role) filters.role = q.role;
+    if (typeof q.isActive !== 'undefined') filters.isActive = String(q.isActive);
 
     const allowedSortFields = ['firstName', 'lastName', 'email', 'createdAt', 'updatedAt', 'role', 'isActive'];
     if (sortBy && !allowedSortFields.includes(sortBy)) {
@@ -28,6 +34,13 @@ export const getAllUsers = async (req: Request, res: Response, next: NextFunctio
     }
 
     const where: any = {};
+    if (queryText) {
+      where.OR = [
+        { email: { contains: queryText, mode: 'insensitive' } },
+        { firstName: { contains: queryText, mode: 'insensitive' } },
+        { lastName: { contains: queryText, mode: 'insensitive' } },
+      ];
+    }
     if (filters) {
       if (typeof filters.firstName === 'string' && filters.firstName)
         where.firstName = { contains: filters.firstName, mode: 'insensitive' };
@@ -60,52 +73,40 @@ export const getAllUsers = async (req: Request, res: Response, next: NextFunctio
     const total = await prisma.user.count({ where });
     const totalPages = Math.max(Math.ceil(total / pageSize), 1);
     const skip = (page - 1) * pageSize;
-    const data = await prisma.user.findMany({ where, select, orderBy: { [sortBy]: sortDir as any }, skip, take: pageSize });
 
-    // CSV/XLSX-Export unterstützen via Accept-Header
+    // Export: gleiche Filter, keine Pagination
     const accept = (req.headers['accept'] as string) || '';
-    if (accept.includes('text/csv')) {
-      const header = ['id','email','firstName','lastName','phone','role','employeeId','isActive','hireDate','qualifications','createdAt','updatedAt'];
-      async function* rows() {
-        for (const u of data as any[]) {
-          yield {
-            id: u.id,
-            email: u.email,
-            firstName: u.firstName,
-            lastName: u.lastName,
-            phone: u.phone ?? '',
-            role: u.role,
-            employeeId: u.employeeId ?? '',
-            isActive: u.isActive ? 'true' : 'false',
-            hireDate: u.hireDate ? new Date(u.hireDate).toISOString() : '',
-            qualifications: Array.isArray(u.qualifications) ? u.qualifications.join('|') : '',
-            createdAt: new Date(u.createdAt).toISOString(),
-            updatedAt: new Date(u.updatedAt).toISOString(),
-          } as Record<string, unknown>;
+    if (accept.includes('text/csv') || accept.includes('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')) {
+      const all = await prisma.user.findMany({ where, select, orderBy: { [sortBy]: sortDir as any } });
+      if (accept.includes('text/csv')) {
+        const header = ['id','email','firstName','lastName','phone','role','employeeId','isActive','hireDate','qualifications','createdAt','updatedAt'];
+        async function* rows() {
+          for (const u of all as any[]) {
+            yield {
+              id: u.id,
+              email: u.email,
+              firstName: u.firstName,
+              lastName: u.lastName,
+              phone: u.phone ?? '',
+              role: u.role,
+              employeeId: u.employeeId ?? '',
+              isActive: u.isActive ? 'true' : 'false',
+              hireDate: u.hireDate ? new Date(u.hireDate).toISOString() : '',
+              qualifications: Array.isArray(u.qualifications) ? u.qualifications.join('|') : '',
+              createdAt: new Date(u.createdAt).toISOString(),
+              updatedAt: new Date(u.updatedAt).toISOString(),
+            } as Record<string, unknown>;
+          }
         }
+        await streamCsv(res, 'users.csv', header, rows());
+        return;
       }
-      await streamCsv(res, 'users.csv', header, rows());
-      return; 
-    }
-    if (accept.includes('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')) {
+      // XLSX-Export
       const wb = new ExcelJS.Workbook();
       const ws = wb.addWorksheet('users');
-      const header = [
-        'id',
-        'email',
-        'firstName',
-        'lastName',
-        'phone',
-        'role',
-        'employeeId',
-        'isActive',
-        'hireDate',
-        'qualifications',
-        'createdAt',
-        'updatedAt',
-      ];
+      const header = ['id','email','firstName','lastName','phone','role','employeeId','isActive','hireDate','qualifications','createdAt','updatedAt'];
       ws.addRow(header);
-      for (const u of data as any[]) {
+      for (const u of all as any[]) {
         ws.addRow([
           u.id,
           u.email,
@@ -122,15 +123,14 @@ export const getAllUsers = async (req: Request, res: Response, next: NextFunctio
         ]);
       }
       const buffer = Buffer.from(await wb.xlsx.writeBuffer());
-      res.setHeader(
-        'Content-Type',
-        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-      );
-      res.setHeader('Content-Disposition', 'attachment; filename="users.xlsx"');
+      res.setHeader('Content-Type','application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      res.setHeader('Content-Disposition','attachment; filename="users.xlsx"');
       res.setHeader('Content-Length', String(buffer.length));
       res.status(200).end(buffer);
       return;
     }
+
+    const data = await prisma.user.findMany({ where, select, orderBy: { [sortBy]: sortDir as any }, skip, take: pageSize });
 
     res.json({ data, pagination: { page, pageSize, total, totalPages }, sort: { by: sortBy, dir: sortDir }, filters: Object.keys(where).length ? filters : undefined });
     return;

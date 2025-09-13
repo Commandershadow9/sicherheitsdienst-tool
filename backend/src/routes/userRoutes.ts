@@ -3,7 +3,8 @@ import { asyncHandler } from '../middleware/asyncHandler';
 import * as userController from '../controllers/userController';
 import { authenticate, authorize, authorizeSelfOr } from '../middleware/auth';
 import { validate } from '../middleware/validate';
-import { createUserSchema, updateUserSchema, userListQuerySchema } from '../validations/userValidation';
+import { createUserSchema, updateUserSchema } from '../validations/userValidation';
+import { userListQuerySchema } from '../validators/userValidators';
 import { createWriteRateLimit } from '../middleware/rateLimit';
 
 const writeLimiter = createWriteRateLimit();
