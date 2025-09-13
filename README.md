@@ -17,6 +17,7 @@ Links
 - VS Code REST Client: `docs/API_EXAMPLES.http`
 - Architektur: `docs/ARCHITECTURE.md`
 - RBAC: `docs/RBAC.md`
+- UI Components (Atoms): `docs/UI_COMPONENTS.md`
 - Changelog: `CHANGELOG.md`
 - Roadmap: `ROADMAP.md`
 - Getting Started (Schritt‑für‑Schritt): `GETTING_STARTED.md`

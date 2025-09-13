@@ -9,7 +9,11 @@ Danke für deinen Beitrag! Dieses Dokument bündelt die wichtigsten Projektkonve
   - `npm ci`
   - `npm run lint` / `npm run lint:fix`
   - `npm test` (unit + smoke, ohne Port-Bindings)
-  - `npm run build`
+- `npm run build`
+
+Weitere Doku
+- Maintainers: `docs/MAINTAINERS.md`
+- UI‑Atoms: `docs/UI_COMPONENTS.md`
 
 ## Commit-/PR-Richtlinien
 
