@@ -3,6 +3,7 @@ import React from 'react'
 import { api } from '@/lib/api'
 import { useListParams } from '@/features/common/useQueryParams'
 import { toSearchParams } from '@/features/common/listParams'
+import useDebounce from '@/features/common/useDebounce'
 import { DebouncedInput } from '@/components/inputs/DebouncedInput'
 import { DataTable } from '@/components/table/DataTable'
 import { useAuth } from '@/features/auth/AuthProvider'
@@ -15,10 +16,12 @@ type User = { id: string; email: string; firstName: string; lastName: string; ro
 type ListResp = { data: User[]; pagination: { page: number; pageSize: number; total: number; totalPages: number } }
 
 export default function UsersList() {
-  const { params, update } = useListParams({ page: 1, pageSize: 25, sortBy: 'firstName', sortDir: 'asc' })
+  const { params, update } = useListParams({ page: 1, pageSize: 25, sortBy: 'firstName', sortDir: 'asc', query: '' })
   const qk = ['users', params]
   const { tokens } = useAuth()
   const nav = useNavigate()
+  const [search, setSearch] = React.useState<string>(params.query || '')
+  const debounced = useDebounce(search, 300)
   const [downloading, setDownloading] = React.useState<null | { type: 'csv'|'xlsx'; progress?: number }>(null)
   const { data, isLoading, isError, error } = useQuery({
     queryKey: qk,
@@ -29,6 +32,21 @@ export default function UsersList() {
     },
     keepPreviousData: true,
   })
+
+  // apply debounced search to query param
+  React.useEffect(() => {
+    if ((params.query || '') !== debounced) {
+      update({ query: debounced, page: 1 })
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debounced])
+
+  // keep local input in sync with URL (Back/Forward)
+  React.useEffect(() => {
+    const q = params.query || ''
+    if (q !== search) setSearch(q)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [params.query])
 
   const currentExportParams = React.useMemo(() => {
     const sp = toSearchParams(params)
@@ -57,7 +75,11 @@ export default function UsersList() {
   return (
     <div className="space-y-4">
       <h1 className="text-xl font-semibold">Benutzer</h1>
-      <div className="flex gap-2 items-end">
+      <div className="flex gap-2 items-end flex-wrap">
+        <div className="min-w-[220px]">
+          <label className="text-xs" htmlFor="search">Suche</label>
+          <input id="search" className="border rounded px-2 py-1 block w-full" value={search} onChange={(e)=>setSearch(e.target.value)} placeholder="Name oder E-Mail" />
+        </div>
         <div>
           <label className="text-xs">E-Mail</label>
           <DebouncedInput className="border rounded px-2 py-1 block" value={params.filters.email||''} onChange={(v)=>update({filters:{email:v}})} />
