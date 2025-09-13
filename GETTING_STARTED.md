@@ -37,3 +37,32 @@ Logins:
 - `GET /healthz` → ok
 - `GET /readyz` → prüft DB/SMTP (Dev: DB optional)
 
+## 8) Users API – Beispiele (cURL)
+Hinweis: Ersetze `<TOKEN>` durch einen gültigen Bearer‑Token (z. B. via `POST /api/auth/login`).
+
+Liste (Defaults: page=1, pageSize=25, sortBy=firstName, sortDir=asc)
+```bash
+curl -sS 'http://<SERVER_IP>:3000/api/users' \
+  -H 'Authorization: Bearer <TOKEN>'
+```
+
+Suche + Filter + Sort
+```bash
+curl -sS 'http://<SERVER_IP>:3000/api/users?query=anna&role=EMPLOYEE&isActive=true&sortBy=lastName&sortDir=asc&page=1&pageSize=25' \
+  -H 'Authorization: Bearer <TOKEN>'
+```
+
+Alias `pagesize` statt `pageSize`
+```bash
+curl -sS 'http://<SERVER_IP>:3000/api/users?pagesize=50' \
+  -H 'Authorization: Bearer <TOKEN>'
+```
+
+Export (CSV) – nutzt dieselben Filter, ohne Pagination
+```bash
+curl -sS 'http://<SERVER_IP>:3000/api/users?role=DISPATCHER' \
+  -H 'Authorization: Bearer <TOKEN>' \
+  -H 'Accept: text/csv' \
+  -o users.csv
+```
+
