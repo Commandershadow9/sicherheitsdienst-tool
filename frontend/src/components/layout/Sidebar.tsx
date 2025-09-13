@@ -1,14 +1,21 @@
 import { NavLink } from 'react-router-dom'
-import { LayoutDashboard, Users, CalendarDays } from 'lucide-react'
+import { LayoutDashboard, Users, CalendarDays, AlertTriangle, Clock, Settings } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { useAuth } from '@/features/auth/AuthProvider'
 
-const nav = [
-  { to: '/', label: 'Dashboard', icon: LayoutDashboard },
-  { to: '/shifts', label: 'Schichten', icon: CalendarDays },
-  { to: '/users', label: 'Benutzer', icon: Users },
+const NAV_ALL = [
+  { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['ADMIN','DISPATCHER','EMPLOYEE','MANAGER'] as const },
+  { to: '/sites', label: 'Standorte', icon: CalendarDays, roles: ['ADMIN','DISPATCHER','MANAGER'] as const },
+  { to: '/shifts', label: 'Schichten', icon: Clock, roles: ['ADMIN','DISPATCHER','EMPLOYEE','MANAGER'] as const },
+  { to: '/users', label: 'Benutzer', icon: Users, roles: ['ADMIN','DISPATCHER'] as const },
+  { to: '/incidents', label: 'Vorfälle', icon: AlertTriangle, roles: ['ADMIN','DISPATCHER','MANAGER'] as const },
+  { to: '/system', label: 'System', icon: Settings, roles: ['ADMIN','DISPATCHER','EMPLOYEE','MANAGER'] as const },
 ]
 
 export function Sidebar() {
+  const { user } = useAuth()
+  const role = user?.role || 'EMPLOYEE'
+  const nav = NAV_ALL.filter((n) => (n.roles as readonly string[]).includes(role))
   return (
     <aside className="w-60 shrink-0 border-r border-border bg-card">
       <div className="p-4 font-bold">Sicherheitsdienst</div>
@@ -32,4 +39,3 @@ export function Sidebar() {
     </aside>
   )
 }
-

@@ -4,8 +4,17 @@ import { fileURLToPath, URL } from 'node:url'
 
 export default defineConfig({
   plugins: [react()],
+  test: {
+    environment: 'node',
+  },
   server: {
+    host: true,
     port: 5173,
+    hmr: {
+      protocol: 'ws',
+      host: process.env.VITE_HMR_HOST || 'localhost',
+      clientPort: Number(process.env.VITE_HMR_CLIENT_PORT || 5173),
+    },
   },
   resolve: {
     alias: {

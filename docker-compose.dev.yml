@@ -1,0 +1,81 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: security
+      POSTGRES_PASSWORD: dev
+      POSTGRES_DB: security
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U security -d security"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    # Port 5432 absichtlich nicht veröffentlicht (nur intern nutzbar)
+
+  api:
+    image: node:20
+    working_dir: /app
+    ports:
+      - '3000:3000'
+    environment:
+      NODE_ENV: development
+      PORT: 3000
+      JWT_SECRET: dev-secret
+      REFRESH_SECRET: dev-refresh
+      CORS_ORIGIN: http://localhost:5173
+      RATE_LIMIT_MAX: 100
+      RATE_LIMIT_WINDOW_MS: 60000
+      DATABASE_URL: postgresql://security:dev@db:5432/security?schema=public
+    volumes:
+      - ./backend:/app
+    command: sh -lc "npm install && npx prisma generate || true && npm run dev"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  web:
+    image: node:20
+    working_dir: /web
+    ports:
+      - '5173:5173'
+    environment:
+      NODE_ENV: development
+      VITE_API_BASE_URL: http://localhost:3000
+    volumes:
+      - ./frontend:/web
+    command: sh -lc "npm install && npm run dev -- --host 0.0.0.0"
+    depends_on:
+      - api
+
+  prometheus:
+    image: prom/prometheus:latest
+    profiles: [ 'monitoring' ]
+    ports:
+      - '9090:9090'
+    volumes:
+      - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./monitoring/alerts/alerts.yml:/etc/prometheus/alerts.yml:ro
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+    depends_on:
+      - api
+
+  grafana:
+    image: grafana/grafana:latest
+    profiles: [ 'monitoring' ]
+    ports:
+      - '3002:3000'
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+    volumes:
+      - ./monitoring/grafana/provisioning/datasources:/etc/grafana/provisioning/datasources
+      - ./monitoring/grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards
+      - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards
+    depends_on:
+      - prometheus
+
+volumes:
+  db_data:

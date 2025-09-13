@@ -31,6 +31,19 @@ export const listIncidents = async (req: Request, res: Response, next: NextFunct
       if (typeof filters.severity === 'string' && filters.severity) where.severity = filters.severity as any;
       if (typeof filters.status === 'string' && filters.status) where.status = filters.status as any;
       if (typeof filters.reportedBy === 'string' && filters.reportedBy) where.reportedBy = filters.reportedBy;
+      const range: any = {};
+      if (typeof (filters as any).occurredAtFrom === 'string' && (filters as any).occurredAtFrom) {
+        const d = new Date((filters as any).occurredAtFrom);
+        if (!isNaN(d.getTime())) range.gte = d;
+      }
+      if (typeof (filters as any).occurredAtTo === 'string' && (filters as any).occurredAtTo) {
+        const d = new Date((filters as any).occurredAtTo);
+        if (!isNaN(d.getTime())) {
+          d.setHours(23,59,59,999);
+          range.lte = d;
+        }
+      }
+      if (Object.keys(range).length) where.occurredAt = range;
     }
 
     const total = await prisma.incident.count({ where });

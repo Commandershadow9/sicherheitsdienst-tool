@@ -21,8 +21,10 @@ export function applySecurity(app: Express): void {
     .filter(Boolean);
   // Optional: einzelner Origin (Vite/Local Dev)
   if (process.env.CORS_ORIGIN) {
-    const one = process.env.CORS_ORIGIN.trim();
-    if (one && !corsAllowlist.includes(one)) corsAllowlist.push(one);
+    const parts = process.env.CORS_ORIGIN.split(',').map((s) => s.trim()).filter(Boolean);
+    for (const one of parts) {
+      if (one && !corsAllowlist.includes(one)) corsAllowlist.push(one);
+    }
   }
   if (!corsAllowlist.length) {
     if (process.env.FRONTEND_URL) corsAllowlist.push(process.env.FRONTEND_URL);

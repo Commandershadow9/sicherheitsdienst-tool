@@ -62,6 +62,9 @@ export const getAllShifts = async (req: Request, res: Response, next: NextFuncti
       if (typeof filters.location === 'string' && filters.location)
         where.location = { contains: filters.location, mode: 'insensitive' };
       if (typeof filters.status === 'string' && filters.status) where.status = filters.status as any;
+      if (typeof filters.userId === 'string' && filters.userId) {
+        where.assignments = { some: { userId: filters.userId } };
+      }
     }
 
     const total = await prisma.shift.count({ where });
