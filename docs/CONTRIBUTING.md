@@ -13,7 +13,11 @@ Danke für deinen Beitrag! Dieses Dokument bündelt die wichtigsten Projektkonve
 
 ## Commit-/PR-Richtlinien
 
-- Kleine, fokussierte Commits im Imperativ, z. B. `feat(api): …`, `fix(routes): …`, `docs(openapi): …`
+- Conventional Commits werden enforced (commitlint) – Beispiele:
+  - `feat(users): server pagination/filter/sort`
+  - `fix(auth): refresh once on 401`
+  - `docs(readme): add Quickstart`
+  - `chore(ci): add commitlint workflow`
 - PR-Beschreibung: Zweck, Änderungen, Tests, Risiken, Follow-ups (kurz)
 - CI muss grün sein (lint, tests, build, OpenAPI-Validation)
 

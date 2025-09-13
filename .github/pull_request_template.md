@@ -22,3 +22,4 @@
 - [ ] OpenAPI konsistent zur Implementierung
 - [ ] CHANGELOG aktualisiert
 - [ ] Roadmap‑Eintrag/Task‑ID verlinkt
+- [ ] Commits folgen Conventional Commits (z. B. feat/fix/docs/chore/ci/test)
