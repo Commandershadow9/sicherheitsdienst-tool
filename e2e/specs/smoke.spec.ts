@@ -34,5 +34,11 @@ test('Smoke: Login, Users paging/sort, Incidents filter', async ({ page }) => {
   await titleInput.fill('Test')
   await page.waitForTimeout(350)
   await expect(page).toHaveURL(/filter%5Btitle%5D=Test/)
-})
 
+  // Sites: kurz prüfen (List + Sort)
+  await page.goto(FE + '/sites', { waitUntil: 'load' })
+  await expect(page.getByRole('heading', { name: 'Standorte' })).toBeVisible({ timeout: 15000 })
+  const sortName = page.getByRole('button', { name: /Name/ })
+  await sortName.click()
+  await expect(page).toHaveURL(/sortBy=name/)
+})

@@ -47,7 +47,7 @@ jobs:
         working-directory: e2e
         env:
           BASE_URL: http://localhost:5173
-        run: npx playwright test --project=chromium --reporter=list,html
+        run: npx playwright test --project=chromium --reporter=list,html e2e/specs/smoke.spec.ts
 
       - name: Upload Playwright artifacts
         if: always()
@@ -57,7 +57,58 @@ jobs:
           path: |
             e2e/playwright-report
             e2e/test-results
+  
+  fast-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
 
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Start compose (db + api + web minimal)
+        env:
+          SEED_ON_START: "true"
+        run: |
+          docker compose -f docker-compose.dev.yml up -d db
+          for i in $(seq 1 60); do
+            if docker ps --format '{{.Names}} {{.Status}}' | grep -q 'project-db-1'; then break; fi
+            sleep 1
+          done
+          docker compose -f docker-compose.dev.yml up -d api web
+          for i in $(seq 1 60); do
+            if curl -fsS http://localhost:3000/healthz >/dev/null; then echo api:up; break; fi; sleep 2; done
+          for i in $(seq 1 60); do
+            if curl -fsS http://localhost:5173 >/dev/null; then echo web:up; break; fi; sleep 2; done
+
+      - name: Install Playwright
+        working-directory: e2e
+        run: |
+          npm init -y >/dev/null 2>&1 || true
+          npm install --no-audit --no-fund -D @playwright/test
+          npx playwright install --with-deps chromium
+
+      - name: Run fast-smoke
+        working-directory: e2e
+        env:
+          BASE_URL: http://localhost:5173
+        run: npx playwright test --project=chromium --reporter=list,html e2e/specs/fast-smoke.spec.ts
+
+      - name: Upload fast-smoke artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-fast-artifacts
+          path: |
+            e2e/playwright-report
+            e2e/test-results
+
+      - name: Stop compose
+        if: always()
+        run: docker compose -f docker-compose.dev.yml down -v
       - name: Stop compose
         if: always()
         run: docker compose -f docker-compose.dev.yml down -v
