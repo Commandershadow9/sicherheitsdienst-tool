@@ -1,0 +1,62 @@
+services:
+  api:
+    image: node:20
+    working_dir: /app
+    ports:
+      - '3000:3000'
+    environment:
+      NODE_ENV: development
+      PORT: 3000
+      JWT_SECRET: dev-secret
+      REFRESH_SECRET: dev-refresh
+      CORS_ORIGIN: http://localhost:5173
+      RATE_LIMIT_MAX: 100
+      RATE_LIMIT_WINDOW_MS: 60000
+      # Hinweis: Für volle Funktion bitte DATABASE_URL setzen (PostgreSQL)
+      # DATABASE_URL: postgresql://admin:admin123@db:5432/sicherheitsdienst_db?schema=public
+    volumes:
+      - ./backend:/app
+    command: sh -lc "npm install && npm run dev"
+
+  web:
+    image: node:20
+    working_dir: /web
+    ports:
+      - '5173:5173'
+    environment:
+      NODE_ENV: development
+      VITE_API_BASE_URL: http://api:3000
+    volumes:
+      - ./frontend:/web
+    command: sh -lc "npm install && npm run dev"
+    depends_on:
+      - api
+
+  prometheus:
+    image: prom/prometheus:latest
+    profiles: [ 'monitoring' ]
+    ports:
+      - '9090:9090'
+    volumes:
+      - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./monitoring/alerts/alerts.yml:/etc/prometheus/alerts.yml:ro
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+    depends_on:
+      - api
+
+  grafana:
+    image: grafana/grafana:latest
+    profiles: [ 'monitoring' ]
+    ports:
+      - '3002:3000'
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+    volumes:
+      - ./monitoring/grafana/provisioning/datasources:/etc/grafana/provisioning/datasources
+      - ./monitoring/grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards
+      - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards
+    depends_on:
+      - prometheus
+
