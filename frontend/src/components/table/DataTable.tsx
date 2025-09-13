@@ -43,18 +43,34 @@ export function DataTable<T extends Record<string, any>>({
       <table className="w-full text-sm">
         <thead className="bg-muted">
           <tr>
-            {columns.map((c) => (
-              <th key={String(c.key)} className="text-left p-2">
-                {c.sortable && onSort ? (
-                  <button className="underline" onClick={() => onSort(String(c.key))}>
-                    {c.header}{' '}
-                    {sortBy === c.key ? (sortDir === 'asc' ? '▲' : '▼') : ''}
-                  </button>
-                ) : (
-                  c.header
-                )}
-              </th>
-            ))}
+            {columns.map((c) => {
+              const key = String(c.key)
+              const active = sortBy === key
+              const aria = active ? (sortDir === 'asc' ? 'ascending' : 'descending') : 'none'
+              const icon = c.sortable
+                ? active
+                  ? sortDir === 'asc'
+                    ? '▲'
+                    : '▼'
+                  : '⇅'
+                : undefined
+              return (
+                <th key={key} className="text-left p-2" aria-sort={aria as any}>
+                  {c.sortable && onSort ? (
+                    <button
+                      className="underline inline-flex items-center gap-1"
+                      onClick={() => onSort(key)}
+                      title={active ? (sortDir === 'asc' ? 'Absteigend sortieren' : 'Aufsteigend sortieren') : 'Sortieren'}
+                    >
+                      <span>{c.header}</span>
+                      {icon && <span aria-hidden>{icon}</span>}
+                    </button>
+                  ) : (
+                    c.header
+                  )}
+                </th>
+              )
+            })}
           </tr>
         </thead>
         <tbody>
@@ -123,4 +139,3 @@ export function DataTable<T extends Record<string, any>>({
     </div>
   )
 }
-
