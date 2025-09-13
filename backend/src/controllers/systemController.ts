@@ -128,9 +128,9 @@ export const getSystemStats = async (req: Request, res: Response, next: NextFunc
       windowMs: Number(process.env.NOTIFICATIONS_TEST_RATE_LIMIT_WINDOW_MS || 60000),
     };
     const authRateLimit = {
-      enabled: String(process.env.AUTH_RATE_LIMIT_ENABLED || 'true').toLowerCase() !== 'false',
-      perMin: Number(process.env.AUTH_RATE_LIMIT_PER_MIN || 10),
-      windowMs: Number(process.env.AUTH_RATE_LIMIT_WINDOW_MS || 60000),
+      enabled: true,
+      perMin: Number(process.env.RATE_LIMIT_MAX || 10),
+      windowMs: Number(process.env.RATE_LIMIT_WINDOW_MS || 60000),
     };
     const pushConfigured = Boolean(process.env.FCM_PROJECT_ID && process.env.FCM_CLIENT_EMAIL && process.env.FCM_PRIVATE_KEY);
     const authCfg = {

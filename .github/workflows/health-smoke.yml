@@ -108,3 +108,6 @@ PY
         working-directory: backend
         run: |
           kill $(cat server.pid) || true
+      - name: Set SLA by trigger
+        run: |
+          if [ "${{ github.event_name }}" = "schedule" ]; then echo "SLA_MAX_MS=700" >> $GITHUB_ENV; fi

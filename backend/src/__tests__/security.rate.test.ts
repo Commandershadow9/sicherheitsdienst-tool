@@ -30,7 +30,7 @@ describe('Auth rate limits (IP + per-user/email)', () => {
   beforeAll(() => {
     process.env.JWT_SECRET = 'test-secret';
     process.env.RATE_LIMIT_MAX = '10';
-    process.env.RATE_LIMIT_WINDOW = '60'; // seconds
+    process.env.RATE_LIMIT_WINDOW_MS = '60000';
   });
 
   beforeEach(() => {
@@ -40,7 +40,7 @@ describe('Auth rate limits (IP + per-user/email)', () => {
   afterAll(() => {
     delete (process.env as any).JWT_SECRET;
     delete (process.env as any).RATE_LIMIT_MAX;
-    delete (process.env as any).RATE_LIMIT_WINDOW;
+    delete (process.env as any).RATE_LIMIT_WINDOW_MS;
   });
 
   it('allows 10 quick logins per IP, then returns 429 on the 11th', async () => {
@@ -85,4 +85,3 @@ describe('Auth rate limits (IP + per-user/email)', () => {
     expect(r6.status).toBe(429);
   });
 });
-

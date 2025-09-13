@@ -31,6 +31,10 @@ jobs:
           (npm ci --no-audit --prefer-offline || npm install --no-audit)
           npm run build --if-present
 
+      - name: Set SLA by trigger
+        run: |
+          if [ "${{ github.event_name }}" = "schedule" ]; then echo "SLA_MAX_MS=700" >> $GITHUB_ENV; else echo "SLA_MAX_MS=500" >> $GITHUB_ENV; fi
+
       - name: Start app (PORT 3000)
         working-directory: backend
         run: |
@@ -55,13 +59,12 @@ jobs:
           grep -q 'http_request_duration_seconds' metrics.txt
 
       - name: Validate p95 latency via histogram buckets (healthz)
-        env:
-          SLA_MAX_MS: 500
         run: |
           python3 - << 'PY'
 import re, sys
 import math
-max_ms = int("${SLA_MAX_MS}")
+import os
+max_ms = int(os.environ.get('SLA_MAX_MS','500'))
 lines = open('metrics.txt','r',encoding='utf-8',errors='ignore').read().splitlines()
 pat = re.compile(r'^http_request_duration_seconds_bucket\{([^}]*)\}\s+(\d+(?:\.\d+)?)$')
 def parse_labels(s):

@@ -52,7 +52,7 @@ services:
       REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
       # Auth-Rate-Limits (IP-basiert)
       RATE_LIMIT_MAX: ${RATE_LIMIT_MAX:-10}
-      RATE_LIMIT_WINDOW: ${RATE_LIMIT_WINDOW:-60}
+      RATE_LIMIT_WINDOW_MS: ${RATE_LIMIT_WINDOW_MS:-60000}
     ports:
       - '3001:3001'
     depends_on:

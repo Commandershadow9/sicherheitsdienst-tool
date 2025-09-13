@@ -143,9 +143,9 @@ function createExpressLimiter(opts: {
 
 // IP-basiertes Limit für /auth/*: 10 req/Minute per IP, ENV konfigurierbar
 export function authIpRateLimit(): RequestHandler {
-  const windowSec = Number(process.env.RATE_LIMIT_WINDOW || '60');
+  const windowMsRaw = Number(process.env.RATE_LIMIT_WINDOW_MS || '60000');
   const max = Number(process.env.RATE_LIMIT_MAX || '10');
-  const windowMs = Number.isFinite(windowSec) && windowSec > 0 ? windowSec * 1000 : 60_000;
+  const windowMs = Number.isFinite(windowMsRaw) && windowMsRaw > 0 ? windowMsRaw : 60_000;
   return createExpressLimiter({
     windowMs,
     max,
