@@ -4,6 +4,9 @@ import { fileURLToPath, URL } from 'node:url'
 
 export default defineConfig({
   plugins: [react()],
+  test: {
+    environment: 'node',
+  },
   server: {
     host: true,
     port: 5173,

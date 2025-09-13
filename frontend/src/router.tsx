@@ -16,6 +16,7 @@ function RouteError() {
 import SitesList from '@/features/sites/pages/SitesList'
 import SiteShifts from '@/features/sites/pages/SiteShifts'
 import UsersList from '@/features/users/UsersList'
+import ShiftList from '@/features/shifts/ShiftList'
 import IncidentsList from '@/features/incidents/IncidentsList'
 
 export const router = createBrowserRouter([
@@ -38,6 +39,7 @@ export const router = createBrowserRouter([
           { path: 'sites', element: <SitesList /> },
           { path: 'sites/:id/shifts', element: <SiteShifts /> },
           { path: 'users', element: <UsersList /> },
+          { path: 'shifts', element: <ShiftList /> },
           { path: 'incidents', element: <IncidentsList /> },
         ],
       },

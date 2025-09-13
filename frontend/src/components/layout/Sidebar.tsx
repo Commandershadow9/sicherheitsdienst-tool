@@ -1,10 +1,11 @@
 import { NavLink } from 'react-router-dom'
-import { LayoutDashboard, Users, CalendarDays, AlertTriangle } from 'lucide-react'
+import { LayoutDashboard, Users, CalendarDays, AlertTriangle, Clock } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const nav = [
   { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { to: '/sites', label: 'Standorte', icon: CalendarDays },
+  { to: '/shifts', label: 'Schichten', icon: Clock },
   { to: '/users', label: 'Benutzer', icon: Users },
   { to: '/incidents', label: 'Vorfälle', icon: AlertTriangle },
 ]

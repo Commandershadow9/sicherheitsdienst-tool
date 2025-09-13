@@ -5,7 +5,7 @@ export function useListParams(defaults?: Partial<{ page: number; pageSize: numbe
   const [sp, setSp] = useSearchParams()
   const params = useMemo(() => {
     const page = Number(sp.get('page') || defaults?.page || 1)
-    const pageSize = Number(sp.get('pageSize') || defaults?.pageSize || 20)
+    const pageSize = Number(sp.get('pageSize') || defaults?.pageSize || 25)
     const sortBy = sp.get('sortBy') || defaults?.sortBy || ''
     const sortDir = (sp.get('sortDir') as 'asc'|'desc') || defaults?.sortDir || 'asc'
     const filters: Record<string,string> = {}
@@ -35,4 +35,3 @@ export function useListParams(defaults?: Partial<{ page: number; pageSize: numbe
   }
   return { params, update }
 }
-
