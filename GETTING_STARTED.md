@@ -66,3 +66,20 @@ curl -sS 'http://<SERVER_IP>:3000/api/users?role=DISPATCHER' \
   -o users.csv
 ```
 
+Export (XLSX)
+```bash
+curl -sS 'http://<SERVER_IP>:3000/api/users?isActive=true' \
+  -H 'Authorization: Bearer <TOKEN>' \
+  -H 'Accept: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' \
+  -o users.xlsx
+```
+
+Access‑Token via Login holen
+```bash
+# Access‑Token aus Login‑Response extrahieren (jq empfohlen)
+TOKEN=$(curl -sS 'http://<SERVER_IP>:3000/api/auth/login' \
+  -H 'Content-Type: application/json' \
+  -d '{"email":"admin@sicherheitsdienst.de","password":"password123"}' | jq -r '.accessToken')
+
+echo "Token: ${TOKEN:0:12}..."
+```
