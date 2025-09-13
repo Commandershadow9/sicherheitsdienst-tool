@@ -1,4 +1,5 @@
 import type { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios'
+import { toast } from 'sonner'
 
 type Tokens = { accessToken: string; refreshToken?: string }
 
@@ -60,8 +61,11 @@ export function installAuthInterceptors(
           return Promise.reject(e)
         }
       }
+      if (status === 403) {
+        // RBAC: Kein Refresh, klarer Hinweis
+        try { toast.error('403 – Zugriff verweigert') } catch {}
+      }
       return Promise.reject(error)
     }
   )
 }
-
