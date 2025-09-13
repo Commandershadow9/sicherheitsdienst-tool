@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { api } from '@/lib/api'
 import { toast } from 'sonner'
+import React from 'react'
 
 type Stats = {
   success: boolean
@@ -19,6 +20,18 @@ export default function SystemPage() {
     refetchInterval: auto ? auto * 1000 : false,
     refetchIntervalInBackground: true,
   })
+
+  React.useEffect(() => {
+    const saved = localStorage.getItem('system:autoRefresh')
+    if (saved !== null) {
+      const n = Number(saved)
+      if (!Number.isNaN(n)) setAuto(n)
+    }
+  }, [])
+
+  React.useEffect(() => {
+    localStorage.setItem('system:autoRefresh', String(auto))
+  }, [auto])
 
   const env = data?.data?.env || {}
   const users = data?.data?.users || {}
