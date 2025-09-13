@@ -20,6 +20,7 @@ import ShiftList from '@/features/shifts/ShiftList'
 import IncidentsList from '@/features/incidents/IncidentsList'
 import IncidentForm from '@/features/incidents/IncidentForm'
 import RequireRole from '@/features/auth/RequireRole'
+import SystemPage from '@/pages/System'
 
 export const router = createBrowserRouter([
   {
@@ -75,6 +76,11 @@ export const router = createBrowserRouter([
           { path: 'incidents/:id/edit', element: (
             <RequireRole roles={['ADMIN','MANAGER']}>
               <IncidentForm mode="edit" />
+            </RequireRole>
+          ) },
+          { path: 'system', element: (
+            <RequireRole roles={['ADMIN','DISPATCHER','EMPLOYEE','MANAGER']}>
+              <SystemPage />
             </RequireRole>
           ) },
         ],
