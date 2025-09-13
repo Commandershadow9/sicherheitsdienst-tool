@@ -9,7 +9,6 @@ import { useAuth } from '@/features/auth/AuthProvider'
 import { toast } from 'sonner'
 import { exportFile } from '@/features/common/export'
 import { useState } from 'react'
-import { useAuth } from '@/features/auth/AuthProvider'
 
 type Incident = { id: string; title: string; severity: string; status: string; occurredAt: string }
 type ListResp = { data: Incident[]; pagination: { page: number; pageSize: number; total: number; totalPages: number } }
@@ -29,25 +28,7 @@ export default function IncidentsList() {
     keepPreviousData: true,
   })
 
-  const exportCsv = async () => {
-    const url = `${api.defaults.baseURL}/incidents`
-    const res = await fetch(url!, {
-      headers: {
-        'Accept': 'text/csv',
-        ...(tokens?.accessToken ? { 'Authorization': `Bearer ${tokens.accessToken}` } : {}),
-      },
-      credentials: 'include',
-    })
-    const blob = await res.blob()
-    const href = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = href
-    a.download = `incidents.csv`
-    document.body.appendChild(a)
-    a.click()
-    a.remove()
-    URL.revokeObjectURL(href)
-  }
+  // Export handled inline below via exportFile helper (sets Authorization header)
 
   return (
     <div className="space-y-4">
@@ -89,14 +70,14 @@ export default function IncidentsList() {
               try {
                 setDownloading({ type: 'csv' })
                 const sp = toSearchParams(params); sp.delete('page'); sp.delete('pageSize')
-                await exportFile({ path: '/incidents', accept: 'text/csv', token: tokens?.accessToken, filenameHint: 'incidents.csv', params: sp, onUnauthorized: () => nav('/login') })
+                await exportFile({ path: '/incidents', accept: 'text/csv', filenameHint: 'incidents.csv', params: sp, onUnauthorized: () => nav('/login') })
               } catch (e:any) { toast.error(e?.message||'Export fehlgeschlagen') } finally { setDownloading(null) }
             }}>Export CSV</button>
             <button disabled={!!downloading} className="underline" onClick={async ()=>{
               try {
                 setDownloading({ type: 'xlsx' })
                 const sp = toSearchParams(params); sp.delete('page'); sp.delete('pageSize')
-                await exportFile({ path: '/incidents', accept: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', token: tokens?.accessToken, filenameHint: 'incidents.xlsx', params: sp, onUnauthorized: () => nav('/login') })
+                await exportFile({ path: '/incidents', accept: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', filenameHint: 'incidents.xlsx', params: sp, onUnauthorized: () => nav('/login') })
               } catch (e:any) { toast.error(e?.message||'Export fehlgeschlagen') } finally { setDownloading(null) }
             }}>Export XLSX</button>
           </div>

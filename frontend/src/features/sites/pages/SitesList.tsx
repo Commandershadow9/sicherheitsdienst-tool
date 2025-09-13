@@ -42,7 +42,6 @@ export default function SitesList() {
       await exportFile({
         path: '/sites',
         accept: type === 'csv' ? 'text/csv' : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        token: tokens?.accessToken,
         filenameHint: type === 'csv' ? 'sites.csv' : 'sites.xlsx',
         params: currentExportParams,
         onProgress: ({ percent }) => setDownloading((s)=> s ? { ...s, progress: percent } : s),

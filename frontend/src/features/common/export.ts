@@ -12,60 +12,43 @@ function parseFilename(cd?: string | null, fallback?: string) {
 export async function exportFile(opts: {
   path: string
   accept: 'text/csv' | 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-  token?: string
   filenameHint?: string
   params?: URLSearchParams
   onProgress?: ProgressHandler
   onUnauthorized?: () => void
 }): Promise<boolean> {
-  const { path, accept, token, filenameHint, params, onProgress, onUnauthorized } = opts
-  const url = `${api.defaults.baseURL}${path}${params && params.toString() ? `?${params.toString()}` : ''}`
-  const res = await fetch(url, {
-    method: 'GET',
-    headers: {
-      Accept: accept,
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    },
-    credentials: 'include',
-  })
+  const { path, accept, filenameHint, params, onProgress, onUnauthorized } = opts
+  const url = `${path}${params && params.toString() ? `?${params.toString()}` : ''}`
+  try {
+    const res = await api.get(url, {
+      responseType: 'blob',
+      headers: { Accept: accept },
+      onDownloadProgress: (e) => {
+        const total = e.total || undefined
+        const loaded = e.loaded
+        const percent = total ? Math.round((loaded / total) * 100) : undefined
+        onProgress?.({ loaded, total, percent })
+      },
+      // Axios baseURL already includes "/api"
+    })
+    const blob = res.data as Blob
+    const cd = (res.headers as any)['content-disposition'] as string | undefined
+    const contentType = (res.headers as any)['content-type'] as string | undefined
+    const fallback = filenameHint || path.split('/').pop() || 'export'
+    const filename = parseFilename(cd || null, fallback)
 
-  if (!res.ok) {
-    if (res.status === 401) onUnauthorized?.()
-    const text = await res.text().catch(() => '')
-    throw new Error(text || `Export fehlgeschlagen (HTTP ${res.status})`)
+    const href = URL.createObjectURL(new Blob([blob], { type: contentType || accept }))
+    const a = document.createElement('a')
+    a.href = href
+    a.download = filename || fallback
+    document.body.appendChild(a)
+    a.click()
+    a.remove()
+    URL.revokeObjectURL(href)
+    return true
+  } catch (err: any) {
+    if (err?.response?.status === 401) onUnauthorized?.()
+    const msg = err?.message || 'Export fehlgeschlagen'
+    throw new Error(msg)
   }
-
-  const contentLength = Number(res.headers.get('Content-Length') || 0)
-  const contentType = res.headers.get('Content-Type') || accept
-  const cd = res.headers.get('Content-Disposition')
-  const fallback = filenameHint || path.split('/').pop() || 'export'
-  const filename = parseFilename(cd, fallback)
-
-  const reader = res.body?.getReader()
-  const chunks: Uint8Array[] = []
-  let loaded = 0
-  if (reader) {
-    while (true) {
-      const { done, value } = await reader.read()
-      if (done) break
-      if (value) {
-        chunks.push(value)
-        loaded += value.byteLength
-        const percent = contentLength ? Math.round((loaded / contentLength) * 100) : undefined
-        onProgress?.({ loaded, total: contentLength || undefined, percent })
-      }
-    }
-  }
-
-  const blob = new Blob(chunks, { type: contentType })
-  const href = URL.createObjectURL(blob)
-  const a = document.createElement('a')
-  a.href = href
-  a.download = filename || fallback
-  document.body.appendChild(a)
-  a.click()
-  a.remove()
-  URL.revokeObjectURL(href)
-  return true
 }
-
