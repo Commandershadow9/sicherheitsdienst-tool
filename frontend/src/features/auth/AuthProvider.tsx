@@ -3,9 +3,11 @@ import { api } from '@/lib/api'
 import { installAuthInterceptors } from './interceptors'
 
 type Tokens = { accessToken: string; refreshToken?: string }
+type User = { id: string; email: string; firstName?: string; lastName?: string; role: 'ADMIN'|'MANAGER'|'DISPATCHER'|'EMPLOYEE' }
 type AuthCtx = {
   tokens: Tokens | null
   isAuthenticated: boolean
+  user: User | null
   login: (email: string, password: string) => Promise<void>
   logout: () => void
 }
@@ -18,6 +20,7 @@ function isDev() {
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [tokens, setTokensState] = useState<Tokens | null>(null)
+  const [user, setUser] = useState<User | null>(null)
   const initialized = useRef(false)
 
   // Persist Access-Token nur im Dev-Modus (Fallback)
@@ -57,17 +60,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const login = useCallback(async (email: string, password: string) => {
     const res = await api.post('/auth/login', { email, password })
-    const { accessToken, refreshToken } = res.data
+    const { accessToken, refreshToken, user } = res.data
     setTokens({ accessToken, refreshToken })
+    setUser(user)
   }, [])
 
   const logout = useCallback(() => {
     setTokens(null)
+    setUser(null)
   }, [])
 
+  // Fetch user (me) when we have tokens but no user yet
+  useEffect(() => {
+    async function loadMe() {
+      try {
+        if (tokens?.accessToken && !user) {
+          const res = await api.get('/auth/me')
+          setUser(res.data?.user || res.data)
+        }
+      } catch {
+        // ignore
+      }
+    }
+    loadMe()
+  }, [tokens?.accessToken, user])
+
   const value: AuthCtx = useMemo(
-    () => ({ tokens, isAuthenticated: Boolean(tokens?.accessToken), login, logout }),
-    [tokens, login, logout]
+    () => ({ tokens, isAuthenticated: Boolean(tokens?.accessToken), user, login, logout }),
+    [tokens, user, login, logout]
   )
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>
@@ -78,4 +98,3 @@ export function useAuth() {
   if (!v) throw new Error('useAuth must be used within AuthProvider')
   return v
 }
-

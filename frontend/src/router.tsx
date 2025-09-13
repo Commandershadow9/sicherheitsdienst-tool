@@ -18,6 +18,7 @@ import SiteShifts from '@/features/sites/pages/SiteShifts'
 import UsersList from '@/features/users/UsersList'
 import ShiftList from '@/features/shifts/ShiftList'
 import IncidentsList from '@/features/incidents/IncidentsList'
+import RequireRole from '@/features/auth/RequireRole'
 
 export const router = createBrowserRouter([
   {
@@ -35,12 +36,36 @@ export const router = createBrowserRouter([
         errorElement: <RouteError />,
         children: [
           { index: true, element: <Navigate to="/dashboard" replace /> },
-          { path: 'dashboard', element: <Dashboard /> },
-          { path: 'sites', element: <SitesList /> },
-          { path: 'sites/:id/shifts', element: <SiteShifts /> },
-          { path: 'users', element: <UsersList /> },
-          { path: 'shifts', element: <ShiftList /> },
-          { path: 'incidents', element: <IncidentsList /> },
+          { path: 'dashboard', element: (
+            <RequireRole roles={['ADMIN','DISPATCHER','EMPLOYEE','MANAGER']}>
+              <Dashboard />
+            </RequireRole>
+          ) },
+          { path: 'sites', element: (
+            <RequireRole roles={['ADMIN','DISPATCHER','EMPLOYEE','MANAGER']}>
+              <SitesList />
+            </RequireRole>
+          ) },
+          { path: 'sites/:id/shifts', element: (
+            <RequireRole roles={['ADMIN','DISPATCHER','EMPLOYEE','MANAGER']}>
+              <SiteShifts />
+            </RequireRole>
+          ) },
+          { path: 'users', element: (
+            <RequireRole roles={['ADMIN','DISPATCHER']}>
+              <UsersList />
+            </RequireRole>
+          ) },
+          { path: 'shifts', element: (
+            <RequireRole roles={['ADMIN','DISPATCHER','EMPLOYEE','MANAGER']}>
+              <ShiftList />
+            </RequireRole>
+          ) },
+          { path: 'incidents', element: (
+            <RequireRole roles={['ADMIN','DISPATCHER','EMPLOYEE','MANAGER']}>
+              <IncidentsList />
+            </RequireRole>
+          ) },
         ],
       },
     ],
