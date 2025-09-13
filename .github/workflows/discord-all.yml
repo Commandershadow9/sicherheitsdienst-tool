@@ -197,6 +197,7 @@ jobs:
           echo "payload=$(cat payload.b64)" >> "$GITHUB_OUTPUT"
 
       - name: Send to Discord (with retry)
+        continue-on-error: true
         env:
           WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
           WEBHOOK_CI: ${{ secrets.DISCORD_WEBHOOK_CI }}
@@ -226,6 +227,5 @@ jobs:
 
           # finaler Check
           if [ "$http_code" -lt 200 ] || [ "$http_code" -ge 300 ]; then
-            echo "::error::Discord-Request fehlgeschlagen (HTTP $http_code)"
-            exit 1
+            echo "::warning::Discord-Request fehlgeschlagen (HTTP $http_code); Workflow wird nicht blockiert."
           fi
