@@ -14,13 +14,20 @@ type ListResp = { data: Shift[]; pagination: { page: number; pageSize: number; t
 
 export default function ShiftList() {
   const { params, update } = useListParams({ page: 1, pageSize: 25, sortBy: 'startTime', sortDir: 'desc' })
-  const { tokens } = useAuth()
+  const { tokens, user } = useAuth()
   const nav = useNavigate()
   const [downloading, setDownloading] = React.useState<null | { type: 'csv'|'xlsx'; progress?: number }>(null)
+  const effectiveParams = React.useMemo(() => {
+    if (user?.role === 'EMPLOYEE' && user.id) {
+      return { ...params, filters: { ...params.filters, userId: user.id } }
+    }
+    return params
+  }, [params, user?.role, user?.id])
+
   const { data, isLoading, isError } = useQuery({
-    queryKey: ['shifts', params],
+    queryKey: ['shifts', effectiveParams],
     queryFn: async () => {
-      const sp = toSearchParams(params)
+      const sp = toSearchParams(effectiveParams)
       const res = await api.get<ListResp>(`/shifts?${sp.toString()}`)
       return res.data
     },
@@ -28,10 +35,10 @@ export default function ShiftList() {
   })
 
   const currentExportParams = React.useMemo(() => {
-    const sp = toSearchParams(params)
+    const sp = toSearchParams(effectiveParams)
     sp.delete('page'); sp.delete('pageSize')
     return sp
-  }, [params])
+  }, [effectiveParams])
 
   const doExport = async (type: 'csv'|'xlsx') => {
     try {
