@@ -9,12 +9,15 @@ type Stats = {
 }
 
 export default function SystemPage() {
+  const [auto, setAuto] = React.useState<number>(0) // Sekunden: 0=aus, 15/30/60
   const { data, isLoading, isError, refetch, isFetching } = useQuery({
     queryKey: ['system-stats'],
     queryFn: async () => (await api.get<Stats>('/stats')).data,
     staleTime: 0,
     refetchOnMount: 'always',
     refetchOnWindowFocus: false,
+    refetchInterval: auto ? auto * 1000 : false,
+    refetchIntervalInBackground: true,
   })
 
   const env = data?.data?.env || {}
@@ -42,6 +45,18 @@ export default function SystemPage() {
         <div className="inline-flex gap-2">
           <a href="/api-docs" className="underline" target="_blank" rel="noreferrer">API‑Docs</a>
           <button className="underline" onClick={()=>refetch()} disabled={isFetching}>{isFetching ? 'Aktualisiere…' : 'Aktualisieren'}</button>
+          <label className="inline-flex items-center gap-2 text-sm">
+            Auto‑Refresh:
+            <select className="border rounded px-2 py-1"
+              value={auto}
+              onChange={(e)=> setAuto(Number(e.target.value))}
+            >
+              <option value={0}>Aus</option>
+              <option value={15}>15s</option>
+              <option value={30}>30s</option>
+              <option value={60}>60s</option>
+            </select>
+          </label>
         </div>
       </div>
 
@@ -115,4 +130,3 @@ function K({ label, value }: { label: string, value: any }) {
     </div>
   )
 }
-
