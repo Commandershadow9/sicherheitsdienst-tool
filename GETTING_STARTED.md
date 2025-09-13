@@ -126,3 +126,168 @@ curl -i 'http://<SERVER_IP>:3000/api/users?page=abc' \
 # Erwartet: HTTP/1.1 422 Unprocessable Entity
 # Body: code: VALIDATION_ERROR (Zod)
 ```
+
+## 9) Sites API – Beispiele (cURL)
+Liste mit Sort/Filter
+```bash
+curl -sS 'http://<SERVER_IP>:3000/api/sites?page=1&pageSize=25&sortBy=name&sortDir=asc&filter[city]=Muster' \
+  -H "Authorization: Bearer $TOKEN" | jq '.pagination,.data[0]'
+```
+
+CSV/XLSX‑Export (gefiltert, ohne Pagination)
+```bash
+curl -sS 'http://<SERVER_IP>:3000/api/sites?filter[postalCode]=12345' \
+  -H "Authorization: Bearer $TOKEN" \
+  -H 'Accept: text/csv' -o sites.csv
+
+curl -sS 'http://<SERVER_IP>:3000/api/sites?filter[city]=Musterstadt' \
+  -H "Authorization: Bearer $TOKEN" \
+  -H 'Accept: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' -o sites.xlsx
+```
+
+Fehlerbeispiele
+```bash
+# 400: unbekanntes sortBy
+curl -i 'http://<SERVER_IP>:3000/api/sites?sortBy=doesNotExist' -H "Authorization: Bearer $TOKEN"
+
+# 422: ungültige page
+curl -i 'http://<SERVER_IP>:3000/api/sites?page=abc' -H "Authorization: Bearer $TOKEN"
+```
+
+## 10) Site‑Schichten – Beispiele (cURL)
+Liste Schichten einer Site
+```bash
+SITE_ID=<id>
+curl -sS "http://<SERVER_IP>:3000/api/sites/$SITE_ID/shifts" \
+  -H "Authorization: Bearer $TOKEN" | jq '.[0]'
+```
+
+CSV/XLSX‑Export für Site‑Schichten
+```bash
+curl -sS "http://<SERVER_IP>:3000/api/sites/$SITE_ID/shifts" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H 'Accept: text/csv' -o site_${SITE_ID}_shifts.csv
+
+curl -sS "http://<SERVER_IP>:3000/api/sites/$SITE_ID/shifts" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H 'Accept: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' -o site_${SITE_ID}_shifts.xlsx
+```
+
+## 11) Shifts API – Beispiele (cURL)
+Liste mit Filter/Sort
+```bash
+curl -sS 'http://<SERVER_IP>:3000/api/shifts?page=1&pageSize=25&sortBy=startTime&sortDir=desc&filter[title]=Nacht' \
+  -H "Authorization: Bearer $TOKEN" | jq '.pagination,.data[0]'
+```
+
+CSV/XLSX‑Export
+```bash
+curl -sS 'http://<SERVER_IP>:3000/api/shifts?page=1&pageSize=1' \
+  -H "Authorization: Bearer $TOKEN" -H 'Accept: text/csv' -o shifts.csv
+
+curl -sS 'http://<SERVER_IP>:3000/api/shifts?page=1&pageSize=1' \
+  -H "Authorization: Bearer $TOKEN" -H 'Accept: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' -o shifts.xlsx
+```
+
+Clock‑In/Out (Zeitbuchung)
+```bash
+SHIFT_ID=<id>
+curl -sS -X POST "http://<SERVER_IP>:3000/api/shifts/$SHIFT_ID/clock-in" \
+  -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
+  -d '{"at":"2025-09-01T08:00:00Z"}' | jq
+
+curl -sS -X POST "http://<SERVER_IP>:3000/api/shifts/$SHIFT_ID/clock-out" \
+  -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
+  -d '{"at":"2025-09-01T16:00:00Z","breakTime":30}' | jq
+```
+
+Fehlerbeispiele
+```bash
+# 400: unbekanntes sortBy
+curl -i 'http://<SERVER_IP>:3000/api/shifts?sortBy=invalid' -H "Authorization: Bearer $TOKEN"
+
+# 422: Clock‑Out ohne required Feld
+curl -i -X POST "http://<SERVER_IP>:3000/api/shifts/$SHIFT_ID/clock-out" \
+  -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' -d '{}' 
+```
+
+## 12) Incidents API – Beispiele (cURL)
+Liste (alle Auth‑Benutzer)
+```bash
+curl -sS 'http://<SERVER_IP>:3000/api/incidents?page=1&pageSize=25' \
+  -H "Authorization: Bearer $TOKEN" | jq '.pagination,.data[0]'
+```
+
+Erstellen/Aktualisieren (ADMIN/MANAGER)
+```bash
+curl -sS -X POST 'http://<SERVER_IP>:3000/api/incidents' \
+  -H "Authorization: Bearer $TOKEN_ADMIN" -H 'Content-Type: application/json' \
+  -d '{"title":"Test","description":"..."}' | jq '.id'
+
+INC_ID=<id>
+curl -sS -X PUT "http://<SERVER_IP>:3000/api/incidents/$INC_ID" \
+  -H "Authorization: Bearer $TOKEN_MANAGER" -H 'Content-Type: application/json' \
+  -d '{"title":"Update"}' | jq '.status'
+```
+
+RBAC Fehlerbeispiel (403)
+```bash
+curl -i -X POST 'http://<SERVER_IP>:3000/api/incidents' \
+  -H "Authorization: Bearer $TOKEN_EMPLOYEE" -H 'Content-Type: application/json' -d '{"title":"X"}'
+```
+
+## 13) Events API – Beispiele (cURL)
+Liste + Export
+```bash
+curl -sS 'http://<SERVER_IP>:3000/api/events?page=1&pageSize=25' \
+  -H "Authorization: Bearer $TOKEN" | jq '.pagination,.data[0]'
+
+curl -sS 'http://<SERVER_IP>:3000/api/events?page=1&pageSize=1' \
+  -H "Authorization: Bearer $TOKEN" -H 'Accept: text/csv' -o events.csv
+```
+
+PDF für Event
+```bash
+EV_ID=<id>
+curl -sS "http://<SERVER_IP>:3000/api/events/$EV_ID" \
+  -H "Authorization: Bearer $TOKEN" -H 'Accept: application/pdf' -o event_${EV_ID}.pdf
+```
+
+## 14) Notifications Test (RBAC)
+```bash
+# 401: anonym
+curl -i -X POST 'http://<SERVER_IP>:3000/api/notifications/test'
+
+# 403: EMPLOYEE
+curl -i -X POST 'http://<SERVER_IP>:3000/api/notifications/test' -H "Authorization: Bearer $TOKEN_EMPLOYEE"
+
+# 200: ADMIN/MANAGER
+curl -i -X POST 'http://<SERVER_IP>:3000/api/notifications/test' -H "Authorization: Bearer $TOKEN_ADMIN"
+```
+
+## 15) Push Tokens
+Meine Tokens
+```bash
+curl -sS 'http://<SERVER_IP>:3000/api/push/tokens' -H "Authorization: Bearer $TOKEN" | jq
+```
+
+Registrieren / Aktualisieren / Löschen
+```bash
+curl -sS -X POST 'http://<SERVER_IP>:3000/api/push/tokens' \
+  -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
+  -d '{"token":"device-abc","platform":"web"}' | jq
+
+curl -sS -X PUT 'http://<SERVER_IP>:3000/api/push/tokens/device-abc' \
+  -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
+  -d '{"platform":"web"}' | jq
+
+curl -i -X DELETE 'http://<SERVER_IP>:3000/api/push/tokens/device-abc' -H "Authorization: Bearer $TOKEN"
+```
+
+Admin: Push‑Opt‑In/Out
+```bash
+USER_ID=<id>
+curl -sS -X PUT "http://<SERVER_IP>:3000/api/push/users/$USER_ID/opt" \
+  -H "Authorization: Bearer $TOKEN_ADMIN" -H 'Content-Type: application/json' \
+  -d '{"pushOptIn":true}' | jq
+```
