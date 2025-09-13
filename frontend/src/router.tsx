@@ -42,12 +42,12 @@ export const router = createBrowserRouter([
             </RequireRole>
           ) },
           { path: 'sites', element: (
-            <RequireRole roles={['ADMIN','DISPATCHER','EMPLOYEE','MANAGER']}>
+            <RequireRole roles={['ADMIN','DISPATCHER','MANAGER']}>
               <SitesList />
             </RequireRole>
           ) },
           { path: 'sites/:id/shifts', element: (
-            <RequireRole roles={['ADMIN','DISPATCHER','EMPLOYEE','MANAGER']}>
+            <RequireRole roles={['ADMIN','DISPATCHER','MANAGER']}>
               <SiteShifts />
             </RequireRole>
           ) },
@@ -62,7 +62,7 @@ export const router = createBrowserRouter([
             </RequireRole>
           ) },
           { path: 'incidents', element: (
-            <RequireRole roles={['ADMIN','DISPATCHER','EMPLOYEE','MANAGER']}>
+            <RequireRole roles={['ADMIN','DISPATCHER','MANAGER']}>
               <IncidentsList />
             </RequireRole>
           ) },
