@@ -4,6 +4,10 @@ import { useListParams } from '@/features/common/useQueryParams'
 import { toSearchParams } from '@/features/common/listParams'
 import { DebouncedInput } from '@/components/inputs/DebouncedInput'
 import { DataTable } from '@/components/table/DataTable'
+import { Link, useNavigate } from 'react-router-dom'
+import { useAuth } from '@/features/auth/AuthProvider'
+import { toast } from 'sonner'
+import { exportFile } from '@/features/common/export'
 import { useAuth } from '@/features/auth/AuthProvider'
 
 type Incident = { id: string; title: string; severity: string; status: string; occurredAt: string }
@@ -11,7 +15,9 @@ type ListResp = { data: Incident[]; pagination: { page: number; pageSize: number
 
 export default function IncidentsList() {
   const { params, update } = useListParams({ page: 1, pageSize: 25, sortBy: 'occurredAt', sortDir: 'desc' })
-  const { tokens } = useAuth()
+  const { tokens, user } = useAuth()
+  const nav = useNavigate()
+  const [downloading, setDownloading] = useState<null | { type: 'csv'|'xlsx'; progress?: number }>(null)
   const { data, isLoading, isError } = useQuery({
     queryKey: ['incidents', params],
     queryFn: async () => {
@@ -68,8 +74,31 @@ export default function IncidentsList() {
             <option>CLOSED</option>
           </select>
         </div>
+        <div>
+          <label className="text-xs">Datum von</label>
+          <input type="date" className="border rounded px-2 py-1 block" value={params.filters.occurredAtFrom||''} onChange={(e)=>update({filters:{occurredAtFrom:e.target.value||undefined}})} />
+        </div>
+        <div>
+          <label className="text-xs">Datum bis</label>
+          <input type="date" className="border rounded px-2 py-1 block" value={params.filters.occurredAtTo||''} onChange={(e)=>update({filters:{occurredAtTo:e.target.value||undefined}})} />
+        </div>
         <div className="ml-auto">
-          <button className="underline" onClick={exportCsv}>CSV Export</button>
+          <div className="inline-flex gap-2">
+            <button disabled={!!downloading} className="underline" onClick={async ()=>{
+              try {
+                setDownloading({ type: 'csv' })
+                const sp = toSearchParams(params); sp.delete('page'); sp.delete('pageSize')
+                await exportFile({ path: '/incidents', accept: 'text/csv', token: tokens?.accessToken, filenameHint: 'incidents.csv', params: sp, onUnauthorized: () => nav('/login') })
+              } catch (e:any) { toast.error(e?.message||'Export fehlgeschlagen') } finally { setDownloading(null) }
+            }}>Export CSV</button>
+            <button disabled={!!downloading} className="underline" onClick={async ()=>{
+              try {
+                setDownloading({ type: 'xlsx' })
+                const sp = toSearchParams(params); sp.delete('page'); sp.delete('pageSize')
+                await exportFile({ path: '/incidents', accept: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', token: tokens?.accessToken, filenameHint: 'incidents.xlsx', params: sp, onUnauthorized: () => nav('/login') })
+              } catch (e:any) { toast.error(e?.message||'Export fehlgeschlagen') } finally { setDownloading(null) }
+            }}>Export XLSX</button>
+          </div>
         </div>
       </div>
 
@@ -90,12 +119,39 @@ export default function IncidentsList() {
           )}
         </div>
       )}
+      <div className="flex justify-between items-center">
+        <div />
+        {(user?.role === 'ADMIN' || user?.role === 'MANAGER') && (
+          <Link to="/incidents/new" className="underline">Neuer Vorfall</Link>
+        )}
+      </div>
+
       <DataTable
         columns={[
           { key: 'title', header: 'Titel', sortable: true },
           { key: 'severity', header: 'Schwere', sortable: true },
           { key: 'status', header: 'Status', sortable: true },
           { key: 'occurredAt', header: 'Zeit', sortable: true, render: (i: Incident) => new Date(i.occurredAt).toLocaleString() },
+          { key: 'actions', header: 'Aktionen', render: (i: Incident) => (
+            <div className="inline-flex gap-2">
+              {(user?.role === 'ADMIN' || user?.role === 'MANAGER') && <Link className="underline" to={`/incidents/${i.id}/edit`}>Bearbeiten</Link>}
+              {(user?.role === 'ADMIN' || user?.role === 'MANAGER') && <button className="underline text-red-600" onClick={async ()=>{
+                if (!confirm('Diesen Vorfall wirklich löschen?')) return
+                try { await api.delete(`/incidents/${i.id}`); toast.success('Vorfall gelöscht'); }
+                catch(e:any){ toast.error(e?.response?.data?.message||'Löschen fehlgeschlagen') }
+              }}>Löschen</button>}
+              {user?.role === 'ADMIN' && (
+                <button className="underline" onClick={async ()=>{
+                  const recipient = prompt('Empfänger E-Mail für Test?')
+                  if (!recipient) return
+                  try {
+                    await api.post('/notifications/test', { recipient, title: `Vorfall: ${i.title}`, body: `Testbenachrichtigung zum Vorfall ${i.title}` })
+                    toast.success('Test-Benachrichtigung gesendet')
+                  } catch(e:any) { toast.error(e?.response?.data?.message||'Senden fehlgeschlagen') }
+                }}>Test Notification</button>
+              )}
+            </div>
+          ) },
         ]}
         rows={data?.data ?? []}
         loading={isLoading}

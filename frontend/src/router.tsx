@@ -18,6 +18,7 @@ import SiteShifts from '@/features/sites/pages/SiteShifts'
 import UsersList from '@/features/users/UsersList'
 import ShiftList from '@/features/shifts/ShiftList'
 import IncidentsList from '@/features/incidents/IncidentsList'
+import IncidentForm from '@/features/incidents/IncidentForm'
 import RequireRole from '@/features/auth/RequireRole'
 
 export const router = createBrowserRouter([
@@ -64,6 +65,16 @@ export const router = createBrowserRouter([
           { path: 'incidents', element: (
             <RequireRole roles={['ADMIN','DISPATCHER','MANAGER']}>
               <IncidentsList />
+            </RequireRole>
+          ) },
+          { path: 'incidents/new', element: (
+            <RequireRole roles={['ADMIN','MANAGER']}>
+              <IncidentForm mode="create" />
+            </RequireRole>
+          ) },
+          { path: 'incidents/:id/edit', element: (
+            <RequireRole roles={['ADMIN','MANAGER']}>
+              <IncidentForm mode="edit" />
             </RequireRole>
           ) },
         ],
