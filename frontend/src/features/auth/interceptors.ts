@@ -1,5 +1,4 @@
 import type { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios'
-import { toast } from 'sonner'
 
 type Tokens = { accessToken: string; refreshToken?: string }
 
@@ -71,10 +70,11 @@ export function installAuthInterceptors(
           return Promise.reject(e)
         }
       }
-      if (status === 403) {
-        // RBAC: Kein Refresh, klarer Hinweis
-        try { toast.error('403 – Zugriff verweigert') } catch {}
+      // Bei wiederholtem 401 nach bereits erfolgtem Retry -> zum Login führen
+      if (status === 401 && original._retry) {
+        try { opts.setTokens(null); opts.onLogout() } catch {}
       }
+      // 403: Kein Refresh-Mechanismus, UI soll die 403-Karte anzeigen. Kein Toast-Spam hier.
       return Promise.reject(error)
     }
   )
