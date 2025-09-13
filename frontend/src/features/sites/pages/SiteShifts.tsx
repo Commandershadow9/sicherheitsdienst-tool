@@ -2,12 +2,17 @@ import { useParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { api } from '@/lib/api'
 import { useAuth } from '@/features/auth/AuthProvider'
+import { exportFile } from '@/features/common/export'
+import { useNavigate } from 'react-router-dom'
+import { toast } from 'sonner'
 
 type Shift = { id: string; title: string; startTime: string; endTime: string; status: string }
 
 export default function SiteShifts() {
   const { id } = useParams<{ id: string }>()
   const { tokens } = useAuth()
+  const nav = useNavigate()
+  const [downloading, setDownloading] = React.useState<null | { progress?: number }>(null)
   const { data, isLoading, isError } = useQuery({
     queryKey: ['site-shifts', id],
     queryFn: async () => {
@@ -18,30 +23,28 @@ export default function SiteShifts() {
   })
 
   const exportCsv = async () => {
-    const url = `${api.defaults.baseURL}/sites/${id}/shifts`
-    const res = await fetch(url!, {
-      headers: {
-        'Accept': 'text/csv',
-        ...(tokens?.accessToken ? { 'Authorization': `Bearer ${tokens.accessToken}` } : {}),
-      },
-      credentials: 'include',
-    })
-    const blob = await res.blob()
-    const href = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = href
-    a.download = `site_${id}_shifts.csv`
-    document.body.appendChild(a)
-    a.click()
-    a.remove()
-    URL.revokeObjectURL(href)
+    try {
+      setDownloading({})
+      await exportFile({
+        path: `/sites/${id}/shifts`,
+        accept: 'text/csv',
+        token: tokens?.accessToken,
+        filenameHint: `site_${id}_shifts.csv`,
+        onProgress: ({ percent }) => setDownloading({ progress: percent }),
+        onUnauthorized: () => nav('/login'),
+      })
+    } catch (e:any) {
+      toast.error(e?.message || 'Export fehlgeschlagen')
+    } finally {
+      setDownloading(null)
+    }
   }
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold">Schichten – Site {id}</h1>
-        <button className="underline" onClick={exportCsv}>CSV Export</button>
+        <button className="underline" disabled={!!downloading} onClick={exportCsv}>CSV Export{downloading?.progress ? ` ${downloading.progress}%` : ''}</button>
       </div>
       {isLoading && <div>Lade…</div>}
       {isError && <div className="text-red-600">Fehler beim Laden</div>}
@@ -73,4 +76,3 @@ export default function SiteShifts() {
     </div>
   )
 }
-
