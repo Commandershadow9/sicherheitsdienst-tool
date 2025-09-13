@@ -14,6 +14,7 @@ Kurzer Überblick, klare Quickstarts und schnelles Troubleshooting für Devs/Ops
 Links
 - OpenAPI: `docs/openapi.yaml` (Swagger UI im Dev: `/api-docs`)
 - API Cheatsheet: `docs/API_CHEATSHEET.md`
+- VS Code REST Client: `docs/API_EXAMPLES.http`
 - Architektur: `docs/ARCHITECTURE.md`
 - RBAC: `docs/RBAC.md`
 - Changelog: `CHANGELOG.md`
@@ -93,6 +94,10 @@ Beispiele
 - 401 auf `/api/users`: Frontend MUSS zentralen `api`‑Client nutzen (Token‑Interceptor); keine nackten `fetch/axios`
 - Contract‑Tests: Dredd/Prism Workflow (manuell/cron) – siehe CI
 - DB fehlt: viele Routen funktionieren trotzdem; Seed nur mit `DATABASE_URL`
+
+## CI Smokes
+- health-smoke: Startet API ohne DB und prüft `/healthz`/`/readyz` inkl. p95‑SLA.
+- api-smoke: Startet DB+API via Docker Compose (Seed on start) und prüft Login, Users‑List/Export, Sites‑List mit httpie.
 
 Badges/CI (Platzhalter)
 - Build • Contract‑Tests • Lint

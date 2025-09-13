@@ -1,0 +1,55 @@
+name: api-smoke
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch: {}
+
+concurrency:
+  group: api-smoke
+  cancel-in-progress: true
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install Docker Compose
+        uses: docker/setup-buildx-action@v3
+
+      - name: Start DB + API (dev compose with seed)
+        env:
+          SEED_ON_START: "true"
+        run: |
+          docker compose -f docker-compose.dev.yml up -d db
+          # wait for db healthy
+          for i in $(seq 1 60); do
+            if docker ps --format '{{.Names}} {{.Status}}' | grep -q 'project-db-1'; then break; fi; sleep 1; done
+          docker compose -f docker-compose.dev.yml up -d api
+          # wait for API
+          for i in $(seq 1 90); do
+            if curl -fsS http://localhost:3000/healthz >/dev/null; then echo up; break; fi; sleep 2; done
+
+      - name: Ensure httpie + jq
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y httpie jq
+
+      - name: API smoke
+        env:
+          BASE: http://localhost:3000
+        run: |
+          bash tools/api-smoke.sh
+
+      - name: Stop stack
+        if: always()
+        run: |
+          docker compose -f docker-compose.dev.yml down -v
+

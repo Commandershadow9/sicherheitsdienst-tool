@@ -3,6 +3,9 @@ import { api } from '@/lib/api'
 import { useListParams } from '@/features/common/useQueryParams'
 import { toSearchParams } from '@/features/common/listParams'
 import { DebouncedInput } from '@/components/inputs/DebouncedInput'
+import { Input } from '@/components/ui/input'
+import { Select } from '@/components/ui/select'
+import { Button } from '@/components/ui/button'
 import { DataTable } from '@/components/table/DataTable'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/features/auth/AuthProvider'
@@ -34,53 +37,53 @@ export default function IncidentsList() {
   return (
     <div className="space-y-4">
       <h1 className="text-xl font-semibold">Vorfälle</h1>
-      <div className="flex gap-2 items-end">
+      <div className="flex gap-2 items-end flex-wrap">
         <div>
           <label className="text-xs">Titel</label>
-          <DebouncedInput className="border rounded px-2 py-1 block" value={params.filters.title||''} onChange={(v)=>update({filters:{title:v}})} />
+          <DebouncedInput value={params.filters.title||''} onChange={(v)=>update({filters:{title:v}})} />
         </div>
         <div>
           <label className="text-xs">Schwere</label>
-          <select className="border rounded px-2 py-1 block" defaultValue={params.filters.severity||''} onChange={(e)=>update({filters:{severity: e.target.value || undefined}})}>
+          <Select defaultValue={params.filters.severity||''} onChange={(e)=>update({filters:{severity: e.target.value || undefined}})}>
             <option value="">Alle</option>
             <option>LOW</option>
             <option>MEDIUM</option>
             <option>HIGH</option>
-          </select>
+          </Select>
         </div>
         <div>
           <label className="text-xs">Status</label>
-          <select className="border rounded px-2 py-1 block" defaultValue={params.filters.status||''} onChange={(e)=>update({filters:{status: e.target.value || undefined}})}>
+          <Select defaultValue={params.filters.status||''} onChange={(e)=>update({filters:{status: e.target.value || undefined}})}>
             <option value="">Alle</option>
             <option>OPEN</option>
             <option>IN_PROGRESS</option>
             <option>CLOSED</option>
-          </select>
+          </Select>
         </div>
         <div>
           <label className="text-xs">Datum von</label>
-          <input type="date" className="border rounded px-2 py-1 block" value={params.filters.occurredAtFrom||''} onChange={(e)=>update({filters:{occurredAtFrom:e.target.value||undefined}})} />
+          <Input type="date" value={params.filters.occurredAtFrom||''} onChange={(e)=>update({filters:{occurredAtFrom:e.target.value||undefined}})} />
         </div>
         <div>
           <label className="text-xs">Datum bis</label>
-          <input type="date" className="border rounded px-2 py-1 block" value={params.filters.occurredAtTo||''} onChange={(e)=>update({filters:{occurredAtTo:e.target.value||undefined}})} />
+          <Input type="date" value={params.filters.occurredAtTo||''} onChange={(e)=>update({filters:{occurredAtTo:e.target.value||undefined}})} />
         </div>
         <div className="ml-auto">
           <div className="inline-flex gap-2">
-            <button disabled={!!downloading} className="underline" onClick={async ()=>{
+            <Button variant="link" disabled={!!downloading} onClick={async ()=>{
               try {
                 setDownloading({ type: 'csv' })
                 const sp = toSearchParams(params); sp.delete('page'); sp.delete('pageSize')
                 await exportFile({ path: '/incidents', accept: 'text/csv', filenameHint: 'incidents.csv', params: sp, onUnauthorized: () => nav('/login') })
               } catch (e:any) { toast.error(e?.message||'Export fehlgeschlagen') } finally { setDownloading(null) }
-            }}>Export CSV</button>
-            <button disabled={!!downloading} className="underline" onClick={async ()=>{
+            }}>Export CSV</Button>
+            <Button variant="link" disabled={!!downloading} onClick={async ()=>{
               try {
                 setDownloading({ type: 'xlsx' })
                 const sp = toSearchParams(params); sp.delete('page'); sp.delete('pageSize')
                 await exportFile({ path: '/incidents', accept: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', filenameHint: 'incidents.xlsx', params: sp, onUnauthorized: () => nav('/login') })
               } catch (e:any) { toast.error(e?.message||'Export fehlgeschlagen') } finally { setDownloading(null) }
-            }}>Export XLSX</button>
+            }}>Export XLSX</Button>
           </div>
         </div>
       </div>
@@ -88,17 +91,14 @@ export default function IncidentsList() {
       {(Object.keys(params.filters).length > 0 || !!params.sortBy) && (
         <div className="flex justify-end gap-4">
           {Object.keys(params.filters).length > 0 && (
-            <button
-              className="underline text-sm"
-              onClick={() => update({ filters: Object.fromEntries(Object.keys(params.filters).map(k => [k, undefined])), page: 1 })}
-            >
+            <Button variant="link" onClick={() => update({ filters: Object.fromEntries(Object.keys(params.filters).map(k => [k, undefined])), page: 1 })}>
               Filter zurücksetzen
-            </button>
+            </Button>
           )}
           {!!params.sortBy && (
-            <button className="underline text-sm" onClick={()=>update({ sortBy: '', page: 1 })}>
+            <Button variant="link" onClick={()=>update({ sortBy: '', page: 1 })}>
               Sortierung zurücksetzen
-            </button>
+            </Button>
           )}
         </div>
       )}

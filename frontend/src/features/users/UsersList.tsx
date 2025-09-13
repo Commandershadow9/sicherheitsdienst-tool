@@ -5,6 +5,9 @@ import { useListParams } from '@/features/common/useQueryParams'
 import { toSearchParams } from '@/features/common/listParams'
 import useDebounce from '@/features/common/useDebounce'
 import { DebouncedInput } from '@/components/inputs/DebouncedInput'
+import { Input } from '@/components/ui/input'
+import { Select } from '@/components/ui/select'
+import { Button } from '@/components/ui/button'
 import { DataTable } from '@/components/table/DataTable'
 import { useAuth } from '@/features/auth/AuthProvider'
 import RbacForbidden from '@/components/RbacForbidden'
@@ -78,57 +81,54 @@ export default function UsersList() {
       <div className="flex gap-2 items-end flex-wrap">
         <div className="min-w-[220px]">
           <label className="text-xs" htmlFor="search">Suche</label>
-          <input id="search" className="border rounded px-2 py-1 block w-full" value={search} onChange={(e)=>setSearch(e.target.value)} placeholder="Name oder E-Mail" />
+          <Input id="search" value={search} onChange={(e)=>setSearch(e.target.value)} placeholder="Name oder E-Mail" />
         </div>
         <div>
           <label className="text-xs">E-Mail</label>
-          <DebouncedInput className="border rounded px-2 py-1 block" value={params.filters.email||''} onChange={(v)=>update({filters:{email:v}})} />
+          <DebouncedInput value={params.filters.email||''} onChange={(v)=>update({filters:{email:v}})} />
         </div>
         <div>
           <label className="text-xs">Vorname</label>
-          <DebouncedInput className="border rounded px-2 py-1 block" value={params.filters.firstName||''} onChange={(v)=>update({filters:{firstName:v}})} />
+          <DebouncedInput value={params.filters.firstName||''} onChange={(v)=>update({filters:{firstName:v}})} />
         </div>
         <div>
           <label className="text-xs">Rolle</label>
-          <select className="border rounded px-2 py-1 block" defaultValue={params.filters.role||''} onChange={(e)=>update({filters:{role: e.target.value || undefined}})}>
+          <Select defaultValue={params.filters.role||''} onChange={(e)=>update({filters:{role: e.target.value || undefined}})}>
             <option value="">Alle</option>
             <option>ADMIN</option>
             <option>MANAGER</option>
             <option>EMPLOYEE</option>
-          </select>
+          </Select>
         </div>
         <div>
           <label className="text-xs">Aktiv</label>
-          <select className="border rounded px-2 py-1 block" defaultValue={params.filters.isActive||''} onChange={(e)=>update({filters:{isActive: e.target.value || undefined}})}>
+          <Select defaultValue={params.filters.isActive||''} onChange={(e)=>update({filters:{isActive: e.target.value || undefined}})}>
             <option value="">Alle</option>
             <option value="true">Ja</option>
             <option value="false">Nein</option>
-          </select>
+          </Select>
         </div>
         <div className="ml-auto inline-flex gap-2">
-          <button disabled={!!downloading} className="underline" onClick={()=>doExport('csv')}>
+          <Button variant="link" disabled={!!downloading} onClick={()=>doExport('csv')}>
             Export CSV{downloading?.type==='csv' && (downloading.progress ? ` ${downloading.progress}%` : ' …')}
-          </button>
-          <button disabled={!!downloading} className="underline" onClick={()=>doExport('xlsx')}>
+          </Button>
+          <Button variant="link" disabled={!!downloading} onClick={()=>doExport('xlsx')}>
             Export XLSX{downloading?.type==='xlsx' && (downloading.progress ? ` ${downloading.progress}%` : ' …')}
-          </button>
+          </Button>
         </div>
       </div>
 
       {(Object.keys(params.filters).length > 0 || !!params.sortBy) && (
         <div className="flex justify-end gap-4">
           {Object.keys(params.filters).length > 0 && (
-            <button
-              className="underline text-sm"
-              onClick={() => update({ filters: Object.fromEntries(Object.keys(params.filters).map(k => [k, undefined])), page: 1 })}
-            >
+            <Button variant="link" onClick={() => update({ filters: Object.fromEntries(Object.keys(params.filters).map(k => [k, undefined])), page: 1 })}>
               Filter zurücksetzen
-            </button>
+            </Button>
           )}
           {!!params.sortBy && (
-            <button className="underline text-sm" onClick={()=>update({ sortBy: '', page: 1 })}>
+            <Button variant="link" onClick={()=>update({ sortBy: '', page: 1 })}>
               Sortierung zurücksetzen
-            </button>
+            </Button>
           )}
         </div>
       )}
