@@ -36,13 +36,13 @@ export default function Login() {
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 w-full max-w-sm border rounded-md p-6 bg-card">
         <h1 className="text-xl font-semibold mb-2">Login</h1>
         <div className="space-y-1">
-          <label className="text-sm">E-Mail</label>
-          <input className="w-full border rounded-md px-3 py-2 bg-background" type="email" {...register('email')} />
+          <label className="text-sm" htmlFor="email">E-Mail</label>
+          <input id="email" className="w-full border rounded-md px-3 py-2 bg-background" type="email" {...register('email')} />
           {errors.email && <p className="text-xs text-destructive">{errors.email.message}</p>}
         </div>
         <div className="space-y-1">
-          <label className="text-sm">Passwort</label>
-          <input className="w-full border rounded-md px-3 py-2 bg-background" type="password" {...register('password')} />
+          <label className="text-sm" htmlFor="password">Passwort</label>
+          <input id="password" className="w-full border rounded-md px-3 py-2 bg-background" type="password" {...register('password')} />
           {errors.password && <p className="text-xs text-destructive">{errors.password.message}</p>}
         </div>
         <Button type="submit" disabled={isSubmitting} className="w-full">{isSubmitting ? 'Bitte warten…' : 'Anmelden'}</Button>
@@ -50,4 +50,3 @@ export default function Login() {
     </div>
   )
 }
-

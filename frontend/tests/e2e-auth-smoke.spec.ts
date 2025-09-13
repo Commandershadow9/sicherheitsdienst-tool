@@ -6,11 +6,15 @@ const API_BASE = process.env.API_BASE || 'http://localhost:3000'
 test('Login → Dashboard → Users → Sites → Incidents keeps auth and sends Authorization header', async ({ page }) => {
   // Intercept API calls and assert Authorization header is present
   await page.route(`${API_BASE}/api/**`, (route) => {
+    const url = route.request().url()
+    // Auth-Endpunkte sind explizit ohne Authorization-Header
+    if (/\/api\/auth\/(login|refresh)/.test(url)) {
+      return route.fallback()
+    }
     const headers = route.request().headers()
     if (!headers['authorization']) {
-      // Fail early to catch missing headers
       route.fallback()
-      throw new Error('Missing Authorization header on API request: ' + route.request().url())
+      throw new Error('Missing Authorization header on API request: ' + url)
     }
     route.fallback()
   })
@@ -19,6 +23,7 @@ test('Login → Dashboard → Users → Sites → Incidents keeps auth and sends
   await page.getByLabel('E-Mail').fill('admin@sicherheitsdienst.de')
   await page.getByLabel('Passwort').fill('password123')
   await page.getByRole('button', { name: 'Anmelden' }).click()
+  await page.waitForLoadState('networkidle')
 
   await page.waitForURL(/\/dashboard$/)
   await expect(page).toHaveURL(/\/dashboard$/)
