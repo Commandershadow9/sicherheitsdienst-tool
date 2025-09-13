@@ -108,5 +108,27 @@ Beispiele
 - health-smoke: Startet API ohne DB und prüft `/healthz`/`/readyz` inkl. p95‑SLA.
 - api-smoke: Startet DB+API via Docker Compose (Seed on start) und prüft Login, Users‑List/Export, Sites‑List mit httpie.
 
+## E2E‑Smoke (Playwright)
+- Workflow: `.github/workflows/e2e-smoke.yml` (Compose: db+api+web, headless Browser)
+- Artefakte: `e2e/playwright-report`, `e2e/test-results` (Traces/Videos)
+
+Lokal ausführen
+```bash
+# Stack starten (mit Seed)
+docker compose -f docker-compose.dev.yml up -d
+
+# E2E in Ordner e2e/ ausführen
+cd e2e
+npm init -y >/dev/null 2>&1 || true
+npm install -D @playwright/test
+npx playwright install chromium
+
+# Tests laufen lassen (BASE_URL optional, Default http://localhost:5173)
+BASE_URL=http://localhost:5173 npx playwright test specs/smoke.spec.ts --project=chromium --reporter=list,html
+
+# Report öffnen
+npx playwright show-report
+```
+
 Badges/CI (Platzhalter)
 - Build • Contract‑Tests • Lint
