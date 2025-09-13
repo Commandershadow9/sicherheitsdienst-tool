@@ -13,6 +13,7 @@ Kurzer Überblick, klare Quickstarts und schnelles Troubleshooting für Devs/Ops
 
 Links
 - OpenAPI: `docs/openapi.yaml` (Swagger UI im Dev: `/api-docs`)
+- API Cheatsheet: `docs/API_CHEATSHEET.md`
 - Architektur: `docs/ARCHITECTURE.md`
 - RBAC: `docs/RBAC.md`
 - Changelog: `CHANGELOG.md`

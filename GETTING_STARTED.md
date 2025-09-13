@@ -2,6 +2,8 @@
 
 Schneller Einstieg für lokale/remote Entwicklung mit Docker Compose und Vite.
 
+Siehe auch: `docs/API_CHEATSHEET.md` für eine kompakte Befehls‑Übersicht.
+
 ## 1) Voraussetzungen
 - Docker + Docker Compose
 - Optional: Node.js 22+ (für reinen FE/BE‑Dev ohne Compose)
