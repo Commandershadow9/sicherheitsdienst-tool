@@ -72,6 +72,14 @@ export default function IncidentsList() {
           <button className="underline" onClick={exportCsv}>CSV Export</button>
         </div>
       </div>
+
+      {!!params.sortBy && (
+        <div className="flex justify-end">
+          <button className="underline text-sm" onClick={()=>update({ sortBy: '', page: 1 })}>
+            Sortierung zurücksetzen
+          </button>
+        </div>
+      )}
       <DataTable
         columns={[
           { key: 'title', header: 'Titel', sortable: true },

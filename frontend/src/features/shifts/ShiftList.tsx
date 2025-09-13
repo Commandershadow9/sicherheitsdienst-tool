@@ -22,6 +22,13 @@ export default function ShiftList() {
   return (
     <div className="space-y-4">
       <h1 className="text-xl font-semibold">Schichten</h1>
+      {!!params.sortBy && (
+        <div className="flex justify-end">
+          <button className="underline text-sm" onClick={()=>update({ sortBy: '', page: 1 })}>
+            Sortierung zurücksetzen
+          </button>
+        </div>
+      )}
 
       <DataTable
         columns={[
