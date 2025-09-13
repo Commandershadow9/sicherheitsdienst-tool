@@ -983,3 +983,50 @@ Based on the original plan, here are the next recommended steps to advance the p
 - [ ] **Expand Core Features**:
   - **Time Tracking**: Create models, controllers, and routes for employee clock-in/out (`TimeEntry`).
   - **Incident Reporting**: Implement an API for reporting and managing incidents.
+
+## DB via Compose (Dev)
+
+Warnhinweis: Nur für lokale Entwicklung/Staging. Nicht für Produktion verwenden.
+
+- Stack starten (zuerst DB, dann API, dann Web):
+  ```bash
+  docker compose -f docker-compose.dev.yml down -v
+  docker compose -f docker-compose.dev.yml up -d db
+  docker compose -f docker-compose.dev.yml ps            # db sollte healthy sein
+  docker compose -f docker-compose.dev.yml up -d api
+  docker compose -f docker-compose.dev.yml up -d web
+  docker compose -f docker-compose.dev.yml ps            # db healthy; api & web running
+  ```
+
+- DATABASE_URL ist im `api`-Service gesetzt: `postgresql://security:dev@db:5432/security?schema=public`
+  - Port 5432 wird nicht nach außen veröffentlicht.
+
+- Migration & Seed im API‑Container ausführen:
+  ```bash
+  # Prisma Migration deploy (Fallback: db push), danach Seed
+  docker compose -f docker-compose.dev.yml exec api sh -lc "npx prisma migrate deploy || npx prisma db push; npm run seed"
+  ```
+
+- Verifizieren:
+  - API Login: `POST http://localhost:3000/api/auth/login` mit JSON `{ "email":"admin@sicherheitsdienst.de", "password":"password123" }` → 200 + Token
+  - Frontend: `http://localhost:5173/login` lädt; Login funktioniert; Redirect zum Dashboard
+
+- Start/Stop kurz:
+  ```bash
+  # Start
+  docker compose -f docker-compose.dev.yml up -d
+  # Stop
+  docker compose -f docker-compose.dev.yml down
+  ```
+
+- Demo-Logins (alle Passwörter `password123`):
+  - admin@sicherheitsdienst.de (ADMIN)
+  - dispatcher@sicherheitsdienst.de (DISPATCHER)
+  - thomas.mueller@sicherheitsdienst.de, anna.schmidt@sicherheitsdienst.de, michael.wagner@sicherheitsdienst.de (EMPLOYEE)
+
+Troubleshooting (Dev):
+- Letzte 100 Zeilen Logs und genutzte DATABASE_URL (ohne Passwort):
+  ```bash
+  docker compose -f docker-compose.dev.yml logs --tail=100 db api
+  docker compose -f docker-compose.dev.yml exec api sh -lc 'echo "${DATABASE_URL}" | sed -E "s#://([^:]+):[^@]+@#://\1:****@#"'
+  ```

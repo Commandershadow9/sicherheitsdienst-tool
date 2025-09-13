@@ -1,4 +1,19 @@
 services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: security
+      POSTGRES_PASSWORD: dev
+      POSTGRES_DB: security
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U security -d security"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    # Port 5432 absichtlich nicht veröffentlicht (nur intern nutzbar)
+
   api:
     image: node:20
     working_dir: /app
@@ -12,11 +27,13 @@ services:
       CORS_ORIGIN: http://localhost:5173
       RATE_LIMIT_MAX: 100
       RATE_LIMIT_WINDOW_MS: 60000
-      # Hinweis: Für volle Funktion bitte DATABASE_URL setzen (PostgreSQL)
-      # DATABASE_URL: postgresql://admin:admin123@db:5432/sicherheitsdienst_db?schema=public
+      DATABASE_URL: postgresql://security:dev@db:5432/security?schema=public
     volumes:
       - ./backend:/app
     command: sh -lc "npm install && npx prisma generate || true && npm run dev"
+    depends_on:
+      db:
+        condition: service_healthy
 
   web:
     image: node:20
@@ -59,3 +76,6 @@ services:
       - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards
     depends_on:
       - prometheus
+
+volumes:
+  db_data:
