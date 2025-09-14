@@ -17,9 +17,17 @@ CREATE TABLE IF NOT EXISTS "device_tokens" (
 );
 
 -- FK
-ALTER TABLE "device_tokens"
-  ADD CONSTRAINT IF NOT EXISTS "device_tokens_user_fkey"
-  FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+-- Add FK constraint (idempotent, Postgres-kompatibel)
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'device_tokens_user_fkey'
+  ) THEN
+    ALTER TABLE "device_tokens"
+      ADD CONSTRAINT "device_tokens_user_fkey"
+      FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+  END IF;
+END $$;
 
 -- Index
 CREATE INDEX IF NOT EXISTS "device_tokens_user_idx" ON "device_tokens" ("userId");
@@ -38,4 +46,3 @@ CREATE TRIGGER set_updated_at_on_device_tokens
 BEFORE UPDATE ON "device_tokens"
 FOR EACH ROW
 EXECUTE FUNCTION set_updated_at();
-

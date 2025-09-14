@@ -35,6 +35,9 @@ Login‑Demo (Seeds)
 Seed (falls DB aktiv)
 - `docker compose -f docker-compose.dev.yml exec api sh -lc 'npm run -s seed'`
 
+Produktion
+- Siehe docs/DEPLOYMENT.md für den produktiven Betrieb (Caddy, TLS, Compose).
+
 ## ENV & Konfiguration
 
 API (Backend)
@@ -64,4 +67,3 @@ WEB (Frontend)
 
 Badges/CI (Platzhalter)
 - Build • Contract‑Tests • Lint
-

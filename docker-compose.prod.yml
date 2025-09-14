@@ -1,0 +1,75 @@
+version: '3.9'
+
+name: project
+
+volumes:
+  db_data:
+  web_dist:
+
+networks:
+  app:
+    driver: bridge
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-security}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-dev}
+      POSTGRES_DB: ${POSTGRES_DB:-security}
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-security} -d ${POSTGRES_DB:-security}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks: [app]
+
+  api:
+    build:
+      context: ./backend
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: 3001
+      DATABASE_URL: postgresql://${POSTGRES_USER:-security}:${POSTGRES_PASSWORD:-dev}@db:5432/${POSTGRES_DB:-security}?schema=public
+      JWT_SECRET: ${JWT_SECRET:-change-me}
+      REFRESH_SECRET: ${REFRESH_SECRET:-change-me}
+      JWT_COOKIE_SECURE: ${JWT_COOKIE_SECURE:-true}
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost}
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3001/api/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+    networks: [app]
+
+  web-builder:
+    image: node:20-alpine
+    working_dir: /web
+    command: sh -lc "npm ci && npm run build && cp -r dist/* /out/ && tail -f /dev/null"
+    environment:
+      VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:3000}
+    volumes:
+      - ./frontend:/web:rw
+      - web_dist:/out
+    networks: [app]
+
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - web_dist:/srv/www:ro
+    depends_on:
+      - api
+      - web-builder
+    networks: [app]
