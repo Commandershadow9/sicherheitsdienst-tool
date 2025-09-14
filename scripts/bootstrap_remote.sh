@@ -29,8 +29,7 @@ rsync -av --progress "$SRC_DIR/" "$REMOTE:~/project/.backups/$TS/"
 echo "== Starte Restore remote =="
 ssh -t "$REMOTE" "cd ~/project/.backups/$TS && bash restore.sh"
 
-echo "Remote-Restore abgeschlossen. Prüfe Endpunkte:"
-echo "  http://$REMOTE:3000/api/health"
-echo "  http://$REMOTE:3000/api/stats"
-echo "  Frontend: http://$REMOTE:5173"
-
+echo "== Prüfe Endpunkte remote =="
+ssh -t "$REMOTE" "curl -sf http://localhost:3000/api/health >/dev/null && echo 'API /api/health: OK' || echo 'API /api/health: FEHLER'"
+ssh -t "$REMOTE" "curl -sf http://localhost:3000/api/stats  >/dev/null && echo 'API /api/stats: OK'  || echo 'API /api/stats: FEHLER'"
+echo "Frontend: http://$REMOTE:5173"
