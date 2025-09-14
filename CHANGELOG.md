@@ -2,6 +2,24 @@
 
 All notable changes to this project will be documented in this file.
 
+## Unreleased
+
+### Added
+- feat(auth/rbac): FE‑Interceptors – 401 genau 1× refresh, 403 zeigt Forbidden‑Karte; Navigation blendet verbotene Menüs aus.
+- feat(users): Server‑getriebene Users‑Tabelle (Suche via `query`, 300ms Debounce, Sort/Paging in URL), Export (CSV/XLSX) nutzt dieselben Filter (ohne Pagination).
+- ui: Base Atoms (Button/Input/Select/Table/Modal), `FormField` Wrapper; DataTable mit Sort‑Icons (lucide) statt Unicode.
+- docs: README Quickstart/E2E/CORS; RBAC‑Beispiele; MONITORING‑Hinweise; UI Components Guide; Maintainers‑Checklist; API Cheatsheet + REST Client Beispiele.
+- ci/e2e: e2e‑smoke Workflow (compose dev: db+api+web) inkl. Artefakte; fast‑smoke Job; e2e‑full Job (Users/Sites/Incidents History/Sort); Playwright retries=1.
+- ci/smoke: API‑Smoke Script (`tools/api-smoke.sh`) + Workflow (`api-smoke`) – Login, Users List/Export, Sites List, Events CSV/PDF, Incidents RBAC.
+- repo: commitlint (Conventional Commits) + PR‑Template Checkliste.
+
+### Changed
+- backend/users: Query‑Validator (Zod) und Export auf Filter vereinheitlicht; `requireRole([])`‑Helper.
+- compose(dev): `SEED_ON_START=true` aktiviert Schema‑Push + Seed beim Start.
+
+### Chore
+- Makefile: `api-smoke`, `api-up`, `api-down`, `fe-dev`, `be-dev`.
+
 ## v1.2.0 (2025-09-13)
 
 - ✨ CSV/XLSX-Export → echtes Streaming (100k+), Tests

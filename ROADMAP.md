@@ -1,5 +1,11 @@
 # Roadmap (nächste 1–2 Sprints)
 
+Aktualisierung: Stand 2025‑09‑13
+- RBAC‑Feinschliff (401 Refresh 1×, 403 Karte, Navigation ausblenden) umgesetzt (FE/BE).
+- Users‑Liste serverseitig (Suche/Sort/Paging, 300ms Debounce, Export gefiltert) umgesetzt.
+- E2E‑Smokes (Playwright) und API‑Smoke (httpie) in CI aktiv; Artefakte verfügbar.
+- UI‑Atoms eingeführt und Listen/Filter konsolidiert.
+
 ## Roadmap – Heute (konsolidiert)
 
 Hinweis: Dieser Abschnitt fasst die tagesaktuellen Ziele aus der ehemaligen Datei `docs/ROADMAP.md` zusammen. Quelle bleibt `docs/KONZEPT.pdf` (Roadmap/DoD maßgeblich).
