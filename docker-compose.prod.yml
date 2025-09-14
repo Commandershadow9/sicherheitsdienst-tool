@@ -5,6 +5,7 @@ name: project
 volumes:
   db_data:
   web_dist:
+  openwebui_data:
 
 networks:
   app:
@@ -73,3 +74,18 @@ services:
       - api
       - web-builder
     networks: [app]
+
+  openwebui:
+    image: ghcr.io/open-webui/open-webui:main
+    restart: unless-stopped
+    ports:
+      - "3003:8080"
+    environment:
+      - WEBUI_NAME=Sicherheitsdienst-AI
+      - ENABLE_OPENAI_API=true
+      - ENABLE_OLLAMA=false
+    volumes:
+      - openwebui_data:/app/backend/data
+    networks: [app]
+
+ 

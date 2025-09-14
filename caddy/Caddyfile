@@ -1,35 +1,24 @@
 {
   # Optional: email für ACME/Let’s Encrypt hier setzen
   # email you@example.com
-  # Auto-HTTPS greift nur bei hostnames (nicht bei reiner IP)
+  # Auto-HTTPS greift nur bei Hostnames (nicht bei reiner IP)
 }
 
-# Wenn Domains vorhanden sind, diese Einträge ersetzen, z. B.:
-# app.example.com {
-#   encode zstd gzip
-#   root * /srv/www
-#   file_server
-#   header {
-#     Strict-Transport-Security "max-age=31536000; includeSubDomains"
-#   }
-# }
-
-# API unter Hostname, z. B. api.example.com:
-# api.example.com {
-#   encode zstd gzip
-#   reverse_proxy api:3000
-# }
-
-# Fallback: IP-basierter Zugriff ohne Zertifikat (nur HTTP)
+# Fallback ohne Domain: HTTP auf Port 80
 :80 {
-  @api path /api/*
-  handle @api {
+  route /api/* {
     reverse_proxy api:3001
   }
 
-  handle {
-    root * /srv/www
-    try_files {path} /index.html
-    file_server
+  route /ai/* {
+    basicauth /* {
+      admin $2a$14$CJ2D./KdNH3vQuccbVpKheYqJGIgS/M1pxl/SbPCLUklI8TPAJQG.
+    }
+    uri strip_prefix /ai
+    reverse_proxy openwebui:8080
   }
+
+  root * /srv/www
+  try_files {path} /index.html
+  file_server
 }
