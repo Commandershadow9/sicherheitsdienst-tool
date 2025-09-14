@@ -138,3 +138,5 @@ dist
 # Playwright artifacts
 **/test-results/
 **/playwright-report/
+\n+# Local backup artifacts
+.backups/
