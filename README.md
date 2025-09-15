@@ -51,7 +51,7 @@ Seed (manuell)
 API (Backend)
 - `.env.example` im Ordner `backend/`
 - Minimal: `PORT`, `JWT_SECRET`, `REFRESH_SECRET`
-- Optional: `DATABASE_URL` (Dev‑Compose setzt es bereits), `CORS_ORIGIN|CORS_ORIGINS`, Rate‑Limits (`RATE_LIMIT_MAX/_WINDOW_MS`)
+- Optional: `DATABASE_URL` (Dev‑Compose setzt es bereits), `CORS_ORIGIN|CORS_ORIGINS`, Rate‑Limits (`RATE_LIMIT_MAX/_WINDOW_MS`, `LOGIN_RATE_LIMIT_MAX/_WINDOW_MS`)
 
 WEB (Frontend)
 - `.env.example` im Ordner `frontend/`

@@ -162,8 +162,15 @@ export function authIpRateLimit(): RequestHandler {
 
 // Login-Bruteforce-Limiter pro Email (5/15min), unabhängig von IP
 export function loginUserRateLimit(): RequestHandler {
-  const windowMs = 15 * 60_000;
-  const max = 5;
+  const windowMsRaw = Number(process.env.LOGIN_RATE_LIMIT_WINDOW_MS ?? Number.NaN);
+  const maxRaw = Number(process.env.LOGIN_RATE_LIMIT_MAX ?? Number.NaN);
+
+  if (!Number.isFinite(maxRaw) || maxRaw <= 0) {
+    return ((_: Request, __: Response, next: NextFunction) => next()) as unknown as RequestHandler;
+  }
+
+  const windowMs = Number.isFinite(windowMsRaw) && windowMsRaw > 0 ? windowMsRaw : 15 * 60_000;
+  const max = Math.max(1, Math.floor(maxRaw));
   return createExpressLimiter({
     windowMs,
     max,

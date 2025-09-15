@@ -29,6 +29,8 @@ services:
       RATE_LIMIT_WINDOW_MS: 60000
       DATABASE_URL: postgresql://security:dev@db:5432/security?schema=public
       SEED_ON_START: "true"
+      LOGIN_RATE_LIMIT_MAX: 100
+      LOGIN_RATE_LIMIT_WINDOW_MS: 60000
     volumes:
       - ./backend:/app
     command: >-
