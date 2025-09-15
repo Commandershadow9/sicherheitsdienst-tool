@@ -12,7 +12,10 @@ export const healthz = async (_req: Request, res: Response): Promise<void> => {
 
 // Readiness with dependency checks (DB mandatory, SMTP optional)
 export const readyz = async (_req: Request, res: Response): Promise<void> => {
-  const deps: { db: 'ok' | 'fail'; smtp: 'ok' | 'fail' | 'skip' } = { db: 'ok', smtp: 'skip' };
+  const deps: { db: 'ok' | 'fail'; smtp: 'ok' | 'fail' | 'skip'; smtpMessage?: string } = {
+    db: 'ok',
+    smtp: 'skip',
+  };
   try {
     await prisma.$queryRaw`SELECT 1`;
   } catch (err) {
@@ -23,7 +26,7 @@ export const readyz = async (_req: Request, res: Response): Promise<void> => {
 
   // Optional SMTP check: if enabled and configured, perform a lightweight verify with timeout
   const checkSmtp = String(process.env.READINESS_CHECK_SMTP || 'false').toLowerCase();
-  const wantSmtp = !['false','0','off','no'].includes(checkSmtp);
+  const wantSmtp = !['false', '0', 'off', 'no'].includes(checkSmtp);
   const smtpConfigured = Boolean(process.env.SMTP_HOST);
   if (wantSmtp && smtpConfigured) {
     const host = process.env.SMTP_HOST as string;
@@ -33,10 +36,11 @@ export const readyz = async (_req: Request, res: Response): Promise<void> => {
     const pass = process.env.SMTP_PASS;
     const timeoutMs = Math.max(parseInt(String(process.env.READINESS_SMTP_TIMEOUT_MS || '1500'), 10) || 1500, 0);
 
+    let transport: any;
     try {
       // eslint-disable-next-line @typescript-eslint/no-var-requires
       const nodemailer = require('nodemailer');
-      const transport = nodemailer.createTransport({
+      transport = nodemailer.createTransport({
         host,
         port,
         secure,
@@ -50,8 +54,19 @@ export const readyz = async (_req: Request, res: Response): Promise<void> => {
         new Promise((_, rej) => setTimeout(() => rej(new Error('SMTP readiness timeout')), timeoutMs)),
       ]);
       deps.smtp = 'ok';
-    } catch (_e) {
+    } catch (err) {
       deps.smtp = 'fail';
+      if (process.env.NODE_ENV !== 'production' && err) {
+        deps.smtpMessage = err instanceof Error ? err.message : String(err);
+      }
+    } finally {
+      if (transport && typeof transport.close === 'function') {
+        try {
+          transport.close();
+        } catch (_closeErr) {
+          // ignore close failures
+        }
+      }
     }
   } else {
     deps.smtp = 'skip';

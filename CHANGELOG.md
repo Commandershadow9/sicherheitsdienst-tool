@@ -5,6 +5,8 @@ All notable changes to this project will be documented in this file.
 ## Unreleased
 
 ### Added
+- backend/auth: Login-Rate-Limiter per ENV (`LOGIN_RATE_LIMIT_MAX/_WINDOW_MS`), Compose-Doku aktualisiert.
+- observability: Prometheus-Counter für Login-Limiter (Hits/Blocked) + Dashboard/Alert Doku.
 - feat(auth/rbac): FE‑Interceptors – 401 genau 1× refresh, 403 zeigt Forbidden‑Karte; Navigation blendet verbotene Menüs aus.
 - feat(users): Server‑getriebene Users‑Tabelle (Suche via `query`, 300ms Debounce, Sort/Paging in URL), Export (CSV/XLSX) nutzt dieselben Filter (ohne Pagination).
 - ui: Base Atoms (Button/Input/Select/Table/Modal), `FormField` Wrapper; DataTable mit Sort‑Icons (lucide) statt Unicode.
@@ -14,6 +16,9 @@ All notable changes to this project will be documented in this file.
 - repo: commitlint (Conventional Commits) + PR‑Template Checkliste.
 
 ### Changed
+- readiness: SMTP-Verify liefert Diagnose (`deps.smtpMessage`) und schließt Transport nach Erfolg/Fehlschlag.
+- backend/auth: Login-Limiter fällt ohne ENV auf Default (5/15min) zurück und deaktiviert sich nur explizit mit `<=0`.
+- frontend/login: Zeigt bei 429 dedizierten Hinweis inkl. Countdown, blockiert erneute Versuche bis Reset.
 - backend/users: Query‑Validator (Zod) und Export auf Filter vereinheitlicht; `requireRole([])`‑Helper.
 - compose(dev): `SEED_ON_START=true` aktiviert Schema‑Push + Seed beim Start.
 

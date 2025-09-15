@@ -30,9 +30,10 @@ Voraussetzungen
 - Docker + Docker Compose
 - Optional: Node.js 22+ (für lokale FE/BE‑Entwicklung außerhalb von Compose)
 
-Start (Dev‑Stack)
-- `.env` optional (siehe `.env.example` im jeweiligen Teilprojekt)
-- `docker compose -f docker-compose.dev.yml up`
+Start (Dev-Stack)
+- `.env` optional (siehe `.env.example` im jeweiligen Teilprojekt, Compose liest `.env` im Repo-Root – hier z. B. `PUBLIC_HOST=37.114.53.56`)
+- Lokal: `docker compose -f docker-compose.dev.yml up`
+- Remote/Server: `PUBLIC_HOST=<SERVER_IP> docker compose -f docker-compose.dev.yml up`
 - Migrations/Seed: im Dev werden Schema und Seed automatisch angewendet (SEED_ON_START=true im Compose)
 
 URLs (Remote/Server)
@@ -51,15 +52,16 @@ Seed (manuell)
 API (Backend)
 - `.env.example` im Ordner `backend/`
 - Minimal: `PORT`, `JWT_SECRET`, `REFRESH_SECRET`
-- Optional: `DATABASE_URL` (Dev‑Compose setzt es bereits), `CORS_ORIGIN|CORS_ORIGINS`, Rate‑Limits (`RATE_LIMIT_MAX/_WINDOW_MS`, `LOGIN_RATE_LIMIT_MAX/_WINDOW_MS`)
+- Optional: `DATABASE_URL` (Dev-Compose setzt es bereits), `CORS_ORIGIN|CORS_ORIGINS`, Rate-Limits (`RATE_LIMIT_MAX/_WINDOW_MS`, `LOGIN_RATE_LIMIT_MAX/_WINDOW_MS`)
+- Compose: `PUBLIC_HOST` steuert, welche Origin (`http://PUBLIC_HOST:5173`) automatisch freigegeben wird.
 
 WEB (Frontend)
 - `.env.example` im Ordner `frontend/`
-- `VITE_API_BASE_URL`, `VITE_HMR_HOST_SERVER_IP`, `VITE_HMR_CLIENT_PORT=5173`
+- `VITE_API_BASE_URL`, `VITE_HMR_HOST_SERVER_IP`, `VITE_HMR_CLIENT_PORT=5173` (Compose nutzt `PUBLIC_HOST`)
 
 ## Health & Stats
 - `GET /healthz` → 200 `{ status: "ok" }`
-- `GET /readyz` → prüft DB & SMTP (DB optional im Dev)
+- `GET /readyz` → prüft DB & optional SMTP (`READINESS_CHECK_SMTP=true`, Timeout `READINESS_SMTP_TIMEOUT_MS`); in Nicht-Prod liefert `deps.smtpMessage` Hinweise bei Fehlern.
 - `GET /api/stats` → `buildSha`, `specVersion`, `env`, Zähler
 
 ## CORS‑Hinweise
@@ -97,9 +99,10 @@ Beispiele
 ## Monitoring (optional)
 - `docker compose -f monitoring/docker-compose.monitoring.yml up -d`
 - Prometheus: `http://<SERVER_IP>:9090`, Grafana: `http://<SERVER_IP>:3000` (admin/admin)
+- Neue Auth-Limiter-Metriken: `app_auth_login_attempts_total`, `app_auth_login_blocked_total` (Dashboard/Alert siehe `MONITORING.md`).
 
 ## Troubleshooting (Kurz)
-- 429 beim Login: Dev‑RateLimiter ist nahezu deaktiviert; bei 429 → API neustarten + Browser hart reload
+- 429 beim Login: Dev‑RateLimiter ist nahezu deaktiviert; bei 429 → API neustarten + Browser hart reload. Frontend zeigt Countdown & Hinweis, Wartezeit respektieren (ENV `LOGIN_RATE_LIMIT_MAX/_WINDOW_MS`).
 - 401 auf `/api/users`: Frontend MUSS zentralen `api`‑Client nutzen (Token‑Interceptor); keine nackten `fetch/axios`
 - Contract‑Tests: Dredd/Prism Workflow (manuell/cron) – siehe CI
 - DB fehlt: viele Routen funktionieren trotzdem; Seed nur mit `DATABASE_URL`

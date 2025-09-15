@@ -3,7 +3,13 @@ import helmet from 'helmet';
 import cors, { CorsOptions } from 'cors';
 import rateLimit from 'express-rate-limit';
 import Redis from 'ioredis';
-import { incrAuthIp429, incrAuthUser429 } from '../utils/rateLimitStats';
+import {
+  incrAuthIp429,
+  incrAuthUser429,
+  incrLoginLimiterAttempt,
+  incrLoginLimiterBlocked,
+  resetAuthLimitCounters,
+} from '../utils/rateLimitStats';
 
 // --- Security: Helmet + CORS (ENV allowlist) ---
 export function applySecurity(app: Express): void {
@@ -119,6 +125,8 @@ function createExpressLimiter(opts: {
   windowMs: number;
   max: number;
   keyGenerator: (req: Request) => string;
+  onAttempt?: (req: Request) => void;
+  onBlocked?: (req: Request) => void;
 }): RequestHandler {
   const useRedis = Boolean(process.env.REDIS_URL);
   let store: any;
@@ -132,7 +140,7 @@ function createExpressLimiter(opts: {
     res.status(429).json({ success: false, code: 'TOO_MANY_REQUESTS', message: 'Rate-Limit erreicht.' });
   };
 
-  return rateLimit({
+  const limiter = rateLimit({
     windowMs: opts.windowMs,
     max: opts.max,
     standardHeaders: true,
@@ -142,9 +150,19 @@ function createExpressLimiter(opts: {
     handler: (req, res) => {
       const key = opts.keyGenerator(req as any);
       if (key.startsWith('ip:')) incrAuthIp429();
-      else if (key.startsWith('user:')) incrAuthUser429();
+      else if (key.startsWith('user:')) {
+        incrAuthUser429();
+        opts.onBlocked?.(req as any);
+      } else {
+        opts.onBlocked?.(req as any);
+      }
       return handler(req, res);
     },
+  }) as unknown as RequestHandler;
+
+  return ((req: Request, res: Response, next: NextFunction) => {
+    opts.onAttempt?.(req);
+    return (limiter as unknown as RequestHandler)(req, res, next);
   }) as unknown as RequestHandler;
 }
 
@@ -182,11 +200,16 @@ export function loginUserRateLimit(): RequestHandler {
       const emailKey = emailRaw.trim().toLowerCase() || 'unknown';
       return `user:${emailKey}`;
     },
+    onAttempt: () => {
+      incrLoginLimiterAttempt();
+    },
+    onBlocked: () => {
+      incrLoginLimiterBlocked();
+    },
   });
 }
 
 // Test-Helfer (keine Wirkung mit express-rate-limit + Redis; hier nur Stub)
 export function __resetSecurityRateLimitStores() {
-  // express-rate-limit MemoryStore besitzt keine globale Clear-API;
-  // für unsere Tests wird ein neuer App-Import pro Testlauf genutzt.
+  resetAuthLimitCounters();
 }

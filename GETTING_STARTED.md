@@ -10,7 +10,13 @@ Siehe auch: `docs/API_CHEATSHEET.md` für eine kompakte Befehls‑Übersicht (Ba
 
 ## 2) Dev‑Stack starten
 ```bash
+# Lokal
 docker compose -f docker-compose.dev.yml up
+
+# Remote/Server (Clients greifen extern zu)
+# entweder `.env` im Repo-Root mit `PUBLIC_HOST=<SERVER_IP>` anlegen (Compose lädt automatisch)
+# oder beim Start setzen:
+PUBLIC_HOST=<SERVER_IP> docker compose -f docker-compose.dev.yml up
 ```
 - Frontend: `http://<SERVER_IP>:5173`
 - API: `http://<SERVER_IP>:3000`
@@ -24,12 +30,12 @@ Logins:
 - dispatcher@… / thomas.mueller@… / anna.schmidt@… / michael.wagner@… (alle password123)
 
 ## 4) ENV (kurz)
-- Backend: `PORT`, `DATABASE_URL` (optional), `JWT_SECRET`, `REFRESH_SECRET`, `RATE_LIMIT_*`, `RATE_LIMIT_SKIP_PATHS`
+- Backend: `PORT`, `DATABASE_URL` (optional), `JWT_SECRET`, `REFRESH_SECRET`, `RATE_LIMIT_*`, `LOGIN_RATE_LIMIT_MAX/_WINDOW_MS`, `RATE_LIMIT_SKIP_PATHS` (`PUBLIC_HOST` setzt `CORS_ORIGIN` im Compose)
 - Frontend: `VITE_API_BASE_URL`, `VITE_HMR_HOST_SERVER_IP`, `VITE_HMR_CLIENT_PORT=5173`
 
 ## 5) Remote‑Vite & CORS
-- SSH‑Tunnel/Dev: `VITE_API_BASE_URL=http://localhost:3000`, CORS_ORIGIN enthält `http://localhost:5173`
-- Server‑IP: `VITE_API_BASE_URL=http://<SERVER_IP>:3000`, CORS_ORIGIN enthält `http://<SERVER_IP>:5173`
+- SSH-Tunnel/Dev: `VITE_API_BASE_URL=http://localhost:3000`, CORS_ORIGIN enthält `http://localhost:5173`
+- Server-IP: `VITE_API_BASE_URL=http://<SERVER_IP>:3000`, CORS_ORIGIN enthält `http://<SERVER_IP>:5173` (Compose übernimmt dies via `PUBLIC_HOST`)
 
 ## 6) Erste Schritte
 - System: `/system` (Stats, Build SHA)

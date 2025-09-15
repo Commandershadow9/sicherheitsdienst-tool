@@ -1,20 +1,17 @@
 # TODO – Nächste Schritte (Kurzplanung)
 
-Stand: 2025-09-09
+Stand: 2025-09-15
 
 - ## Kurzfristig (P1, 1–2 Tage)
-- [x] Users: Positive Self‑Access‑Tests ergänzen (eigene ID lesen/ändern)
-  - Akzeptanz: EMPLOYEE/MANAGER dürfen `GET/PUT /api/users/{ownId}` (200), nur Basisfelder updaten; fremde ID → 403; ADMIN unverändert.
-- [x] OpenAPI Push‑API: Fehlerbeispiele (400/422) ergänzen und Referenzen prüfen
-  - Akzeptanz: `docs/openapi.yaml` enthält Beispiel‑Responses für 400/422 bei Push‑Endpunkten; `redocly lint` ohne neue Errors (Warnmodus ok).
-- [x] CI Stabilität: Prisma Client Generate/Mocks vor Tests
-  - Akzeptanz: CI‑Workflow führt `npx prisma generate` vor Tests aus oder globale Prisma‑Mocks verhindern Initialisierung; Tests grün.
-- [x] README RBAC: Self‑Access‑Hinweis ergänzen
-  - Akzeptanz: Abschnitt „RBAC Übersicht“ erwähnt Self‑Access für Users‑Detail/Update + Feldbeschränkung.
-- [x] DX: (Optional) Swagger UI nur in Dev unter `/api-docs`
-  - Akzeptanz: Dev‑Server bietet Swagger UI; Prod unverändert.
+- [x] Login-Limiter Observability
+  - Akzeptanz: Auth-Login-Limiter exportiert Prometheus-Zähler (Hits, Blocked); Dashboard + Alert-Empfehlung dokumentiert.
+- [x] Login-Limiter QA
+  - Akzeptanz: Integrationstest deckt ENV-Overrides (`LOGIN_RATE_LIMIT_MAX/_WINDOW_MS`) ab; Dev-Doku erklärt Default/Fallback klar (README/Troubleshooting aktualisiert, QA-Notiz).
+- [x] Frontend Feedback für 429 Login
+  - Akzeptanz: UI zeigt dedizierten Hinweis + Retry-Countdown, wenn API 429 liefert; UX-Review bestätigt.
   
 Erledigt:
+- [x] Auth Login-Limiter konfigurierbar (ENV `LOGIN_RATE_LIMIT_MAX/_WINDOW_MS`, sichere Defaults, Compose Override, Docs aktualisiert).
 - [x] Swagger UI (Dev) unter `/api-docs` mit YAML‑Quelle (`/api-docs-spec/openapi.yaml`).
 - [x] Users: RBAC‑Negativtests ergänzen (403/401) – analog zu Sites/Shifts
   - Akzeptanz: Tests schlagen korrekt bei EMPLOYEE/anonymous an; CI grün.

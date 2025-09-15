@@ -24,7 +24,7 @@ services:
       PORT: 3000
       JWT_SECRET: dev-secret
       REFRESH_SECRET: dev-refresh
-      CORS_ORIGIN: http://localhost:5173
+      CORS_ORIGIN: http://${PUBLIC_HOST:-localhost}:5173
       RATE_LIMIT_MAX: 100
       RATE_LIMIT_WINDOW_MS: 60000
       DATABASE_URL: postgresql://security:dev@db:5432/security?schema=public
@@ -49,10 +49,12 @@ services:
       - '5173:5173'
     environment:
       NODE_ENV: development
-      VITE_API_BASE_URL: http://localhost:3000
+      VITE_API_BASE_URL: http://${PUBLIC_HOST:-localhost}:3000
+      VITE_HMR_HOST_SERVER_IP: ${PUBLIC_HOST:-localhost}
+      VITE_HMR_CLIENT_PORT: 5173
     volumes:
       - ./frontend:/web
-    command: sh -lc "npm install && npm run dev -- --host 0.0.0.0"
+    command: sh -lc "npm install && npm run dev -- --host 0.0.0.0 --port 5173"
     depends_on:
       - api
 

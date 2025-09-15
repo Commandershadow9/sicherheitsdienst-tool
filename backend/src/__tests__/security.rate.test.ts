@@ -1,6 +1,7 @@
 import request from 'supertest';
+import express from 'express';
 import app from '../app';
-import { __resetSecurityRateLimitStores } from '../middleware/security';
+import { __resetSecurityRateLimitStores, loginUserRateLimit } from '../middleware/security';
 
 // Mock bcrypt to always succeed
 jest.mock('bcryptjs', () => ({
@@ -83,5 +84,56 @@ describe('Auth rate limits (IP + per-user/email)', () => {
       .set('X-Forwarded-For', '10.0.0.2')
       .send({ email, password: 'Password123!' });
     expect(r6.status).toBe(429);
+  });
+
+  it('respects LOGIN_RATE_LIMIT_MAX override via env', async () => {
+    const prevMax = process.env.LOGIN_RATE_LIMIT_MAX;
+    const prevWindow = process.env.LOGIN_RATE_LIMIT_WINDOW_MS;
+    process.env.LOGIN_RATE_LIMIT_MAX = '3';
+    process.env.LOGIN_RATE_LIMIT_WINDOW_MS = '60000';
+    __resetSecurityRateLimitStores();
+
+    const limiterApp = express();
+    limiterApp.use(express.json());
+    limiterApp.post('/login', loginUserRateLimit(), (_req, res) => {
+      res.status(200).json({ ok: true });
+    });
+
+    for (let i = 0; i < 3; i++) {
+      const ok = await request(limiterApp).post('/login').send({ email: 'env@example.com', password: 'x' });
+      expect(ok.status).toBe(200);
+    }
+    const blocked = await request(limiterApp).post('/login').send({ email: 'env@example.com', password: 'x' });
+    expect(blocked.status).toBe(429);
+
+    if (prevMax === undefined) delete process.env.LOGIN_RATE_LIMIT_MAX;
+    else process.env.LOGIN_RATE_LIMIT_MAX = prevMax;
+    if (prevWindow === undefined) delete process.env.LOGIN_RATE_LIMIT_WINDOW_MS;
+    else process.env.LOGIN_RATE_LIMIT_WINDOW_MS = prevWindow;
+  });
+
+  it('disables login limiter when LOGIN_RATE_LIMIT_MAX <= 0', async () => {
+    const prevMax = process.env.LOGIN_RATE_LIMIT_MAX;
+    const prevWindow = process.env.LOGIN_RATE_LIMIT_WINDOW_MS;
+    process.env.LOGIN_RATE_LIMIT_MAX = '0';
+    process.env.LOGIN_RATE_LIMIT_WINDOW_MS = '60000';
+    __resetSecurityRateLimitStores();
+
+    const noLimitApp = express();
+    noLimitApp.use(express.json());
+    noLimitApp.post('/login', loginUserRateLimit(), (_req, res) => {
+      res.status(200).json({ ok: true });
+    });
+
+    // far more than default to ensure no limiter kicks in
+    for (let i = 0; i < 10; i++) {
+      const res = await request(noLimitApp).post('/login').send({ email: 'nolimit@example.com', password: 'x' });
+      expect(res.status).toBe(200);
+    }
+
+    if (prevMax === undefined) delete process.env.LOGIN_RATE_LIMIT_MAX;
+    else process.env.LOGIN_RATE_LIMIT_MAX = prevMax;
+    if (prevWindow === undefined) delete process.env.LOGIN_RATE_LIMIT_WINDOW_MS;
+    else process.env.LOGIN_RATE_LIMIT_WINDOW_MS = prevWindow;
   });
 });

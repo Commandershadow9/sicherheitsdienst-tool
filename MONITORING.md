@@ -19,12 +19,24 @@ docker compose -f docker-compose.monitoring.yml up -d
 - 4xx/5xx Rate:
   - `sum(rate(http_requests_total{status_code=~"4.."}[5m])) / sum(rate(http_requests_total[5m]))`
   - `sum(rate(http_requests_total{status_code=~"5.."}[5m])) / sum(rate(http_requests_total[5m]))`
+- Login-Limiter Hits/Blocks (rolling 5m):
+  - `increase(app_auth_login_attempts_total[5m])`
+  - `increase(app_auth_login_blocked_total[5m])`
 
 ## Panels (Empfehlung)
 - Top Routes p95
 - 4xx/5xx Rate (rolling 5m)
 - Latenz Heatmap
 - Requests Total / per Route
+- Login-Limiter Übersicht (Hits vs. Blocked, Top-Emails optional via Logs)
+
+## Alerts (Empfehlung)
+- Login-Limiter Spike:
+  - Expression: `increase(app_auth_login_blocked_total[5m]) > 5`
+  - Severity: Warn → Hinweis auf mögliches Bruteforce; bei `> 20` → Kritisch.
+- Login-Limiter Stiller Tod (keine Hits):
+  - Expression: `increase(app_auth_login_attempts_total[1h]) == 0`
+  - Severity: Info – Meldung, wenn sich länger niemand anmeldet (optional).
 
 Hinweise
 - Scrape‑Target: im Dev häufig `api:3000` (Compose‑Service). Für reines Monitoring‑Compose ggf. `host.docker.internal:3000`/Bridge‑Netz.

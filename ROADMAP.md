@@ -1,10 +1,11 @@
 # Roadmap (nächste 1–2 Sprints)
 
-Aktualisierung: Stand 2025‑09‑13
+Aktualisierung: Stand 2025‑09‑15
 - RBAC‑Feinschliff (401 Refresh 1×, 403 Karte, Navigation ausblenden) umgesetzt (FE/BE).
 - Users‑Liste serverseitig (Suche/Sort/Paging, 300ms Debounce, Export gefiltert) umgesetzt.
 - E2E‑Smokes (Playwright) und API‑Smoke (httpie) in CI aktiv; Artefakte verfügbar.
 - UI‑Atoms eingeführt und Listen/Filter konsolidiert.
+- Login‑Bruteforce‑Limiter konfigurierbar (`LOGIN_RATE_LIMIT_MAX/_WINDOW_MS`) mit sicheren Defaults und Dev‑Override.
 
 ## Roadmap – Heute (konsolidiert)
 
@@ -21,6 +22,8 @@ Hinweis: Dieser Abschnitt fasst die tagesaktuellen Ziele aus der ehemaligen Date
 - RBAC (Users): Detail- und Update-Routen abgesichert (ADMIN oder Self-Access); Self-Updates auf Basisfelder beschränkt.
 - Validierung: 422-Fehler enthalten `code: VALIDATION_ERROR` (Middleware + Tests angepasst).
 - OpenAPI: Push-API dokumentiert (`/push/tokens`, `/push/tokens/{token}`, `/push/users/{userId}/opt`) + zusätzlicher Server `http://localhost:3001/api/v1`.
+- Auth: Login-Limiter nutzt Default 5/15min bei fehlender ENV; ENV-Overrides dokumentiert/Compose angepasst.
+- Observability: Login-Limiter exportiert Prometheus-Counter (Hits/Blocked) & FE zeigt 429-Countdown.
 - Doku: README Listen-Parameter vereinheitlicht (`page/pageSize/sortBy/sortDir/filter[...]`).
 - Tests/Build lokal: Typecheck/Build grün; einige Jest-Suites benötigen Prisma-Generate/Mocks (CI deckt regulär ab).
 - DX: Swagger UI (nur Dev) unter `/api-docs` verfügbar.
@@ -35,7 +38,7 @@ Hinweis: Dieser Abschnitt fasst die tagesaktuellen Ziele aus der ehemaligen Date
 
 ### Nächste Schritte (Kurz-Backlog)
 - Readiness: Optionalen SMTP‑Verify implementieren (`READINESS_CHECK_SMTP=true`, Timeout via `READINESS_SMTP_TIMEOUT_MS`).
-- Rate‑Limits: Metriken/Monitoring (Exposition/Prometheus evaluieren).
+- Rate‑Limits: Metriken/Monitoring (Exposition/Prometheus evaluieren) – Fokus auf Login‑Limiter.
 - CI: Prisma‑Setup/Caching beschleunigen; Smoke um Basis‑Auth/CORS ergänzen.
 - OpenAPI: Beispiele/operationIds pflegen, ungenutzte Komponenten abbauen.
 
