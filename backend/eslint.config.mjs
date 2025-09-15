@@ -22,6 +22,6 @@ export default [
     },
   },
   {
-    ignores: ['dist/**', 'coverage/**', 'src/__tests__/**', 'jest.config.ts'],
+    ignores: ['dist/**', 'coverage/**', 'src/__tests__/**', 'jest.config.ts', 'types/**/*.d.ts'],
   },
 ];

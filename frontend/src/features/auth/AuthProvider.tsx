@@ -85,14 +85,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       },
     })
     initialized.current = true
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const login = useCallback(async (email: string, password: string) => {
     const res = await api.post('/auth/login', { email, password })
-    const { accessToken, refreshToken, user } = res.data
+    const { accessToken, refreshToken, user: loginUser } = res.data
     setTokens({ accessToken, refreshToken })
-    setUser(user)
+    setUser(loginUser)
   }, [])
 
   const logout = useCallback(() => {

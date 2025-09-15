@@ -1,5 +1,7 @@
 import tsParser from '@typescript-eslint/parser';
 import tsPlugin from '@typescript-eslint/eslint-plugin';
+import reactHooks from 'eslint-plugin-react-hooks';
+import { fileURLToPath } from 'node:url';
 
 export default [
   {
@@ -8,13 +10,14 @@ export default [
       parser: tsParser,
       parserOptions: {
         project: ['./tsconfig.json'],
-        tsconfigRootDir: new URL('.', import.meta.url),
+        tsconfigRootDir: fileURLToPath(new URL('.', import.meta.url)),
         ecmaVersion: 'latest',
         sourceType: 'module',
       },
     },
     plugins: {
       '@typescript-eslint': tsPlugin,
+      'react-hooks': reactHooks,
     },
     rules: {
       'no-duplicate-imports': 'error',

@@ -1,10 +1,9 @@
 import React from 'react'
-import { useParams } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { api } from '@/lib/api'
 import { useAuth } from '@/features/auth/AuthProvider'
 import { exportFile } from '@/features/common/export'
-import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 
 type Shift = { id: string; title: string; startTime: string; endTime: string; status: string }

@@ -8,8 +8,7 @@ import React from 'react'
 import { exportFile } from '@/features/common/export'
 import { useAuth } from '@/features/auth/AuthProvider'
 import { toast } from 'sonner'
-import { useNavigate } from 'react-router-dom'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import RbacForbidden from '@/components/RbacForbidden'
 
 type Site = { id: string; name: string; city?: string; postalCode?: string }

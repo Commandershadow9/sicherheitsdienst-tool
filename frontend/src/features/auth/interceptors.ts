@@ -1,4 +1,4 @@
-import type { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios'
+import type { AxiosInstance, AxiosRequestConfig, AxiosResponse } from '@/lib/api'
 import { toast } from 'sonner'
 
 type Tokens = { accessToken: string; refreshToken?: string }
