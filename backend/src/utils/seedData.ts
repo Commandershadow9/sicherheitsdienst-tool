@@ -13,6 +13,8 @@ async function main() {
     await prisma.timeEntry.deleteMany();
     await prisma.shift.deleteMany();
     await prisma.user.deleteMany();
+    await prisma.site.deleteMany();
+    await prisma.event.deleteMany();
 
     console.log('🗑️ Alte Daten gelöscht');
 
@@ -99,11 +101,25 @@ async function main() {
 
     console.log('👥 Mitarbeiter erstellt');
 
+    // Beispiel-Sites erstellen
+    const sites = await prisma.$transaction([
+      prisma.site.create({ data: { name: 'Business Center Mitte', address: 'Musterstraße 123', city: 'Musterstadt', postalCode: '12345' } }),
+      prisma.site.create({ data: { name: 'Hauptbahnhof Baustelle', address: 'Bahnhofstraße 1', city: 'Musterstadt', postalCode: '12345' } }),
+      prisma.site.create({ data: { name: 'Stadion Nord', address: 'Sportallee 10', city: 'Nordhausen', postalCode: '54321' } }),
+      prisma.site.create({ data: { name: 'Rathaus', address: 'Rathausplatz 1', city: 'Musterstadt', postalCode: '12345' } }),
+      prisma.site.create({ data: { name: 'Einkaufszentrum West', address: 'Centerweg 5', city: 'Westheim', postalCode: '77777' } }),
+    ]);
+
+    const siteBusiness = sites[0];
+    const siteBahnhof = sites[1];
+    const siteStadion = sites[2];
+
     // Test-Schichten erstellen
 
     // 1. Objektschutz - Tagschicht
     const morningShift = await prisma.shift.create({
       data: {
+        siteId: siteBusiness.id,
         title: 'Objektschutz Bürogebäude - Tagschicht',
         description:
           'Sicherheitsdienst für Bürokomplex in der Innenstadt. Zugangskontrolle, Empfang, Rundgänge.',
@@ -119,6 +135,7 @@ async function main() {
     // 2. Objektschutz - Nachtschicht
     const nightShift = await prisma.shift.create({
       data: {
+        siteId: siteBusiness.id,
         title: 'Objektschutz Bürogebäude - Nachtschicht',
         description:
           'Nachtdienst für Bürokomplex. Überwachung, Alarmanlage, Rundgänge alle 2 Stunden.',
@@ -134,6 +151,7 @@ async function main() {
     // 3. Veranstaltungsschutz
     const eventShift = await prisma.shift.create({
       data: {
+        siteId: siteStadion.id,
         title: 'Veranstaltungsschutz - Stadtfest',
         description:
           'Sicherheitsdienst beim Stadtfest. Einlasskontrolle, Crowd Management, Notfallbereitschaft.',
@@ -149,6 +167,7 @@ async function main() {
     // 4. Baustellenüberwachung
     const constructionShift = await prisma.shift.create({
       data: {
+        siteId: siteBahnhof.id,
         title: 'Baustellenüberwachung - Bahnhofsprojekt',
         description: 'Sicherung der Baustelle am Hauptbahnhof. Zufahrtskontrolle, Diebstahlschutz.',
         location: 'Hauptbahnhof Baustelle, Bahnhofstraße 1, 12345 Musterstadt',
@@ -233,6 +252,36 @@ async function main() {
     });
 
     console.log('📋 Beispiel-Daten (Zeiterfassung & Vorfälle) erstellt');
+
+    // Beispiel-Events (Einsätze)
+    const now = new Date();
+    await prisma.event.create({
+      data: {
+        title: 'Konferenzsicherung – Rathaus',
+        description: 'Eingangskontrolle, VIP‑Betreuung, Taschenkontrollen.',
+        siteId: siteBusiness.id,
+        startTime: new Date(now.getTime() + 3 * 24 * 3600 * 1000),
+        endTime: new Date(now.getTime() + 3 * 24 * 3600 * 1000 + 4 * 3600 * 1000),
+        serviceInstructions: 'Diskret auftreten, VIP‑Zugang nur mit Liste.',
+        assignedEmployeeIds: [employee1.id, employee2.id],
+        status: 'PLANNED',
+      },
+    });
+
+    await prisma.event.create({
+      data: {
+        title: 'Spieltag – Stadion Nord',
+        description: 'Crowd Management, Einlass, VIP‑Bereich.',
+        siteId: siteStadion.id,
+        startTime: new Date(now.getTime() + 5 * 24 * 3600 * 1000),
+        endTime: new Date(now.getTime() + 5 * 24 * 3600 * 1000 + 6 * 3600 * 1000),
+        serviceInstructions: 'Eingänge A–C besetzen, Funkgerät Pflicht.',
+        assignedEmployeeIds: [employee2.id, employee3.id],
+        status: 'PLANNED',
+      },
+    });
+
+    console.log('🎪 Events (Einsätze) erstellt');
 
     console.log('\n🎉 Test-Daten erfolgreich erstellt!');
     console.log('\n👤 Login-Daten:');

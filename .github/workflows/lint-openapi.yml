@@ -1,0 +1,25 @@
+name: lint-openapi
+
+on:
+  pull_request:
+    branches: [ main ]
+  push:
+    branches: [ main ]
+
+jobs:
+  validate-and-lint-openapi:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Validate OpenAPI (swagger-cli)
+        run: npx --yes swagger-cli@latest validate docs/openapi.yaml
+
+      - name: Lint OpenAPI (Redocly)
+        run: npx --yes @redocly/cli@latest lint docs/openapi.yaml --format=github

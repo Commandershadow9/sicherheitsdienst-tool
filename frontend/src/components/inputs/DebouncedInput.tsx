@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { Input } from '@/components/ui/input'
 
 type Props = Omit<React.InputHTMLAttributes<HTMLInputElement>, 'onChange' | 'value'> & {
   value?: string
@@ -20,6 +21,5 @@ export function DebouncedInput({ value = '', onChange, delay = 300, ...rest }: P
     timeout.id = setTimeout(() => onChange(v), delay) as any
   }
 
-  return <input {...rest} value={inner} onChange={handleChange} />
+  return <Input {...rest} value={inner} onChange={handleChange} />
 }
-

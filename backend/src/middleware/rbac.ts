@@ -1,6 +1,10 @@
 import type { RequestHandler } from 'express';
 import { authorize } from './auth';
 
-// RBAC guard for Notifications: allow only ADMIN and MANAGER
-export const notificationsRBAC: RequestHandler = authorize('ADMIN', 'MANAGER');
+// Allgemeiner Helper: requireRole([...])
+export function requireRole(roles: string[]): RequestHandler {
+  return authorize(...roles);
+}
 
+// RBAC guard for Notifications: allow only ADMIN and MANAGER
+export const notificationsRBAC: RequestHandler = requireRole(['ADMIN', 'MANAGER']);

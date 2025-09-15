@@ -1,0 +1,58 @@
+@server = http://localhost:3000
+
+### Auth: Login (Admin)
+POST {{server}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "admin@sicherheitsdienst.de",
+  "password": "password123"
+}
+
+### Auth: Refresh
+POST {{server}}/api/auth/refresh
+Content-Type: application/json
+
+{
+  "refreshToken": "{{refreshToken}}"
+}
+
+### Users: List (page/sort/query)
+GET {{server}}/api/users?page=1&pageSize=25&sortBy=lastName&sortDir=asc&query=anna
+Authorization: Bearer {{accessToken}}
+
+### Users: Export CSV (gefiltert)
+GET {{server}}/api/users?role=EMPLOYEE
+Accept: text/csv
+Authorization: Bearer {{accessToken}}
+
+### Sites: List
+GET {{server}}/api/sites?page=1&pageSize=25&sortBy=name&sortDir=asc
+Authorization: Bearer {{accessToken}}
+
+### Events: PDF (Beispiel, ID ersetzen)
+GET {{server}}/api/events/{{eventId}}
+Accept: application/pdf
+Authorization: Bearer {{accessToken}}
+
+### Users: 400 unknown sortBy
+# @name usersBadSort
+GET {{server}}/api/users?sortBy=doesNotExist
+Authorization: Bearer {{accessToken}}
+
+> {%
+client.test("400 unknown sortBy", function() {
+  client.assert(response.status === 400, 'status should be 400');
+});
+%}
+
+### Users: 422 invalid page
+# @name usersInvalidPage
+GET {{server}}/api/users?page=abc
+Authorization: Bearer {{accessToken}}
+
+> {%
+client.test("422 invalid page", function() {
+  client.assert(response.status === 422, 'status should be 422');
+});
+%}

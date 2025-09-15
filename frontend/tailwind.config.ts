@@ -41,8 +41,17 @@ export default {
         md: 'calc(var(--radius) - 2px)',
         sm: 'calc(var(--radius) - 4px)'
       },
+      boxShadow: {
+        sm: '0 1px 2px 0 rgba(0,0,0,0.05)',
+        md: '0 4px 8px -2px rgba(0,0,0,0.08)',
+        lg: '0 10px 15px -3px rgba(0,0,0,0.1)'
+      },
+      spacing: {
+        '1.5': '0.375rem',
+        '2.5': '0.625rem',
+        '3.5': '0.875rem'
+      }
     },
   },
   plugins: [],
 } satisfies Config
-

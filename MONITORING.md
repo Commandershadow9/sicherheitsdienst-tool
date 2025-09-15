@@ -28,4 +28,5 @@ docker compose -f docker-compose.monitoring.yml up -d
 
 Hinweise
 - Scrape‑Target: im Dev häufig `api:3000` (Compose‑Service). Für reines Monitoring‑Compose ggf. `host.docker.internal:3000`/Bridge‑Netz.
-
+- Ports: Prometheus 9090, Grafana 3000 (kollisionsfrei zu API 3000/FE 5173).
+- Optionales Profil: Monitoring‑Compose ist getrennt; kann parallel zum Dev‑Stack laufen.

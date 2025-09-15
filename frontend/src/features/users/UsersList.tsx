@@ -3,7 +3,12 @@ import React from 'react'
 import { api } from '@/lib/api'
 import { useListParams } from '@/features/common/useQueryParams'
 import { toSearchParams } from '@/features/common/listParams'
+import useDebounce from '@/features/common/useDebounce'
 import { DebouncedInput } from '@/components/inputs/DebouncedInput'
+import { Input } from '@/components/ui/input'
+import { Select } from '@/components/ui/select'
+import { Button } from '@/components/ui/button'
+import { FormField } from '@/components/ui/form'
 import { DataTable } from '@/components/table/DataTable'
 import { useAuth } from '@/features/auth/AuthProvider'
 import RbacForbidden from '@/components/RbacForbidden'
@@ -15,10 +20,12 @@ type User = { id: string; email: string; firstName: string; lastName: string; ro
 type ListResp = { data: User[]; pagination: { page: number; pageSize: number; total: number; totalPages: number } }
 
 export default function UsersList() {
-  const { params, update } = useListParams({ page: 1, pageSize: 25, sortBy: 'firstName', sortDir: 'asc' })
+  const { params, update } = useListParams({ page: 1, pageSize: 25, sortBy: 'firstName', sortDir: 'asc', query: '' })
   const qk = ['users', params]
   const { tokens } = useAuth()
   const nav = useNavigate()
+  const [search, setSearch] = React.useState<string>(params.query || '')
+  const debounced = useDebounce(search, 300)
   const [downloading, setDownloading] = React.useState<null | { type: 'csv'|'xlsx'; progress?: number }>(null)
   const { data, isLoading, isError, error } = useQuery({
     queryKey: qk,
@@ -29,6 +36,19 @@ export default function UsersList() {
     },
     keepPreviousData: true,
   })
+
+  // apply debounced search to query param
+  React.useEffect(() => {
+    if ((params.query || '') !== debounced) {
+      update({ query: debounced, page: 1 })
+    }
+  }, [debounced, params.query, update])
+
+  // keep local input in sync with URL (Back/Forward)
+  React.useEffect(() => {
+    const q = params.query || ''
+    if (q !== search) setSearch(q)
+  }, [params.query, search])
 
   const currentExportParams = React.useMemo(() => {
     const sp = toSearchParams(params)
@@ -57,56 +77,52 @@ export default function UsersList() {
   return (
     <div className="space-y-4">
       <h1 className="text-xl font-semibold">Benutzer</h1>
-      <div className="flex gap-2 items-end">
-        <div>
-          <label className="text-xs">E-Mail</label>
-          <DebouncedInput className="border rounded px-2 py-1 block" value={params.filters.email||''} onChange={(v)=>update({filters:{email:v}})} />
-        </div>
-        <div>
-          <label className="text-xs">Vorname</label>
-          <DebouncedInput className="border rounded px-2 py-1 block" value={params.filters.firstName||''} onChange={(v)=>update({filters:{firstName:v}})} />
-        </div>
-        <div>
-          <label className="text-xs">Rolle</label>
-          <select className="border rounded px-2 py-1 block" defaultValue={params.filters.role||''} onChange={(e)=>update({filters:{role: e.target.value || undefined}})}>
+      <div className="flex gap-2 items-end flex-wrap">
+        <FormField className="min-w-[220px]" label="Suche" htmlFor="search">
+          <Input id="search" value={search} onChange={(e)=>setSearch(e.target.value)} placeholder="Name oder E-Mail" />
+        </FormField>
+        <FormField label="E-Mail">
+          <DebouncedInput value={params.filters.email||''} onChange={(v)=>update({filters:{email:v}})} />
+        </FormField>
+        <FormField label="Vorname">
+          <DebouncedInput value={params.filters.firstName||''} onChange={(v)=>update({filters:{firstName:v}})} />
+        </FormField>
+        <FormField label="Rolle">
+          <Select defaultValue={params.filters.role||''} onChange={(e)=>update({filters:{role: e.target.value || undefined}})}>
             <option value="">Alle</option>
             <option>ADMIN</option>
             <option>MANAGER</option>
             <option>EMPLOYEE</option>
-          </select>
-        </div>
-        <div>
-          <label className="text-xs">Aktiv</label>
-          <select className="border rounded px-2 py-1 block" defaultValue={params.filters.isActive||''} onChange={(e)=>update({filters:{isActive: e.target.value || undefined}})}>
+          </Select>
+        </FormField>
+        <FormField label="Aktiv">
+          <Select defaultValue={params.filters.isActive||''} onChange={(e)=>update({filters:{isActive: e.target.value || undefined}})}>
             <option value="">Alle</option>
             <option value="true">Ja</option>
             <option value="false">Nein</option>
-          </select>
-        </div>
+          </Select>
+        </FormField>
         <div className="ml-auto inline-flex gap-2">
-          <button disabled={!!downloading} className="underline" onClick={()=>doExport('csv')}>
+          <Button variant="link" disabled={!!downloading} onClick={()=>doExport('csv')}>
             Export CSV{downloading?.type==='csv' && (downloading.progress ? ` ${downloading.progress}%` : ' …')}
-          </button>
-          <button disabled={!!downloading} className="underline" onClick={()=>doExport('xlsx')}>
+          </Button>
+          <Button variant="link" disabled={!!downloading} onClick={()=>doExport('xlsx')}>
             Export XLSX{downloading?.type==='xlsx' && (downloading.progress ? ` ${downloading.progress}%` : ' …')}
-          </button>
+          </Button>
         </div>
       </div>
 
       {(Object.keys(params.filters).length > 0 || !!params.sortBy) && (
         <div className="flex justify-end gap-4">
           {Object.keys(params.filters).length > 0 && (
-            <button
-              className="underline text-sm"
-              onClick={() => update({ filters: Object.fromEntries(Object.keys(params.filters).map(k => [k, undefined])), page: 1 })}
-            >
+            <Button variant="link" onClick={() => update({ filters: Object.fromEntries(Object.keys(params.filters).map(k => [k, undefined])), page: 1 })}>
               Filter zurücksetzen
-            </button>
+            </Button>
           )}
           {!!params.sortBy && (
-            <button className="underline text-sm" onClick={()=>update({ sortBy: '', page: 1 })}>
+            <Button variant="link" onClick={()=>update({ sortBy: '', page: 1 })}>
               Sortierung zurücksetzen
-            </button>
+            </Button>
           )}
         </div>
       )}

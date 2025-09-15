@@ -1,4 +1,8 @@
 import React from 'react'
+import { Button } from '@/components/ui/button'
+import { Select } from '@/components/ui/select'
+import { Table, THead, TBody, Tr, Th, Td } from '@/components/ui/table'
+import { ChevronsUpDown, ArrowUp, ArrowDown } from 'lucide-react'
 
 type Column<T> = {
   key: keyof T | string
@@ -40,9 +44,9 @@ export function DataTable<T extends Record<string, any>>({
 }: Props<T>) {
   return (
     <div className="border rounded">
-      <table className="w-full text-sm">
-        <thead className="bg-muted">
-          <tr>
+      <Table>
+        <THead>
+          <Tr>
             {columns.map((c) => {
               const key = String(c.key)
               const active = sortBy === key
@@ -50,90 +54,85 @@ export function DataTable<T extends Record<string, any>>({
               const icon = c.sortable
                 ? active
                   ? sortDir === 'asc'
-                    ? '▲'
-                    : '▼'
-                  : '⇅'
+                    ? 'up'
+                    : 'down'
+                  : 'both'
                 : undefined
               return (
-                <th key={key} className="text-left p-2" aria-sort={aria as any}>
+                <Th key={key} aria-sort={aria as any}>
                   {c.sortable && onSort ? (
-                    <button
-                      className="underline inline-flex items-center gap-1"
+                    <Button
+                      variant="link"
                       onClick={() => onSort(key)}
                       title={active ? (sortDir === 'asc' ? 'Absteigend sortieren' : 'Aufsteigend sortieren') : 'Sortieren'}
                     >
                       <span>{c.header}</span>
-                      {icon && <span aria-hidden>{icon}</span>}
-                    </button>
+                      {icon === 'both' && <ChevronsUpDown className="h-4 w-4" aria-hidden />}
+                      {icon === 'up' && <ArrowUp className="h-4 w-4" aria-hidden />}
+                      {icon === 'down' && <ArrowDown className="h-4 w-4" aria-hidden />}
+                    </Button>
                   ) : (
                     c.header
                   )}
-                </th>
+                </Th>
               )
             })}
-          </tr>
-        </thead>
-        <tbody>
+          </Tr>
+        </THead>
+        <TBody>
           {loading && (
-            <tr>
-              <td className="p-3 text-muted-foreground" colSpan={columns.length}>
+            <Tr>
+              <Td className="p-3 text-muted-foreground" colSpan={columns.length}>
                 Lade…
-              </td>
-            </tr>
+              </Td>
+            </Tr>
           )}
           {error && !loading && (
-            <tr>
-              <td className="p-3 text-red-600" colSpan={columns.length}>
+            <Tr>
+              <Td className="p-3 text-red-600" colSpan={columns.length}>
                 Fehler beim Laden
-              </td>
-            </tr>
+              </Td>
+            </Tr>
           )}
           {!loading && !error && rows.length === 0 && (
-            <tr>
-              <td className="p-3 text-muted-foreground" colSpan={columns.length}>
+            <Tr>
+              <Td className="p-3 text-muted-foreground" colSpan={columns.length}>
                 {emptyText}
-              </td>
-            </tr>
+              </Td>
+            </Tr>
           )}
           {!loading && !error &&
             rows.map((r, idx) => (
-              <tr key={(r.id as string) ?? idx} className="border-t">
+              <Tr key={(r.id as string) ?? idx} className="border-t">
                 {columns.map((c) => (
-                  <td key={String(c.key)} className="p-2">
+                  <Td key={String(c.key)} className="p-2">
                     {c.render ? c.render(r) : (r as any)[c.key] ?? ''}
-                  </td>
+                  </Td>
                 ))}
-              </tr>
+              </Tr>
             ))}
-        </tbody>
-      </table>
+        </TBody>
+      </Table>
       <div className="flex items-center justify-between p-2 gap-2">
         <div className="flex items-center gap-2">
           {onPageSizeChange && (
-            <select
-              className="border rounded px-2 py-1"
-              value={pagination.pageSize}
-              onChange={(e) => onPageSizeChange(Number(e.target.value))}
-            >
+            <Select value={String(pagination.pageSize)} onChange={(e) => onPageSizeChange(Number(e.target.value))}>
               {pageSizeOptions.map((o) => (
                 <option key={o} value={o}>
                   {o} / Seite
                 </option>
               ))}
-            </select>
+            </Select>
           )}
         </div>
         <div>Seite {pagination.page} / {Math.max(1, pagination.totalPages)}</div>
         <div className="flex gap-2">
-          <button disabled={pagination.page <= 1} onClick={() => onPageChange(pagination.page - 1)}>
+          <Button variant="link" disabled={pagination.page <= 1} onClick={() => onPageChange(pagination.page - 1)}>
             Zurück
-          </button>
-          <button
-            disabled={pagination.page >= pagination.totalPages}
-            onClick={() => onPageChange(pagination.page + 1)}
-          >
+          </Button>
+          <Button variant="link" disabled={pagination.page >= pagination.totalPages} onClick={() => onPageChange(pagination.page + 1)}>
             Weiter
-          </button>
+          </Button>
         </div>
       </div>
     </div>

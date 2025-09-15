@@ -1,6 +1,9 @@
 import { useQuery } from '@tanstack/react-query'
 import { api } from '@/lib/api'
 import { toast } from 'sonner'
+import { Button } from '@/components/ui/button'
+import { Select } from '@/components/ui/select'
+import { FormField } from '@/components/ui/form'
 import React from 'react'
 
 type Stats = {
@@ -55,21 +58,21 @@ export default function SystemPage() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold">System</h1>
-        <div className="inline-flex gap-2">
-          <a href="/api-docs" className="underline" target="_blank" rel="noreferrer">API‑Docs</a>
-          <button className="underline" onClick={()=>refetch()} disabled={isFetching}>{isFetching ? 'Aktualisiere…' : 'Aktualisieren'}</button>
-          <label className="inline-flex items-center gap-2 text-sm">
-            Auto‑Refresh:
-            <select className="border rounded px-2 py-1"
-              value={auto}
-              onChange={(e)=> setAuto(Number(e.target.value))}
-            >
+        <div className="inline-flex items-end gap-3">
+          <Button variant="link" asChild>
+            <a href="/api-docs" target="_blank" rel="noreferrer">API‑Docs</a>
+          </Button>
+          <Button variant="link" onClick={()=>refetch()} disabled={isFetching}>
+            {isFetching ? 'Aktualisiere…' : 'Aktualisieren'}
+          </Button>
+          <FormField label="Auto‑Refresh" className="text-sm">
+            <Select value={String(auto)} onChange={(e)=> setAuto(Number(e.target.value))}>
               <option value={0}>Aus</option>
               <option value={15}>15s</option>
               <option value={30}>30s</option>
               <option value={60}>60s</option>
-            </select>
-          </label>
+            </Select>
+          </FormField>
         </div>
       </div>
 
