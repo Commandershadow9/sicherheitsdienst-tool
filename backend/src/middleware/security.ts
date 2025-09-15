@@ -165,12 +165,15 @@ export function loginUserRateLimit(): RequestHandler {
   const windowMsRaw = Number(process.env.LOGIN_RATE_LIMIT_WINDOW_MS ?? Number.NaN);
   const maxRaw = Number(process.env.LOGIN_RATE_LIMIT_MAX ?? Number.NaN);
 
-  if (!Number.isFinite(maxRaw) || maxRaw <= 0) {
+  const defaultWindowMs = 15 * 60_000;
+  const defaultMax = 5;
+
+  const windowMs = Number.isFinite(windowMsRaw) && windowMsRaw > 0 ? windowMsRaw : defaultWindowMs;
+  if (Number.isFinite(maxRaw) && maxRaw <= 0) {
     return ((_: Request, __: Response, next: NextFunction) => next()) as unknown as RequestHandler;
   }
 
-  const windowMs = Number.isFinite(windowMsRaw) && windowMsRaw > 0 ? windowMsRaw : 15 * 60_000;
-  const max = Math.max(1, Math.floor(maxRaw));
+  const max = Number.isFinite(maxRaw) && maxRaw > 0 ? Math.max(1, Math.floor(maxRaw)) : defaultMax;
   return createExpressLimiter({
     windowMs,
     max,
