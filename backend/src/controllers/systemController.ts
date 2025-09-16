@@ -4,6 +4,8 @@ import { getCounters } from '../utils/stats';
 import { getAuthLimitCounters } from '../utils/rateLimitStats';
 import { getSpecVersion } from '../utils/specVersion';
 import { getNotifyCounters } from '../utils/notifyStats';
+import { getQueueSnapshot, type QueueState } from '../utils/queueStats';
+import { getRuntimeMetrics } from '../utils/runtimeMetrics';
 
 // Lightweight health endpoint (no deps)
 export const healthz = async (_req: Request, res: Response): Promise<void> => {
@@ -114,6 +116,7 @@ export const healthCheck = async (_req: Request, res: Response, _next: NextFunct
 // GET /api/stats - System Statistics
 export const getSystemStats = async (req: Request, res: Response, next: NextFunction) => {
   try {
+    const runtime = getRuntimeMetrics();
     // Parallele Datenbankabfragen für bessere Performance
     const [totalUsers, activeUsers, totalShifts, upcomingShifts, openIncidents, totalTimeEntries] =
       await Promise.all([
@@ -153,6 +156,27 @@ export const getSystemStats = async (req: Request, res: Response, next: NextFunc
       refreshExpiresIn: process.env.REFRESH_EXPIRES_IN || '30d',
     };
 
+    const notifyCounters = getNotifyCounters();
+    const totalEmailAttempts = notifyCounters.email.success + notifyCounters.email.fail;
+    const totalPushAttempts = notifyCounters.push.success + notifyCounters.push.fail;
+    const emailSuccessRate = totalEmailAttempts > 0 ? notifyCounters.email.success / totalEmailAttempts : null;
+    const pushSuccessRate = totalPushAttempts > 0 ? notifyCounters.push.success / totalPushAttempts : null;
+    const formatRate = (value: number | null) =>
+      value === null ? null : Math.round((value + Number.EPSILON) * 10000) / 10000;
+
+    const queueSnapshot = getQueueSnapshot();
+    const defaultQueueState = (name: string): QueueState => ({
+      name,
+      pending: 0,
+      inFlight: 0,
+      processed: 0,
+      failed: 0,
+    });
+    const notificationQueues = {
+      email: queueSnapshot['notifications-email'] || defaultQueueState('notifications-email'),
+      push: queueSnapshot['notifications-push'] || defaultQueueState('notifications-push'),
+    };
+
     res.json({
       success: true,
       message: 'System-Statistiken erfolgreich abgerufen',
@@ -173,10 +197,12 @@ export const getSystemStats = async (req: Request, res: Response, next: NextFunc
           total: totalTimeEntries,
         },
         system: {
-          uptime: process.uptime(),
+          uptime: runtime.uptimeSeconds,
           nodeVersion: process.version,
           platform: process.platform,
-          memory: process.memoryUsage(),
+          memory: runtime.memory,
+          resourceUsage: runtime.resourceUsage,
+          eventLoop: runtime.eventLoop,
           logLevel: process.env.LOG_LEVEL || (process.env.NODE_ENV === 'development' ? 'debug' : 'info'),
         },
         requests: getCounters(),
@@ -186,8 +212,14 @@ export const getSystemStats = async (req: Request, res: Response, next: NextFunc
           testRateLimit: rateLimit,
           smtpConfigured: Boolean(process.env.SMTP_HOST),
           pushConfigured,
-          counters: getNotifyCounters(),
+          counters: notifyCounters,
+          successRate: {
+            email: formatRate(emailSuccessRate),
+            push: formatRate(pushSuccessRate),
+          },
+          queue: notificationQueues,
         },
+        queues: queueSnapshot,
         authRateLimit,
         auth: authCfg,
         env: {

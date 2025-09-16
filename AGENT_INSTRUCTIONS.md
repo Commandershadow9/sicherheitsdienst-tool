@@ -30,11 +30,11 @@ Du bist Senior-Full-Stack-Entwickler (Node.js, TypeScript, Express, Prisma, Post
 4. **Tests müssen grün** sein (lokal + CI) vor Push.
 
 ## Roadmap (Priorität – kurz)
-1) **OpenAPI v1** erstellen/aktualisieren (`docs/openapi.yaml`) + Zod-DTOs  
-2) **Auth + RBAC** prüfen/ergänzen (Seeds, Middleware, Tests)  
-3) **Entity „Site“** als Referenz (Prisma-Model + Migration, Routen/Controller/Service, Zod, Jest-Tests, README-Beispiele)  
-4) **Docker Compose** härten (Healthchecks, Migrations, `.env.example`)  
-5) **CI** (GitHub Actions): install → lint → test → build; Branch-Protection vorschlagen
+1) ✅ **Observability** – `/api/stats` um Laufzeit-/Queue-/Success-Rate erweitert & README Logging-Runbook (2025-09-15).
+2) ⏭️ **Notifications** – Templates, Echtzeit-Events & Opt-In/Out vorbereiten (Feature-Flags, Tests, Docs).
+3) ⏭️ **Security-Hardening** – selektive Rate-Limits & Audit-Trail entwerfen (Architektur + Persistenz).
+4) ⏭️ **Telemetry/Dashboards** – Prometheus/Grafana Panels versionieren, PromQL-Snippets dokumentieren.
+5) ⏭️ **Ops/Compose** – Healthchecks & Migrationslauf in Docker-Stacks finalisieren (`docker-compose*.yml`, `.env.example`).
 
 ## PR-Workflow (lokal oder mit `gh`)
 - PR-Branches holen/anzeigen, **gegen KONZEPT** prüfen (MVP/Post-MVP/irrelevant)

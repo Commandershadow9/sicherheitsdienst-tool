@@ -75,6 +75,47 @@ components:
                 type: string
                 example: "invalid_email"
       required: [message]
+    QueueState:
+      type: object
+      description: Zustand einer asynchronen In-Memory-Queue.
+      properties:
+        name:
+          type: string
+        pending:
+          type: integer
+          minimum: 0
+        inFlight:
+          type: integer
+          minimum: 0
+        processed:
+          type: integer
+          minimum: 0
+        failed:
+          type: integer
+          minimum: 0
+        lastEnqueuedAt:
+          type: string
+          format: date-time
+          nullable: true
+        lastStartedAt:
+          type: string
+          format: date-time
+          nullable: true
+        lastProcessedAt:
+          type: string
+          format: date-time
+          nullable: true
+        lastFailedAt:
+          type: string
+          format: date-time
+          nullable: true
+        lastSettledAt:
+          type: string
+          format: date-time
+          nullable: true
+        lastError:
+          type: string
+          nullable: true
     PageMeta:
       type: object
       properties:
@@ -3329,10 +3370,47 @@ paths:
                       system:
                         type: object
                         properties:
-                          uptime: { type: number }
+                          uptime:
+                            type: number
+                            description: Laufzeit des Node.js-Prozesses in Sekunden.
                           nodeVersion: { type: string }
                           platform: { type: string }
-                          memory: { type: object }
+                          memory:
+                            type: object
+                            additionalProperties: { type: number }
+                            description: Rohwerte aus `process.memoryUsage()` in Bytes.
+                          resourceUsage:
+                            type: object
+                            properties:
+                              userCPUSeconds: { type: number }
+                              systemCPUSeconds: { type: number }
+                              maxRSS: { type: integer }
+                              sharedMemorySize: { type: integer }
+                              unsharedDataSize: { type: integer }
+                              unsharedStackSize: { type: integer }
+                              minorPageFaults: { type: integer }
+                              majorPageFaults: { type: integer }
+                              voluntaryContextSwitches: { type: integer }
+                              involuntaryContextSwitches: { type: integer }
+                          eventLoop:
+                            type: object
+                            properties:
+                              delay:
+                                type: object
+                                properties:
+                                  minMs: { type: number }
+                                  maxMs: { type: number }
+                                  meanMs: { type: number }
+                                  stddevMs: { type: number }
+                                  p50Ms: { type: number }
+                                  p90Ms: { type: number }
+                                  p99Ms: { type: number }
+                              utilization:
+                                type: object
+                                properties:
+                                  idle: { type: number }
+                                  active: { type: number }
+                                  utilization: { type: number }
                           logLevel: { type: string }
                       requests:
                         type: object
@@ -3364,11 +3442,61 @@ paths:
                                 properties:
                                   success: { type: integer }
                                   fail: { type: integer }
+                                  attempts: { type: integer }
+                                  lastAttemptAt:
+                                    type: string
+                                    format: date-time
+                                    nullable: true
+                                  lastSuccessAt:
+                                    type: string
+                                    format: date-time
+                                    nullable: true
+                                  lastFailAt:
+                                    type: string
+                                    format: date-time
+                                    nullable: true
+                                  lastError:
+                                    type: string
+                                    nullable: true
                               push:
                                 type: object
                                 properties:
                                   success: { type: integer }
                                   fail: { type: integer }
+                                  attempts: { type: integer }
+                                  lastAttemptAt:
+                                    type: string
+                                    format: date-time
+                                    nullable: true
+                                  lastSuccessAt:
+                                    type: string
+                                    format: date-time
+                                    nullable: true
+                                  lastFailAt:
+                                    type: string
+                                    format: date-time
+                                    nullable: true
+                                  lastError:
+                                    type: string
+                                    nullable: true
+                          successRate:
+                            type: object
+                            properties:
+                              email:
+                                type: number
+                                nullable: true
+                              push:
+                                type: number
+                                nullable: true
+                          queue:
+                            type: object
+                            properties:
+                              email: { $ref: '#/components/schemas/QueueState' }
+                              push: { $ref: '#/components/schemas/QueueState' }
+                      queues:
+                        type: object
+                        additionalProperties:
+                          $ref: '#/components/schemas/QueueState'
                       auth:
                         type: object
                         properties:
@@ -3380,19 +3508,95 @@ paths:
                           nodeEnv: { type: string }
                           version: { type: string }
                 required: [success, data]
-              example:
-                success: true
-                message: System-Statistiken erfolgreich abgerufen
-                data:
-                  users: { total: 42, active: 40, inactive: 2 }
-                  shifts: { total: 120, upcoming: 18 }
-                  incidents: { open: 3 }
-                  timeEntries: { total: 1450 }
-                  system: { uptime: 123.45, nodeVersion: v20.11.0, platform: linux, logLevel: info }
-                  requests: { requestsTotal: 200, responses4xx: 5, responses5xx: 1 }
-                  features: { emailNotifyShifts: false, pushNotifyEvents: true }
-                  notifications: { testRateLimit: { enabled: true, perMin: 10, windowMs: 60000 }, smtpConfigured: false, pushConfigured: false, counters: { email: { success: 10, fail: 1 }, push: { success: 20, fail: 2 } } }
-                  auth: { jwtExpiresIn: 7d, refreshExpiresIn: 30d }
-                  env: { nodeEnv: development, version: 1.0.0 }
+                example:
+                  success: true
+                  message: System-Statistiken erfolgreich abgerufen
+                  data:
+                    users: { total: 42, active: 40, inactive: 2 }
+                    shifts: { total: 120, upcoming: 18 }
+                    incidents: { open: 3 }
+                    timeEntries: { total: 1450 }
+                    system:
+                      uptime: 123.45
+                      nodeVersion: v20.11.0
+                      platform: linux
+                      memory: { rss: 50282496, heapTotal: 33554432, heapUsed: 23140384 }
+                      resourceUsage:
+                        userCPUSeconds: 1.23
+                        systemCPUSeconds: 0.45
+                        maxRSS: 50280
+                        sharedMemorySize: 0
+                        unsharedDataSize: 0
+                        unsharedStackSize: 0
+                        minorPageFaults: 123
+                        majorPageFaults: 0
+                        voluntaryContextSwitches: 10
+                        involuntaryContextSwitches: 2
+                      eventLoop:
+                        delay: { minMs: 0.05, maxMs: 3.2, meanMs: 0.2, stddevMs: 0.1, p50Ms: 0.18, p90Ms: 0.5, p99Ms: 1.8 }
+                        utilization: { idle: 0.7, active: 0.3, utilization: 0.3 }
+                      logLevel: info
+                    requests: { requestsTotal: 200, responses4xx: 5, responses5xx: 1 }
+                    features: { emailNotifyShifts: false, pushNotifyEvents: true }
+                    notifications:
+                      testRateLimit: { enabled: true, perMin: 10, windowMs: 60000 }
+                      smtpConfigured: false
+                      pushConfigured: false
+                      counters:
+                        email:
+                          success: 10
+                          fail: 1
+                          attempts: 11
+                          lastAttemptAt: '2025-09-15T12:00:00.000Z'
+                          lastSuccessAt: '2025-09-15T12:00:00.000Z'
+                          lastFailAt: '2025-09-15T11:50:00.000Z'
+                          lastError: null
+                        push:
+                          success: 20
+                          fail: 2
+                          attempts: 5
+                          lastAttemptAt: '2025-09-15T12:05:00.000Z'
+                          lastSuccessAt: '2025-09-15T12:05:00.000Z'
+                          lastFailAt: '2025-09-15T11:45:00.000Z'
+                          lastError: 'Token ungültig'
+                      successRate: { email: 0.9091, push: 0.9091 }
+                      queue:
+                        email:
+                          name: notifications-email
+                          pending: 0
+                          inFlight: 0
+                          processed: 12
+                          failed: 1
+                          lastEnqueuedAt: '2025-09-15T12:00:00.000Z'
+                          lastProcessedAt: '2025-09-15T12:00:01.000Z'
+                          lastFailedAt: '2025-09-15T11:50:00.000Z'
+                          lastSettledAt: '2025-09-15T12:00:01.000Z'
+                          lastError: null
+                        push:
+                          name: notifications-push
+                          pending: 0
+                          inFlight: 0
+                          processed: 4
+                          failed: 1
+                          lastEnqueuedAt: '2025-09-15T12:05:00.000Z'
+                          lastProcessedAt: '2025-09-15T12:05:00.500Z'
+                          lastFailedAt: '2025-09-15T11:45:00.000Z'
+                          lastSettledAt: '2025-09-15T12:05:00.500Z'
+                          lastError: 'Token ungültig'
+                    queues:
+                      notifications-email:
+                        name: notifications-email
+                        pending: 0
+                        inFlight: 0
+                        processed: 12
+                        failed: 1
+                      notifications-push:
+                        name: notifications-push
+                        pending: 0
+                        inFlight: 0
+                        processed: 4
+                        failed: 1
+                    auth: { jwtExpiresIn: 7d, refreshExpiresIn: 30d }
+                    env: { nodeEnv: development, version: 1.0.0 }
         '503': { $ref: '#/components/responses/ServiceUnavailable' }
         '405': { $ref: '#/components/responses/MethodNotAllowed' }

@@ -28,6 +28,7 @@ Hinweis: Dieser Abschnitt fasst die tagesaktuellen Ziele aus der ehemaligen Date
 - Tests/Build lokal: Typecheck/Build grün; einige Jest-Suites benötigen Prisma-Generate/Mocks (CI deckt regulär ab).
 - DX: Swagger UI (nur Dev) unter `/api-docs` verfügbar.
 - Observability: `/api/stats` erweitert (Features/Notifications/Auth/System/Env) und dokumentiert (README + OpenAPI).
+- Observability: `/api/stats` liefert Laufzeit/Event-Loop/Queue & Success-Rates; README Logging-Runbook ergänzt (2025-09-15).
 
 ### Neu seit v1.1.1 (Health/Readiness)
 - Liveness/Readiness: `/healthz`, `/readyz` (mit `deps.db`, `deps.smtp`).
@@ -37,10 +38,10 @@ Hinweis: Dieser Abschnitt fasst die tagesaktuellen Ziele aus der ehemaligen Date
 - CI: Health‑Smoke‑Job (baut, startet, prüft `/healthz`/`/readyz`).
 
 ### Nächste Schritte (Kurz-Backlog)
-- Readiness: Optionalen SMTP‑Verify implementieren (`READINESS_CHECK_SMTP=true`, Timeout via `READINESS_SMTP_TIMEOUT_MS`).
-- Rate‑Limits: Metriken/Monitoring (Exposition/Prometheus evaluieren) – Fokus auf Login‑Limiter.
-- CI: Prisma‑Setup/Caching beschleunigen; Smoke um Basis‑Auth/CORS ergänzen.
-- OpenAPI: Beispiele/operationIds pflegen, ungenutzte Komponenten abbauen.
+- Notifications: Templates/Echtzeit-Events & Opt-In/Out vorbereiten (Feature-Flags, Tests, UI-Hooks).
+- Security-Hardening: Selektive Rate-Limits & Audit-Trail-Konzept finalisieren (Persistence/Read-APIs).
+- Telemetry: Prometheus/Grafana Dashboards versionieren, PromQL-Snippets im Monitoring-Runbook ergänzen.
+- Ops/Compose: Healthchecks & Migrationslauf in Docker-Stacks harmonisieren (`docker-compose*.yml`, `.env.example`).
 
 
 Ziel: Konkrete, messbare Aufgaben mit klaren Akzeptanzkriterien (Given/When/Then).

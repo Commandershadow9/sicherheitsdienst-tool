@@ -37,7 +37,7 @@ Erledigt:
 
 ## Langfristig / Post‑MVP (P3)
 - [ ] Erweiterte Benachrichtigungen (Real‑Events, Templates, Opt‑In)
-- [ ] Observability: erweiterte /stats (Laufzeit, Queue, Mail‑Erfolg), Log‑Konfiguration in README
+- [x] Observability: erweiterte /stats (Laufzeit, Queue, Mail‑Erfolg), Log‑Konfiguration in README (2025-09-15)
 - [ ] Sicherheits‑Hardening: Rate‑Limit selektiv auf weitere Endpunkte; Audit‑Trail
 
 ## Neues Feature: Einsätze/Events

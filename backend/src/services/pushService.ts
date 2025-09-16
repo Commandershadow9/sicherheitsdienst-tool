@@ -1,6 +1,12 @@
 import logger from '../utils/logger';
 import prisma from '../utils/prisma';
 import { incrPushSuccess, incrPushFail } from '../utils/notifyStats';
+import {
+  queueJobEnqueued,
+  queueJobFailed,
+  queueJobStarted,
+  queueJobSucceeded,
+} from '../utils/queueStats';
 
 let firebase: any | null = null;
 
@@ -47,19 +53,30 @@ async function getActiveTokens(userIds: string[]): Promise<string[]> {
 }
 
 export async function sendPushToUsers(userIds: string[], title: string, body: string) {
+  const queueName = 'notifications-push';
+  queueJobEnqueued(queueName);
+  queueJobStarted(queueName);
   const tokens = await getActiveTokens(userIds);
   if (!tokens.length) {
     logger.info('PUSH: keine aktiven Tokens gefunden für Nutzer %o', userIds);
+    incrPushSuccess(0);
+    queueJobSucceeded(queueName);
     return { success: true, count: 0 };
   }
 
   if (!isFCMConfigured()) {
     logger.info('PUSH (mock, ohne FCM): tokens=%d title=%s body=%s', tokens.length, title, body);
     incrPushSuccess(tokens.length);
+    queueJobSucceeded(queueName);
     return { success: true, count: tokens.length };
   }
   initFCM();
-  if (!firebase) return { success: false, count: 0 };
+  if (!firebase) {
+    const error = new Error('FCM konnte nicht initialisiert werden');
+    incrPushFail(error);
+    queueJobFailed(queueName, error);
+    return { success: false, count: 0 };
+  }
 
   try {
     const resp = await firebase.messaging().sendEachForMulticast({ tokens, notification: { title, body } });
@@ -81,10 +98,12 @@ export async function sendPushToUsers(userIds: string[], title: string, body: st
     }
     incrPushSuccess(tokens.length - (resp.failureCount || 0));
     if ((resp.failureCount || 0) > 0) incrPushFail();
-    return { success: true, count: tokens.length, result: resp }; 
+    queueJobSucceeded(queueName);
+    return { success: true, count: tokens.length, result: resp };
   } catch (err) {
     logger.error('PUSH Fehler: %o', err);
-    incrPushFail();
+    incrPushFail(err);
+    queueJobFailed(queueName, err);
     return { success: false, count: 0 };
   }
 }

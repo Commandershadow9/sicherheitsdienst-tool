@@ -1,5 +1,11 @@
 import logger from '../utils/logger';
 import { incrEmailSuccess, incrEmailFail } from '../utils/notifyStats';
+import {
+  queueJobEnqueued,
+  queueJobFailed,
+  queueJobStarted,
+  queueJobSucceeded,
+} from '../utils/queueStats';
 import { renderEmailTemplate } from './templateService';
 
 const smtpHost = process.env.SMTP_HOST;
@@ -51,6 +57,9 @@ export async function sendEmail(to: string, subject: string, text?: string, html
   const maxRetries = Math.max(parseInt(String(process.env.SMTP_RETRY_MAX || '1'), 10) || 1, 0);
   const retryDelayMs = Math.max(parseInt(String(process.env.SMTP_RETRY_DELAY_MS || '200'), 10) || 200, 0);
   let attempt = 0;
+  const queueName = 'notifications-email';
+  queueJobEnqueued(queueName);
+  queueJobStarted(queueName);
   // First try + up to maxRetries additional attempts on transient errors
   // attempt counts total tries; retries happen while attempt <= maxRetries
   /* eslint-disable no-constant-condition */
@@ -62,6 +71,7 @@ export async function sendEmail(to: string, subject: string, text?: string, html
       const info = await transport.sendMail({ from: smtpFrom, to, subject, text, html });
       logger.info('E-Mail erfolgreich gesendet: %o', { to, messageId: info.messageId });
       incrEmailSuccess();
+      queueJobSucceeded(queueName);
       return info;
     } catch (err) {
       const transient = isTransientError(err);
@@ -72,7 +82,8 @@ export async function sendEmail(to: string, subject: string, text?: string, html
         continue;
       }
       logger.error('E-Mail-Versand fehlgeschlagen: %o', err);
-      incrEmailFail();
+      incrEmailFail(err);
+      queueJobFailed(queueName, err);
       throw err;
     }
   }
