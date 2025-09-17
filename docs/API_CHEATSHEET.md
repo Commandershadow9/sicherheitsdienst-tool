@@ -125,6 +125,10 @@ http POST "$BASE/api/shifts/$SHIFT_ID/clock-in" "Authorization: Bearer $TOKEN" a
 http POST "$BASE/api/shifts/$SHIFT_ID/clock-out" "Authorization: Bearer $TOKEN" at="2025-09-01T16:00:00Z" breakTime:=30
 ```
 
+**Rate-Limits & RBAC**
+- `POST /api/shifts/:id/assign` benötigt Rollen `ADMIN` oder `DISPATCHER` und nutzt `SHIFT_ASSIGN_RATE_LIMIT_*` zusätzlich zum globalen Schreib-Limiter.
+- `POST /api/shifts/:id/clock-in` & `POST /api/shifts/:id/clock-out` teilen sich den Limiter `SHIFT_CLOCK_RATE_LIMIT_*`; Header `Retry-After` und `RateLimit-Reset` geben Wartedauer vor.
+
 ## Incidents
 - RBAC: List/Get alle Auth; Create/Update/Delete nur `ADMIN`, `MANAGER`
 - Beispiele

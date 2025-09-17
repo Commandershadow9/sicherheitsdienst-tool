@@ -52,7 +52,14 @@ Seed (manuell)
 API (Backend)
 - `.env.example` im Ordner `backend/`
 - Minimal: `PORT`, `JWT_SECRET`, `REFRESH_SECRET`
-- Optional: `DATABASE_URL` (Dev-Compose setzt es bereits), `CORS_ORIGIN|CORS_ORIGINS`, Rate-Limits (`RATE_LIMIT_MAX/_WINDOW_MS`, `LOGIN_RATE_LIMIT_MAX/_WINDOW_MS`)
+- Optional: `DATABASE_URL` (Dev-Compose setzt es bereits), `CORS_ORIGIN|CORS_ORIGINS`, Rate-Limits (siehe unten)
+- Rate-Limits
+  - Global: `RATE_LIMIT_MAX`, `RATE_LIMIT_WINDOW_MS`
+  - Auth/Login: `LOGIN_RATE_LIMIT_MAX`, `LOGIN_RATE_LIMIT_WINDOW_MS`
+  - Schreibend (POST/PUT/DELETE allgemein): `WRITE_RATE_LIMIT_PER_MIN`, `WRITE_RATE_LIMIT_WINDOW_MS`, `WRITE_RATE_LIMIT_ENABLED`
+  - Notifications-Test: `NOTIFICATIONS_TEST_RATE_LIMIT_PER_MIN`, `NOTIFICATIONS_TEST_RATE_LIMIT_WINDOW_MS`, `NOTIFICATIONS_TEST_RATE_LIMIT_ENABLED`
+  - Schicht-Zuweisung: `SHIFT_ASSIGN_RATE_LIMIT_PER_MIN`, `SHIFT_ASSIGN_RATE_LIMIT_WINDOW_MS`, `SHIFT_ASSIGN_RATE_LIMIT_ENABLED`
+  - Clock-in/out: `SHIFT_CLOCK_RATE_LIMIT_PER_MIN`, `SHIFT_CLOCK_RATE_LIMIT_WINDOW_MS`, `SHIFT_CLOCK_RATE_LIMIT_ENABLED`
 - Logging: `LOG_LEVEL` (Default `debug` in Dev, sonst `info`), `LOG_FORMAT=json` erzwingt strukturierte Console-Logs.
 - Compose: `PUBLIC_HOST` steuert, welche Origin (`http://PUBLIC_HOST:5173`) automatisch freigegeben wird.
 
@@ -76,6 +83,12 @@ WEB (Frontend)
 
 ## Export (CSV/XLSX)
 - Streaming‑Download (100k+ Zeilen) via Accept: `text/csv` oder XLSX MIME‑Type
+
+## Schichten & Zeiterfassung – Sicherheit & Limits
+- `POST /api/shifts/:id/assign` (RBAC: `ADMIN`, `DISPATCHER`) nutzt einen dedizierten Puffer `SHIFT_ASSIGN_RATE_LIMIT_*` zusätzlich zum globalen Schreib-Limit (`WRITE_RATE_LIMIT_*`).
+- `POST /api/shifts/:id/clock-in` sowie `POST /api/shifts/:id/clock-out` teilen sich den Puffer `SHIFT_CLOCK_RATE_LIMIT_*`; damit werden schnelle Mehrfachbuchungen gebremst, ohne reguläre Nutzung zu blockieren.
+- Empfohlene Produktionswerte: Assignments 6/min, Clock-Events 4/min (je 60 s Fenster). Temporäre Anpassungen lassen sich per ENV ohne Neustart vornehmen.
+- 429-Antworten enthalten `Retry-After`, `RateLimit-Limit`, `RateLimit-Remaining`, `RateLimit-Reset` – Clients sollten diese Header respektieren und keine aggressiven Retries senden.
 
 ## Users – Listen‑API (Suche/Filter/Sort/Pagination)
 - Endpoint: `GET /api/users`

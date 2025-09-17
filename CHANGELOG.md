@@ -5,6 +5,8 @@ All notable changes to this project will be documented in this file.
 ## Unreleased
 
 ### Added
+- docs: Security-Hardening Blueprint (`docs/planning/security-hardening.md`) mit Rate-Limit- und Audit-Trail-Konzept.
+- backend/shifts: Selektive Rate-Limits für Schicht-Zuweisung (`SHIFT_ASSIGN_RATE_LIMIT_*`) sowie Clock-in/out (`SHIFT_CLOCK_RATE_LIMIT_*`) inkl. Tests & ENV-Beispielen.
 - notifications: Template-Metadaten (GET `/api/notifications/templates`), Nutzer-Opt-In-API (`/preferences/me`), SSE-Eventstream `/api/notifications/events`, neue Incident-Templates (E-Mail & Push).
 - prisma: `user.emailOptIn` Feld + Migration (`20250916_add_user_email_optin`).
 - docs: README & MONITORING um Notification-Runbook (Templates, Opt-In, SSE) erweitert; `.env.example` mit Incident-Flags & Heartbeat.
@@ -20,6 +22,7 @@ All notable changes to this project will be documented in this file.
 - repo: commitlint (Conventional Commits) + PR‑Template Checkliste.
 
 ### Changed
+- shifts: `/api/shifts/:id/assign` erfordert nun Rollen `ADMIN`/`DISPATCHER` und trägt Rate-Limit-Header für wiederholte Aufrufe.
 - notifications/test: Channel `push` unterstützt, Validierung via Zod (Template-Key, userIds, Variablen) erweitert; Versand tracked Event-Stream.
 - readiness: SMTP-Verify liefert Diagnose (`deps.smtpMessage`) und schließt Transport nach Erfolg/Fehlschlag.
 - backend/auth: Login-Limiter fällt ohne ENV auf Default (5/15min) zurück und deaktiviert sich nur explizit mit `<=0`.

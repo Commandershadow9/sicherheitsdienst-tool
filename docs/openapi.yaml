@@ -2148,6 +2148,17 @@ paths:
       summary: Mitarbeiter zuweisen
       security:
         - BearerAuth: []
+      x-required-roles:
+        - ADMIN
+        - DISPATCHER
+      x-rate-limit:
+        env:
+          enabled: SHIFT_ASSIGN_RATE_LIMIT_ENABLED
+          perMinute: SHIFT_ASSIGN_RATE_LIMIT_PER_MIN
+          windowMs: SHIFT_ASSIGN_RATE_LIMIT_WINDOW_MS
+        default:
+          perMinute: 12
+          windowMs: 60000
       parameters:
         - name: id
           in: path
@@ -2237,6 +2248,14 @@ paths:
       summary: Arbeitsbeginn buchen
       security:
         - BearerAuth: []
+      x-rate-limit:
+        env:
+          enabled: SHIFT_CLOCK_RATE_LIMIT_ENABLED
+          perMinute: SHIFT_CLOCK_RATE_LIMIT_PER_MIN
+          windowMs: SHIFT_CLOCK_RATE_LIMIT_WINDOW_MS
+        default:
+          perMinute: 20
+          windowMs: 60000
       parameters:
         - name: id
           in: path
@@ -2298,6 +2317,14 @@ paths:
       summary: Arbeitsende buchen
       security:
         - BearerAuth: []
+      x-rate-limit:
+        env:
+          enabled: SHIFT_CLOCK_RATE_LIMIT_ENABLED
+          perMinute: SHIFT_CLOCK_RATE_LIMIT_PER_MIN
+          windowMs: SHIFT_CLOCK_RATE_LIMIT_WINDOW_MS
+        default:
+          perMinute: 20
+          windowMs: 60000
       parameters:
         - name: id
           in: path
