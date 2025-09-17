@@ -35,5 +35,19 @@ describe('/api/stats env fields', () => {
     expect(res.body.data.env.specVersion).toBe('9.9.9');
     expect(res.body.data.env.buildSha).toBe('deadbeef');
   });
+
+  it('reports push success rate using delivered and failed counters', async () => {
+    const { resetNotifyCounters, incrPushSuccess, incrPushFail } = require('../utils/notifyStats');
+    resetNotifyCounters();
+    incrPushSuccess(7);
+    incrPushFail(undefined, 3);
+    const app = require('../app').default;
+    const res = await request(app).get('/api/stats');
+
+    expect(res.status).toBe(200);
+    const pushRate = res.body?.data?.notifications?.successRate?.push;
+    expect(pushRate).not.toBeNull();
+    expect(pushRate).toBeCloseTo(7 / (7 + 3));
+  });
 });
 

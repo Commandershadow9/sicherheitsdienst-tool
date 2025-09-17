@@ -132,8 +132,10 @@ export async function sendPushToUsers(
         logger.warn('PUSH: %d ungültige Tokens deaktiviert', toDisable.length);
       }
     }
-    incrPushSuccess(tokens.length - (resp.failureCount || 0));
-    if ((resp.failureCount || 0) > 0) incrPushFail();
+    const failureCount = Math.max(0, resp.failureCount ?? 0);
+    const deliveredCount = Math.max(0, tokens.length - failureCount);
+    incrPushSuccess(deliveredCount);
+    if (failureCount > 0) incrPushFail(undefined, failureCount);
     queueJobSucceeded(queueName);
     publishNotificationEvent({
       channel: 'push',
@@ -143,8 +145,8 @@ export async function sendPushToUsers(
       title,
       body,
       metadata: {
-        delivered: tokens.length - (resp.failureCount || 0),
-        failed: resp.failureCount || 0,
+        delivered: deliveredCount,
+        failed: failureCount,
         reason: options.reason || 'custom',
         ...((options.context && Object.keys(options.context).length) ? { context: options.context } : {}),
       },
