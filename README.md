@@ -52,7 +52,15 @@ Seed (manuell)
 API (Backend)
 - `.env.example` im Ordner `backend/`
 - Minimal: `PORT`, `JWT_SECRET`, `REFRESH_SECRET`
-- Optional: `DATABASE_URL` (Dev-Compose setzt es bereits), `CORS_ORIGIN|CORS_ORIGINS`, Rate-Limits (`RATE_LIMIT_MAX/_WINDOW_MS`, `LOGIN_RATE_LIMIT_MAX/_WINDOW_MS`)
+- Optional: `DATABASE_URL` (Dev-Compose setzt es bereits), `CORS_ORIGIN|CORS_ORIGINS`, Rate-Limits (siehe unten)
+- Rate-Limits
+  - Global: `RATE_LIMIT_MAX`, `RATE_LIMIT_WINDOW_MS`
+  - Auth/Login: `LOGIN_RATE_LIMIT_MAX`, `LOGIN_RATE_LIMIT_WINDOW_MS`
+  - Schreibend (POST/PUT/DELETE allgemein): `WRITE_RATE_LIMIT_PER_MIN`, `WRITE_RATE_LIMIT_WINDOW_MS`, `WRITE_RATE_LIMIT_ENABLED`
+  - Notifications-Test: `NOTIFICATIONS_TEST_RATE_LIMIT_PER_MIN`, `NOTIFICATIONS_TEST_RATE_LIMIT_WINDOW_MS`, `NOTIFICATIONS_TEST_RATE_LIMIT_ENABLED`
+  - Schicht-Zuweisung: `SHIFT_ASSIGN_RATE_LIMIT_PER_MIN`, `SHIFT_ASSIGN_RATE_LIMIT_WINDOW_MS`, `SHIFT_ASSIGN_RATE_LIMIT_ENABLED`
+  - Clock-in/out: `SHIFT_CLOCK_RATE_LIMIT_PER_MIN`, `SHIFT_CLOCK_RATE_LIMIT_WINDOW_MS`, `SHIFT_CLOCK_RATE_LIMIT_ENABLED`
+- Logging: `LOG_LEVEL` (Default `debug` in Dev, sonst `info`), `LOG_FORMAT=json` erzwingt strukturierte Console-Logs.
 - Compose: `PUBLIC_HOST` steuert, welche Origin (`http://PUBLIC_HOST:5173`) automatisch freigegeben wird.
 
 WEB (Frontend)
@@ -62,7 +70,12 @@ WEB (Frontend)
 ## Health & Stats
 - `GET /healthz` → 200 `{ status: "ok" }`
 - `GET /readyz` → prüft DB & optional SMTP (`READINESS_CHECK_SMTP=true`, Timeout `READINESS_SMTP_TIMEOUT_MS`); in Nicht-Prod liefert `deps.smtpMessage` Hinweise bei Fehlern.
-- `GET /api/stats` → `buildSha`, `specVersion`, `env`, Zähler
+- `GET /api/stats` → Laufzeit-/Systemmetriken, Request-Zähler, Feature-Flags, Notification-Erfolg & Queue-Zustand, Build-Infos
+  - `system.resourceUsage` liefert CPU-Zeiten, Page-Faults & Context-Switches; `system.eventLoop.delay/utilization` zeigt Event-Loop-Auslastung.
+  - `notifications.counters` enthält `attempts`, Zeitstempel & letzte Fehlermeldung je Kanal; `notifications.successRate` gibt Erfolgsquote (0–1) zurück.
+  - `notifications.queue` & `queues` spiegeln In-Memory-Jobs (`notifications-email`, `notifications-push`) mit Pending/In-Flight/Processed/Failed wider.
+  - `notifications.streams` liefert Anzahl aktiver SSE-Abonnenten und zuletzt versandte Events (inkl. Kanalverteilung).
+  - `env.specVersion`/`env.version`/`env.buildSha` sowie Request-Zähler (`requests.requestsTotal`, `responses4xx`, `responses5xx`).
 
 ## CORS‑Hinweise
 - Lokale Dev‑Kombi: `VITE_API_BASE_URL=http://localhost:3000`, `CORS_ORIGIN=http://localhost:5173`.
@@ -70,6 +83,12 @@ WEB (Frontend)
 
 ## Export (CSV/XLSX)
 - Streaming‑Download (100k+ Zeilen) via Accept: `text/csv` oder XLSX MIME‑Type
+
+## Schichten & Zeiterfassung – Sicherheit & Limits
+- `POST /api/shifts/:id/assign` (RBAC: `ADMIN`, `DISPATCHER`) nutzt einen dedizierten Puffer `SHIFT_ASSIGN_RATE_LIMIT_*` zusätzlich zum globalen Schreib-Limit (`WRITE_RATE_LIMIT_*`).
+- `POST /api/shifts/:id/clock-in` sowie `POST /api/shifts/:id/clock-out` teilen sich den Puffer `SHIFT_CLOCK_RATE_LIMIT_*`; damit werden schnelle Mehrfachbuchungen gebremst, ohne reguläre Nutzung zu blockieren.
+- Empfohlene Produktionswerte: Assignments 6/min, Clock-Events 4/min (je 60 s Fenster). Temporäre Anpassungen lassen sich per ENV ohne Neustart vornehmen.
+- 429-Antworten enthalten `Retry-After`, `RateLimit-Limit`, `RateLimit-Remaining`, `RateLimit-Reset` – Clients sollten diese Header respektieren und keine aggressiven Retries senden.
 
 ## Users – Listen‑API (Suche/Filter/Sort/Pagination)
 - Endpoint: `GET /api/users`
@@ -100,6 +119,11 @@ Beispiele
 - `docker compose -f monitoring/docker-compose.monitoring.yml up -d`
 - Prometheus: `http://<SERVER_IP>:9090`, Grafana: `http://<SERVER_IP>:3000` (admin/admin)
 - Neue Auth-Limiter-Metriken: `app_auth_login_attempts_total`, `app_auth_login_blocked_total` (Dashboard/Alert siehe `MONITORING.md`).
+
+## Logging
+- Winston schreibt nach `logs/combined.log` und `logs/error.log`; Console-Output übernimmt `LOG_LEVEL` (Dev: `debug`, sonst `info`).
+- Request-ID (`X-Request-ID`) wird in jeden Logeintrag injiziert; strukturierte Logs via `LOG_FORMAT=json`.
+- Für JSON-Shipping (z. B. Loki/ELK) `LOG_FORMAT=json` setzen und `docker compose logs -f api` bzw. Filebeat nutzen.
 
 ## Troubleshooting (Kurz)
 - 429 beim Login: Dev‑RateLimiter ist nahezu deaktiviert; bei 429 → API neustarten + Browser hart reload. Frontend zeigt Countdown & Hinweis, Wartezeit respektieren (ENV `LOGIN_RATE_LIMIT_MAX/_WINDOW_MS`).
@@ -136,3 +160,10 @@ npx playwright show-report
 
 Badges/CI (Platzhalter)
 - Build • Contract‑Tests • Lint
+## Benachrichtigungen (Templates, Opt-In, Events)
+
+- Testversand: `POST /api/notifications/test` (RBAC: ADMIN/MANAGER, Rate-Limit). Unterstützt `channel=email|push`, optionale `templateKey` sowie Variablen. Für Push müssen `userIds` angegeben werden.
+- Templates: `GET /api/notifications/templates` liefert verfügbare Vorlagen (inkl. Feature-Flag & Variablen). Flags: `EMAIL_NOTIFY_SHIFTS`, `EMAIL_NOTIFY_INCIDENTS`, `PUSH_NOTIFY_EVENTS`, `PUSH_NOTIFY_INCIDENTS`.
+- Opt-In/Out: `GET|PUT /api/notifications/preferences/me` erlaubt Mitarbeitenden, `emailOptIn` bzw. `pushOptIn` zu setzen (Standard: beide `true`).
+- Echtzeit-Events (SSE): `GET /api/notifications/events` (RBAC: ADMIN/MANAGER/DISPATCHER) streamt Zustellereignisse. Filterbar via Query (`channel=email,push`, `status=sent,failed`, `template=incident-created`). Heartbeat-Intervall via `NOTIFY_EVENTS_HEARTBEAT_MS` (Default 15 s).
+

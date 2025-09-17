@@ -5,10 +5,12 @@ import { validate } from '../middleware/validate';
 import { createShiftSchema, updateShiftSchema, shiftListQuerySchema } from '../validations/shiftValidation';
 import { clockInSchema, clockOutSchema } from '../validations/timeValidation';
 import * as shiftController from '../controllers/shiftController';
-import { createWriteRateLimit } from '../middleware/rateLimit';
+import { createWriteRateLimit, createShiftAssignRateLimit, createShiftClockRateLimit } from '../middleware/rateLimit';
+import methodNotAllowed from '../middleware/methodNotAllowed';
 
 const writeLimiter = createWriteRateLimit();
-import methodNotAllowed from '../middleware/methodNotAllowed';
+const assignLimiter = createShiftAssignRateLimit();
+const clockLimiter = createShiftClockRateLimit();
 
 const router = Router();
 
@@ -42,11 +44,29 @@ router.put(
 router.delete('/:id', authenticate, authorize('ADMIN'), writeLimiter, asyncHandler(shiftController.deleteShift));
 
 // POST /api/shifts/:id/assign - Mitarbeiter zur Schicht zuweisen
-router.post('/:id/assign', authenticate, asyncHandler(shiftController.assignUserToShift));
+router.post(
+  '/:id/assign',
+  authenticate,
+  authorize('ADMIN', 'DISPATCHER'),
+  assignLimiter,
+  asyncHandler(shiftController.assignUserToShift),
+);
 // POST /api/shifts/:id/clock-in
-router.post('/:id/clock-in', authenticate, validate(clockInSchema), asyncHandler(shiftController.clockIn));
+router.post(
+  '/:id/clock-in',
+  authenticate,
+  clockLimiter,
+  validate(clockInSchema),
+  asyncHandler(shiftController.clockIn),
+);
 // POST /api/shifts/:id/clock-out
-router.post('/:id/clock-out', authenticate, validate(clockOutSchema), asyncHandler(shiftController.clockOut));
+router.post(
+  '/:id/clock-out',
+  authenticate,
+  clockLimiter,
+  validate(clockOutSchema),
+  asyncHandler(shiftController.clockOut),
+);
 // 405
 router.all('/', authenticate, methodNotAllowed(['GET', 'POST']));
 router.all('/:id', authenticate, methodNotAllowed(['GET', 'PUT', 'DELETE']));

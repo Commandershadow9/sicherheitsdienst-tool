@@ -23,6 +23,7 @@ model User {
   hireDate       DateTime?
   qualifications String[] // Array von Qualifikationen
   pushOptIn      Boolean  @default(true)
+  emailOptIn     Boolean  @default(true)
   
   // Zeitstempel
   createdAt DateTime @default(now())

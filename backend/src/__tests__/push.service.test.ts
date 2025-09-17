@@ -1,10 +1,19 @@
 import { incrPushSuccess, incrPushFail } from '../utils/notifyStats';
 
 jest.mock('../utils/notifyStats', () => {
-  const counters = { email: { success: 0, fail: 0 }, push: { success: 0, fail: 0 } };
+  const counters = {
+    email: { success: 0, fail: 0, attempts: 0 },
+    push: { success: 0, fail: 0, attempts: 0 },
+  };
   return {
-    incrPushSuccess: (n: number) => { counters.push.success += n; },
-    incrPushFail: () => { counters.push.fail += 1; },
+    incrPushSuccess: (n: number) => {
+      counters.push.success += n;
+      counters.push.attempts += 1;
+    },
+    incrPushFail: (_error?: unknown) => {
+      counters.push.fail += 1;
+      counters.push.attempts += 1;
+    },
     __counters: counters,
   };
 });

@@ -36,9 +36,11 @@ Erledigt:
   - Akzeptanz: konfigurierbare Limits; Tests für Grenzen/Eckenfälle. (Umgesetzt: ENV‑Toggle, Standard‑Headers, 429 Retry‑After, Tests.)
 
 ## Langfristig / Post‑MVP (P3)
-- [ ] Erweiterte Benachrichtigungen (Real‑Events, Templates, Opt‑In)
-- [ ] Observability: erweiterte /stats (Laufzeit, Queue, Mail‑Erfolg), Log‑Konfiguration in README
+- [x] Erweiterte Benachrichtigungen (Real‑Events, Templates, Opt‑In) (2025-09-16)
+- [x] Observability: erweiterte /stats (Laufzeit, Queue, Mail‑Erfolg), Log‑Konfiguration in README (2025-09-15)
 - [ ] Sicherheits‑Hardening: Rate‑Limit selektiv auf weitere Endpunkte; Audit‑Trail
+  - [x] Selektive Rate-Limits für Schicht-Zuweisung & Clock-in/out (`SHIFT_ASSIGN_RATE_LIMIT_*`, `SHIFT_CLOCK_RATE_LIMIT_*`, Tests/Doku)
+  - [ ] Audit-Trail (Schema, Logging-Utility, Read-API, Retention)
 
 ## Neues Feature: Einsätze/Events
 - [x] Datenmodell (Prisma): `Event` mit Feldern `id, title, description, siteId?, startTime, endTime, serviceInstructions (Text/Markdown), assignedEmployeeIds[]` + Indizes

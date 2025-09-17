@@ -1,0 +1,2 @@
+ALTER TABLE "users"
+ADD COLUMN "emailOptIn" BOOLEAN NOT NULL DEFAULT true;

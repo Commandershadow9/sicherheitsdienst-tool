@@ -1,6 +1,13 @@
 import logger from '../utils/logger';
 import { incrEmailSuccess, incrEmailFail } from '../utils/notifyStats';
+import {
+  queueJobEnqueued,
+  queueJobFailed,
+  queueJobStarted,
+  queueJobSucceeded,
+} from '../utils/queueStats';
 import { renderEmailTemplate } from './templateService';
+import { publishNotificationEvent } from '../utils/notificationEvents';
 
 const smtpHost = process.env.SMTP_HOST;
 const smtpPort = process.env.SMTP_PORT ? parseInt(process.env.SMTP_PORT, 10) : 587;
@@ -46,11 +53,26 @@ function sleep(ms: number) {
   return new Promise((r) => setTimeout(r, ms));
 }
 
-export async function sendEmail(to: string, subject: string, text?: string, html?: string) {
+type EmailSendOptions = {
+  template?: string;
+  context?: Record<string, unknown>;
+  reason?: string;
+};
+
+export async function sendEmail(
+  to: string,
+  subject: string,
+  text?: string,
+  html?: string,
+  options: EmailSendOptions = {},
+) {
   const transport = getTransport();
   const maxRetries = Math.max(parseInt(String(process.env.SMTP_RETRY_MAX || '1'), 10) || 1, 0);
   const retryDelayMs = Math.max(parseInt(String(process.env.SMTP_RETRY_DELAY_MS || '200'), 10) || 200, 0);
   let attempt = 0;
+  const queueName = 'notifications-email';
+  queueJobEnqueued(queueName);
+  queueJobStarted(queueName);
   // First try + up to maxRetries additional attempts on transient errors
   // attempt counts total tries; retries happen while attempt <= maxRetries
   /* eslint-disable no-constant-condition */
@@ -62,6 +84,20 @@ export async function sendEmail(to: string, subject: string, text?: string, html
       const info = await transport.sendMail({ from: smtpFrom, to, subject, text, html });
       logger.info('E-Mail erfolgreich gesendet: %o', { to, messageId: info.messageId });
       incrEmailSuccess();
+      queueJobSucceeded(queueName);
+      publishNotificationEvent({
+        channel: 'email',
+        status: 'sent',
+        template: options.template,
+        recipient: to,
+        title: subject,
+        body: text || html || null,
+        metadata: {
+          ...((options.context && Object.keys(options.context).length) ? { context: options.context } : {}),
+          messageId: info.messageId,
+          reason: options.reason || 'custom',
+        },
+      });
       return info;
     } catch (err) {
       const transient = isTransientError(err);
@@ -72,7 +108,23 @@ export async function sendEmail(to: string, subject: string, text?: string, html
         continue;
       }
       logger.error('E-Mail-Versand fehlgeschlagen: %o', err);
-      incrEmailFail();
+      incrEmailFail(err);
+      queueJobFailed(queueName, err);
+      publishNotificationEvent({
+        channel: 'email',
+        status: 'failed',
+        template: options.template,
+        recipient: to,
+        title: subject,
+        body: text || html || null,
+        metadata: {
+          ...((options.context && Object.keys(options.context).length) ? { context: options.context } : {}),
+          reason: options.reason || 'custom',
+          transient,
+          attempt,
+        },
+        error: err instanceof Error ? err.message : String(err),
+      });
       throw err;
     }
   }
@@ -81,9 +133,19 @@ export async function sendEmail(to: string, subject: string, text?: string, html
 export async function sendShiftChangedEmail(to: string, shiftTitle: string, change: string) {
   const tpl = renderEmailTemplate('shift-changed', { shiftTitle, change });
   if (tpl?.subject || tpl?.text || tpl?.html) {
-    return sendEmail(to, tpl.subject || `Schichtänderung: ${shiftTitle}`, tpl.text, tpl.html);
+    return sendEmail(
+      to,
+      tpl.subject || `Schichtänderung: ${shiftTitle}`,
+      tpl.text,
+      tpl.html,
+      { template: 'shift-changed', context: { shiftTitle, change }, reason: 'shift-change' },
+    );
   }
   const subject = `Schichtänderung: ${shiftTitle}`;
   const text = `Hallo,\n\nDeine Schicht "${shiftTitle}" wurde geändert: ${change}\n\nViele Grüße`;
-  return sendEmail(to, subject, text);
+  return sendEmail(to, subject, text, undefined, {
+    template: 'shift-changed',
+    context: { shiftTitle, change },
+    reason: 'shift-change',
+  });
 }

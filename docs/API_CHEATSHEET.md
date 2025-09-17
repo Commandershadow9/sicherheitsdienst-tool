@@ -125,6 +125,10 @@ http POST "$BASE/api/shifts/$SHIFT_ID/clock-in" "Authorization: Bearer $TOKEN" a
 http POST "$BASE/api/shifts/$SHIFT_ID/clock-out" "Authorization: Bearer $TOKEN" at="2025-09-01T16:00:00Z" breakTime:=30
 ```
 
+**Rate-Limits & RBAC**
+- `POST /api/shifts/:id/assign` benötigt Rollen `ADMIN` oder `DISPATCHER` und nutzt `SHIFT_ASSIGN_RATE_LIMIT_*` zusätzlich zum globalen Schreib-Limiter.
+- `POST /api/shifts/:id/clock-in` & `POST /api/shifts/:id/clock-out` teilen sich den Limiter `SHIFT_CLOCK_RATE_LIMIT_*`; Header `Retry-After` und `RateLimit-Reset` geben Wartedauer vor.
+
 ## Incidents
 - RBAC: List/Get alle Auth; Create/Update/Delete nur `ADMIN`, `MANAGER`
 - Beispiele
@@ -152,10 +156,31 @@ http "$BASE/api/events" "Authorization: Bearer $TOKEN" page==1 pageSize==25
 ## Notifications (Test)
 - RBAC: `ADMIN`, `MANAGER`
 ```bash
-curl -i -X POST "$BASE/api/notifications/test" -H "Authorization: Bearer $TOKEN_ADMIN"
+curl -i -X POST "$BASE/api/notifications/test" -H "Authorization: Bearer $TOKEN_ADMIN" \
+  -H 'Content-Type: application/json' \
+  -d '{"channel":"email","recipient":"jane.doe@example.com","title":"Test","body":"Hallo"}'
+
+# Push-Test (userIds verpflichtend)
+curl -i -X POST "$BASE/api/notifications/test" -H "Authorization: Bearer $TOKEN_ADMIN" \
+  -H 'Content-Type: application/json' \
+  -d '{"channel":"push","title":"Neuer Vorfall","body":"Bitte prüfen","userIds":["'$USER_ID'"]}'
 
 # HTTPie
-http -v POST "$BASE/api/notifications/test" "Authorization: Bearer $TOKEN_ADMIN"
+http -v POST "$BASE/api/notifications/test" "Authorization: Bearer $TOKEN_ADMIN" channel=email recipient=jane.doe@example.com title=Test body=Hallo
+```
+
+- Templates: `GET /api/notifications/templates`
+```bash
+http "$BASE/api/notifications/templates" "Authorization: Bearer $TOKEN_ADMIN"
+```
+- Opt-In/Out: `GET|PUT /api/notifications/preferences/me`
+```bash
+http "$BASE/api/notifications/preferences/me" "Authorization: Bearer $TOKEN"
+http PUT "$BASE/api/notifications/preferences/me" "Authorization: Bearer $TOKEN" emailOptIn:=false
+```
+- Echtzeit-Events (SSE)
+```bash
+curl -N -H "Authorization: Bearer $TOKEN_ADMIN" "$BASE/api/notifications/events?channel=email,push"
 ```
 
 ## Push Tokens
