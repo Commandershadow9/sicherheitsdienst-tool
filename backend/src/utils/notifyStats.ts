@@ -17,9 +17,15 @@ function nowIso(): string {
   return new Date().toISOString();
 }
 
-function recordAttempt(group: CounterGroup): string {
+function normalizeIncrement(value: number): number {
+  if (!Number.isFinite(value)) return 0;
+  if (value <= 0) return 0;
+  return Math.floor(value);
+}
+
+function recordAttempt(group: CounterGroup, increment = 1): string {
   const ts = nowIso();
-  group.attempts += 1;
+  group.attempts += normalizeIncrement(increment);
   group.lastAttemptAt = ts;
   return ts;
 }
@@ -31,9 +37,9 @@ function recordSuccess(group: CounterGroup, increment = 1): void {
   group.lastError = undefined;
 }
 
-function recordFailure(group: CounterGroup, error?: unknown): void {
-  const ts = recordAttempt(group);
-  group.fail += 1;
+function recordFailure(group: CounterGroup, error?: unknown, increment = 1): void {
+  const ts = recordAttempt(group, increment);
+  group.fail += normalizeIncrement(increment);
   group.lastFailAt = ts;
   if (error) {
     group.lastError = error instanceof Error ? error.message : String(error);
@@ -52,8 +58,8 @@ export function incrPushSuccess(delivered: number): void {
   recordSuccess(counters.push, delivered);
 }
 
-export function incrPushFail(error?: unknown): void {
-  recordFailure(counters.push, error);
+export function incrPushFail(error?: unknown, count = 1): void {
+  recordFailure(counters.push, error, count);
 }
 
 export function getNotifyCounters() {
