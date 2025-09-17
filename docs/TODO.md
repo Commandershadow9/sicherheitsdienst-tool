@@ -9,6 +9,13 @@ Stand: 2025-09-15
   - Akzeptanz: Integrationstest deckt ENV-Overrides (`LOGIN_RATE_LIMIT_MAX/_WINDOW_MS`) ab; Dev-Doku erklärt Default/Fallback klar (README/Troubleshooting aktualisiert, QA-Notiz).
 - [x] Frontend Feedback für 429 Login
   - Akzeptanz: UI zeigt dedizierten Hinweis + Retry-Countdown, wenn API 429 liefert; UX-Review bestätigt.
+
+- [ ] Monitoring: Alert-Routing (Grafana/Alertmanager) gegen Ops-Kanal verdrahten
+  - Akzeptanz: Neue Audit-Warnungen (Queue, Direct/Flush-Failures, Prune) laufen im gewünschten Kanal auf.
+- [ ] Monitoring: Audit-Dashboard (`svc-audit-trail`) auf Prod-Grafana importieren & Panels feinjustieren
+  - Akzeptanz: Queue/Failures/Prune-Panels zeigen Daten aus Produktions-Prometheus.
+- [ ] Monitoring-Dokumentation: Compose-Ports (Prometheus 9090, Grafana 3300) & Betriebs-Checkliste finalisieren
+  - Akzeptanz: README / MONITORING.md enthalten klare Schritte für Deploy & Betrieb, inkl. Skripte `import-dashboard.sh` und `reload-prometheus.sh`.
   
 Erledigt:
 - [x] Auth Login-Limiter konfigurierbar (ENV `LOGIN_RATE_LIMIT_MAX/_WINDOW_MS`, sichere Defaults, Compose Override, Docs aktualisiert).
