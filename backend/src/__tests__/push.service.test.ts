@@ -1,20 +1,42 @@
-import { incrPushSuccess, incrPushFail } from '../utils/notifyStats';
+const publishNotificationEventMock = jest.fn();
+
+jest.mock('../utils/notificationEvents', () => ({
+  publishNotificationEvent: publishNotificationEventMock,
+}));
 
 jest.mock('../utils/notifyStats', () => {
   const counters = {
     email: { success: 0, fail: 0, attempts: 0 },
     push: { success: 0, fail: 0, attempts: 0 },
   };
+
+  const clamp = (value: number) => {
+    if (typeof value !== 'number' || !Number.isFinite(value) || value <= 0) {
+      return 0;
+    }
+    return Math.floor(value);
+  };
+
   return {
     incrPushSuccess: (n: number) => {
-      counters.push.success += n;
+      const increment = clamp(n);
+      counters.push.success += increment;
       counters.push.attempts += 1;
     },
-    incrPushFail: (_error?: unknown) => {
-      counters.push.fail += 1;
-      counters.push.attempts += 1;
+    incrPushFail: (_error?: unknown, count = 1) => {
+      const increment = clamp(count);
+      counters.push.fail += increment;
+      counters.push.attempts += increment;
     },
     __counters: counters,
+    __reset: () => {
+      counters.email.success = 0;
+      counters.email.fail = 0;
+      counters.email.attempts = 0;
+      counters.push.success = 0;
+      counters.push.fail = 0;
+      counters.push.attempts = 0;
+    },
   };
 });
 
@@ -23,19 +45,38 @@ jest.mock('@prisma/client', () => {
   return { PrismaClient: jest.fn(() => prisma) };
 });
 
+type NotifyStatsMock = {
+  __reset: () => void;
+  __counters: {
+    email: { success: number; fail: number; attempts: number };
+    push: { success: number; fail: number; attempts: number };
+  };
+};
+
+const getNotifyStatsMock = (): NotifyStatsMock => require('../utils/notifyStats');
+
 describe('pushService', () => {
   beforeEach(() => {
     process.env.FCM_PROJECT_ID = '';
     process.env.FCM_CLIENT_EMAIL = '';
     process.env.FCM_PRIVATE_KEY = '';
+    publishNotificationEventMock.mockReset();
+    getNotifyStatsMock().__reset();
   });
 
   it('mock path increments success when FCM not configured', async () => {
+    const notifyStats = getNotifyStatsMock();
+    notifyStats.__reset();
     const svc = require('../services/pushService');
     const pm = new (require('@prisma/client').PrismaClient)();
     pm.deviceToken.findMany.mockResolvedValueOnce([{ token: 't1' }, { token: 't2' }]);
     const res = await svc.sendPushToUsers(['u1'], 'T', 'B');
     expect(res.success).toBe(true);
+
+    const counters = getNotifyStatsMock().__counters;
+    expect(counters.push.success).toBe(2);
+    expect(counters.push.fail).toBe(0);
+    expect(counters.push.attempts).toBe(1);
   });
 
   it('FCM path disables invalid tokens', async () => {
@@ -43,13 +84,11 @@ describe('pushService', () => {
     process.env.FCM_CLIENT_EMAIL = 'c';
     process.env.FCM_PRIVATE_KEY = 'k';
     jest.resetModules();
-    // Remock Prisma to ensure singleton instance after resetModules
+    publishNotificationEventMock.mockReset();
     jest.doMock('@prisma/client', () => {
       const prisma = { deviceToken: { updateMany: jest.fn(), findMany: jest.fn() } };
       return { PrismaClient: jest.fn(() => prisma) };
     });
-    // Reset global prisma singleton used by utils/prisma
-    // so that a new mock instance is picked up after resetModules
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (global as any).prisma = undefined;
     const adminMock = {
@@ -58,16 +97,81 @@ describe('pushService', () => {
       messaging: jest.fn(() => ({
         sendEachForMulticast: jest.fn(async () => ({
           failureCount: 1,
-          responses: [ { success: false, error: { code: 'messaging/registration-token-not-registered' } }, { success: true } ],
+          responses: [
+            { success: false, error: { code: 'messaging/registration-token-not-registered' } },
+            { success: true },
+          ],
         })),
       })),
     };
     jest.doMock('firebase-admin', () => adminMock, { virtual: true });
+    const notifyStats = getNotifyStatsMock();
+    notifyStats.__reset();
     const svc = require('../services/pushService');
     const pm = new (require('@prisma/client').PrismaClient)();
     pm.deviceToken.findMany.mockResolvedValueOnce([{ token: 'bad' }, { token: 'good' }]);
     const res = await svc.sendPushToUsers(['u1'], 'T', 'B');
     expect(res.success).toBe(true);
     expect(pm.deviceToken.updateMany).toHaveBeenCalled();
+  });
+
+  it('tracks partial failures with failure counts for success rate', async () => {
+    process.env.FCM_PROJECT_ID = 'p';
+    process.env.FCM_CLIENT_EMAIL = 'c';
+    process.env.FCM_PRIVATE_KEY = 'k';
+    jest.resetModules();
+    publishNotificationEventMock.mockReset();
+    jest.doMock('@prisma/client', () => {
+      const prisma = { deviceToken: { updateMany: jest.fn(), findMany: jest.fn() } };
+      return { PrismaClient: jest.fn(() => prisma) };
+    });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (global as any).prisma = undefined;
+    const failureCount = 3;
+    const adminMock = {
+      credential: { cert: jest.fn(() => ({})) },
+      initializeApp: jest.fn(),
+      messaging: jest.fn(() => ({
+        sendEachForMulticast: jest.fn(async () => ({
+          failureCount,
+          responses: [
+            { success: false, error: { code: 'messaging/registration-token-not-registered' } },
+            { success: false, error: { code: 'messaging/invalid-registration-token' } },
+            { success: false, error: { code: 'messaging/internal-error' } },
+            { success: true },
+            { success: true },
+          ],
+        })),
+      })),
+    };
+    jest.doMock('firebase-admin', () => adminMock, { virtual: true });
+    const notifyStats = getNotifyStatsMock();
+    notifyStats.__reset();
+    const svc = require('../services/pushService');
+    const pm = new (require('@prisma/client').PrismaClient)();
+    const tokens = [
+      { token: 'bad-1' },
+      { token: 'bad-2' },
+      { token: 'bad-3' },
+      { token: 'good-1' },
+      { token: 'good-2' },
+    ];
+    pm.deviceToken.findMany.mockResolvedValueOnce(tokens);
+    const res = await svc.sendPushToUsers(['u1'], 'Title', 'Body');
+    expect(res.success).toBe(true);
+
+    const counters = getNotifyStatsMock().__counters.push;
+    const delivered = tokens.length - failureCount;
+    expect(counters.success).toBe(delivered);
+    expect(counters.fail).toBe(failureCount);
+    expect(counters.attempts).toBe(failureCount + 1);
+    const computedRate = counters.success / (counters.success + counters.fail);
+    expect(computedRate).toBeCloseTo(delivered / (delivered + failureCount));
+
+    expect(publishNotificationEventMock).toHaveBeenCalled();
+    const eventPayload =
+      publishNotificationEventMock.mock.calls[publishNotificationEventMock.mock.calls.length - 1]?.[0];
+    expect(eventPayload?.metadata?.failed).toBe(failureCount);
+    expect(eventPayload?.metadata?.delivered).toBe(delivered);
   });
 });
