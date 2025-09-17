@@ -28,6 +28,18 @@ describe('pushService', () => {
     process.env.FCM_PROJECT_ID = '';
     process.env.FCM_CLIENT_EMAIL = '';
     process.env.FCM_PRIVATE_KEY = '';
+    const notify = require('../utils/notifyStats');
+    notify.__counters.email.success = 0;
+    notify.__counters.email.fail = 0;
+    notify.__counters.email.attempts = 0;
+    notify.__counters.push.success = 0;
+    notify.__counters.push.fail = 0;
+    notify.__counters.push.attempts = 0;
+    const pm = new (require('@prisma/client').PrismaClient)();
+    pm.deviceToken.findMany.mockReset();
+    pm.deviceToken.updateMany.mockReset();
+    const queue = require('../utils/queueStats');
+    queue.resetAllQueues();
   });
 
   it('mock path increments success when FCM not configured', async () => {
@@ -36,6 +48,29 @@ describe('pushService', () => {
     pm.deviceToken.findMany.mockResolvedValueOnce([{ token: 't1' }, { token: 't2' }]);
     const res = await svc.sendPushToUsers(['u1'], 'T', 'B');
     expect(res.success).toBe(true);
+  });
+
+  it('records failure metrics and resets queue state when token lookup throws', async () => {
+    const svc = require('../services/pushService');
+    const pm = new (require('@prisma/client').PrismaClient)();
+    const error = new Error('db kaputt');
+    pm.deviceToken.findMany.mockRejectedValueOnce(error);
+    const res = await svc.sendPushToUsers(['u1'], 'T', 'B');
+    expect(res.success).toBe(false);
+    const notify = require('../utils/notifyStats');
+    expect(notify.__counters.push.fail).toBe(1);
+    expect(notify.__counters.push.success).toBe(0);
+    expect(notify.__counters.push.attempts).toBe(1);
+    const queue = require('../utils/queueStats');
+    const snapshot = queue.getQueueSnapshot();
+    expect(snapshot['notifications-push']).toBeDefined();
+    expect(snapshot['notifications-push']).toMatchObject({
+      pending: 0,
+      inFlight: 0,
+      processed: 0,
+      failed: 1,
+      lastError: error.message,
+    });
   });
 
   it('FCM path disables invalid tokens', async () => {
