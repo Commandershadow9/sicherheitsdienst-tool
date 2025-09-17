@@ -31,7 +31,7 @@ Du bist Senior-Full-Stack-Entwickler (Node.js, TypeScript, Express, Prisma, Post
 
 ## Roadmap (Priorität – kurz)
 1) ✅ **Observability** – `/api/stats` um Laufzeit-/Queue-/Success-Rate erweitert & README Logging-Runbook (2025-09-15).
-2) ⏭️ **Notifications** – Templates, Echtzeit-Events & Opt-In/Out vorbereiten (Feature-Flags, Tests, Docs).
+2) ✅ **Notifications** – Templates, Echtzeit-Events & Opt-In/Out vorbereitet (Feature-Flags, Tests, Docs) (2025-09-16).
 3) ⏭️ **Security-Hardening** – selektive Rate-Limits & Audit-Trail entwerfen (Architektur + Persistenz).
 4) ⏭️ **Telemetry/Dashboards** – Prometheus/Grafana Panels versionieren, PromQL-Snippets dokumentieren.
 5) ⏭️ **Ops/Compose** – Healthchecks & Migrationslauf in Docker-Stacks finalisieren (`docker-compose*.yml`, `.env.example`).

@@ -152,10 +152,31 @@ http "$BASE/api/events" "Authorization: Bearer $TOKEN" page==1 pageSize==25
 ## Notifications (Test)
 - RBAC: `ADMIN`, `MANAGER`
 ```bash
-curl -i -X POST "$BASE/api/notifications/test" -H "Authorization: Bearer $TOKEN_ADMIN"
+curl -i -X POST "$BASE/api/notifications/test" -H "Authorization: Bearer $TOKEN_ADMIN" \
+  -H 'Content-Type: application/json' \
+  -d '{"channel":"email","recipient":"jane.doe@example.com","title":"Test","body":"Hallo"}'
+
+# Push-Test (userIds verpflichtend)
+curl -i -X POST "$BASE/api/notifications/test" -H "Authorization: Bearer $TOKEN_ADMIN" \
+  -H 'Content-Type: application/json' \
+  -d '{"channel":"push","title":"Neuer Vorfall","body":"Bitte prüfen","userIds":["'$USER_ID'"]}'
 
 # HTTPie
-http -v POST "$BASE/api/notifications/test" "Authorization: Bearer $TOKEN_ADMIN"
+http -v POST "$BASE/api/notifications/test" "Authorization: Bearer $TOKEN_ADMIN" channel=email recipient=jane.doe@example.com title=Test body=Hallo
+```
+
+- Templates: `GET /api/notifications/templates`
+```bash
+http "$BASE/api/notifications/templates" "Authorization: Bearer $TOKEN_ADMIN"
+```
+- Opt-In/Out: `GET|PUT /api/notifications/preferences/me`
+```bash
+http "$BASE/api/notifications/preferences/me" "Authorization: Bearer $TOKEN"
+http PUT "$BASE/api/notifications/preferences/me" "Authorization: Bearer $TOKEN" emailOptIn:=false
+```
+- Echtzeit-Events (SSE)
+```bash
+curl -N -H "Authorization: Bearer $TOKEN_ADMIN" "$BASE/api/notifications/events?channel=email,push"
 ```
 
 ## Push Tokens

@@ -6,6 +6,7 @@ import { getSpecVersion } from '../utils/specVersion';
 import { getNotifyCounters } from '../utils/notifyStats';
 import { getQueueSnapshot, type QueueState } from '../utils/queueStats';
 import { getRuntimeMetrics } from '../utils/runtimeMetrics';
+import { getNotificationStreamStats } from '../utils/notificationEvents';
 
 // Lightweight health endpoint (no deps)
 export const healthz = async (_req: Request, res: Response): Promise<void> => {
@@ -157,6 +158,7 @@ export const getSystemStats = async (req: Request, res: Response, next: NextFunc
     };
 
     const notifyCounters = getNotifyCounters();
+    const streamStats = getNotificationStreamStats();
     const totalEmailAttempts = notifyCounters.email.success + notifyCounters.email.fail;
     const totalPushAttempts = notifyCounters.push.success + notifyCounters.push.fail;
     const emailSuccessRate = totalEmailAttempts > 0 ? notifyCounters.email.success / totalEmailAttempts : null;
@@ -218,6 +220,7 @@ export const getSystemStats = async (req: Request, res: Response, next: NextFunc
             push: formatRate(pushSuccessRate),
           },
           queue: notificationQueues,
+          streams: streamStats,
         },
         queues: queueSnapshot,
         authRateLimit,

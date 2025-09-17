@@ -36,7 +36,7 @@ Erledigt:
   - Akzeptanz: konfigurierbare Limits; Tests für Grenzen/Eckenfälle. (Umgesetzt: ENV‑Toggle, Standard‑Headers, 429 Retry‑After, Tests.)
 
 ## Langfristig / Post‑MVP (P3)
-- [ ] Erweiterte Benachrichtigungen (Real‑Events, Templates, Opt‑In)
+- [x] Erweiterte Benachrichtigungen (Real‑Events, Templates, Opt‑In) (2025-09-16)
 - [x] Observability: erweiterte /stats (Laufzeit, Queue, Mail‑Erfolg), Log‑Konfiguration in README (2025-09-15)
 - [ ] Sicherheits‑Hardening: Rate‑Limit selektiv auf weitere Endpunkte; Audit‑Trail
 

@@ -38,7 +38,7 @@ Hinweis: Dieser Abschnitt fasst die tagesaktuellen Ziele aus der ehemaligen Date
 - CI: Health‑Smoke‑Job (baut, startet, prüft `/healthz`/`/readyz`).
 
 ### Nächste Schritte (Kurz-Backlog)
-- Notifications: Templates/Echtzeit-Events & Opt-In/Out vorbereiten (Feature-Flags, Tests, UI-Hooks).
+- ✅ Notifications: Templates/Echtzeit-Events & Opt-In/Out vorbereitet (Feature-Flags, Tests, UI-Hooks) – 2025-09-16.
 - Security-Hardening: Selektive Rate-Limits & Audit-Trail-Konzept finalisieren (Persistence/Read-APIs).
 - Telemetry: Prometheus/Grafana Dashboards versionieren, PromQL-Snippets im Monitoring-Runbook ergänzen.
 - Ops/Compose: Healthchecks & Migrationslauf in Docker-Stacks harmonisieren (`docker-compose*.yml`, `.env.example`).

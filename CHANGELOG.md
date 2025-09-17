@@ -5,6 +5,9 @@ All notable changes to this project will be documented in this file.
 ## Unreleased
 
 ### Added
+- notifications: Template-Metadaten (GET `/api/notifications/templates`), Nutzer-Opt-In-API (`/preferences/me`), SSE-Eventstream `/api/notifications/events`, neue Incident-Templates (E-Mail & Push).
+- prisma: `user.emailOptIn` Feld + Migration (`20250916_add_user_email_optin`).
+- docs: README & MONITORING um Notification-Runbook (Templates, Opt-In, SSE) erweitert; `.env.example` mit Incident-Flags & Heartbeat.
 - backend/auth: Login-Rate-Limiter per ENV (`LOGIN_RATE_LIMIT_MAX/_WINDOW_MS`), Compose-Doku aktualisiert.
 - observability: Prometheus-Counter für Login-Limiter (Hits/Blocked) + Dashboard/Alert Doku.
 - observability: `/api/stats` mit Runtime-/Event-Loop-/Queue-Metriken & Notification-Success-Rates; Logging-Runbook (README) + In-Memory-Queue-Tracking.
@@ -17,6 +20,7 @@ All notable changes to this project will be documented in this file.
 - repo: commitlint (Conventional Commits) + PR‑Template Checkliste.
 
 ### Changed
+- notifications/test: Channel `push` unterstützt, Validierung via Zod (Template-Key, userIds, Variablen) erweitert; Versand tracked Event-Stream.
 - readiness: SMTP-Verify liefert Diagnose (`deps.smtpMessage`) und schließt Transport nach Erfolg/Fehlschlag.
 - backend/auth: Login-Limiter fällt ohne ENV auf Default (5/15min) zurück und deaktiviert sich nur explizit mit `<=0`.
 - notifications/email: Queue- und Counter-State speichern letzte Zeitstempel/Fehler; Push/E-Mail-Services melden Jobs an Queue-Monitoring.

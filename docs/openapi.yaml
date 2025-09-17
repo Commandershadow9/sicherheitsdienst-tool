@@ -707,16 +707,79 @@ components:
       required: [id, recipient, title, body, channel, status, createdAt]
     NotificationTestRequest:
       type: object
+      description: Request zum manuellen Auslösen einer Test-Benachrichtigung.
       properties:
+        channel:
+          type: string
+          enum: [email, push]
+          default: email
         recipient:
           type: string
+          format: email
+          description: Erforderlich für `channel=email`.
+        userIds:
+          type: array
+          description: Erforderlich für `channel=push`.
+          items:
+            type: string
+            format: uuid
         title:
           type: string
+          description: Betreff/Titel. Pflicht, wenn kein `templateKey` gesetzt wird.
         body:
+          type: string
+          description: Textinhalt. Pflicht für Push, wenn kein `templateKey` gesetzt wird.
+        templateKey:
+          type: string
+          description: Schlüssel einer vordefinierten Vorlage (`shift-changed`, `incident-created`, `incident-updated`, …).
+        variables:
+          type: object
+          additionalProperties: {}
+          description: Platzhalter-Werte für Templates (z. B. `{ "title": "Einsatz" }`).
+    NotificationTemplate:
+      type: object
+      properties:
+        key:
           type: string
         channel:
           type: string
-      required: [recipient, title, body]
+          enum: [email, push]
+        name:
+          type: string
+        description:
+          type: string
+        category:
+          type: string
+        featureFlag:
+          type: string
+          nullable: true
+        variables:
+          type: array
+          items:
+            type: string
+        tags:
+          type: array
+          items:
+            type: string
+        enabled:
+          type: boolean
+      required: [key, channel, name, description, category, variables, enabled]
+    NotificationPreferences:
+      type: object
+      properties:
+        emailOptIn:
+          type: boolean
+        pushOptIn:
+          type: boolean
+      required: [emailOptIn, pushOptIn]
+    NotificationPreferencesUpdate:
+      type: object
+      description: Mindestens eines der Felder muss gesetzt sein.
+      properties:
+        emailOptIn:
+          type: boolean
+        pushOptIn:
+          type: boolean
   parameters:
     PageParam:
       name: page
@@ -2577,7 +2640,7 @@ paths:
     post:
       operationId: sendTestNotification
       summary: Test-Benachrichtigung senden
-      description: 'RBAC: ADMIN oder MANAGER. Rate-Limit aktiv (konfigurierbar per ENV).'
+      description: 'RBAC: ADMIN oder MANAGER. Unterstützt E-Mail und Push inkl. Templates. Rate-Limit aktiv (ENV).'
       security:
         - BearerAuth: []
       x-required-roles:
@@ -2590,25 +2653,44 @@ paths:
             schema:
               $ref: '#/components/schemas/NotificationTestRequest'
             example:
+              channel: email
               recipient: "jane.doe@example.com"
               title: "Test"
               body: "Hallo Jane"
-              channel: "email"
       responses:
         '200':
-          description: Benachrichtigung erstellt/gesendet
+          description: Test-Benachrichtigung akzeptiert
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Notification'
-              example:
-                id: "f00ba7ba-1234-5678-9abc-111122223333"
-                recipient: "jane.doe@example.com"
-                title: "Test"
-                body: "Hallo Jane"
-                channel: "email"
-                status: "SENT"
-                createdAt: "2024-09-01T12:00:00Z"
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Test-Benachrichtigung gesendet
+                  data:
+                    type: object
+                    properties:
+                      channel:
+                        type: string
+                        enum: [email, push]
+                      template:
+                        type: string
+                        nullable: true
+                      recipient:
+                        type: string
+                        description: Wird nur bei E-Mail mitgegeben.
+                    required: [channel]
+                required: [success, message, data]
+                example:
+                  success: true
+                  message: Test-Benachrichtigung gesendet
+                  data:
+                    channel: email
+                    template: shift-changed
         '400':
           description: Ungültige Anfrage (z. B. nicht unterstützter Kanal)
           content:
@@ -2638,6 +2720,129 @@ paths:
                     message: Darf nicht leer sein.
                   - field: title
                     message: Darf nicht leer sein.
+  /notifications/templates:
+    get:
+      operationId: listNotificationTemplates
+      summary: Verfügbare Benachrichtigungsvorlagen
+      description: Liefert Metadaten zu E-Mail- und Push-Templates (Feature-Flags, Variablen, Status).
+      security:
+        - BearerAuth: []
+      x-required-roles:
+        - ADMIN
+        - MANAGER
+      parameters:
+        - in: query
+          name: channel
+          schema:
+            type: string
+            enum: [email, push]
+          description: Optionaler Filter nach Kanal.
+      responses:
+        '200':
+          description: Liste der Templates
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean, example: true }
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/NotificationTemplate'
+                required: [success, data]
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '500': { $ref: '#/components/responses/InternalServerError' }
+  /notifications/preferences/me:
+    get:
+      operationId: getMyNotificationPreferences
+      summary: Eigene Notification-Opt-Ins abrufen
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Aktive Einstellungen
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean, example: true }
+                  data:
+                    $ref: '#/components/schemas/NotificationPreferences'
+                required: [success, data]
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '500': { $ref: '#/components/responses/InternalServerError' }
+    put:
+      operationId: updateMyNotificationPreferences
+      summary: Eigene Notification-Opt-Ins aktualisieren
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NotificationPreferencesUpdate'
+            example:
+              emailOptIn: false
+      responses:
+        '200':
+          description: Aktualisierte Einstellungen
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean, example: true }
+                  data:
+                    $ref: '#/components/schemas/NotificationPreferences'
+                required: [success, data]
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '500': { $ref: '#/components/responses/InternalServerError' }
+  /notifications/events:
+    get:
+      operationId: streamNotificationEvents
+      summary: Echtzeit-Benachrichtigungsereignisse (SSE)
+      description: Server-Sent Events mit Zustellstatus (`notification.sent`, `notification.failed`).
+      security:
+        - BearerAuth: []
+      x-required-roles:
+        - ADMIN
+        - MANAGER
+        - DISPATCHER
+      parameters:
+        - in: query
+          name: channel
+          schema:
+            type: string
+          description: Kommagetrennte Kanalfilter (`email`, `push`).
+        - in: query
+          name: status
+          schema:
+            type: string
+          description: Kommagetrennte Statusfilter (`sent`, `failed`).
+        - in: query
+          name: template
+          schema:
+            type: string
+          description: Kommagetrennte Template-Keys (z. B. `incident-created`).
+      responses:
+        '200':
+          description: Stream mit Server-Sent Events (`text/event-stream`)
+          content:
+            text/event-stream:
+              schema:
+                type: string
+              example: |
+                event: notification.sent
+                data: {"channel":"email","status":"sent","recipient":"demo@example.com"}
+
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '500': { $ref: '#/components/responses/InternalServerError' }
                   - field: body
                     message: Darf nicht leer sein.
         '429':

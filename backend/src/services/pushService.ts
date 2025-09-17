@@ -7,6 +7,7 @@ import {
   queueJobStarted,
   queueJobSucceeded,
 } from '../utils/queueStats';
+import { publishNotificationEvent } from '../utils/notificationEvents';
 
 let firebase: any | null = null;
 
@@ -52,7 +53,18 @@ async function getActiveTokens(userIds: string[]): Promise<string[]> {
   return (tokens as any[]).map((t: any) => t.token);
 }
 
-export async function sendPushToUsers(userIds: string[], title: string, body: string) {
+type PushSendOptions = {
+  template?: string;
+  context?: Record<string, unknown>;
+  reason?: string;
+};
+
+export async function sendPushToUsers(
+  userIds: string[],
+  title: string,
+  body: string,
+  options: PushSendOptions = {},
+) {
   const queueName = 'notifications-push';
   queueJobEnqueued(queueName);
   queueJobStarted(queueName);
@@ -61,6 +73,19 @@ export async function sendPushToUsers(userIds: string[], title: string, body: st
     logger.info('PUSH: keine aktiven Tokens gefunden für Nutzer %o', userIds);
     incrPushSuccess(0);
     queueJobSucceeded(queueName);
+    publishNotificationEvent({
+      channel: 'push',
+      status: 'sent',
+      template: options.template,
+      userIds,
+      title,
+      body,
+      metadata: {
+        delivered: 0,
+        reason: options.reason || 'custom',
+        ...((options.context && Object.keys(options.context).length) ? { context: options.context } : {}),
+      },
+    });
     return { success: true, count: 0 };
   }
 
@@ -68,6 +93,20 @@ export async function sendPushToUsers(userIds: string[], title: string, body: st
     logger.info('PUSH (mock, ohne FCM): tokens=%d title=%s body=%s', tokens.length, title, body);
     incrPushSuccess(tokens.length);
     queueJobSucceeded(queueName);
+    publishNotificationEvent({
+      channel: 'push',
+      status: 'sent',
+      template: options.template,
+      userIds,
+      title,
+      body,
+      metadata: {
+        delivered: tokens.length,
+        mode: 'mock',
+        reason: options.reason || 'custom',
+        ...((options.context && Object.keys(options.context).length) ? { context: options.context } : {}),
+      },
+    });
     return { success: true, count: tokens.length };
   }
   initFCM();
@@ -75,6 +114,19 @@ export async function sendPushToUsers(userIds: string[], title: string, body: st
     const error = new Error('FCM konnte nicht initialisiert werden');
     incrPushFail(error);
     queueJobFailed(queueName, error);
+    publishNotificationEvent({
+      channel: 'push',
+      status: 'failed',
+      template: options.template,
+      userIds,
+      title,
+      body,
+      metadata: {
+        reason: options.reason || 'custom',
+        ...((options.context && Object.keys(options.context).length) ? { context: options.context } : {}),
+      },
+      error: error.message,
+    });
     return { success: false, count: 0 };
   }
 
@@ -99,11 +151,38 @@ export async function sendPushToUsers(userIds: string[], title: string, body: st
     incrPushSuccess(tokens.length - (resp.failureCount || 0));
     if ((resp.failureCount || 0) > 0) incrPushFail();
     queueJobSucceeded(queueName);
+    publishNotificationEvent({
+      channel: 'push',
+      status: 'sent',
+      template: options.template,
+      userIds,
+      title,
+      body,
+      metadata: {
+        delivered: tokens.length - (resp.failureCount || 0),
+        failed: resp.failureCount || 0,
+        reason: options.reason || 'custom',
+        ...((options.context && Object.keys(options.context).length) ? { context: options.context } : {}),
+      },
+    });
     return { success: true, count: tokens.length, result: resp };
   } catch (err) {
     logger.error('PUSH Fehler: %o', err);
     incrPushFail(err);
     queueJobFailed(queueName, err);
+    publishNotificationEvent({
+      channel: 'push',
+      status: 'failed',
+      template: options.template,
+      userIds,
+      title,
+      body,
+      metadata: {
+        reason: options.reason || 'custom',
+        ...((options.context && Object.keys(options.context).length) ? { context: options.context } : {}),
+      },
+      error: err instanceof Error ? err.message : String(err),
+    });
     return { success: false, count: 0 };
   }
 }

@@ -67,6 +67,7 @@ WEB (Frontend)
   - `system.resourceUsage` liefert CPU-Zeiten, Page-Faults & Context-Switches; `system.eventLoop.delay/utilization` zeigt Event-Loop-Auslastung.
   - `notifications.counters` enthält `attempts`, Zeitstempel & letzte Fehlermeldung je Kanal; `notifications.successRate` gibt Erfolgsquote (0–1) zurück.
   - `notifications.queue` & `queues` spiegeln In-Memory-Jobs (`notifications-email`, `notifications-push`) mit Pending/In-Flight/Processed/Failed wider.
+  - `notifications.streams` liefert Anzahl aktiver SSE-Abonnenten und zuletzt versandte Events (inkl. Kanalverteilung).
   - `env.specVersion`/`env.version`/`env.buildSha` sowie Request-Zähler (`requests.requestsTotal`, `responses4xx`, `responses5xx`).
 
 ## CORS‑Hinweise
@@ -146,3 +147,10 @@ npx playwright show-report
 
 Badges/CI (Platzhalter)
 - Build • Contract‑Tests • Lint
+## Benachrichtigungen (Templates, Opt-In, Events)
+
+- Testversand: `POST /api/notifications/test` (RBAC: ADMIN/MANAGER, Rate-Limit). Unterstützt `channel=email|push`, optionale `templateKey` sowie Variablen. Für Push müssen `userIds` angegeben werden.
+- Templates: `GET /api/notifications/templates` liefert verfügbare Vorlagen (inkl. Feature-Flag & Variablen). Flags: `EMAIL_NOTIFY_SHIFTS`, `EMAIL_NOTIFY_INCIDENTS`, `PUSH_NOTIFY_EVENTS`, `PUSH_NOTIFY_INCIDENTS`.
+- Opt-In/Out: `GET|PUT /api/notifications/preferences/me` erlaubt Mitarbeitenden, `emailOptIn` bzw. `pushOptIn` zu setzen (Standard: beide `true`).
+- Echtzeit-Events (SSE): `GET /api/notifications/events` (RBAC: ADMIN/MANAGER/DISPATCHER) streamt Zustellereignisse. Filterbar via Query (`channel=email,push`, `status=sent,failed`, `template=incident-created`). Heartbeat-Intervall via `NOTIFY_EVENTS_HEARTBEAT_MS` (Default 15 s).
+
