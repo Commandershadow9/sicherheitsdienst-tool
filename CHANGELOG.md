@@ -5,8 +5,15 @@ All notable changes to this project will be documented in this file.
 ## Unreleased
 
 ### Added
+- docs: Security-Hardening Blueprint (`docs/planning/security-hardening.md`) mit Rate-Limit- und Audit-Trail-Konzept.
+- backend/shifts: Selektive Rate-Limits für Schicht-Zuweisung (`SHIFT_ASSIGN_RATE_LIMIT_*`) sowie Clock-in/out (`SHIFT_CLOCK_RATE_LIMIT_*`) inkl. Tests & ENV-Beispielen.
+- security: Prisma `AuditLog` Modell + Migration, Logging-Service (`logAuditEvent`/`flushAuditLogQueue`) mit Retry-Queue, Tests & Doku (Phase B).
+- notifications: Template-Metadaten (GET `/api/notifications/templates`), Nutzer-Opt-In-API (`/preferences/me`), SSE-Eventstream `/api/notifications/events`, neue Incident-Templates (E-Mail & Push).
+- prisma: `user.emailOptIn` Feld + Migration (`20250916_add_user_email_optin`).
+- docs: README & MONITORING um Notification-Runbook (Templates, Opt-In, SSE) erweitert; `.env.example` mit Incident-Flags & Heartbeat.
 - backend/auth: Login-Rate-Limiter per ENV (`LOGIN_RATE_LIMIT_MAX/_WINDOW_MS`), Compose-Doku aktualisiert.
 - observability: Prometheus-Counter für Login-Limiter (Hits/Blocked) + Dashboard/Alert Doku.
+- observability: `/api/stats` mit Runtime-/Event-Loop-/Queue-Metriken & Notification-Success-Rates; Logging-Runbook (README) + In-Memory-Queue-Tracking.
 - feat(auth/rbac): FE‑Interceptors – 401 genau 1× refresh, 403 zeigt Forbidden‑Karte; Navigation blendet verbotene Menüs aus.
 - feat(users): Server‑getriebene Users‑Tabelle (Suche via `query`, 300ms Debounce, Sort/Paging in URL), Export (CSV/XLSX) nutzt dieselben Filter (ohne Pagination).
 - ui: Base Atoms (Button/Input/Select/Table/Modal), `FormField` Wrapper; DataTable mit Sort‑Icons (lucide) statt Unicode.
@@ -16,8 +23,11 @@ All notable changes to this project will be documented in this file.
 - repo: commitlint (Conventional Commits) + PR‑Template Checkliste.
 
 ### Changed
+- shifts: `/api/shifts/:id/assign` erfordert nun Rollen `ADMIN`/`DISPATCHER` und trägt Rate-Limit-Header für wiederholte Aufrufe.
+- notifications/test: Channel `push` unterstützt, Validierung via Zod (Template-Key, userIds, Variablen) erweitert; Versand tracked Event-Stream.
 - readiness: SMTP-Verify liefert Diagnose (`deps.smtpMessage`) und schließt Transport nach Erfolg/Fehlschlag.
 - backend/auth: Login-Limiter fällt ohne ENV auf Default (5/15min) zurück und deaktiviert sich nur explizit mit `<=0`.
+- notifications/email: Queue- und Counter-State speichern letzte Zeitstempel/Fehler; Push/E-Mail-Services melden Jobs an Queue-Monitoring.
 - frontend/login: Zeigt bei 429 dedizierten Hinweis inkl. Countdown, blockiert erneute Versuche bis Reset.
 - backend/users: Query‑Validator (Zod) und Export auf Filter vereinheitlicht; `requireRole([])`‑Helper.
 - compose(dev): `SEED_ON_START=true` aktiviert Schema‑Push + Seed beim Start.

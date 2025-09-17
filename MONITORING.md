@@ -22,6 +22,8 @@ docker compose -f docker-compose.monitoring.yml up -d
 - Login-Limiter Hits/Blocks (rolling 5m):
   - `increase(app_auth_login_attempts_total[5m])`
   - `increase(app_auth_login_blocked_total[5m])`
+- Notification Streams aktiv:
+  - `app_api_stats_notifications_streams_subscribers` (über `/api/stats` per Exporter) bzw. `notifications.streams.subscribers` im JSON.
 
 ## Panels (Empfehlung)
 - Top Routes p95
@@ -29,6 +31,7 @@ docker compose -f docker-compose.monitoring.yml up -d
 - Latenz Heatmap
 - Requests Total / per Route
 - Login-Limiter Übersicht (Hits vs. Blocked, Top-Emails optional via Logs)
+- Notification Streams & Zustellstatistik (`notifications.streams`, `notifications.counters.success/fail`)
 
 ## Alerts (Empfehlung)
 - Login-Limiter Spike:
@@ -42,3 +45,4 @@ Hinweise
 - Scrape‑Target: im Dev häufig `api:3000` (Compose‑Service). Für reines Monitoring‑Compose ggf. `host.docker.internal:3000`/Bridge‑Netz.
 - Ports: Prometheus 9090, Grafana 3000 (kollisionsfrei zu API 3000/FE 5173).
 - Optionales Profil: Monitoring‑Compose ist getrennt; kann parallel zum Dev‑Stack laufen.
+- Echtzeit-Events prüfen: `curl -N -H "Authorization: Bearer <TOKEN>" "http://<SERVER_IP>:3000/api/notifications/events?channel=email,push"` (ADMIN/MANAGER/DISPATCHER). Heartbeat alle `NOTIFY_EVENTS_HEARTBEAT_MS` Sekunden (`: ping`).

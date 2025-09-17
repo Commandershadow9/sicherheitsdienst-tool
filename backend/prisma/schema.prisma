@@ -23,6 +23,7 @@ model User {
   hireDate       DateTime?
   qualifications String[] // Array von Qualifikationen
   pushOptIn      Boolean  @default(true)
+  emailOptIn     Boolean  @default(true)
   
   // Zeitstempel
   createdAt DateTime @default(now())
@@ -254,4 +255,24 @@ model DeviceToken {
 
   @@map("device_tokens")
   @@index([userId], name: "device_tokens_user_idx")
+}
+
+model AuditLog {
+  id           String   @id @default(cuid())
+  occurredAt   DateTime @default(now())
+  actorId      String?
+  actorRole    String?
+  actorIp      String?
+  action       String
+  resourceType String
+  resourceId   String?
+  data         Json?
+  requestId    String?
+  userAgent    String?
+  outcome      String?
+
+  @@map("audit_logs")
+  @@index([occurredAt], name: "audit_logs_occurredAt_idx")
+  @@index([resourceType, resourceId], name: "audit_logs_resource_idx")
+  @@index([actorId, occurredAt], name: "audit_logs_actor_idx")
 }

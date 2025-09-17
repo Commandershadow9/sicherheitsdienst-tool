@@ -1,0 +1,16 @@
+Hallo Einsatzleitung,
+
+der Vorfall "{{title}}" wurde gemeldet.
+
+Schweregrad: {{severity}}
+Ort: {{location}}
+Gemeldet von: {{reportedBy}}
+Zeitpunkt: {{occurredAt}}
+
+Beschreibung:
+{{description}}
+
+Bitte prüfen und weitere Maßnahmen einleiten.
+
+Viele Grüße
+Sicherheitsdienst-Tool

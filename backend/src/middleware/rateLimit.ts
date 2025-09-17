@@ -67,6 +67,8 @@ export function createRateLimit(options?: {
   perMinEnv?: string;
   enabledEnv?: string;
   keyName?: string; // used in the bucket key suffix for separation
+  defaultWindowMs?: number;
+  defaultPerMin?: number;
 }) {
   const cfg = {
     windowMsEnv: options?.windowMsEnv || 'AUTH_RATE_LIMIT_WINDOW_MS',
@@ -75,16 +77,20 @@ export function createRateLimit(options?: {
     keyName: options?.keyName || 'auth',
   };
   const store = new Map<Key, Bucket>();
+  const defaults = {
+    windowMs: options?.defaultWindowMs && options.defaultWindowMs > 0 ? options.defaultWindowMs : 60000,
+    perMin: options?.defaultPerMin && options.defaultPerMin > 0 ? options.defaultPerMin : 10,
+  };
 
   const getWindowMs = () => {
     const raw = process.env[cfg.windowMsEnv as keyof NodeJS.ProcessEnv] as string | undefined;
-    const n = raw && /^\d+$/.test(raw) ? parseInt(raw, 10) : 60000;
-    return n > 0 ? n : 60000;
+    const n = raw && /^\d+$/.test(raw) ? parseInt(raw, 10) : defaults.windowMs;
+    return n > 0 ? n : defaults.windowMs;
   };
   const getPerMin = () => {
     const raw = process.env[cfg.perMinEnv as keyof NodeJS.ProcessEnv] as string | undefined;
-    const n = raw && /^\d+$/.test(raw) ? parseInt(raw, 10) : 10;
-    return n > 0 ? n : 10;
+    const n = raw && /^\d+$/.test(raw) ? parseInt(raw, 10) : defaults.perMin;
+    return n > 0 ? n : defaults.perMin;
   };
   const getEnabled = () => {
     const raw = String(process.env[cfg.enabledEnv as keyof NodeJS.ProcessEnv] || 'true').toLowerCase();
@@ -133,4 +139,26 @@ export const createWriteRateLimit = () =>
     perMinEnv: 'WRITE_RATE_LIMIT_PER_MIN',
     enabledEnv: 'WRITE_RATE_LIMIT_ENABLED',
     keyName: 'write',
+    defaultPerMin: 10,
+    defaultWindowMs: 60000,
+  });
+
+export const createShiftAssignRateLimit = () =>
+  createRateLimit({
+    windowMsEnv: 'SHIFT_ASSIGN_RATE_LIMIT_WINDOW_MS',
+    perMinEnv: 'SHIFT_ASSIGN_RATE_LIMIT_PER_MIN',
+    enabledEnv: 'SHIFT_ASSIGN_RATE_LIMIT_ENABLED',
+    keyName: 'shift-assign',
+    defaultPerMin: 12,
+    defaultWindowMs: 60000,
+  });
+
+export const createShiftClockRateLimit = () =>
+  createRateLimit({
+    windowMsEnv: 'SHIFT_CLOCK_RATE_LIMIT_WINDOW_MS',
+    perMinEnv: 'SHIFT_CLOCK_RATE_LIMIT_PER_MIN',
+    enabledEnv: 'SHIFT_CLOCK_RATE_LIMIT_ENABLED',
+    keyName: 'shift-clock',
+    defaultPerMin: 20,
+    defaultWindowMs: 60000,
   });

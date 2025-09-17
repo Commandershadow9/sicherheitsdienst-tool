@@ -1,0 +1,15 @@
+Hallo Einsatzleitung,
+
+der Vorfall "{{title}}" wurde aktualisiert.
+
+Neuer Status: {{status}}
+Aktualisiert von: {{updatedBy}}
+Zeitpunkt: {{updatedAt}}
+
+Zusammenfassung:
+{{summary}}
+
+Bitte prüfen Sie die Änderungen und passen Sie Maßnahmen an.
+
+Viele Grüße
+Sicherheitsdienst-Tool
