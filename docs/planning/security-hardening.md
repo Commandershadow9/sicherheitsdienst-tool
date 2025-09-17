@@ -1,6 +1,6 @@
 # Security Hardening Blueprint
 
-_Status: 2025-09-17_
+_Status: 2025-09-18_
 
 ## Scope & Objectives
 - Reduce abuse potential on high-impact write endpoints (shift assignment, clock events, notifications test) with targeted limits that complement the global write limiter.
@@ -75,7 +75,7 @@ model AuditLog {
 
 ## Implementation Roadmap
 1. **Phase A (done)**: Document blueprint, introduce selective rate-limits for shift assignment & clock flows, update env examples + tests.
-2. **Phase B**: Implement Prisma model + migration, service util (`auditLogger.log({ action, actor, resource, data })`) with batching fallback.
+2. **Phase B (done 2025-09-18)**: Prisma-Modell + Migration, Logging-Service mit Retry-Queue (`logAuditEvent`, `flushAuditLogQueue`) samt Tests/Doku.
 3. **Phase C**: Wire controllers/middleware to emit events (auth, shifts, notifications, incidents). Add integration tests covering audit writes.
 4. **Phase D**: Expose `GET /api/audit-logs` (RBAC `ADMIN`), document filters, add CSV export.
 5. **Phase E**: Ops tasks – retention job (`scripts/prune-audit.ts`), Prometheus metrics, dashboards, alert rules.
@@ -84,4 +84,3 @@ model AuditLog {
 - Do we need tamper-proofing beyond DB-level protections (e.g., WORM storage, hash chaining)?
 - Required SLA for audit availability (RPO/RTO) to size retention and storage redundancy.
 - Regional data residency constraints for audit data copies.
-

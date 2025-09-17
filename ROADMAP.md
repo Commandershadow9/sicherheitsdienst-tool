@@ -39,7 +39,8 @@ Hinweis: Dieser Abschnitt fasst die tagesaktuellen Ziele aus der ehemaligen Date
 
 ### Nächste Schritte (Kurz-Backlog)
 - ✅ Notifications: Templates/Echtzeit-Events & Opt-In/Out vorbereitet (Feature-Flags, Tests, UI-Hooks) – 2025-09-16.
-- Security-Hardening: Audit-Trail & Persistenz umsetzen (Selektive Shift-Limits + Blueprint erledigt am 2025-09-17).
+- ✅ Security-Hardening Phase B: Prisma-AuditLog + Logging-Utility inkl. Queue/Tests/Docs (2025-09-18).
+- Security-Hardening Phase C: Audit-Events in Auth/Shifts/Notifications verankern und Read-API vorbereiten (Blueprint & selektive Shift-Limits aus Phase A abgeschlossen 2025-09-17).
 - Telemetry: Prometheus/Grafana Dashboards versionieren, PromQL-Snippets im Monitoring-Runbook ergänzen.
 - Ops/Compose: Healthchecks & Migrationslauf in Docker-Stacks harmonisieren (`docker-compose*.yml`, `.env.example`).
 

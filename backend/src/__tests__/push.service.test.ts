@@ -60,6 +60,8 @@ describe('pushService', () => {
     process.env.FCM_PROJECT_ID = '';
     process.env.FCM_CLIENT_EMAIL = '';
     process.env.FCM_PRIVATE_KEY = '';
+    const queueStats = require('../utils/queueStats');
+    queueStats.resetAllQueues();
   });
 
   it('mock path increments success when FCM not configured', async () => {
@@ -78,6 +80,8 @@ describe('pushService', () => {
   });
 
   it('records failure metrics and resets queue state when token lookup throws', async () => {
+    const notifyStats = getNotifyStatsMock();
+    notifyStats.__reset();
     const svc = require('../services/pushService');
     const pm = new (require('@prisma/client').PrismaClient)();
     const error = new Error('db kaputt');
