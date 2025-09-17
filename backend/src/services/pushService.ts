@@ -68,69 +68,53 @@ export async function sendPushToUsers(
   const queueName = 'notifications-push';
   queueJobEnqueued(queueName);
   queueJobStarted(queueName);
-  const tokens = await getActiveTokens(userIds);
-  if (!tokens.length) {
-    logger.info('PUSH: keine aktiven Tokens gefunden für Nutzer %o', userIds);
-    incrPushSuccess(0);
-    queueJobSucceeded(queueName);
-    publishNotificationEvent({
-      channel: 'push',
-      status: 'sent',
-      template: options.template,
-      userIds,
-      title,
-      body,
-      metadata: {
-        delivered: 0,
-        reason: options.reason || 'custom',
-        ...((options.context && Object.keys(options.context).length) ? { context: options.context } : {}),
-      },
-    });
-    return { success: true, count: 0 };
-  }
-
-  if (!isFCMConfigured()) {
-    logger.info('PUSH (mock, ohne FCM): tokens=%d title=%s body=%s', tokens.length, title, body);
-    incrPushSuccess(tokens.length);
-    queueJobSucceeded(queueName);
-    publishNotificationEvent({
-      channel: 'push',
-      status: 'sent',
-      template: options.template,
-      userIds,
-      title,
-      body,
-      metadata: {
-        delivered: tokens.length,
-        mode: 'mock',
-        reason: options.reason || 'custom',
-        ...((options.context && Object.keys(options.context).length) ? { context: options.context } : {}),
-      },
-    });
-    return { success: true, count: tokens.length };
-  }
-  initFCM();
-  if (!firebase) {
-    const error = new Error('FCM konnte nicht initialisiert werden');
-    incrPushFail(error);
-    queueJobFailed(queueName, error);
-    publishNotificationEvent({
-      channel: 'push',
-      status: 'failed',
-      template: options.template,
-      userIds,
-      title,
-      body,
-      metadata: {
-        reason: options.reason || 'custom',
-        ...((options.context && Object.keys(options.context).length) ? { context: options.context } : {}),
-      },
-      error: error.message,
-    });
-    return { success: false, count: 0 };
-  }
-
   try {
+    const tokens = await getActiveTokens(userIds);
+    if (!tokens.length) {
+      logger.info('PUSH: keine aktiven Tokens gefunden für Nutzer %o', userIds);
+      incrPushSuccess(0);
+      queueJobSucceeded(queueName);
+      publishNotificationEvent({
+        channel: 'push',
+        status: 'sent',
+        template: options.template,
+        userIds,
+        title,
+        body,
+        metadata: {
+          delivered: 0,
+          reason: options.reason || 'custom',
+          ...((options.context && Object.keys(options.context).length) ? { context: options.context } : {}),
+        },
+      });
+      return { success: true, count: 0 };
+    }
+
+    if (!isFCMConfigured()) {
+      logger.info('PUSH (mock, ohne FCM): tokens=%d title=%s body=%s', tokens.length, title, body);
+      incrPushSuccess(tokens.length);
+      queueJobSucceeded(queueName);
+      publishNotificationEvent({
+        channel: 'push',
+        status: 'sent',
+        template: options.template,
+        userIds,
+        title,
+        body,
+        metadata: {
+          delivered: tokens.length,
+          mode: 'mock',
+          reason: options.reason || 'custom',
+          ...((options.context && Object.keys(options.context).length) ? { context: options.context } : {}),
+        },
+      });
+      return { success: true, count: tokens.length };
+    }
+    initFCM();
+    if (!firebase) {
+      throw new Error('FCM konnte nicht initialisiert werden');
+    }
+
     const resp = await firebase.messaging().sendEachForMulticast({ tokens, notification: { title, body } });
     // Optional: inaktive Tokens gezielt deaktivieren
     if (resp.failureCount > 0 && Array.isArray(resp.responses)) {
