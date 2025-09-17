@@ -12,7 +12,18 @@ import { httpRequestDurationSeconds, httpRequestsTotal } from './utils/metrics';
 dotenv.config();
 
 // Import all routes
-import { systemRoutes, userRoutes, shiftRoutes, authRoutes, siteRoutes, notificationRoutes, eventRoutes, pushRoutes, incidentRoutes } from './routes';
+import {
+  systemRoutes,
+  userRoutes,
+  shiftRoutes,
+  authRoutes,
+  siteRoutes,
+  notificationRoutes,
+  eventRoutes,
+  pushRoutes,
+  incidentRoutes,
+  auditLogRoutes,
+} from './routes';
 import systemRootRoutes from './routes/system';
 
 const app = express();
@@ -85,6 +96,7 @@ app.get('/', (req: Request, res: Response) => {
       auth: '/api/auth',
       users: '/api/users',
       shifts: '/api/shifts',
+      auditLogs: '/api/audit-logs',
       sites: '/api/sites',
     },
     timestamp: new Date().toISOString(),
@@ -104,6 +116,7 @@ app.use('/api/notifications', notificationRoutes);
 app.use('/api/events', eventRoutes);
 app.use('/api/push', pushRoutes);
 app.use('/api/incidents', incidentRoutes);
+app.use('/api/audit-logs', auditLogRoutes);
 
 // API v1 Alias (OpenAPI servers: /api/v1)
 app.use('/api/v1', systemRoutes);
@@ -115,6 +128,7 @@ app.use('/api/v1/notifications', notificationRoutes);
 app.use('/api/v1/events', eventRoutes);
 app.use('/api/v1/push', pushRoutes);
 app.use('/api/v1/incidents', incidentRoutes);
+app.use('/api/v1/audit-logs', auditLogRoutes);
 
 // 404 handler for unmatched routes
 app.use((req: Request, res: Response) => {

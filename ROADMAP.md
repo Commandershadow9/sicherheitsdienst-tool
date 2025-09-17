@@ -40,7 +40,9 @@ Hinweis: Dieser Abschnitt fasst die tagesaktuellen Ziele aus der ehemaligen Date
 ### Nächste Schritte (Kurz-Backlog)
 - ✅ Notifications: Templates/Echtzeit-Events & Opt-In/Out vorbereitet (Feature-Flags, Tests, UI-Hooks) – 2025-09-16.
 - ✅ Security-Hardening Phase B: Prisma-AuditLog + Logging-Utility inkl. Queue/Tests/Docs (2025-09-18).
-- Security-Hardening Phase C: Audit-Events in Auth/Shifts/Notifications verankern und Read-API vorbereiten (Blueprint & selektive Shift-Limits aus Phase A abgeschlossen 2025-09-17).
+- ✅ Security-Hardening Phase C: Audit-Events für Auth/Shifts/Notifications + Admin Read-API (`GET /api/audit-logs`) (2025-09-19).
+- ✅ Security-Hardening Phase D: Audit-CSV-Export + `/api/stats`-Kennzahlen (2025-09-19).
+- ✅ Security-Hardening Phase E: Retention-Job (`npm run audit:prune`), Prometheus-Metriken, `/api/stats` Auditdaten (2025-09-19). Nächster Schritt: Dashboards/Alerts feintunen.
 - Telemetry: Prometheus/Grafana Dashboards versionieren, PromQL-Snippets im Monitoring-Runbook ergänzen.
 - Ops/Compose: Healthchecks & Migrationslauf in Docker-Stacks harmonisieren (`docker-compose*.yml`, `.env.example`).
 

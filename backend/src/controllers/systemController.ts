@@ -7,6 +7,7 @@ import { getNotifyCounters } from '../utils/notifyStats';
 import { getQueueSnapshot, type QueueState } from '../utils/queueStats';
 import { getRuntimeMetrics } from '../utils/runtimeMetrics';
 import { getNotificationStreamStats } from '../utils/notificationEvents';
+import { getAuditLogQueueSize } from '../services/auditLogService';
 
 // Lightweight health endpoint (no deps)
 export const healthz = async (_req: Request, res: Response): Promise<void> => {
@@ -119,7 +120,20 @@ export const getSystemStats = async (req: Request, res: Response, next: NextFunc
   try {
     const runtime = getRuntimeMetrics();
     // Parallele Datenbankabfragen für bessere Performance
-    const [totalUsers, activeUsers, totalShifts, upcomingShifts, openIncidents, totalTimeEntries] =
+    const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+
+    const [
+      totalUsers,
+      activeUsers,
+      totalShifts,
+      upcomingShifts,
+      openIncidents,
+      totalTimeEntries,
+      totalAuditLogs,
+      lastDayAuditLogs,
+      outcomeGroups,
+      latestAuditEvent,
+    ] =
       await Promise.all([
         prisma.user.count(),
         prisma.user.count({ where: { isActive: true } }),
@@ -134,6 +148,13 @@ export const getSystemStats = async (req: Request, res: Response, next: NextFunc
           where: { status: { in: ['OPEN', 'IN_PROGRESS'] } },
         }),
         prisma.timeEntry.count(),
+        prisma.auditLog.count(),
+        prisma.auditLog.count({ where: { occurredAt: { gte: twentyFourHoursAgo } } }),
+        prisma.auditLog.groupBy({
+          by: ['outcome'],
+          _count: true,
+        }),
+        prisma.auditLog.findFirst({ orderBy: { occurredAt: 'desc' } }),
       ]);
 
     // Feature-/Env-Status ableiten
@@ -177,6 +198,19 @@ export const getSystemStats = async (req: Request, res: Response, next: NextFunc
     const notificationQueues = {
       email: queueSnapshot['notifications-email'] || defaultQueueState('notifications-email'),
       push: queueSnapshot['notifications-push'] || defaultQueueState('notifications-push'),
+    };
+
+    const auditOutcomeCounts = outcomeGroups.reduce<Record<string, number>>((acc, entry) => {
+      const key = entry.outcome ?? 'UNKNOWN';
+      acc[key] = entry._count;
+      return acc;
+    }, {});
+
+    const auditQueueConfig = {
+      flushIntervalMs: Number(process.env.AUDIT_LOG_FLUSH_INTERVAL_MS || 2000),
+      batchSize: Number(process.env.AUDIT_LOG_BATCH_SIZE || 25),
+      maxQueueSize: Number(process.env.AUDIT_LOG_MAX_QUEUE || 1000),
+      pending: getAuditLogQueueSize(),
     };
 
     res.json({
@@ -225,6 +259,20 @@ export const getSystemStats = async (req: Request, res: Response, next: NextFunc
         queues: queueSnapshot,
         authRateLimit,
         auth: authCfg,
+        auditTrail: {
+          total: totalAuditLogs,
+          last24h: lastDayAuditLogs,
+          outcomes: auditOutcomeCounts,
+          latest: latestAuditEvent
+            ? {
+                id: latestAuditEvent.id,
+                occurredAt: latestAuditEvent.occurredAt.toISOString(),
+                action: latestAuditEvent.action,
+                outcome: latestAuditEvent.outcome,
+              }
+            : null,
+          queue: auditQueueConfig,
+        },
         env: {
           nodeEnv: process.env.NODE_ENV || 'development',
           version: process.env.npm_package_version || '1.0.0',

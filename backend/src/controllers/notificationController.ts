@@ -12,6 +12,7 @@ import {
   registerNotificationStream,
   unregisterNotificationStream,
 } from '../utils/notificationEvents';
+import { recordAuditEvent } from '../utils/auditTrail';
 
 function parseChannel(input?: string): NotificationChannel {
   if (input && input.toLowerCase() === 'push') return 'push';
@@ -151,12 +152,26 @@ export const getMyNotificationPreferences = async (req: Request, res: Response, 
 export const updateMyNotificationPreferences = async (req: Request, res: Response, next: NextFunction) => {
   try {
     if (!req.user) {
+      await recordAuditEvent(req, {
+        action: 'NOTIFICATION.PREFERENCES.UPDATE',
+        resourceType: 'NOTIFICATION_PREFERENCE',
+        resourceId: null,
+        outcome: 'DENIED',
+        data: { reason: 'UNAUTHENTICATED' },
+      });
       return res.status(401).json({ success: false, message: 'Authentifizierung erforderlich.' });
     }
     const updates: Record<string, boolean> = {};
     if (typeof req.body.emailOptIn === 'boolean') updates.emailOptIn = req.body.emailOptIn;
     if (typeof req.body.pushOptIn === 'boolean') updates.pushOptIn = req.body.pushOptIn;
     if (!Object.keys(updates).length) {
+      await recordAuditEvent(req, {
+        action: 'NOTIFICATION.PREFERENCES.UPDATE',
+        resourceType: 'NOTIFICATION_PREFERENCE',
+        resourceId: req.user.id,
+        outcome: 'DENIED',
+        data: { reason: 'NO_VALID_FIELDS' },
+      });
       return res.status(400).json({ success: false, message: 'Keine gültigen Felder zum Aktualisieren gefunden.' });
     }
     const updated = await prisma.user.update({
@@ -164,8 +179,22 @@ export const updateMyNotificationPreferences = async (req: Request, res: Respons
       data: updates,
       select: { emailOptIn: true, pushOptIn: true },
     });
+    await recordAuditEvent(req, {
+      action: 'NOTIFICATION.PREFERENCES.UPDATE',
+      resourceType: 'NOTIFICATION_PREFERENCE',
+      resourceId: req.user.id,
+      outcome: 'SUCCESS',
+      data: updates,
+    });
     return res.json({ success: true, data: updated });
   } catch (err) {
+    await recordAuditEvent(req, {
+      action: 'NOTIFICATION.PREFERENCES.UPDATE',
+      resourceType: 'NOTIFICATION_PREFERENCE',
+      resourceId: req.user?.id ?? null,
+      outcome: 'ERROR',
+      data: { error: err instanceof Error ? err.message : 'UNKNOWN_ERROR' },
+    });
     return next(err);
   }
 };
@@ -219,4 +248,3 @@ export const streamNotificationEvents = (req: Request, res: Response, next: Next
     next(err);
   }
 };
-

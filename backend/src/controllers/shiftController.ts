@@ -4,6 +4,7 @@ import ExcelJS from 'exceljs';
 import logger from '../utils/logger';
 import { sendShiftChangedEmail } from '../services/emailService';
 import { streamCsv } from '../utils/csv';
+import { recordAuditEvent } from '../utils/auditTrail';
 
 const EMAIL_FLAG = 'EMAIL_NOTIFY_SHIFTS';
 
@@ -289,6 +290,17 @@ export const createShift = async (req: Request, res: Response, next: NextFunctio
     } catch {
       // bereits intern geloggt
     }
+    await recordAuditEvent(req, {
+      action: 'SHIFT.CREATE',
+      resourceType: 'SHIFT',
+      resourceId: shift.id,
+      outcome: 'SUCCESS',
+      data: {
+        title: shift.title,
+        startTime: shift.startTime instanceof Date ? shift.startTime.toISOString() : new Date(shift.startTime).toISOString(),
+        endTime: shift.endTime instanceof Date ? shift.endTime.toISOString() : new Date(shift.endTime).toISOString(),
+      },
+    });
     res.status(201).json({
       success: true,
       message: 'Schicht erfolgreich erstellt',
@@ -296,6 +308,12 @@ export const createShift = async (req: Request, res: Response, next: NextFunctio
     });
   } catch (error) {
     console.error('Error creating shift:', error);
+    await recordAuditEvent(req, {
+      action: 'SHIFT.CREATE',
+      resourceType: 'SHIFT',
+      outcome: 'ERROR',
+      data: { error: error instanceof Error ? error.message : 'UNKNOWN_ERROR' },
+    });
     next(error);
   }
 };
@@ -412,6 +430,16 @@ export const updateShift = async (req: Request, res: Response, next: NextFunctio
     } catch {
       // bereits intern geloggt
     }
+    await recordAuditEvent(req, {
+      action: 'SHIFT.UPDATE',
+      resourceType: 'SHIFT',
+      resourceId: updatedShift.id,
+      outcome: 'SUCCESS',
+      data: {
+        updatedFields: Object.keys(req.body || {}),
+        status: updatedShift.status,
+      },
+    });
     res.json({
       success: true,
       message: 'Schicht erfolgreich aktualisiert',
@@ -421,6 +449,13 @@ export const updateShift = async (req: Request, res: Response, next: NextFunctio
     console.error('Error updating shift:', error);
 
     if (error.code === 'P2025') {
+      await recordAuditEvent(req, {
+        action: 'SHIFT.UPDATE',
+        resourceType: 'SHIFT',
+        resourceId: req.params.id,
+        outcome: 'DENIED',
+        data: { reason: 'NOT_FOUND' },
+      });
       res.status(404).json({
         success: false,
         message: 'Schicht nicht gefunden',
@@ -428,6 +463,13 @@ export const updateShift = async (req: Request, res: Response, next: NextFunctio
       return;
     }
 
+    await recordAuditEvent(req, {
+      action: 'SHIFT.UPDATE',
+      resourceType: 'SHIFT',
+      resourceId: req.params.id,
+      outcome: 'ERROR',
+      data: { error: error instanceof Error ? error.message : 'UNKNOWN_ERROR' },
+    });
     next(error);
   }
 };
@@ -469,6 +511,13 @@ export const deleteShift = async (req: Request, res: Response, next: NextFunctio
     } catch {
       // bereits intern geloggt
     }
+    await recordAuditEvent(req, {
+      action: 'SHIFT.DELETE',
+      resourceType: 'SHIFT',
+      resourceId: deletedShift.id,
+      outcome: 'SUCCESS',
+      data: { title: deletedShift.title },
+    });
     res.json({
       success: true,
       message: 'Schicht erfolgreich gelöscht',
@@ -478,6 +527,13 @@ export const deleteShift = async (req: Request, res: Response, next: NextFunctio
     console.error('Error deleting shift:', error);
 
     if (error.code === 'P2025') {
+      await recordAuditEvent(req, {
+        action: 'SHIFT.DELETE',
+        resourceType: 'SHIFT',
+        resourceId: req.params.id,
+        outcome: 'DENIED',
+        data: { reason: 'NOT_FOUND' },
+      });
       res.status(404).json({
         success: false,
         message: 'Schicht nicht gefunden',
@@ -485,6 +541,13 @@ export const deleteShift = async (req: Request, res: Response, next: NextFunctio
       return;
     }
 
+    await recordAuditEvent(req, {
+      action: 'SHIFT.DELETE',
+      resourceType: 'SHIFT',
+      resourceId: req.params.id,
+      outcome: 'ERROR',
+      data: { error: error instanceof Error ? error.message : 'UNKNOWN_ERROR' },
+    });
     next(error);
   }
 };
@@ -496,6 +559,13 @@ export const assignUserToShift = async (req: Request, res: Response, next: NextF
     const { userId } = req.body;
 
     if (!userId) {
+      await recordAuditEvent(req, {
+        action: 'SHIFT.ASSIGN',
+        resourceType: 'SHIFT',
+        resourceId: shiftId,
+        outcome: 'DENIED',
+        data: { reason: 'MISSING_USER_ID' },
+      });
       res.status(400).json({
         success: false,
         message: 'Benutzer-ID ist erforderlich',
@@ -510,6 +580,13 @@ export const assignUserToShift = async (req: Request, res: Response, next: NextF
     });
 
     if (!shift) {
+      await recordAuditEvent(req, {
+        action: 'SHIFT.ASSIGN',
+        resourceType: 'SHIFT',
+        resourceId: shiftId,
+        outcome: 'DENIED',
+        data: { reason: 'SHIFT_NOT_FOUND', userId },
+      });
       res.status(404).json({
         success: false,
         message: 'Schicht nicht gefunden',
@@ -528,6 +605,13 @@ export const assignUserToShift = async (req: Request, res: Response, next: NextF
     });
 
     if (existingAssignment) {
+      await recordAuditEvent(req, {
+        action: 'SHIFT.ASSIGN',
+        resourceType: 'SHIFT',
+        resourceId: shiftId,
+        outcome: 'DENIED',
+        data: { reason: 'ALREADY_ASSIGNED', userId },
+      });
       res.status(400).json({
         success: false,
         message: 'Mitarbeiter ist bereits dieser Schicht zugewiesen',
@@ -562,6 +646,13 @@ export const assignUserToShift = async (req: Request, res: Response, next: NextF
       },
     });
 
+    await recordAuditEvent(req, {
+      action: 'SHIFT.ASSIGN',
+      resourceType: 'SHIFT',
+      resourceId: shiftId,
+      outcome: 'SUCCESS',
+      data: { assignmentId: assignment.id, userId },
+    });
     res.status(201).json({
       success: true,
       message: 'Mitarbeiter erfolgreich zur Schicht zugewiesen',
@@ -571,6 +662,13 @@ export const assignUserToShift = async (req: Request, res: Response, next: NextF
     console.error('Error assigning user to shift:', error);
 
     if (error.code === 'P2002') {
+      await recordAuditEvent(req, {
+        action: 'SHIFT.ASSIGN',
+        resourceType: 'SHIFT',
+        resourceId: req.params.id,
+        outcome: 'DENIED',
+        data: { reason: 'ALREADY_ASSIGNED', userId: req.body?.userId },
+      });
       res.status(400).json({
         success: false,
         message: 'Mitarbeiter ist bereits dieser Schicht zugewiesen',
@@ -578,6 +676,13 @@ export const assignUserToShift = async (req: Request, res: Response, next: NextF
       return;
     }
 
+    await recordAuditEvent(req, {
+      action: 'SHIFT.ASSIGN',
+      resourceType: 'SHIFT',
+      resourceId: req.params.id,
+      outcome: 'ERROR',
+      data: { error: error instanceof Error ? error.message : 'UNKNOWN_ERROR' },
+    });
     next(error);
   }
 };
@@ -589,6 +694,13 @@ export const clockIn = async (req: Request, res: Response, next: NextFunction) =
     const userId = (req.user as any)?.id;
     const { at, location, notes } = req.body;
     if (!userId) {
+      await recordAuditEvent(req, {
+        action: 'SHIFT.CLOCK_IN',
+        resourceType: 'SHIFT',
+        resourceId: shiftId,
+        outcome: 'DENIED',
+        data: { reason: 'UNAUTHENTICATED' },
+      });
       res.status(401).json({ success: false, message: 'Nicht authentifiziert' });
       return;
     }
@@ -596,11 +708,25 @@ export const clockIn = async (req: Request, res: Response, next: NextFunction) =
       where: { userId_shiftId: { userId, shiftId } },
     });
     if (!assigned) {
+      await recordAuditEvent(req, {
+        action: 'SHIFT.CLOCK_IN',
+        resourceType: 'SHIFT',
+        resourceId: shiftId,
+        outcome: 'DENIED',
+        data: { reason: 'NOT_ASSIGNED', userId },
+      });
       res.status(403).json({ success: false, message: 'Nicht für diese Schicht zugewiesen' });
       return;
     }
     const open = await prisma.timeEntry.findFirst({ where: { userId, endTime: null } });
     if (open) {
+      await recordAuditEvent(req, {
+        action: 'SHIFT.CLOCK_IN',
+        resourceType: 'SHIFT',
+        resourceId: shiftId,
+        outcome: 'DENIED',
+        data: { reason: 'OPEN_ENTRY_EXISTS', userId, openEntryId: open.id },
+      });
       res.status(400).json({ success: false, message: 'Es existiert bereits ein offener Zeiteintrag' });
       return;
     }
@@ -617,8 +743,22 @@ export const clockIn = async (req: Request, res: Response, next: NextFunction) =
       const hoursRest = (start.getTime() - new Date(last.endTime).getTime()) / 3_600_000;
       if (hoursRest < 11) warnings.push('WARN_REST_PERIOD_LT_11H');
     }
+    await recordAuditEvent(req, {
+      action: 'SHIFT.CLOCK_IN',
+      resourceType: 'SHIFT',
+      resourceId: shiftId,
+      outcome: 'SUCCESS',
+      data: { timeEntryId: entry.id, userId, at },
+    });
     res.json({ success: true, message: 'Clock-in erfasst', data: entry, warnings });
   } catch (error) {
+    await recordAuditEvent(req, {
+      action: 'SHIFT.CLOCK_IN',
+      resourceType: 'SHIFT',
+      resourceId: req.params.id,
+      outcome: 'ERROR',
+      data: { error: error instanceof Error ? error.message : 'UNKNOWN_ERROR' },
+    });
     next(error);
   }
 };
@@ -630,6 +770,13 @@ export const clockOut = async (req: Request, res: Response, next: NextFunction) 
     const userId = (req.user as any)?.id;
     const { at, breakTime, location, notes } = req.body;
     if (!userId) {
+      await recordAuditEvent(req, {
+        action: 'SHIFT.CLOCK_OUT',
+        resourceType: 'SHIFT',
+        resourceId: shiftId,
+        outcome: 'DENIED',
+        data: { reason: 'UNAUTHENTICATED' },
+      });
       res.status(401).json({ success: false, message: 'Nicht authentifiziert' });
       return;
     }
@@ -637,11 +784,25 @@ export const clockOut = async (req: Request, res: Response, next: NextFunction) 
       where: { userId_shiftId: { userId, shiftId } },
     });
     if (!assigned) {
+      await recordAuditEvent(req, {
+        action: 'SHIFT.CLOCK_OUT',
+        resourceType: 'SHIFT',
+        resourceId: shiftId,
+        outcome: 'DENIED',
+        data: { reason: 'NOT_ASSIGNED', userId },
+      });
       res.status(403).json({ success: false, message: 'Nicht für diese Schicht zugewiesen' });
       return;
     }
     const open = await prisma.timeEntry.findFirst({ where: { userId, endTime: null }, orderBy: { startTime: 'desc' } });
     if (!open) {
+      await recordAuditEvent(req, {
+        action: 'SHIFT.CLOCK_OUT',
+        resourceType: 'SHIFT',
+        resourceId: shiftId,
+        outcome: 'DENIED',
+        data: { reason: 'NO_OPEN_ENTRY', userId },
+      });
       res.status(400).json({ success: false, message: 'Kein offener Zeiteintrag vorhanden' });
       return;
     }
@@ -660,8 +821,22 @@ export const clockOut = async (req: Request, res: Response, next: NextFunction) 
       (end.getTime() - new Date(updated.startTime).getTime()) / 3_600_000 - (updated.breakTime ? updated.breakTime / 60 : 0);
     if (durationHours > 12) warnings.push('WARN_SHIFT_GT_12H');
     if (durationHours > 10) warnings.push('WARN_SHIFT_GT_10H');
+    await recordAuditEvent(req, {
+      action: 'SHIFT.CLOCK_OUT',
+      resourceType: 'SHIFT',
+      resourceId: shiftId,
+      outcome: 'SUCCESS',
+      data: { timeEntryId: updated.id, userId, at, breakTime: updated.breakTime },
+    });
     res.json({ success: true, message: 'Clock-out erfasst', data: updated, warnings });
   } catch (error) {
+    await recordAuditEvent(req, {
+      action: 'SHIFT.CLOCK_OUT',
+      resourceType: 'SHIFT',
+      resourceId: req.params.id,
+      outcome: 'ERROR',
+      data: { error: error instanceof Error ? error.message : 'UNKNOWN_ERROR' },
+    });
     next(error);
   }
 };

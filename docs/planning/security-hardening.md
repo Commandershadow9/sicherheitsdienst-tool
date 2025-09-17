@@ -1,6 +1,6 @@
 # Security Hardening Blueprint
 
-_Status: 2025-09-18_
+_Status: 2025-09-19_
 
 ## Scope & Objectives
 - Reduce abuse potential on high-impact write endpoints (shift assignment, clock events, notifications test) with targeted limits that complement the global write limiter.
@@ -62,6 +62,16 @@ model AuditLog {
 - For clock-in/out: log shiftId, time, warnings, geo metadata (if present) in `data` JSON.
 - Notifications: link to telemetry by storing `notificationId` or queue identifiers.
 
+### Implemented (Phase C/D/E)
+- Auth: Login & Refresh (success, denied, Konfig-Fehler) mit Audit-Events.
+- Shifts: Create/Update/Delete, Assign, Clock-In/Clock-Out inkl. Fehlpfade (nicht zugewiesen, doppelter Clock-In, Schicht nicht gefunden).
+- Notifications: Eigene Opt-In/Out-Änderungen werden protokolliert.
+- Admin Read-API `GET /api/audit-logs` mit Filter-/Paging-Support und RBAC `ADMIN`.
+- CSV-Export `GET /api/audit-logs/export?format=csv` für Compliance-Ausleitungen (gleiche Filter wie Listing).
+- `/api/stats` zeigt Audit-Trail Kennzahlen (Total, letzte 24 h, Outcome-Verteilung, Queue-Konfiguration & Pending); Prometheus-Metriken `audit_log_events_total`, `audit_log_failures_total`, `audit_log_queue_size`, `audit_log_prune_operations_total` stehen zur Verfügung.
+- CSV-Export `GET /api/audit-logs/export?format=csv` für Compliance-Ausleitungen (gleiche Filter wie Listing).
+- Retention-Skript `npm run audit:prune` (ts-node) entfernt Einträge älter als `AUDIT_RETENTION_DAYS` (Default 400 Tage, Dry-Run via `--dry-run`).
+
 ### Access & Retention
 - API surface (`GET /api/audit-logs`) restricted to `ADMIN` (read-only) with pagination, filters (`actorId`, `resourceType`, `date range`).
 - Export capability (CSV) for compliance requests.
@@ -76,9 +86,9 @@ model AuditLog {
 ## Implementation Roadmap
 1. **Phase A (done)**: Document blueprint, introduce selective rate-limits for shift assignment & clock flows, update env examples + tests.
 2. **Phase B (done 2025-09-18)**: Prisma-Modell + Migration, Logging-Service mit Retry-Queue (`logAuditEvent`, `flushAuditLogQueue`) samt Tests/Doku.
-3. **Phase C**: Wire controllers/middleware to emit events (auth, shifts, notifications, incidents). Add integration tests covering audit writes.
-4. **Phase D**: Expose `GET /api/audit-logs` (RBAC `ADMIN`), document filters, add CSV export.
-5. **Phase E**: Ops tasks – retention job (`scripts/prune-audit.ts`), Prometheus metrics, dashboards, alert rules.
+3. **Phase C (done 2025-09-19)**: Audit-Events für Auth/Shifts/Notifications integriert, Admin-Read-API (`GET /api/audit-logs`) inkl. Filter/Paging und Tests bereitgestellt.
+4. **Phase D (done 2025-09-19)**: CSV-Export bereitgestellt, `/api/stats` um Audit-Kennzahlen ergänzt, Queue-Konfiguration dokumentiert.
+5. **Phase E (done 2025-09-19)**: Retention-Job (`npm run audit:prune`), Prometheus-Metriken und Export-Flow finalisiert; nächste Schritte: Dashboards & Alerts konfigurieren.
 
 ## Open Questions
 - Do we need tamper-proofing beyond DB-level protections (e.g., WORM storage, hash chaining)?

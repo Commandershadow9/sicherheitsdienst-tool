@@ -42,8 +42,9 @@ Erledigt:
   - [x] Selektive Rate-Limits für Schicht-Zuweisung & Clock-in/out (`SHIFT_ASSIGN_RATE_LIMIT_*`, `SHIFT_CLOCK_RATE_LIMIT_*`, Tests/Doku)
   - [ ] Audit-Trail (Schema, Logging-Utility, Read-API, Retention)
     - [x] Phase B: Prisma-Modell `AuditLog`, Logging-Service mit Retry-Queue, Tests & Doku (2025-09-18)
-    - [ ] Phase C: Audit-Events in Mutationen (Auth/Shifts/Notifications) + erste Read-API
-    - [ ] Phase D/E: Export/Retention-Job & Monitoring
+    - [x] Phase C: Audit-Events in Mutationen (Auth/Shifts/Notifications) + erste Read-API (2025-09-19)
+    - [x] Phase D: CSV-Export + `/api/stats` Kennzahlen (Audit) (2025-09-19)
+    - [x] Phase E: Retention-Job (`npm run audit:prune`), Prometheus-Metriken, `/api/stats` Kennzahlen (2025-09-19)
 
 ## Neues Feature: Einsätze/Events
 - [x] Datenmodell (Prisma): `Event` mit Feldern `id, title, description, siteId?, startTime, endTime, serviceInstructions (Text/Markdown), assignedEmployeeIds[]` + Indizes

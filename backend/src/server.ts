@@ -16,6 +16,7 @@ const server = app.listen(PORT, () => {
   logger.info(`   ├─ Health Check:   http://localhost:${PORT}/api/health`);
   logger.info(`   ├─ System Stats:   http://localhost:${PORT}/api/stats`);
   logger.info(`   ├─ Auth API:       http://localhost:${PORT}/api/auth`);
+  logger.info(`   ├─ Audit Logs:     http://localhost:${PORT}/api/audit-logs`);
   logger.info(`   ├─ Users API:      http://localhost:${PORT}/api/users`);
   logger.info(`   └─ Shifts API:     http://localhost:${PORT}/api/shifts`);
   logger.info('');

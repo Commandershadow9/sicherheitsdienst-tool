@@ -52,6 +52,24 @@ curl -sS 'http://<SERVER_IP>:3000/api/auth/refresh' \
   -d '{"refreshToken":"<REFRESH>"}' | jq
 ```
 
+## Audit Logs (ADMIN)
+- Liste abrufen (Filter & Paging)
+```bash
+curl -sS "$BASE/api/audit-logs?page=1&pageSize=25&actorId=admin&resourceType=SHIFT&from=2025-09-17T00:00:00Z&to=2025-09-19T00:00:00Z" \
+  -H "Authorization: Bearer $TOKEN" | jq
+
+# HTTPie mit Filterparametern
+http "$BASE/api/audit-logs" "Authorization: Bearer $TOKEN" \\
+  page==1 pageSize==25 actorId==admin resourceType==SHIFT action==SHIFT.ASSIGN outcome==SUCCESS
+```
+- CSV-Export
+```bash
+curl -sS "$BASE/api/audit-logs/export?format=csv&from=2025-09-17T00:00:00Z&to=2025-09-19T00:00:00Z" \
+  -H "Authorization: Bearer $TOKEN" -H 'Accept: text/csv' -o audit_logs.csv
+# HTTPie
+http --download "$BASE/api/audit-logs/export" "Authorization: Bearer $TOKEN" format==csv actorId==admin -o audit_logs.csv
+```
+
 ## Users
 - RBAC: Lesen nur `ADMIN`, `DISPATCHER`
 - Parameter (Query): `page`, `pageSize|pagesize`, `sortBy`, `sortDir`, `query`, `role`, `isActive`, `filter[...]`

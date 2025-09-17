@@ -24,6 +24,7 @@
     "docker:down": "docker-compose down",
     "docker:logs": "docker-compose logs -f",
     "setup": "npm install && npm run db:generate && npm run db:migrate && npm run db:seed",
+    "audit:prune": "ts-node src/scripts/pruneAuditLogs.ts",
     "clean": "rm -rf dist node_modules",
     "lint": "eslint . --ext .ts",
     "lint:fix": "eslint . --ext .ts --fix",

@@ -61,7 +61,7 @@ API (Backend)
   - Schicht-Zuweisung: `SHIFT_ASSIGN_RATE_LIMIT_PER_MIN`, `SHIFT_ASSIGN_RATE_LIMIT_WINDOW_MS`, `SHIFT_ASSIGN_RATE_LIMIT_ENABLED`
   - Clock-in/out: `SHIFT_CLOCK_RATE_LIMIT_PER_MIN`, `SHIFT_CLOCK_RATE_LIMIT_WINDOW_MS`, `SHIFT_CLOCK_RATE_LIMIT_ENABLED`
 - Logging: `LOG_LEVEL` (Default `debug` in Dev, sonst `info`), `LOG_FORMAT=json` erzwingt strukturierte Console-Logs.
-- Audit-Log (Phase B): `AUDIT_LOG_FLUSH_INTERVAL_MS` (Default 2000 ms), `AUDIT_LOG_BATCH_SIZE` (Default 25), `AUDIT_LOG_MAX_QUEUE` (Default 1000 Einträge vor Drop ältester Events).
+- Audit-Log (Phase E): `AUDIT_LOG_FLUSH_INTERVAL_MS` (Default 2000 ms), `AUDIT_LOG_BATCH_SIZE` (Default 25), `AUDIT_LOG_MAX_QUEUE` (Default 1000 Einträge vor Drop ältester Events), `AUDIT_RETENTION_DAYS` (Default 400, Minimum 1 Tag).
 - Compose: `PUBLIC_HOST` steuert, welche Origin (`http://PUBLIC_HOST:5173`) automatisch freigegeben wird.
 
 WEB (Frontend)
@@ -118,7 +118,7 @@ Beispiele
 
 ## Monitoring (optional)
 - `docker compose -f monitoring/docker-compose.monitoring.yml up -d`
-- Prometheus: `http://<SERVER_IP>:9090`, Grafana: `http://<SERVER_IP>:3000` (admin/admin)
+- Prometheus: `http://<SERVER_IP>:9090`, Grafana: `http://<SERVER_IP>:3300` (admin/admin)
 - Neue Auth-Limiter-Metriken: `app_auth_login_attempts_total`, `app_auth_login_blocked_total` (Dashboard/Alert siehe `MONITORING.md`).
 
 ## Logging
@@ -126,11 +126,15 @@ Beispiele
 - Request-ID (`X-Request-ID`) wird in jeden Logeintrag injiziert; strukturierte Logs via `LOG_FORMAT=json`.
 - Für JSON-Shipping (z. B. Loki/ELK) `LOG_FORMAT=json` setzen und `docker compose logs -f api` bzw. Filebeat nutzen.
 
-## Audit-Trail (Phase B)
+## Audit-Trail (Phase E)
 - Prisma-Modell `AuditLog` persistiert sicherheitsrelevante Aktionen (Actor, Ressource, Outcome, optional Payload) in der Tabelle `audit_logs`.
-- Service `logAuditEvent` schreibt synchron; bei Fehlern landen Events in einer In-Memory-Retry-Queue (`flushAuditLogQueue` leert sie batchweise, Default alle 2 s / max. 25 Events).
-- Queue ist per ENV einstellbar (`AUDIT_LOG_FLUSH_INTERVAL_MS`, `AUDIT_LOG_BATCH_SIZE`, `AUDIT_LOG_MAX_QUEUE`); bei voller Queue werden älteste Einträge verworfen (Warn-Log).
-- Tests decken Sofort-Schreibpfad, Queueing und Fehlerszenarien ab – Basis für Phase C (Integration in Mutationen) und Phase D/E (Read-API, Retention).
+- Service `logAuditEvent` schreibt synchron; bei Fehlern landen Events in einer In-Memory-Retry-Queue (`flushAuditLogQueue` leert sie batchweise, Default alle 2 s / max. 25 Events) und Prometheus-Metriken zählen direkte/Flush-Erfolge bzw. -Fehler (`audit_log_events_total`, `audit_log_failures_total`, `audit_log_queue_size`).
+- Queue ist per ENV einstellbar (`AUDIT_LOG_FLUSH_INTERVAL_MS`, `AUDIT_LOG_BATCH_SIZE`, `AUDIT_LOG_MAX_QUEUE`, `AUDIT_RETENTION_DAYS`); bei voller Queue werden älteste Einträge verworfen (Warn-Log).
+- Events werden für Auth (Login/Refresh), Schichten (Create/Update/Delete, Assign, Clock in/out) und Notification-Opt-Ins/-Outs aufgezeichnet – inkl. Fehlpfaden (z. B. nicht zugewiesen, ungültiger Token).
+- Admins rufen das Journal via `GET /api/audit-logs` (RBAC `ADMIN`) mit Paging & Filtern (`actorId`, `resourceType`, `resourceId`, `action`, `outcome`, `from`, `to`) ab – CSV-Export via `GET /api/audit-logs/export?format=csv` (gleiche Filter).
+- `/api/stats` enthält Audit-Kennzahlen (Total, letzte 24 h, Outcome-Verteilung, Queue-Konfiguration/Pending) für Dashboards.
+- Retention: `npm run audit:prune` löscht Einträge älter als `AUDIT_RETENTION_DAYS` (Default 400 Tage). Dry-Run via `npm run audit:prune -- --dry-run` oder alternativer `--retention-days` Wert.
+- Tests decken Sofort-Schreibpfad, Queueing, Fehlerszenarien sowie Retention-Logik ab.
 
 ## Troubleshooting (Kurz)
 - 429 beim Login: Dev‑RateLimiter ist nahezu deaktiviert; bei 429 → API neustarten + Browser hart reload. Frontend zeigt Countdown & Hinweis, Wartezeit respektieren (ENV `LOGIN_RATE_LIMIT_MAX/_WINDOW_MS`).

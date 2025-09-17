@@ -1,0 +1,115 @@
+{
+  "id": null,
+  "uid": "svc-audit-trail",
+  "title": "Audit Trail Overview",
+  "tags": ["sicherheitsdienst", "audit"],
+  "timezone": "browser",
+  "schemaVersion": 38,
+  "version": 1,
+  "refresh": "30s",
+  "panels": [
+    {
+      "type": "timeseries",
+      "title": "Audit Queue Size",
+      "gridPos": { "h": 7, "w": 24, "x": 0, "y": 0 },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "orange", "value": 200 },
+              { "color": "red", "value": 500 }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "audit_log_queue_size",
+          "legendFormat": "queue size"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Audit Events by Result (Δ 5m)",
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 7 },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(increase(audit_log_events_total[5m])) by (result)",
+          "legendFormat": "{{result}}"
+        }
+      ],
+      "options": {
+        "legend": { "displayMode": "list", "placement": "bottom" },
+        "tooltip": { "mode": "multi" }
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Audit Failures by Stage (Δ 5m)",
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 15 },
+      "fieldConfig": { "defaults": { "unit": "short" }, "overrides": [] },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(increase(audit_log_failures_total[5m])) by (stage)",
+          "legendFormat": "{{stage}}"
+        }
+      ],
+      "options": {
+        "legend": { "displayMode": "list", "placement": "bottom" }
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Prune Operations (Δ 24h)",
+      "gridPos": { "h": 6, "w": 24, "x": 0, "y": 23 },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "red", "value": 1 }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": { "calcs": ["sum"], "fields": "", "values": false },
+        "orientation": "horizontal",
+        "colorMode": "background",
+        "graphMode": "area",
+        "justifyMode": "center"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(increase(audit_log_prune_operations_total{result=\"deleted\"}[24h]))",
+          "legendFormat": "deleted last 24h"
+        },
+        {
+          "refId": "B",
+          "expr": "sum(increase(audit_log_prune_operations_total{result=\"error\"}[24h]))",
+          "legendFormat": "errors last 24h"
+        }
+      ]
+    }
+  ],
+  "templating": { "list": [] }
+}

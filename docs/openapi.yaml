@@ -780,6 +780,44 @@ components:
           type: boolean
         pushOptIn:
           type: boolean
+    AuditLogEntry:
+      type: object
+      properties:
+        id:
+          type: string
+        occurredAt:
+          type: string
+          format: date-time
+        action:
+          type: string
+        resourceType:
+          type: string
+        resourceId:
+          type: string
+          nullable: true
+        actorId:
+          type: string
+          nullable: true
+        actorRole:
+          type: string
+          nullable: true
+        actorIp:
+          type: string
+          nullable: true
+        requestId:
+          type: string
+          nullable: true
+        userAgent:
+          type: string
+          nullable: true
+        outcome:
+          type: string
+          nullable: true
+        data:
+          type: object
+          nullable: true
+          additionalProperties: true
+      required: [id, occurredAt, action, resourceType]
   parameters:
     PageParam:
       name: page
@@ -1032,6 +1070,127 @@ paths:
           $ref: '#/components/responses/InternalServerError'
         '503':
           $ref: '#/components/responses/ServiceUnavailable'
+  /audit-logs:
+    get:
+      operationId: listAuditLogs
+      summary: Audit-Logs abrufen
+      description: Liefert das Audit-Journal (ADMIN).
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - name: pageSize
+          in: query
+          description: Anzahl Einträge pro Seite (max. 100)
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 25
+        - name: actorId
+          in: query
+          description: Filtert nach Akteur (Benutzer-ID)
+          schema:
+            type: string
+        - name: resourceType
+          in: query
+          description: Filtert nach Ressourcentyp (z. B. SHIFT, AUTH)
+          schema:
+            type: string
+        - name: resourceId
+          in: query
+          description: Filtert nach konkreter Ressourcen-ID
+          schema:
+            type: string
+        - name: action
+          in: query
+          description: Filtert nach Aktionscode (z. B. SHIFT.ASSIGN)
+          schema:
+            type: string
+        - name: outcome
+          in: query
+          description: Filtert nach Ergebnis (SUCCESS, DENIED, ERROR)
+          schema:
+            type: string
+        - name: from
+          in: query
+          description: Startzeitpunkt (ISO-8601) für den Filter
+          schema:
+            type: string
+            format: date-time
+        - name: to
+          in: query
+          description: Endzeitpunkt (ISO-8601) für den Filter
+          schema:
+            type: string
+            format: date-time
+      responses:
+        '200':
+          description: Audit-Log Einträge
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/AuditLogEntry'
+                  pagination:
+                    type: object
+                    properties:
+                      page:
+                        type: integer
+                        example: 1
+                      pageSize:
+                        type: integer
+                        example: 25
+                      total:
+                        type: integer
+                        example: 42
+                      totalPages:
+                        type: integer
+                        example: 2
+                  filters:
+                    type: object
+                    description: Echo der angewendeten Filter
+                    additionalProperties: true
+              examples:
+                default:
+                  value:
+                    success: true
+                    data:
+                      - id: log-1
+                        occurredAt: '2025-09-19T07:30:00.000Z'
+                        action: SHIFT.ASSIGN
+                        resourceType: SHIFT
+                        resourceId: shift-1
+                        actorId: admin-1
+                        actorRole: ADMIN
+                        actorIp: 203.0.113.10
+                        outcome: SUCCESS
+                        data:
+                          assignmentId: assign-123
+                          userId: employee-7
+                    pagination:
+                      page: 1
+                      pageSize: 25
+                      total: 42
+                      totalPages: 2
+                    filters:
+                      actorId: admin-1
+                      resourceType: SHIFT
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
   /auth/me:
     get:
       operationId: authMe
@@ -3720,15 +3879,39 @@ paths:
                               push:
                                 type: number
                                 nullable: true
-                          queue:
-                            type: object
-                            properties:
-                              email: { $ref: '#/components/schemas/QueueState' }
-                              push: { $ref: '#/components/schemas/QueueState' }
-                      queues:
+                      queue:
                         type: object
-                        additionalProperties:
-                          $ref: '#/components/schemas/QueueState'
+                        properties:
+                          email: { $ref: '#/components/schemas/QueueState' }
+                          push: { $ref: '#/components/schemas/QueueState' }
+                    auditTrail:
+                      type: object
+                      properties:
+                        total: { type: integer }
+                        last24h: { type: integer }
+                        outcomes:
+                          type: object
+                          additionalProperties: { type: integer }
+                        latest:
+                          type: object
+                          nullable: true
+                          properties:
+                            id: { type: string }
+                            occurredAt: { type: string, format: date-time }
+                            action: { type: string }
+                            outcome: { type: string, nullable: true }
+                        queue:
+                          type: object
+                          properties:
+                            flushIntervalMs: { type: integer }
+                            batchSize: { type: integer }
+                            maxQueueSize: { type: integer }
+                            pending: { type: integer }
+                      required: [total, last24h, outcomes, queue]
+                  queues:
+                    type: object
+                    additionalProperties:
+                      $ref: '#/components/schemas/QueueState'
                       auth:
                         type: object
                         properties:
@@ -3815,6 +3998,20 @@ paths:
                           lastFailedAt: '2025-09-15T11:45:00.000Z'
                           lastSettledAt: '2025-09-15T12:05:00.500Z'
                           lastError: 'Token ungültig'
+                    auditTrail:
+                      total: 420
+                      last24h: 35
+                      outcomes: { SUCCESS: 380, DENIED: 30, ERROR: 10 }
+                      latest:
+                        id: log-xyz
+                        occurredAt: '2025-09-19T08:00:00.000Z'
+                        action: SHIFT.ASSIGN
+                        outcome: SUCCESS
+                      queue:
+                        flushIntervalMs: 2000
+                        batchSize: 25
+                        maxQueueSize: 1000
+                        pending: 0
                     queues:
                       notifications-email:
                         name: notifications-email

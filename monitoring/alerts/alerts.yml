@@ -33,3 +33,52 @@ groups:
             5xx error rate exceeded 5% over the last 5 minutes.
             Immediate investigation required. Check API health and dependencies.
 
+  - name: audit-trail
+    rules:
+      - alert: AuditLogQueueGrowing
+        expr: audit_log_queue_size > 200
+        for: 2m
+        labels:
+          severity: warning
+          service: sicherheitsdienst-api
+        annotations:
+          summary: "Audit log queue size > 200"
+          description: |
+            The retry queue for audit logs exceeded 200 entries for at least 2 minutes.
+            Investigate database connectivity or sustained write failures before entries get dropped.
+
+      - alert: AuditLogDirectFailures
+        expr: increase(audit_log_failures_total{stage="direct"}[5m]) > 5
+        for: 5m
+        labels:
+          severity: warning
+          service: sicherheitsdienst-api
+        annotations:
+          summary: "Audit direct write failures > 5 in 5m"
+          description: |
+            Immediate audit log writes failed more than five times in the last 5 minutes.
+            Check database health and recent application errors.
+
+      - alert: AuditLogFlushFailures
+        expr: increase(audit_log_failures_total{stage="flush"}[5m]) > 5
+        for: 5m
+        labels:
+          severity: critical
+          service: sicherheitsdienst-api
+        annotations:
+          summary: "Audit flush failures > 5 in 5m"
+          description: |
+            Batched audit log flushes are failing repeatedly. Pending entries cannot be persisted.
+            Inspect database availability and application logs immediately.
+
+      - alert: AuditLogPruneErrors
+        expr: increase(audit_log_prune_operations_total{result="error"}[12h]) > 0
+        for: 0m
+        labels:
+          severity: warning
+          service: sicherheitsdienst-api
+        annotations:
+          summary: "Audit prune job reported errors"
+          description: |
+            The audit retention job reported at least one error in the last 12 hours.
+            Review prune logs and ensure old entries are removed to maintain compliance.

@@ -8,6 +8,9 @@ All notable changes to this project will be documented in this file.
 - docs: Security-Hardening Blueprint (`docs/planning/security-hardening.md`) mit Rate-Limit- und Audit-Trail-Konzept.
 - backend/shifts: Selektive Rate-Limits für Schicht-Zuweisung (`SHIFT_ASSIGN_RATE_LIMIT_*`) sowie Clock-in/out (`SHIFT_CLOCK_RATE_LIMIT_*`) inkl. Tests & ENV-Beispielen.
 - security: Prisma `AuditLog` Modell + Migration, Logging-Service (`logAuditEvent`/`flushAuditLogQueue`) mit Retry-Queue, Tests & Doku (Phase B).
+- security: Audit-Events für Auth/Shifts/Notifications + Admin Read Endpoint `GET /api/audit-logs` inkl. Filter/Paging (Phase C).
+- security: CSV-Export (`GET /api/audit-logs/export`), Retention-Job `npm run audit:prune`, Prometheus Audit-Metriken & `/api/stats` Kennzahlen (Phase D/E).
+- security: CSV-Export (`GET /api/audit-logs/export`) + Audit-Kennzahlen in `/api/stats` (Phase D).
 - notifications: Template-Metadaten (GET `/api/notifications/templates`), Nutzer-Opt-In-API (`/preferences/me`), SSE-Eventstream `/api/notifications/events`, neue Incident-Templates (E-Mail & Push).
 - prisma: `user.emailOptIn` Feld + Migration (`20250916_add_user_email_optin`).
 - docs: README & MONITORING um Notification-Runbook (Templates, Opt-In, SSE) erweitert; `.env.example` mit Incident-Flags & Heartbeat.

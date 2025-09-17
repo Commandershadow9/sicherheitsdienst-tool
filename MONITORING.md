@@ -8,7 +8,7 @@ cd monitoring
 docker compose -f docker-compose.monitoring.yml up -d
 ```
 - Prometheus: `http://<SERVER_IP>:9090`
-- Grafana: `http://<SERVER_IP>:3000` (admin/admin)
+- Grafana: `http://<SERVER_IP>:3300` (admin/admin)
 
 ## PromQL Snippets
 - p50/p90/p95/p99 (rolling 5m):
@@ -24,6 +24,11 @@ docker compose -f docker-compose.monitoring.yml up -d
   - `increase(app_auth_login_blocked_total[5m])`
 - Notification Streams aktiv:
   - `app_api_stats_notifications_streams_subscribers` (über `/api/stats` per Exporter) bzw. `notifications.streams.subscribers` im JSON.
+- Audit Queue & Events:
+  - `audit_log_queue_size`
+  - `sum(increase(audit_log_events_total[5m])) by (result)`
+  - `sum(increase(audit_log_failures_total[5m])) by (stage)`
+  - `sum(increase(audit_log_prune_operations_total{result="error"}[24h]))`
 
 ## Panels (Empfehlung)
 - Top Routes p95
@@ -32,6 +37,10 @@ docker compose -f docker-compose.monitoring.yml up -d
 - Requests Total / per Route
 - Login-Limiter Übersicht (Hits vs. Blocked, Top-Emails optional via Logs)
 - Notification Streams & Zustellstatistik (`notifications.streams`, `notifications.counters.success/fail`)
+- Audit Trail Overview Dashboard (`monitoring/grafana/dashboards/audit-trail.json`)
+  - Queue Size (`audit_log_queue_size`)
+  - Events & Failures nach Result/Stage (`audit_log_events_total`, `audit_log_failures_total`)
+  - Retention/Prune-Ergebnisse (`audit_log_prune_operations_total`)
 
 ## Alerts (Empfehlung)
 - Login-Limiter Spike:
@@ -40,6 +49,26 @@ docker compose -f docker-compose.monitoring.yml up -d
 - Login-Limiter Stiller Tod (keine Hits):
   - Expression: `increase(app_auth_login_attempts_total[1h]) == 0`
   - Severity: Info – Meldung, wenn sich länger niemand anmeldet (optional).
+- Audit Queue groß: `audit_log_queue_size > 200` (Warn) – Gefahr, dass Einträge gedroppt werden.
+- Audit Direct Failures: `increase(audit_log_failures_total{stage="direct"}[5m]) > 5` – DB sofort prüfen.
+- Audit Flush Failures: `increase(audit_log_failures_total{stage="flush"}[5m]) > 5` – kritisch, Queue leert sich nicht.
+- Audit Retention Fehler: `increase(audit_log_prune_operations_total{result="error"}[12h]) > 0` – Retention-Job beobachten.
+
+## Dashboards & Alerts deployen
+- Dashboard importieren:
+  ```bash
+  cd monitoring
+  GRAFANA_URL=http://localhost:3300 \
+  GRAFANA_USER=admin GRAFANA_PASSWORD=admin \
+  ./scripts/import-dashboard.sh grafana/dashboards/audit-trail.json
+  ```
+- Prometheus Alerts neu laden (z. B. nach Änderungen an `monitoring/alerts/alerts.yml`):
+  ```bash
+  cd monitoring
+  PROMETHEUS_URL=http://localhost:9090 ./scripts/reload-prometheus.sh
+  ```
+- Alternativ `docker compose -f docker-compose.monitoring.yml restart prometheus grafana`, falls kein API-Zugriff.
+- Alert-Routing: Alertmanager bzw. Grafana Alerting so konfigurieren, dass `service=sicherheitsdienst-api` in den gewünschten Ops-Kanal (Slack, PagerDuty, …) eskaliert.
 
 Hinweise
 - Scrape‑Target: im Dev häufig `api:3000` (Compose‑Service). Für reines Monitoring‑Compose ggf. `host.docker.internal:3000`/Bridge‑Netz.

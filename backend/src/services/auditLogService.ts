@@ -1,6 +1,11 @@
 import { Prisma } from '@prisma/client';
 import prisma from '../utils/prisma';
 import logger from '../utils/logger';
+import {
+  auditLogEventCounter,
+  auditLogFailureCounter,
+  setQueueSize,
+} from '../utils/auditMetrics';
 
 export type AuditLogEventInput = {
   action: string;
@@ -84,6 +89,7 @@ function enqueue(payload: AuditLogPayload) {
     logger.warn('Audit log queue reached capacity (%d); discarding oldest entry.', maxQueueSize);
   }
   pendingQueue.push(payload);
+  setQueueSize(pendingQueue.length);
   scheduleFlush();
 }
 
@@ -95,10 +101,13 @@ export async function logAuditEvent(event: AuditLogEventInput): Promise<boolean>
   const payload = toPayload(event);
   try {
     await prisma.auditLog.create({ data: payload });
+    auditLogEventCounter.inc({ result: 'direct_success' });
     return true;
   } catch (error) {
     logger.error('Immediate audit log write failed, queueing for retry: %o', error);
     enqueue(payload);
+    auditLogEventCounter.inc({ result: 'direct_failure' });
+    auditLogFailureCounter.inc({ stage: 'direct' });
     return false;
   }
 }
@@ -114,15 +123,20 @@ export async function flushAuditLogQueue(): Promise<number> {
   try {
     const result = await prisma.auditLog.createMany({ data: batch });
     isFlushing = false;
+    auditLogEventCounter.inc({ result: 'flush_success' }, result.count);
     if (pendingQueue.length > 0) {
       scheduleFlush();
     }
+    setQueueSize(pendingQueue.length);
     return result.count;
   } catch (error) {
     pendingQueue.unshift(...batch);
     isFlushing = false;
     scheduleFlush();
     logger.error('Batch audit log write failed; will retry later: %o', error);
+    auditLogEventCounter.inc({ result: 'flush_failure' });
+    auditLogFailureCounter.inc({ stage: 'flush' });
+    setQueueSize(pendingQueue.length);
     return 0;
   }
 }
@@ -142,4 +156,5 @@ export function __resetAuditLogService(): void {
   }
   pendingQueue.length = 0;
   isFlushing = false;
+  setQueueSize(0);
 }
