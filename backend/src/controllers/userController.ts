@@ -3,6 +3,7 @@ import prisma from '../utils/prisma';
 import ExcelJS from 'exceljs';
 import { streamCsv } from '../utils/csv';
 import bcrypt from 'bcryptjs';
+import { submitAuditEvent } from '../utils/audit';
 
 
 // GET /api/users - Alle Mitarbeiter abrufen
@@ -158,6 +159,17 @@ export const createUser = async (req: Request, res: Response, next: NextFunction
 
     // Validation
     if (!email || !password || !firstName || !lastName) {
+      const missingFields = ['email', 'password', 'firstName', 'lastName'].filter((field) => {
+        const value = (req.body as Record<string, unknown>)[field];
+        return value === undefined || value === null || (typeof value === 'string' && value.trim() === '');
+      });
+      await submitAuditEvent(req, {
+        action: 'USER.CREATE.FAIL',
+        resourceType: 'USER',
+        resourceId: null,
+        outcome: 'FAIL',
+        data: { reason: 'VALIDATION', missing: missingFields },
+      });
       res.status(400).json({
         success: false,
         message: 'Email, Passwort, Vorname und Nachname sind erforderlich',
@@ -195,6 +207,14 @@ export const createUser = async (req: Request, res: Response, next: NextFunction
       },
     });
 
+    await submitAuditEvent(req, {
+      action: 'USER.CREATE.SUCCESS',
+      resourceType: 'USER',
+      resourceId: user.id,
+      outcome: 'SUCCESS',
+      data: { id: user.id, email: user.email, role: user.role },
+    });
+
     res.status(201).json({
       success: true,
       message: 'Mitarbeiter erfolgreich in Datenbank erstellt',
@@ -205,6 +225,18 @@ export const createUser = async (req: Request, res: Response, next: NextFunction
 
     // Prisma unique constraint error
     if (error.code === 'P2002') {
+      await submitAuditEvent(req, {
+        action: 'USER.CREATE.FAIL',
+        resourceType: 'USER',
+        resourceId: null,
+        outcome: 'FAIL',
+        data: {
+          reason: 'UNIQUE_CONSTRAINT',
+          target: Array.isArray(error.meta?.target) ? error.meta.target : undefined,
+          email,
+          employeeId,
+        },
+      });
       res.status(400).json({
         success: false,
         message: 'E-Mail oder Mitarbeiter-ID bereits in Datenbank vergeben',
@@ -212,6 +244,13 @@ export const createUser = async (req: Request, res: Response, next: NextFunction
       return;
     }
 
+    await submitAuditEvent(req, {
+      action: 'USER.CREATE.ERROR',
+      resourceType: 'USER',
+      resourceId: null,
+      outcome: 'ERROR',
+      data: { error: error instanceof Error ? error.message : 'UNKNOWN_ERROR', email },
+    });
     next(error);
   }
 };
@@ -306,6 +345,13 @@ export const updateUser = async (req: Request, res: Response, next: NextFunction
     const isSelf = actor?.id === id;
     if (!isAdmin) {
       if (!isSelf) {
+        await submitAuditEvent(req, {
+          action: 'USER.UPDATE.DENIED',
+          resourceType: 'USER',
+          resourceId: id,
+          outcome: 'DENIED',
+          data: { reason: 'RBAC_BLOCK' },
+        });
         res.status(403).json({ success: false, code: 'FORBIDDEN', message: 'Keine Berechtigung für diese Aktion.' });
         return;
       }
@@ -313,6 +359,13 @@ export const updateUser = async (req: Request, res: Response, next: NextFunction
       const allowedForSelf = new Set(['email', 'firstName', 'lastName', 'phone']);
       const disallowed = providedKeys.filter((k) => !allowedForSelf.has(k));
       if (disallowed.length > 0) {
+        await submitAuditEvent(req, {
+          action: 'USER.UPDATE.DENIED',
+          resourceType: 'USER',
+          resourceId: id,
+          outcome: 'DENIED',
+          data: { reason: 'FIELD_RESTRICTED', fields: disallowed },
+        });
         res.status(403).json({ success: false, code: 'FORBIDDEN', message: `Nicht erlaubt, folgende Felder zu ändern: ${disallowed.join(', ')}` });
         return;
       }
@@ -349,6 +402,18 @@ export const updateUser = async (req: Request, res: Response, next: NextFunction
       },
     });
 
+    await submitAuditEvent(req, {
+      action: 'USER.UPDATE.SUCCESS',
+      resourceType: 'USER',
+      resourceId: updatedUser.id,
+      outcome: 'SUCCESS',
+      data: {
+        changes: Object.keys(req.body || {}).filter((key) => key !== 'password'),
+        role: updatedUser.role,
+        isActive: updatedUser.isActive,
+      },
+    });
+
     res.json({
       success: true,
       message: 'Mitarbeiter erfolgreich aktualisiert',
@@ -358,6 +423,16 @@ export const updateUser = async (req: Request, res: Response, next: NextFunction
     console.error('Error updating user in database:', error);
 
     if (error.code === 'P2002') {
+      await submitAuditEvent(req, {
+        action: 'USER.UPDATE.FAIL',
+        resourceType: 'USER',
+        resourceId: id,
+        outcome: 'FAIL',
+        data: {
+          reason: 'UNIQUE_CONSTRAINT',
+          target: Array.isArray(error.meta?.target) ? error.meta.target : undefined,
+        },
+      });
       res.status(400).json({
         success: false,
         message: 'E-Mail oder Mitarbeiter-ID bereits vergeben',
@@ -366,6 +441,13 @@ export const updateUser = async (req: Request, res: Response, next: NextFunction
     }
 
     if (error.code === 'P2025') {
+      await submitAuditEvent(req, {
+        action: 'USER.UPDATE.FAIL',
+        resourceType: 'USER',
+        resourceId: id,
+        outcome: 'FAIL',
+        data: { reason: 'NOT_FOUND' },
+      });
       res.status(404).json({
         success: false,
         message: 'Mitarbeiter nicht gefunden',
@@ -373,6 +455,13 @@ export const updateUser = async (req: Request, res: Response, next: NextFunction
       return;
     }
 
+    await submitAuditEvent(req, {
+      action: 'USER.UPDATE.ERROR',
+      resourceType: 'USER',
+      resourceId: id,
+      outcome: 'ERROR',
+      data: { error: error instanceof Error ? error.message : 'UNKNOWN_ERROR' },
+    });
     next(error);
   }
 };
@@ -394,6 +483,14 @@ export const deactivateUser = async (req: Request, res: Response, next: NextFunc
       },
     });
 
+    await submitAuditEvent(req, {
+      action: 'USER.DEACTIVATE.SUCCESS',
+      resourceType: 'USER',
+      resourceId: deactivatedUser.id,
+      outcome: 'SUCCESS',
+      data: { email: deactivatedUser.email },
+    });
+
     res.json({
       success: true,
       message: 'Mitarbeiter erfolgreich deaktiviert',
@@ -403,6 +500,13 @@ export const deactivateUser = async (req: Request, res: Response, next: NextFunc
     console.error('Error deactivating user:', error);
 
     if (error.code === 'P2025') {
+      await submitAuditEvent(req, {
+        action: 'USER.DEACTIVATE.FAIL',
+        resourceType: 'USER',
+        resourceId: id,
+        outcome: 'FAIL',
+        data: { reason: 'NOT_FOUND' },
+      });
       res.status(404).json({
         success: false,
         message: 'Mitarbeiter nicht gefunden',
@@ -410,6 +514,13 @@ export const deactivateUser = async (req: Request, res: Response, next: NextFunc
       return;
     }
 
+    await submitAuditEvent(req, {
+      action: 'USER.DEACTIVATE.ERROR',
+      resourceType: 'USER',
+      resourceId: id,
+      outcome: 'ERROR',
+      data: { error: error instanceof Error ? error.message : 'UNKNOWN_ERROR' },
+    });
     next(error);
   }
 };

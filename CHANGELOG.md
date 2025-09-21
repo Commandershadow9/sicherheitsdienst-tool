@@ -5,6 +5,7 @@ All notable changes to this project will be documented in this file.
 ## Unreleased
 
 ### Added
+- security: Konsistenter Audit-Helfer (`buildAuditEvent`/`submitAuditEvent`) für Auth-, User-, Shift-, Incident- und Notification-Controller inkl. Fehlerpfade (Login/Refresh, verbotene Self-Updates, Incident CRUD, Test-Benachrichtigungen).
 - docs: Security-Hardening Blueprint (`docs/planning/security-hardening.md`) mit Rate-Limit- und Audit-Trail-Konzept.
 - backend/shifts: Selektive Rate-Limits für Schicht-Zuweisung (`SHIFT_ASSIGN_RATE_LIMIT_*`) sowie Clock-in/out (`SHIFT_CLOCK_RATE_LIMIT_*`) inkl. Tests & ENV-Beispielen.
 - security: Prisma `AuditLog` Modell + Migration, Logging-Service (`logAuditEvent`/`flushAuditLogQueue`) mit Retry-Queue, Tests & Doku (Phase B).
@@ -26,6 +27,8 @@ All notable changes to this project will be documented in this file.
 - repo: commitlint (Conventional Commits) + PR‑Template Checkliste.
 
 ### Changed
+- security: Audit-Log-Service wirft bei fehlendem Prisma-Modell keine Fehler mehr, sondern verwirft Events mit Warnung und liefert Laufzeitstatus via `getAuditLogState`.
+- observability: `/api/stats` ergänzt ein separates `audit`-Objekt mit Queue-Größe, Flush-Flags und Intervallen; bestehende `auditTrail.queue`-Daten spiegeln denselben Zustand wider.
 - shifts: `/api/shifts/:id/assign` erfordert nun Rollen `ADMIN`/`DISPATCHER` und trägt Rate-Limit-Header für wiederholte Aufrufe.
 - notifications/test: Channel `push` unterstützt, Validierung via Zod (Template-Key, userIds, Variablen) erweitert; Versand tracked Event-Stream.
 - readiness: SMTP-Verify liefert Diagnose (`deps.smtpMessage`) und schließt Transport nach Erfolg/Fehlschlag.

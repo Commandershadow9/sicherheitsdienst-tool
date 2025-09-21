@@ -3903,11 +3903,22 @@ paths:
                         queue:
                           type: object
                           properties:
+                            queueSize: { type: integer }
                             flushIntervalMs: { type: integer }
                             batchSize: { type: integer }
                             maxQueueSize: { type: integer }
-                            pending: { type: integer }
+                            isFlushing: { type: boolean }
+                            hasScheduledFlush: { type: boolean }
                       required: [total, last24h, outcomes, queue]
+                    audit:
+                      type: object
+                      properties:
+                        queueSize: { type: integer }
+                        flushIntervalMs: { type: integer }
+                        batchSize: { type: integer }
+                        maxQueueSize: { type: integer }
+                        isFlushing: { type: boolean }
+                        hasScheduledFlush: { type: boolean }
                   queues:
                     type: object
                     additionalProperties:
@@ -4008,10 +4019,19 @@ paths:
                         action: SHIFT.ASSIGN
                         outcome: SUCCESS
                       queue:
+                        queueSize: 0
                         flushIntervalMs: 2000
                         batchSize: 25
                         maxQueueSize: 1000
-                        pending: 0
+                        isFlushing: false
+                        hasScheduledFlush: false
+                    audit:
+                      queueSize: 0
+                      flushIntervalMs: 2000
+                      batchSize: 25
+                      maxQueueSize: 1000
+                      isFlushing: false
+                      hasScheduledFlush: false
                     queues:
                       notifications-email:
                         name: notifications-email

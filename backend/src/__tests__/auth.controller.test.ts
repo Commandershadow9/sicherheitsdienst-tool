@@ -15,13 +15,13 @@ jest.mock('bcryptjs', () => ({
   compare: jest.fn(),
 }));
 
-jest.mock('../utils/auditTrail', () => ({
-  recordAuditEvent: jest.fn().mockResolvedValue(undefined),
+jest.mock('../utils/audit', () => ({
+  submitAuditEvent: jest.fn().mockResolvedValue(undefined),
 }));
 
 const prisma = require('../utils/prisma').default;
 const bcrypt = require('bcryptjs');
-const { recordAuditEvent } = require('../utils/auditTrail');
+const { submitAuditEvent } = require('../utils/audit');
 
 function createMockResponse() {
   const res: Partial<Response> & { statusCode?: number; payload?: unknown } = {};
@@ -43,7 +43,7 @@ describe('authController', () => {
     jest.clearAllMocks();
     prisma.user.findUnique.mockReset();
     bcrypt.compare.mockReset();
-    recordAuditEvent.mockClear();
+    submitAuditEvent.mockClear();
     process.env = { ...originalEnv, JWT_SECRET: 'jwt-secret', REFRESH_SECRET: 'refresh-secret' };
   });
 
@@ -66,10 +66,9 @@ describe('authController', () => {
     await login(req, res);
 
     expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ success: true }));
-    expect(recordAuditEvent).toHaveBeenCalledWith(
+    expect(submitAuditEvent).toHaveBeenCalledWith(
       req,
-      expect.objectContaining({ action: 'AUTH.LOGIN', outcome: 'SUCCESS' }),
-      expect.objectContaining({ actorId: user.id, actorRole: user.role }),
+      expect.objectContaining({ action: 'AUTH.LOGIN.SUCCESS', outcome: 'SUCCESS' }),
     );
   });
 
@@ -87,10 +86,9 @@ describe('authController', () => {
     await login(req, res);
 
     expect(res.status).toHaveBeenCalledWith(401);
-    expect(recordAuditEvent).toHaveBeenCalledWith(
+    expect(submitAuditEvent).toHaveBeenCalledWith(
       req,
-      expect.objectContaining({ action: 'AUTH.LOGIN', outcome: 'DENIED' }),
-      expect.objectContaining({ actorId: 'user-2' }),
+      expect.objectContaining({ action: 'AUTH.LOGIN.FAIL', outcome: 'FAIL' }),
     );
   });
 
@@ -109,10 +107,9 @@ describe('authController', () => {
     await refresh(req, res);
 
     expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ success: true }));
-    expect(recordAuditEvent).toHaveBeenCalledWith(
+    expect(submitAuditEvent).toHaveBeenCalledWith(
       req,
-      expect.objectContaining({ action: 'AUTH.REFRESH', outcome: 'SUCCESS', resourceId: user.id }),
-      expect.objectContaining({ actorId: user.id, actorRole: user.role }),
+      expect.objectContaining({ action: 'AUTH.REFRESH.SUCCESS', outcome: 'SUCCESS', resourceId: user.id }),
     );
   });
 
@@ -129,10 +126,9 @@ describe('authController', () => {
     await refresh(req, res);
 
     expect(res.status).toHaveBeenCalledWith(401);
-    expect(recordAuditEvent).toHaveBeenCalledWith(
+    expect(submitAuditEvent).toHaveBeenCalledWith(
       req,
-      expect.objectContaining({ action: 'AUTH.REFRESH', outcome: 'DENIED' }),
-      expect.objectContaining({ actorId: null }),
+      expect.objectContaining({ action: 'AUTH.REFRESH.FAIL', outcome: 'DENIED' }),
     );
   });
 });

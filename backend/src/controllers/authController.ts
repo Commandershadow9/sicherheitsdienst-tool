@@ -2,67 +2,55 @@ import { Request, Response } from 'express';
 import prisma from '../utils/prisma';
 import bcrypt from 'bcryptjs';
 import jwt, { SignOptions } from 'jsonwebtoken';
-import { recordAuditEvent } from '../utils/auditTrail';
+import { submitAuditEvent } from '../utils/audit';
 
 
 export const login = async (req: Request, res: Response): Promise<Response> => {
   const { email, password } = req.body;
 
-  let actorContext = {} as { actorId?: string | null; actorRole?: string | null };
   try {
     const user = await prisma.user.findUnique({
       where: { email },
     });
 
-    actorContext = {
-      actorId: user?.id ?? null,
-      actorRole: user?.role ?? null,
-    };
-
     if (!user || !(await bcrypt.compare(password, user.password))) {
-      await recordAuditEvent(
-        req,
-        {
-          action: 'AUTH.LOGIN',
-          resourceType: 'AUTH',
-          resourceId: user?.id ?? null,
-          outcome: 'DENIED',
-          data: { email },
-        },
-        actorContext,
-      );
+      await submitAuditEvent(req, {
+        action: 'AUTH.LOGIN.FAIL',
+        resourceType: 'AUTH',
+        resourceId: user?.id ?? null,
+        actorId: user?.id ?? null,
+        actorRole: user?.role ?? null,
+        outcome: 'FAIL',
+        data: { email },
+      });
       return res.status(401).json({ success: false, code: 'UNAUTHORIZED', message: 'Ungültige Anmeldedaten' });
     }
 
     if (!user.isActive) {
-      await recordAuditEvent(
-        req,
-        {
-          action: 'AUTH.LOGIN',
-          resourceType: 'AUTH',
-          resourceId: user.id,
-          outcome: 'DENIED',
-          data: { email, reason: 'ACCOUNT_INACTIVE' },
-        },
-        actorContext,
-      );
+      await submitAuditEvent(req, {
+        action: 'AUTH.LOGIN.DENIED',
+        resourceType: 'AUTH',
+        resourceId: user.id,
+        actorId: user.id,
+        actorRole: user.role,
+        outcome: 'DENIED',
+        data: { email, reason: 'ACCOUNT_INACTIVE' },
+      });
       return res.status(403).json({ success: false, code: 'FORBIDDEN', message: 'Benutzerkonto ist inaktiv. Bitte kontaktiere den Administrator.' });
     }
 
     const jwtSecret = process.env.JWT_SECRET;
     if (!jwtSecret) {
       console.error('JWT_SECRET ist nicht definiert in den Umgebungsvariablen.');
-      await recordAuditEvent(
-        req,
-        {
-          action: 'AUTH.LOGIN',
-          resourceType: 'AUTH',
-          resourceId: user.id,
-          outcome: 'ERROR',
-          data: { email, reason: 'JWT_SECRET_MISSING' },
-        },
-        actorContext,
-      );
+      await submitAuditEvent(req, {
+        action: 'AUTH.LOGIN.ERROR',
+        resourceType: 'AUTH',
+        resourceId: user.id,
+        actorId: user.id,
+        actorRole: user.role,
+        outcome: 'ERROR',
+        data: { email, reason: 'JWT_SECRET_MISSING' },
+      });
       return res.status(500).json({ success: false, code: 'INTERNAL_SERVER_ERROR', message: 'Server-Konfigurationsfehler: JWT Secret fehlt.' });
     }
 
@@ -93,17 +81,15 @@ export const login = async (req: Request, res: Response): Promise<Response> => {
 
     const { password: _removedPassword, ...userWithoutPassword } = user;
 
-    await recordAuditEvent(
-      req,
-      {
-        action: 'AUTH.LOGIN',
-        resourceType: 'AUTH',
-        resourceId: user.id,
-        outcome: 'SUCCESS',
-        data: { email },
-      },
-      actorContext,
-    );
+    await submitAuditEvent(req, {
+      action: 'AUTH.LOGIN.SUCCESS',
+      resourceType: 'AUTH',
+      resourceId: user.id,
+      actorId: user.id,
+      actorRole: user.role,
+      outcome: 'SUCCESS',
+      data: { email },
+    });
 
     return res.json({
       success: true,
@@ -115,16 +101,13 @@ export const login = async (req: Request, res: Response): Promise<Response> => {
     });
   } catch (error) {
     console.error('Login error:', error);
-    await recordAuditEvent(
-      req,
-      {
-        action: 'AUTH.LOGIN',
-        resourceType: 'AUTH',
-        outcome: 'ERROR',
-        data: { email, error: error instanceof Error ? error.message : 'UNKNOWN_ERROR' },
-      },
-      actorContext,
-    );
+    await submitAuditEvent(req, {
+      action: 'AUTH.LOGIN.ERROR',
+      resourceType: 'AUTH',
+      resourceId: null,
+      outcome: 'ERROR',
+      data: { email, error: error instanceof Error ? error.message : 'UNKNOWN_ERROR' },
+    });
     if (error instanceof jwt.JsonWebTokenError || error instanceof jwt.TokenExpiredError) {
       return res.status(401).json({ success: false, code: 'UNAUTHORIZED', message: 'Token-Fehler: ' + error.message });
     }
@@ -150,19 +133,21 @@ export const refresh = async (req: Request, res: Response): Promise<Response> =>
     const accessSecret = process.env.JWT_SECRET;
     if (!refreshSecret || !accessSecret) {
       console.error('JWT/REFRESH Secrets fehlen in den Umgebungsvariablen.');
-      await recordAuditEvent(req, {
-        action: 'AUTH.REFRESH',
+      await submitAuditEvent(req, {
+        action: 'AUTH.REFRESH.ERROR',
         resourceType: 'AUTH',
+        resourceId: null,
         outcome: 'ERROR',
         data: { reason: 'TOKEN_SECRETS_MISSING' },
       });
       return res.status(500).json({ success: false, code: 'INTERNAL_SERVER_ERROR', message: 'Server-Konfigurationsfehler: Secrets fehlen.' });
     }
     if (!refreshToken) {
-      await recordAuditEvent(req, {
-        action: 'AUTH.REFRESH',
+      await submitAuditEvent(req, {
+        action: 'AUTH.REFRESH.FAIL',
         resourceType: 'AUTH',
-        outcome: 'DENIED',
+        resourceId: null,
+        outcome: 'FAIL',
         data: { reason: 'MISSING_REFRESH_TOKEN' },
       });
       return res.status(422).json({ success: false, code: 'VALIDATION_ERROR', message: 'Validierungsfehler.', errors: [{ path: ['refreshToken'], message: 'refreshToken ist erforderlich' }] });
@@ -174,17 +159,15 @@ export const refresh = async (req: Request, res: Response): Promise<Response> =>
     tokenClaims = jwt.verify(refreshToken, refreshSecret, verifyOptions) as { userId: string; role?: string; iat?: number; exp?: number };
     const user = await prisma.user.findUnique({ where: { id: tokenClaims.userId } });
     if (!user || !user.isActive) {
-      await recordAuditEvent(
-        req,
-        {
-          action: 'AUTH.REFRESH',
-          resourceType: 'AUTH',
-          resourceId: user?.id ?? tokenClaims.userId ?? null,
-          outcome: 'DENIED',
-          data: { reason: user ? 'ACCOUNT_INACTIVE' : 'USER_NOT_FOUND' },
-        },
-        { actorId: user?.id ?? tokenClaims.userId ?? null, actorRole: user?.role ?? tokenClaims.role ?? null },
-      );
+      await submitAuditEvent(req, {
+        action: 'AUTH.REFRESH.DENIED',
+        resourceType: 'AUTH',
+        resourceId: user?.id ?? tokenClaims.userId ?? null,
+        actorId: user?.id ?? tokenClaims.userId ?? null,
+        actorRole: user?.role ?? tokenClaims.role ?? null,
+        outcome: 'DENIED',
+        data: { reason: user ? 'ACCOUNT_INACTIVE' : 'USER_NOT_FOUND' },
+      });
       return res.status(401).json({ success: false, code: 'UNAUTHORIZED', message: 'Ungültiger oder inaktiver Benutzer.' });
     }
 
@@ -212,17 +195,15 @@ export const refresh = async (req: Request, res: Response): Promise<Response> =>
     const expiresInSeconds =
       accessExpRaw && /^\d+$/.test(accessExpRaw) ? parseInt(accessExpRaw, 10) : 3600;
 
-    await recordAuditEvent(
-      req,
-      {
-        action: 'AUTH.REFRESH',
-        resourceType: 'AUTH',
-        resourceId: user.id,
-        outcome: 'SUCCESS',
-        data: { userId: user.id },
-      },
-      { actorId: user.id, actorRole: user.role },
-    );
+    await submitAuditEvent(req, {
+      action: 'AUTH.REFRESH.SUCCESS',
+      resourceType: 'AUTH',
+      resourceId: user.id,
+      actorId: user.id,
+      actorRole: user.role,
+      outcome: 'SUCCESS',
+      data: { userId: user.id },
+    });
 
     return res.json({
       success: true,
@@ -237,17 +218,15 @@ export const refresh = async (req: Request, res: Response): Promise<Response> =>
       actorRole: tokenClaims?.role ?? null,
     };
     const outcome = error instanceof jwt.JsonWebTokenError || error instanceof jwt.TokenExpiredError ? 'DENIED' : 'ERROR';
-    await recordAuditEvent(
-      req,
-      {
-        action: 'AUTH.REFRESH',
-        resourceType: 'AUTH',
-        resourceId: tokenClaims?.userId ?? null,
-        outcome,
-        data: { reason: outcome === 'DENIED' ? 'INVALID_TOKEN' : 'INTERNAL_ERROR', error: error instanceof Error ? error.message : String(error) },
-      },
-      actorOverrides,
-    );
+    await submitAuditEvent(req, {
+      action: outcome === 'DENIED' ? 'AUTH.REFRESH.FAIL' : 'AUTH.REFRESH.ERROR',
+      resourceType: 'AUTH',
+      resourceId: tokenClaims?.userId ?? null,
+      actorId: actorOverrides.actorId ?? null,
+      actorRole: actorOverrides.actorRole ?? null,
+      outcome,
+      data: { reason: outcome === 'DENIED' ? 'INVALID_TOKEN' : 'INTERNAL_ERROR', error: error instanceof Error ? error.message : String(error) },
+    });
     if (error instanceof jwt.JsonWebTokenError || error instanceof jwt.TokenExpiredError) {
       return res.status(401).json({ success: false, code: 'UNAUTHORIZED', message: 'Ungültiger oder abgelaufener Refresh-Token.' });
     }
