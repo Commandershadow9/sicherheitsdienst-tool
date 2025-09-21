@@ -8,6 +8,17 @@ import { submitAuditEvent } from '../utils/audit';
 
 const EMAIL_FLAG = 'EMAIL_NOTIFY_SHIFTS';
 
+function toIsoString(value: unknown): string | undefined {
+  if (value instanceof Date) {
+    return Number.isNaN(value.getTime()) ? undefined : value.toISOString();
+  }
+  if (typeof value === 'string' || typeof value === 'number') {
+    const parsed = new Date(value);
+    return Number.isNaN(parsed.getTime()) ? undefined : parsed.toISOString();
+  }
+  return undefined;
+}
+
 function isEmailNotifyEnabled(): boolean {
   return process.env[EMAIL_FLAG] === 'true';
 }
@@ -301,8 +312,8 @@ export const createShift = async (req: Request, res: Response, next: NextFunctio
       outcome: 'SUCCESS',
       data: {
         title: shift.title,
-        startTime: start.toISOString(),
-        endTime: end.toISOString(),
+        startTime: toIsoString(shift.startTime) ?? null,
+        endTime: toIsoString(shift.endTime) ?? null,
       },
     });
     res.status(201).json({

@@ -16,7 +16,7 @@ function getRequestUser(req: Request): RequestActor {
 }
 
 export function extractClientIp(req: Request): string | null {
-  const headers = (req && (req as any).headers) ? (req as any).headers as Record<string, any> : {};
+  const headers = req.headers ?? {};
   const headerCandidates: Array<string | string[] | undefined> = [
     headers['x-forwarded-for'],
     headers['x-real-ip'],
@@ -48,7 +48,7 @@ export function extractClientIp(req: Request): string | null {
 }
 
 function resolveRequestId(req: Request): string | null {
-  const headers = (req && (req as any).headers) ? (req as any).headers as Record<string, any> : {};
+  const headers = req.headers ?? {};
   if (typeof (req as any).id === 'string' && (req as any).id.length > 0) {
     return (req as any).id;
   }
@@ -61,7 +61,7 @@ function resolveRequestId(req: Request): string | null {
 
 export function buildAuditEvent(req: Request, event: BuildableAuditEvent): AuditLogEventInput {
   const actor = getRequestUser(req);
-  const headers = (req && (req as any).headers) ? (req as any).headers as Record<string, any> : {};
+  const headers = req.headers ?? {};
   return {
     action: event.action,
     resourceType: event.resourceType,

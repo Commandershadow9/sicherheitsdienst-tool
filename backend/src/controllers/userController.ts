@@ -159,25 +159,25 @@ export const createUser = async (req: Request, res: Response, next: NextFunction
     qualifications = [],
   } = req.body;
 
-  const missingFields = ['email', 'password', 'firstName', 'lastName'].filter((field) => {
-    const value = (req.body as Record<string, unknown>)[field];
-    return value === undefined || value === null || (typeof value === 'string' && value.trim() === '');
-  });
-  if (missingFields.length > 0) {
-    await submitAuditEvent(req, {
-      action: 'USER.CREATE.FAIL',
-      resourceType: 'USER',
-      resourceId: null,
-      outcome: 'FAIL',
-      data: { reason: 'VALIDATION', missing: missingFields },
+  try {
+    const missingFields = ['email', 'password', 'firstName', 'lastName'].filter((field) => {
+      const value = (req.body as Record<string, unknown>)[field];
+      return value === undefined || value === null || (typeof value === 'string' && value.trim() === '');
     });
-    return next(createError(400, 'Email, Passwort, Vorname und Nachname sind erforderlich'));
-  }
+    if (missingFields.length > 0) {
+      await submitAuditEvent(req, {
+        action: 'USER.CREATE.FAIL',
+        resourceType: 'USER',
+        resourceId: null,
+        outcome: 'FAIL',
+        data: { reason: 'VALIDATION', missing: missingFields },
+      });
+      return next(createError(400, 'Email, Passwort, Vorname und Nachname sind erforderlich'));
+    }
 
-  const hashedPassword = await bcrypt.hash(password, 12);
+    const hashedPassword = await bcrypt.hash(password, 12);
 
-  const user = await prisma.user
-    .create({
+    const user = await prisma.user.create({
       data: {
         email,
         password: hashedPassword,
@@ -202,46 +202,47 @@ export const createUser = async (req: Request, res: Response, next: NextFunction
         qualifications: true,
         createdAt: true,
       },
-    })
-    .catch(async (error: any) => {
-      if (error?.code === 'P2002') {
-        await submitAuditEvent(req, {
-          action: 'USER.CREATE.FAIL',
-          resourceType: 'USER',
-          resourceId: null,
-          outcome: 'FAIL',
-          data: {
-            reason: 'UNIQUE_CONSTRAINT',
-            target: normalizePrismaTarget(error.meta?.target),
-            email,
-            employeeId,
-          },
-        });
-      } else {
-        await submitAuditEvent(req, {
-          action: 'USER.CREATE.ERROR',
-          resourceType: 'USER',
-          resourceId: null,
-          outcome: 'ERROR',
-          data: { error: toAuditErrorMessage(error), email },
-        });
-      }
-      throw error;
     });
 
-  await submitAuditEvent(req, {
-    action: 'USER.CREATE.SUCCESS',
-    resourceType: 'USER',
-    resourceId: user.id,
-    outcome: 'SUCCESS',
-    data: { id: user.id, email: user.email, role: user.role },
-  });
+    await submitAuditEvent(req, {
+      action: 'USER.CREATE.SUCCESS',
+      resourceType: 'USER',
+      resourceId: user.id,
+      outcome: 'SUCCESS',
+      data: { id: user.id, email: user.email, role: user.role },
+    });
 
-  res.status(201).json({
-    success: true,
-    message: 'Mitarbeiter erfolgreich in Datenbank erstellt',
-    data: user,
-  });
+    res.status(201).json({
+      success: true,
+      message: 'Mitarbeiter erfolgreich in Datenbank erstellt',
+      data: user,
+    });
+  } catch (error: any) {
+    if (error?.code === 'P2002') {
+      await submitAuditEvent(req, {
+        action: 'USER.CREATE.FAIL',
+        resourceType: 'USER',
+        resourceId: null,
+        outcome: 'FAIL',
+        data: {
+          reason: 'UNIQUE_CONSTRAINT',
+          target: normalizePrismaTarget((error as any)?.meta?.target),
+          email,
+          employeeId,
+        },
+      });
+      return next(createError(400, 'E-Mail oder Mitarbeiter-ID bereits in Datenbank vergeben'));
+    }
+
+    await submitAuditEvent(req, {
+      action: 'USER.CREATE.ERROR',
+      resourceType: 'USER',
+      resourceId: null,
+      outcome: 'ERROR',
+      data: { error: toAuditErrorMessage(error), email },
+    });
+    return next(error);
+  }
 };
 
 // GET /api/users/:id - Einzelnen Mitarbeiter abrufen
@@ -306,39 +307,49 @@ export const getUserById = async (req: Request, res: Response, next: NextFunctio
 // PUT /api/users/:id - Mitarbeiter aktualisieren
 export const updateUser = async (req: Request, res: Response, next: NextFunction) => {
   const { id } = req.params;
-  const { email, firstName, lastName, phone, role, employeeId, hireDate, qualifications, isActive } = req.body;
+  const {
+    email,
+    firstName,
+    lastName,
+    phone,
+    role,
+    employeeId,
+    hireDate,
+    qualifications,
+    isActive,
+  } = req.body;
 
-  const actor = req.user as any;
-  const isAdmin = actor?.role === 'ADMIN';
-  const isSelf = actor?.id === id;
-  if (!isAdmin) {
-    if (!isSelf) {
-      await submitAuditEvent(req, {
-        action: 'USER.UPDATE.DENIED',
-        resourceType: 'USER',
-        resourceId: id,
-        outcome: 'DENIED',
-        data: { reason: 'RBAC_BLOCK' },
-      });
-      return next(createError(403, 'Keine Berechtigung für diese Aktion.'));
+  try {
+    const actor = req.user as any;
+    const isAdmin = actor?.role === 'ADMIN';
+    const isSelf = actor?.id === id;
+    if (!isAdmin) {
+      if (!isSelf) {
+        await submitAuditEvent(req, {
+          action: 'USER.UPDATE.DENIED',
+          resourceType: 'USER',
+          resourceId: id,
+          outcome: 'DENIED',
+          data: { reason: 'RBAC_BLOCK' },
+        });
+        return next(createError(403, 'Keine Berechtigung für diese Aktion.'));
+      }
+      const providedKeys = Object.keys(req.body || {});
+      const allowedForSelf = new Set(['email', 'firstName', 'lastName', 'phone']);
+      const disallowed = providedKeys.filter((k) => !allowedForSelf.has(k));
+      if (disallowed.length > 0) {
+        await submitAuditEvent(req, {
+          action: 'USER.UPDATE.DENIED',
+          resourceType: 'USER',
+          resourceId: id,
+          outcome: 'DENIED',
+          data: { reason: 'FIELD_RESTRICTED', fields: disallowed },
+        });
+        return next(createError(403, `Nicht erlaubt, folgende Felder zu ändern: ${disallowed.join(', ')}`));
+      }
     }
-    const providedKeys = Object.keys(req.body || {});
-    const allowedForSelf = new Set(['email', 'firstName', 'lastName', 'phone']);
-    const disallowed = providedKeys.filter((k) => !allowedForSelf.has(k));
-    if (disallowed.length > 0) {
-      await submitAuditEvent(req, {
-        action: 'USER.UPDATE.DENIED',
-        resourceType: 'USER',
-        resourceId: id,
-        outcome: 'DENIED',
-        data: { reason: 'FIELD_RESTRICTED', fields: disallowed },
-      });
-      return next(createError(403, `Nicht erlaubt, folgende Felder zu ändern: ${disallowed.join(', ')}`));
-    }
-  }
 
-  const updatedUser = await prisma.user
-    .update({
+    const updatedUser = await prisma.user.update({
       where: { id },
       data: {
         ...(email && { email }),
@@ -367,64 +378,67 @@ export const updateUser = async (req: Request, res: Response, next: NextFunction
         createdAt: true,
         updatedAt: true,
       },
-    })
-    .catch(async (error: any) => {
-      if (error?.code === 'P2002') {
-        await submitAuditEvent(req, {
-          action: 'USER.UPDATE.FAIL',
-          resourceType: 'USER',
-          resourceId: id,
-          outcome: 'FAIL',
-          data: {
-            reason: 'UNIQUE_CONSTRAINT',
-            target: normalizePrismaTarget(error.meta?.target),
-          },
-        });
-      } else if (error?.code === 'P2025') {
-        await submitAuditEvent(req, {
-          action: 'USER.UPDATE.FAIL',
-          resourceType: 'USER',
-          resourceId: id,
-          outcome: 'FAIL',
-          data: { reason: 'NOT_FOUND' },
-        });
-      } else {
-        await submitAuditEvent(req, {
-          action: 'USER.UPDATE.ERROR',
-          resourceType: 'USER',
-          resourceId: id,
-          outcome: 'ERROR',
-          data: { error: toAuditErrorMessage(error) },
-        });
-      }
-      throw error;
     });
 
-  await submitAuditEvent(req, {
-    action: 'USER.UPDATE.SUCCESS',
-    resourceType: 'USER',
-    resourceId: updatedUser.id,
-    outcome: 'SUCCESS',
-    data: {
-      changes: Object.keys(req.body || {}).filter((key) => key !== 'password'),
-      role: updatedUser.role,
-      isActive: updatedUser.isActive,
-    },
-  });
+    await submitAuditEvent(req, {
+      action: 'USER.UPDATE.SUCCESS',
+      resourceType: 'USER',
+      resourceId: updatedUser.id,
+      outcome: 'SUCCESS',
+      data: {
+        changes: Object.keys(req.body || {}).filter((key) => key !== 'password'),
+        role: updatedUser.role,
+        isActive: updatedUser.isActive,
+      },
+    });
 
-  res.json({
-    success: true,
-    message: 'Mitarbeiter erfolgreich aktualisiert',
-    data: updatedUser,
-  });
+    res.json({
+      success: true,
+      message: 'Mitarbeiter erfolgreich aktualisiert',
+      data: updatedUser,
+    });
+  } catch (error: any) {
+    if (error?.code === 'P2002') {
+      await submitAuditEvent(req, {
+        action: 'USER.UPDATE.FAIL',
+        resourceType: 'USER',
+        resourceId: id,
+        outcome: 'FAIL',
+        data: {
+          reason: 'UNIQUE_CONSTRAINT',
+          target: normalizePrismaTarget((error as any)?.meta?.target),
+        },
+      });
+      return next(createError(400, 'E-Mail oder Mitarbeiter-ID bereits in Datenbank vergeben'));
+    }
+    if (error?.code === 'P2025') {
+      await submitAuditEvent(req, {
+        action: 'USER.UPDATE.FAIL',
+        resourceType: 'USER',
+        resourceId: id,
+        outcome: 'FAIL',
+        data: { reason: 'NOT_FOUND' },
+      });
+      return next(createError(404, 'Mitarbeiter nicht in Datenbank gefunden'));
+    }
+
+    await submitAuditEvent(req, {
+      action: 'USER.UPDATE.ERROR',
+      resourceType: 'USER',
+      resourceId: id,
+      outcome: 'ERROR',
+      data: { error: toAuditErrorMessage(error) },
+    });
+    return next(error);
+  }
 };
 
 // DELETE /api/users/:id - Mitarbeiter deaktivieren (soft delete)
-export const deactivateUser = async (req: Request, res: Response, _next: NextFunction) => {
+export const deactivateUser = async (req: Request, res: Response, next: NextFunction) => {
   const { id } = req.params;
 
-  const deactivatedUser = await prisma.user
-    .update({
+  try {
+    const deactivatedUser = await prisma.user.update({
       where: { id },
       data: { isActive: false },
       select: {
@@ -434,39 +448,40 @@ export const deactivateUser = async (req: Request, res: Response, _next: NextFun
         email: true,
         isActive: true,
       },
-    })
-    .catch(async (error: any) => {
-      if (error?.code === 'P2025') {
-        await submitAuditEvent(req, {
-          action: 'USER.DEACTIVATE.FAIL',
-          resourceType: 'USER',
-          resourceId: id,
-          outcome: 'FAIL',
-          data: { reason: 'NOT_FOUND' },
-        });
-      } else {
-        await submitAuditEvent(req, {
-          action: 'USER.DEACTIVATE.ERROR',
-          resourceType: 'USER',
-          resourceId: id,
-          outcome: 'ERROR',
-          data: { error: toAuditErrorMessage(error) },
-        });
-      }
-      throw error;
     });
 
-  await submitAuditEvent(req, {
-    action: 'USER.DEACTIVATE.SUCCESS',
-    resourceType: 'USER',
-    resourceId: deactivatedUser.id,
-    outcome: 'SUCCESS',
-    data: { email: deactivatedUser.email },
-  });
+    await submitAuditEvent(req, {
+      action: 'USER.DEACTIVATE.SUCCESS',
+      resourceType: 'USER',
+      resourceId: deactivatedUser.id,
+      outcome: 'SUCCESS',
+      data: { email: deactivatedUser.email },
+    });
 
-  res.json({
-    success: true,
-    message: 'Mitarbeiter erfolgreich deaktiviert',
-    data: deactivatedUser,
-  });
+    res.json({
+      success: true,
+      message: 'Mitarbeiter erfolgreich deaktiviert',
+      data: deactivatedUser,
+    });
+  } catch (error: any) {
+    if (error?.code === 'P2025') {
+      await submitAuditEvent(req, {
+        action: 'USER.DEACTIVATE.FAIL',
+        resourceType: 'USER',
+        resourceId: id,
+        outcome: 'FAIL',
+        data: { reason: 'NOT_FOUND' },
+      });
+      return next(createError(404, 'Mitarbeiter nicht in Datenbank gefunden'));
+    }
+
+    await submitAuditEvent(req, {
+      action: 'USER.DEACTIVATE.ERROR',
+      resourceType: 'USER',
+      resourceId: id,
+      outcome: 'ERROR',
+      data: { error: toAuditErrorMessage(error) },
+    });
+    return next(error);
+  }
 };
