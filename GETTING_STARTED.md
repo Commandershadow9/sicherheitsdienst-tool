@@ -20,8 +20,12 @@ PUBLIC_HOST=<SERVER_IP> docker compose -f docker-compose.dev.yml up
 ```
 - Frontend: `http://<SERVER_IP>:5173`
 - API: `http://<SERVER_IP>:3000`
+- Der API-Container führt vor dem Start automatisch `npx prisma migrate deploy` aus. Bei Fehlern stoppt der Start.
+- Seeds laufen im Dev-Stack automatisch, solange `SEED_ON_START=true` gesetzt ist (Default in `docker-compose.dev.yml`).
 
 ## 3) Seeds (Demo‑Daten)
+- Automatisch (Default): Der Startbefehl führt nach erfolgreichen Migrationen `npm run seed` aus.
+- Manuell (falls `SEED_ON_START=false` oder erneuter Seed benötigt wird)
 ```bash
 docker compose -f docker-compose.dev.yml exec api sh -lc 'npm run -s seed'
 ```

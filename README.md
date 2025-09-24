@@ -34,7 +34,9 @@ Start (Dev-Stack)
 - `.env` optional (siehe `.env.example` im jeweiligen Teilprojekt, Compose liest `.env` im Repo-Root – hier z. B. `PUBLIC_HOST=37.114.53.56`)
 - Lokal: `docker compose -f docker-compose.dev.yml up`
 - Remote/Server: `PUBLIC_HOST=<SERVER_IP> docker compose -f docker-compose.dev.yml up`
-- Migrations/Seed: im Dev werden Schema und Seed automatisch angewendet (SEED_ON_START=true im Compose)
+- Migrationslauf: Alle Stacks führen vor dem Start `npx prisma migrate deploy` aus und brechen bei Fehlern ab.
+- Seed (Dev): Standardmäßig setzt `docker-compose.dev.yml` `SEED_ON_START=true` und startet nach erfolgreichen Migrationen `npm run seed`. Zum Deaktivieren `SEED_ON_START=false` setzen.
+- Healthcheck: Compose nutzt `/readyz` als Readiness-Probe; abhängige Dienste (`web`, Monitoring) warten via `depends_on.condition: service_healthy` auf die API.
 
 URLs (Remote/Server)
 - Frontend: `http://<SERVER_IP>:5173`
@@ -44,7 +46,7 @@ Login‑Demo (Seeds)
 - `admin@sicherheitsdienst.de` / `password123`
 - weitere: `dispatcher@…`, `thomas.mueller@…`, `anna.schmidt@…`, `michael.wagner@…` (alle `password123`)
 
-Seed (manuell)
+- Seed (manuell)
 - `docker compose -f docker-compose.dev.yml exec api sh -lc 'npm run -s seed'`
 
 ## ENV & Konfiguration
@@ -52,7 +54,7 @@ Seed (manuell)
 API (Backend)
 - `.env.example` im Ordner `backend/`
 - Minimal: `PORT`, `JWT_SECRET`, `REFRESH_SECRET`
-- Optional: `DATABASE_URL` (Dev-Compose setzt es bereits), `CORS_ORIGIN|CORS_ORIGINS`, Rate-Limits (siehe unten)
+- Optional: `DATABASE_URL` (Dev-Compose setzt es bereits), `CORS_ORIGIN|CORS_ORIGINS`, `SEED_ON_START` (steuert automatischen Seed im Dev-Stack), Rate-Limits (siehe unten)
 - Rate-Limits
   - Global: `RATE_LIMIT_MAX`, `RATE_LIMIT_WINDOW_MS`
   - Auth/Login: `LOGIN_RATE_LIMIT_MAX`, `LOGIN_RATE_LIMIT_WINDOW_MS`
@@ -119,6 +121,11 @@ Beispiele
 - `GET /api/users?page=1&pageSize=25&sortBy=lastName&sortDir=asc&query=anna`
 - `GET /api/users?role=EMPLOYEE&isActive=true&filter[email]=@firma.de`
 - `GET /api/users?role=DISPATCHER` mit `Accept: text/csv` → gefiltertes CSV
+
+## Backend – Fehlerbehandlung & Controller-Stil
+
+- Controller werden sukzessive auf `asyncHandler` mit `next(createError(...))` umgestellt, damit der globale Error-Handler konsistente JSON-Antworten liefert.
+- Der `userController` nutzt bereits dieses Muster inklusive Audit-Events vor dem Throw; weitere Controller sollten ohne manuelle `try/catch`-Blöcke folgen und erwartete 4xx-Fälle per `createError` melden.
 
 ## Monitoring (optional)
 - `docker compose -f monitoring/docker-compose.monitoring.yml up -d`
