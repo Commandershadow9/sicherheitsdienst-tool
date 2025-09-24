@@ -22,7 +22,13 @@ docker compose -f docker-compose.monitoring.yml up -d
    cd monitoring
    GRAFANA_URL=http://<SERVER_IP>:3300 \
    GRAFANA_USER=admin GRAFANA_PASSWORD=<PASSWORT> \
-   ./scripts/import-dashboard.sh grafana/dashboards/audit-trail.json
+ ./scripts/import-dashboard.sh grafana/dashboards/audit-trail.json
+  ```
+   Optional: weitere Dashboards importieren (SLO/Fehlerraten):
+   ```bash
+   ./scripts/import-dashboard.sh grafana/dashboards/latency-and-errors.json
+   ./scripts/import-dashboard.sh grafana/dashboards/top-routes-p95.json
+   ./scripts/import-dashboard.sh grafana/dashboards/top-routes-5xx.json
    ```
 7. **Regeln/Config neu laden:**
    - Prometheus: `PROMETHEUS_URL=http://<SERVER_IP>:9090 ./scripts/reload-prometheus.sh`
@@ -56,6 +62,37 @@ docker compose -f docker-compose.monitoring.yml up -d
 - **AuditLogFlushFailures** (Kritisch) → Slack (Ops-Kanal) **und** Ops-Webhook; Flush blockiert → sofort handeln.
 - **AuditLogPruneErrors** (Warnung) → Slack (Ops-Kanal) erinnert an fehlerhafte Retention-Läufe.
 - Slack-Meldungen enthalten Service, Summary, Details & optional `runbook_url`; Ops-Webhook spiegelt kritische Alerts (PagerDuty o. ä.).
+
+## Synthetische Checks (Blackbox Exporter)
+- Ziel: Externe SLO‑Messung (HTTP‑Probe) für `/healthz` und `/readyz` — unabhängig vom internen Metrics‑Pfad.
+- Compose‑Service (Beispiel):
+  ```yaml
+  blackbox:
+    image: prom/blackbox-exporter:latest
+    container_name: sicherheitsdienst-blackbox
+    ports:
+      - '9115:9115'
+    networks: [ 'obs' ]
+  ```
+- Prometheus‑Job (Beispiel in `monitoring/prometheus/prometheus.yml`):
+  ```yaml
+  - job_name: 'blackbox'
+    metrics_path: /probe
+    params:
+      module: [http_2xx]
+    static_configs:
+      - targets:
+          - http://api:3000/healthz
+          - http://api:3000/readyz
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: target
+      - target_label: __address__
+        replacement: blackbox:9115
+  ```
+- Dashboard‑Panels: `latency-and-errors.json` enthält p95/Fehler‑Panels; optional eigenes Panel für `probe_success` / `probe_duration_seconds` ergänzen.
 
 ## PromQL Snippets
 - p50/p90/p95/p99 (rolling 5m):
@@ -127,3 +164,7 @@ Hinweise
 - Ports: Prometheus 9090, Alertmanager 9093, Grafana 3300 (kollisionsfrei zu API 3000/FE 5173).
 - Optionales Profil: Monitoring‑Compose ist getrennt; kann parallel zum Dev‑Stack laufen.
 - Echtzeit-Events prüfen: `curl -N -H "Authorization: Bearer <TOKEN>" "http://<SERVER_IP>:3000/api/notifications/events?channel=email,push"` (ADMIN/MANAGER/DISPATCHER). Heartbeat alle `NOTIFY_EVENTS_HEARTBEAT_MS` Sekunden (`: ping`).
+
+Empfehlung: synthetische Checks (Blackbox Exporter)
+- Blackbox‑Exporter als zusätzlichen Service in `docker-compose.monitoring.yml` aufnehmen und in Prometheus als Job `blackbox` konfigurieren (z. B. HTTP‑Probe auf `/healthz` und `/readyz`).
+- Nutzen: Synthetische SLO‑Messung unabhängig vom Applikations‑/Metrics‑Pfad; ergänzt Panels `latency-and-errors`.

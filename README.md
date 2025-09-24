@@ -134,10 +134,12 @@ Beispiele
 - **Alert-Routing konfigurieren:** ENV in `.env` setzen (`ALERTMANAGER_SLACK_WEBHOOK`, `ALERTMANAGER_SLACK_CHANNEL`, optional `ALERTMANAGER_SLACK_AUDIT_CHANNEL`, `ALERTMANAGER_WEBHOOK_URL`, optional `ALERTMANAGER_WEBHOOK_BEARER`). Slack bündelt alle Alerts; Audit-Warnungen landen im dedizierten Ops-Kanal und `severity="critical"` wird zusätzlich auf das Ops-Webhook gespiegelt.
 - **Dashboards & Regeln verwalten:**
   - Audit Trail Dashboard (`monitoring/grafana/dashboards/audit-trail.json`) via `monitoring/scripts/import-dashboard.sh` einspielen oder automatisches Provisioning nutzen.
+  - SLO/Fehler‑Dashboards: `monitoring/grafana/dashboards/latency-and-errors.json`, `monitoring/grafana/dashboards/top-routes-p95.json`, `monitoring/grafana/dashboards/top-routes-5xx.json` analog importieren.
   - Prometheus-Regeln (`monitoring/alerts/alerts.yml`) nach Änderungen mit `monitoring/scripts/reload-prometheus.sh` neu laden.
   - Alertmanager-Konfiguration (`monitoring/alertmanager/config.yml`) nach Anpassungen mit `monitoring/scripts/reload-alertmanager.sh` übernehmen.
 - **Audit-Alerts:** Warnungen zu Queue-Wachstum, Direct-/Flush-Fehlern sowie Prune-Errors sind aktiv und werden in den Ops-Slack-Kanal (optional konfigurierbar) plus – bei kritischen Flush-Fehlern – das Ops-Webhook geroutet (Details in `MONITORING.md`).
 - **Neue Auth-Limiter-Metriken:** `app_auth_login_attempts_total`, `app_auth_login_blocked_total` (Dashboard/Alert siehe `MONITORING.md`).
+ - Siehe `.env.example` im Repo‑Root für Beispiel‑ENV (inkl. `PUBLIC_HOST` und Alertmanager‑Variablen).
 
 ## Logging
 - Winston schreibt nach `logs/combined.log` und `logs/error.log`; Console-Output übernimmt `LOG_LEVEL` (Dev: `debug`, sonst `info`).

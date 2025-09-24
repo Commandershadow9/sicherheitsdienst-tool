@@ -16,7 +16,18 @@ Stand: 2025-09-15
   - Akzeptanz: Queue/Failures/Prune-Panels zeigen Daten aus Produktions-Prometheus.
 - [ ] Monitoring-Dokumentation: Compose-Ports (Prometheus 9090, Grafana 3300) & Betriebs-Checkliste finalisieren
   - Akzeptanz: README / MONITORING.md enthalten klare Schritte für Deploy & Betrieb, inkl. Skripte `import-dashboard.sh` und `reload-prometheus.sh`.
-  
+
+- [ ] Monitoring: Synthetische Checks (Blackbox Exporter) für SLOs
+  - Akzeptanz: Blackbox‑Exporter als Service in `docker-compose.monitoring.yml`, Prometheus‑Job `blackbox` (HTTP‑Probe `/healthz`/`/readyz`), Panels in `latency-and-errors` zeigen Ergebnisse; MONITORING.md enthält Konfig‑Snippet.
+- [ ] ENV/Onboarding: `.env.example` verlinken und Root‑.env erklären
+  - Akzeptanz: GETTING_STARTED.md verlinkt `.env.example` (Root) und erläutert kurz, wann Root‑.env (Monitoring/Compose) vs. Service‑`.env.example` (backend/frontend) genutzt wird.
+- [ ] Alert‑Routing validieren (Slack/Webhook)
+  - Akzeptanz: Test‑Alerts erscheinen im konfigurierten Slack‑Audit‑Kanal (`ALERTMANAGER_SLACK_AUDIT_CHANNEL`) und Ops‑Webhook empfängt `severity=critical`; Vorgehen in MONITORING.md dokumentiert.
+- [ ] CI‑Sichtbarkeit schärfen
+  - Akzeptanz: `metrics-smoke` zusätzlich zeitgesteuert (cron) ausführen; Artefakt‑Links in Benachrichtigungen verweisen auf Reports/Dashboards.
+- [ ] Doku‑Feinschliff (Ports/Dashboards)
+  - Akzeptanz: README nennt unterschiedliche Grafana‑Ports (Dev‑Compose 3002 vs. Monitoring 3300) und listet Import‑Befehle für `latency-and-errors`, `top-routes-p95`, `top-routes-5xx`.
+
 Erledigt:
 - [x] Auth Login-Limiter konfigurierbar (ENV `LOGIN_RATE_LIMIT_MAX/_WINDOW_MS`, sichere Defaults, Compose Override, Docs aktualisiert).
 - [x] Swagger UI (Dev) unter `/api-docs` mit YAML‑Quelle (`/api-docs-spec/openapi.yaml`).
@@ -41,6 +52,9 @@ Erledigt:
   - Akzeptanz: Liste empfohlener Indexe + (optional) Migrationen vorgeschlagen. (Umgesetzt: `docs/DB_INDEXES.md` + Prisma-@@index in Schema.)
 - [x] Notifications: Rate‑Limit produktionsreif (z. B. Token‑Bucket/express-rate-limit) + Env‑Profile
   - Akzeptanz: konfigurierbare Limits; Tests für Grenzen/Eckenfälle. (Umgesetzt: ENV‑Toggle, Standard‑Headers, 429 Retry‑After, Tests.)
+
+- [ ] Codequalität: ESLint‑Warnungen reduzieren
+  - Akzeptanz: ESLint‑Warnungen im Backend auf ≤ 5 reduzieren (ohne Funktionsänderung), Format/Lint‑Regeln beibehalten.
 
 ## Langfristig / Post‑MVP (P3)
 - [x] Erweiterte Benachrichtigungen (Real‑Events, Templates, Opt‑In) (2025-09-16)

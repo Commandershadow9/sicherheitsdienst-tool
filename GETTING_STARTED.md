@@ -18,6 +18,7 @@ docker compose -f docker-compose.dev.yml up
 # oder beim Start setzen:
 PUBLIC_HOST=<SERVER_IP> docker compose -f docker-compose.dev.yml up
 ```
+- Hinweis: Eine Beispiel‑ENV liegt als `.env.example` im Repo‑Root (inkl. `PUBLIC_HOST` und Alertmanager‑Variablen für das Monitoring‑Compose). Für das reine Dev‑Compose reicht i. d. R. `PUBLIC_HOST`.
 - Frontend: `http://<SERVER_IP>:5173`
 - API: `http://<SERVER_IP>:3000`
 - Der API-Container führt vor dem Start automatisch `npx prisma migrate deploy` aus. Bei Fehlern stoppt der Start.
@@ -36,6 +37,7 @@ Logins:
 ## 4) ENV (kurz)
 - Backend: `PORT`, `DATABASE_URL` (optional), `JWT_SECRET`, `REFRESH_SECRET`, `RATE_LIMIT_*`, `LOGIN_RATE_LIMIT_MAX/_WINDOW_MS`, `RATE_LIMIT_SKIP_PATHS` (`PUBLIC_HOST` setzt `CORS_ORIGIN` im Compose)
 - Frontend: `VITE_API_BASE_URL`, `VITE_HMR_HOST_SERVER_IP`, `VITE_HMR_CLIENT_PORT=5173`
+- Root/Monitoring: `.env` im Repo‑Root (optional) liefert `ALERTMANAGER_*` Variablen für das separate Monitoring‑Compose (`monitoring/docker-compose.monitoring.yml`).
 
 ## 5) Remote‑Vite & CORS
 - SSH-Tunnel/Dev: `VITE_API_BASE_URL=http://localhost:3000`, CORS_ORIGIN enthält `http://localhost:5173`
