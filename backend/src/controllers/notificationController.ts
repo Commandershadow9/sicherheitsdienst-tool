@@ -12,7 +12,7 @@ import {
   registerNotificationStream,
   unregisterNotificationStream,
 } from '../utils/notificationEvents';
-import { recordAuditEvent } from '../utils/auditTrail';
+import { submitAuditEvent } from '../utils/audit';
 
 function parseChannel(input?: string): NotificationChannel {
   if (input && input.toLowerCase() === 'push') return 'push';
@@ -49,9 +49,23 @@ export const sendTestNotification = async (req: Request, res: Response, next: Ne
     if (templateKey) {
       const templateMeta = getNotificationTemplate(channel, templateKey);
       if (!templateMeta) {
+        await submitAuditEvent(req, {
+          action: 'NOTIFICATION.TEST.FAIL',
+          resourceType: 'NOTIFICATION_TEST',
+          resourceId: null,
+          outcome: 'FAIL',
+          data: { channel, templateKey, reason: 'UNKNOWN_TEMPLATE' },
+        });
         return res.status(404).json({ success: false, message: 'Unbekanntes Template.' });
       }
       if (!templateMeta.enabled) {
+        await submitAuditEvent(req, {
+          action: 'NOTIFICATION.TEST.DENIED',
+          resourceType: 'NOTIFICATION_TEST',
+          resourceId: null,
+          outcome: 'DENIED',
+          data: { channel, templateKey, reason: 'TEMPLATE_DISABLED' },
+        });
         return res
           .status(409)
           .json({ success: false, message: `Template ${templateKey} ist durch Feature-Flag deaktiviert.` });
@@ -60,6 +74,13 @@ export const sendTestNotification = async (req: Request, res: Response, next: Ne
 
     if (channel === 'email') {
       if (!recipient || typeof recipient !== 'string') {
+        await submitAuditEvent(req, {
+          action: 'NOTIFICATION.TEST.FAIL',
+          resourceType: 'NOTIFICATION_TEST',
+          resourceId: null,
+          outcome: 'FAIL',
+          data: { channel, reason: 'MISSING_RECIPIENT' },
+        });
         return res.status(422).json({ success: false, message: 'E-Mail-Empfänger wird benötigt.' });
       }
       let subject: string | undefined = typeof title === 'string' ? title : undefined;
@@ -68,6 +89,13 @@ export const sendTestNotification = async (req: Request, res: Response, next: Ne
       if (templateKey) {
         const template = renderEmailTemplate(templateKey, variables || {});
         if (!template) {
+          await submitAuditEvent(req, {
+            action: 'NOTIFICATION.TEST.FAIL',
+            resourceType: 'NOTIFICATION_TEST',
+            resourceId: null,
+            outcome: 'FAIL',
+            data: { channel, templateKey, reason: 'TEMPLATE_RENDER_FAILED' },
+          });
           return res
             .status(409)
             .json({ success: false, message: `Template ${templateKey} konnte nicht gerendert werden.` });
@@ -77,6 +105,13 @@ export const sendTestNotification = async (req: Request, res: Response, next: Ne
         htmlContent = template.html;
       }
       if (!subject || (!textContent && !htmlContent)) {
+        await submitAuditEvent(req, {
+          action: 'NOTIFICATION.TEST.FAIL',
+          resourceType: 'NOTIFICATION_TEST',
+          resourceId: null,
+          outcome: 'FAIL',
+          data: { channel, templateKey: templateKey || null, reason: 'MISSING_CONTENT' },
+        });
         return res
           .status(422)
           .json({ success: false, message: 'Betreff und Inhalt werden für E-Mail-Benachrichtigungen benötigt.' });
@@ -86,12 +121,26 @@ export const sendTestNotification = async (req: Request, res: Response, next: Ne
         context: variables || {},
         reason: 'test',
       });
+      await submitAuditEvent(req, {
+        action: 'NOTIFICATION.TEST.SUCCESS',
+        resourceType: 'NOTIFICATION_TEST',
+        resourceId: null,
+        outcome: 'SUCCESS',
+        data: { channel, templateKey: templateKey || null, recipient },
+      });
       return res.json({ success: true, message: 'Test-Benachrichtigung gesendet', data: { channel, template: templateKey } });
     }
 
     // Push-Test
     const ids = Array.isArray(userIds) ? userIds.filter((id: unknown) => typeof id === 'string' && id) : [];
     if (!ids.length) {
+      await submitAuditEvent(req, {
+        action: 'NOTIFICATION.TEST.FAIL',
+        resourceType: 'NOTIFICATION_TEST',
+        resourceId: null,
+        outcome: 'FAIL',
+        data: { channel, reason: 'MISSING_USER_IDS' },
+      });
       return res.status(422).json({ success: false, message: 'Für Push-Benachrichtigungen wird eine userIds-Liste benötigt.' });
     }
     let pushTitle: string | undefined = typeof title === 'string' ? title : undefined;
@@ -99,6 +148,13 @@ export const sendTestNotification = async (req: Request, res: Response, next: Ne
     if (templateKey) {
       const template = renderPushTemplate(templateKey, variables || {});
       if (!template) {
+        await submitAuditEvent(req, {
+          action: 'NOTIFICATION.TEST.FAIL',
+          resourceType: 'NOTIFICATION_TEST',
+          resourceId: null,
+          outcome: 'FAIL',
+          data: { channel, templateKey, reason: 'TEMPLATE_RENDER_FAILED' },
+        });
         return res
           .status(409)
           .json({ success: false, message: `Template ${templateKey} konnte nicht gerendert werden.` });
@@ -107,6 +163,13 @@ export const sendTestNotification = async (req: Request, res: Response, next: Ne
       pushBody = template.body || pushBody;
     }
     if (!pushTitle || !pushBody) {
+      await submitAuditEvent(req, {
+        action: 'NOTIFICATION.TEST.FAIL',
+        resourceType: 'NOTIFICATION_TEST',
+        resourceId: null,
+        outcome: 'FAIL',
+        data: { channel, templateKey: templateKey || null, reason: 'MISSING_CONTENT' },
+      });
       return res
         .status(422)
         .json({ success: false, message: 'Titel und Text werden für Push-Benachrichtigungen benötigt.' });
@@ -116,8 +179,22 @@ export const sendTestNotification = async (req: Request, res: Response, next: Ne
       context: variables || {},
       reason: 'test',
     });
+    await submitAuditEvent(req, {
+      action: 'NOTIFICATION.TEST.SUCCESS',
+      resourceType: 'NOTIFICATION_TEST',
+      resourceId: null,
+      outcome: 'SUCCESS',
+      data: { channel, templateKey: templateKey || null, userIds: ids },
+    });
     return res.json({ success: true, message: 'Test-Benachrichtigung gesendet', data: { channel, template: templateKey } });
   } catch (err) {
+    await submitAuditEvent(req, {
+      action: 'NOTIFICATION.TEST.ERROR',
+      resourceType: 'NOTIFICATION_TEST',
+      resourceId: null,
+      outcome: 'ERROR',
+      data: { error: err instanceof Error ? err.message : 'UNKNOWN_ERROR' },
+    });
     return next(err);
   }
 };
@@ -152,7 +229,7 @@ export const getMyNotificationPreferences = async (req: Request, res: Response, 
 export const updateMyNotificationPreferences = async (req: Request, res: Response, next: NextFunction) => {
   try {
     if (!req.user) {
-      await recordAuditEvent(req, {
+      await submitAuditEvent(req, {
         action: 'NOTIFICATION.PREFERENCES.UPDATE',
         resourceType: 'NOTIFICATION_PREFERENCE',
         resourceId: null,
@@ -165,7 +242,7 @@ export const updateMyNotificationPreferences = async (req: Request, res: Respons
     if (typeof req.body.emailOptIn === 'boolean') updates.emailOptIn = req.body.emailOptIn;
     if (typeof req.body.pushOptIn === 'boolean') updates.pushOptIn = req.body.pushOptIn;
     if (!Object.keys(updates).length) {
-      await recordAuditEvent(req, {
+      await submitAuditEvent(req, {
         action: 'NOTIFICATION.PREFERENCES.UPDATE',
         resourceType: 'NOTIFICATION_PREFERENCE',
         resourceId: req.user.id,
@@ -179,7 +256,7 @@ export const updateMyNotificationPreferences = async (req: Request, res: Respons
       data: updates,
       select: { emailOptIn: true, pushOptIn: true },
     });
-    await recordAuditEvent(req, {
+    await submitAuditEvent(req, {
       action: 'NOTIFICATION.PREFERENCES.UPDATE',
       resourceType: 'NOTIFICATION_PREFERENCE',
       resourceId: req.user.id,
@@ -188,7 +265,7 @@ export const updateMyNotificationPreferences = async (req: Request, res: Respons
     });
     return res.json({ success: true, data: updated });
   } catch (err) {
-    await recordAuditEvent(req, {
+    await submitAuditEvent(req, {
       action: 'NOTIFICATION.PREFERENCES.UPDATE',
       resourceType: 'NOTIFICATION_PREFERENCE',
       resourceId: req.user?.id ?? null,

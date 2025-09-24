@@ -66,6 +66,16 @@ afterEach(() => {
     expect(payload.success).toBe(true);
     expect(payload.data.env.specVersion).toBe('9.9.9');
     expect(payload.data.env.buildSha).toBe('deadbeef');
+    expect(payload.data.audit).toEqual(
+      expect.objectContaining({
+        queueSize: expect.any(Number),
+        flushIntervalMs: expect.any(Number),
+        batchSize: expect.any(Number),
+        maxQueueSize: expect.any(Number),
+        isFlushing: expect.any(Boolean),
+        hasScheduledFlush: expect.any(Boolean),
+      }),
+    );
   });
 
   it('reports push success rate using delivered and failed counters', async () => {
@@ -109,5 +119,15 @@ afterEach(() => {
       outcomes: expect.objectContaining({ SUCCESS: 80, DENIED: 15, ERROR: 5 }),
       latest: expect.objectContaining({ id: 'log-latest' }),
     });
+    expect(payload?.data?.audit).toEqual(
+      expect.objectContaining({
+        queueSize: expect.any(Number),
+        flushIntervalMs: expect.any(Number),
+        batchSize: expect.any(Number),
+        maxQueueSize: expect.any(Number),
+        isFlushing: expect.any(Boolean),
+        hasScheduledFlush: expect.any(Boolean),
+      }),
+    );
   });
 });

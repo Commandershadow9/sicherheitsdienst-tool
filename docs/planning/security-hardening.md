@@ -86,7 +86,7 @@ model AuditLog {
 ## Implementation Roadmap
 1. **Phase A (done)**: Document blueprint, introduce selective rate-limits for shift assignment & clock flows, update env examples + tests.
 2. **Phase B (done 2025-09-18)**: Prisma-Modell + Migration, Logging-Service mit Retry-Queue (`logAuditEvent`, `flushAuditLogQueue`) samt Tests/Doku.
-3. **Phase C (done 2025-09-19)**: Audit-Events für Auth/Shifts/Notifications integriert, Admin-Read-API (`GET /api/audit-logs`) inkl. Filter/Paging und Tests bereitgestellt.
+3. **Phase C (done 2025-09-19)**: Audit-Events für Auth/Users/Shifts/Incidents/Notifications integriert (inkl. Test-Sendungen & Fehlpfade), Admin-Read-API (`GET /api/audit-logs`) inkl. Filter/Paging und Tests bereitgestellt.
 4. **Phase D (done 2025-09-19)**: CSV-Export bereitgestellt, `/api/stats` um Audit-Kennzahlen ergänzt, Queue-Konfiguration dokumentiert.
 5. **Phase E (done 2025-09-19)**: Retention-Job (`npm run audit:prune`), Prometheus-Metriken und Export-Flow finalisiert; nächste Schritte: Dashboards & Alerts konfigurieren.
 

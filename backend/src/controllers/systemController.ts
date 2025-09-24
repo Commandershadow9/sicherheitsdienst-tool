@@ -7,7 +7,7 @@ import { getNotifyCounters } from '../utils/notifyStats';
 import { getQueueSnapshot, type QueueState } from '../utils/queueStats';
 import { getRuntimeMetrics } from '../utils/runtimeMetrics';
 import { getNotificationStreamStats } from '../utils/notificationEvents';
-import { getAuditLogQueueSize } from '../services/auditLogService';
+import { getAuditLogState } from '../services/auditLogService';
 
 // Lightweight health endpoint (no deps)
 export const healthz = async (_req: Request, res: Response): Promise<void> => {
@@ -206,12 +206,7 @@ export const getSystemStats = async (req: Request, res: Response, next: NextFunc
       return acc;
     }, {});
 
-    const auditQueueConfig = {
-      flushIntervalMs: Number(process.env.AUDIT_LOG_FLUSH_INTERVAL_MS || 2000),
-      batchSize: Number(process.env.AUDIT_LOG_BATCH_SIZE || 25),
-      maxQueueSize: Number(process.env.AUDIT_LOG_MAX_QUEUE || 1000),
-      pending: getAuditLogQueueSize(),
-    };
+    const auditState = getAuditLogState();
 
     res.json({
       success: true,
@@ -271,8 +266,9 @@ export const getSystemStats = async (req: Request, res: Response, next: NextFunc
                 outcome: latestAuditEvent.outcome,
               }
             : null,
-          queue: auditQueueConfig,
+          queue: auditState,
         },
+        audit: auditState,
         env: {
           nodeEnv: process.env.NODE_ENV || 'development',
           version: process.env.npm_package_version || '1.0.0',

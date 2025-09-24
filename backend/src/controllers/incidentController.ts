@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import prisma from '../utils/prisma';
 import ExcelJS from 'exceljs';
 import { streamCsv } from '../utils/csv';
+import { submitAuditEvent } from '../utils/audit';
 
 export const listIncidents = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -123,8 +124,24 @@ export const createIncident = async (req: Request, res: Response, next: NextFunc
         reportedBy: userId,
       },
     });
+    await submitAuditEvent(req, {
+      action: 'INCIDENT.CREATE.SUCCESS',
+      resourceType: 'INCIDENT',
+      resourceId: created.id,
+      outcome: 'SUCCESS',
+      data: { severity: created.severity, status: created.status, location: created.location },
+    });
     res.status(201).json(created);
-  } catch (err) { next(err); }
+  } catch (err) {
+    await submitAuditEvent(req, {
+      action: 'INCIDENT.CREATE.ERROR',
+      resourceType: 'INCIDENT',
+      resourceId: null,
+      outcome: 'ERROR',
+      data: { error: err instanceof Error ? err.message : 'UNKNOWN_ERROR' },
+    });
+    next(err);
+  }
 };
 
 export const getIncident = async (req: Request, res: Response, next: NextFunction) => {
@@ -148,12 +165,33 @@ export const updateIncident = async (req: Request, res: Response, next: NextFunc
       if (req.body[f] !== undefined) payload[f] = f === 'occurredAt' ? new Date(req.body[f]) : req.body[f];
     }
     const updated = await prisma.incident.update({ where: { id }, data: payload });
+    await submitAuditEvent(req, {
+      action: 'INCIDENT.UPDATE.SUCCESS',
+      resourceType: 'INCIDENT',
+      resourceId: updated.id,
+      outcome: 'SUCCESS',
+      data: { changes: Object.keys(payload) },
+    });
     res.json(updated);
   } catch (err: any) {
     if (err?.code === 'P2025') {
+      await submitAuditEvent(req, {
+        action: 'INCIDENT.UPDATE.FAIL',
+        resourceType: 'INCIDENT',
+        resourceId: req.params?.id ?? null,
+        outcome: 'FAIL',
+        data: { reason: 'NOT_FOUND' },
+      });
       res.status(404).json({ success: false, code: 'NOT_FOUND', message: 'Vorfall nicht gefunden.' });
       return;
     }
+    await submitAuditEvent(req, {
+      action: 'INCIDENT.UPDATE.ERROR',
+      resourceType: 'INCIDENT',
+      resourceId: req.params?.id ?? null,
+      outcome: 'ERROR',
+      data: { error: err instanceof Error ? err.message : 'UNKNOWN_ERROR' },
+    });
     next(err);
   }
 };
@@ -162,12 +200,32 @@ export const deleteIncident = async (req: Request, res: Response, next: NextFunc
   try {
     const { id } = req.params as { id: string };
     await prisma.incident.delete({ where: { id } });
+    await submitAuditEvent(req, {
+      action: 'INCIDENT.DELETE.SUCCESS',
+      resourceType: 'INCIDENT',
+      resourceId: id,
+      outcome: 'SUCCESS',
+    });
     res.status(204).send();
   } catch (err: any) {
     if (err?.code === 'P2025') {
+      await submitAuditEvent(req, {
+        action: 'INCIDENT.DELETE.FAIL',
+        resourceType: 'INCIDENT',
+        resourceId: req.params?.id ?? null,
+        outcome: 'FAIL',
+        data: { reason: 'NOT_FOUND' },
+      });
       res.status(404).json({ success: false, code: 'NOT_FOUND', message: 'Vorfall nicht gefunden.' });
       return;
     }
+    await submitAuditEvent(req, {
+      action: 'INCIDENT.DELETE.ERROR',
+      resourceType: 'INCIDENT',
+      resourceId: req.params?.id ?? null,
+      outcome: 'ERROR',
+      data: { error: err instanceof Error ? err.message : 'UNKNOWN_ERROR' },
+    });
     next(err);
   }
 };

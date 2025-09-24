@@ -128,11 +128,12 @@ Beispiele
 
 ## Audit-Trail (Phase E)
 - Prisma-Modell `AuditLog` persistiert sicherheitsrelevante Aktionen (Actor, Ressource, Outcome, optional Payload) in der Tabelle `audit_logs`.
-- Service `logAuditEvent` schreibt synchron; bei Fehlern landen Events in einer In-Memory-Retry-Queue (`flushAuditLogQueue` leert sie batchweise, Default alle 2 s / max. 25 Events) und Prometheus-Metriken zählen direkte/Flush-Erfolge bzw. -Fehler (`audit_log_events_total`, `audit_log_failures_total`, `audit_log_queue_size`).
+- Service `logAuditEvent` schreibt synchron; bei Fehlern landen Events in einer In-Memory-Retry-Queue (`flushAuditLogQueue` leert sie batchweise, Default alle 2 s / max. 25 Events) und Prometheus-Metriken zählen direkte/Flush-Erfolge bzw. -Fehler (`audit_log_events_total`, `audit_log_failures_total`, `audit_log_queue_size`). Fehlt das Prisma-Modell (z. B. in Unit-Tests), werden Events verworfen und einmalig gewarnt statt Exceptions zu werfen.
 - Queue ist per ENV einstellbar (`AUDIT_LOG_FLUSH_INTERVAL_MS`, `AUDIT_LOG_BATCH_SIZE`, `AUDIT_LOG_MAX_QUEUE`, `AUDIT_RETENTION_DAYS`); bei voller Queue werden älteste Einträge verworfen (Warn-Log).
-- Events werden für Auth (Login/Refresh), Schichten (Create/Update/Delete, Assign, Clock in/out) und Notification-Opt-Ins/-Outs aufgezeichnet – inkl. Fehlpfaden (z. B. nicht zugewiesen, ungültiger Token).
+- Events werden für Auth (Login/Refresh), Users (Create/Update/Deactivate inkl. verbotener Self-Änderungen), Schichten (Create/Update/Delete, Assign, Clock in/out), Incidents (Create/Update/Delete) sowie Notifications (Opt-In/Out & Test-Sendungen inkl. 4xx-Szenarien) aufgezeichnet.
 - Admins rufen das Journal via `GET /api/audit-logs` (RBAC `ADMIN`) mit Paging & Filtern (`actorId`, `resourceType`, `resourceId`, `action`, `outcome`, `from`, `to`) ab – CSV-Export via `GET /api/audit-logs/export?format=csv` (gleiche Filter).
-- `/api/stats` enthält Audit-Kennzahlen (Total, letzte 24 h, Outcome-Verteilung, Queue-Konfiguration/Pending) für Dashboards.
+- `/api/stats` enthält Audit-Kennzahlen (Total, letzte 24 h, Outcome-Verteilung, Queue-State) plus separates `audit`-Objekt mit Queue-Größe, Flush-Status und Timer, wodurch Dashboards den In-Memory-Puffer überwachen können.
+- Helper `buildAuditEvent`/`submitAuditEvent` reichern Actor-, Request- und Client-Informationen konsistent an, Controller rufen sie für alle kritischen Mutationen auf.
 - Retention: `npm run audit:prune` löscht Einträge älter als `AUDIT_RETENTION_DAYS` (Default 400 Tage). Dry-Run via `npm run audit:prune -- --dry-run` oder alternativer `--retention-days` Wert.
 - Tests decken Sofort-Schreibpfad, Queueing, Fehlerszenarien sowie Retention-Logik ab.
 

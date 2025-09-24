@@ -4,7 +4,7 @@ import ExcelJS from 'exceljs';
 import logger from '../utils/logger';
 import { sendShiftChangedEmail } from '../services/emailService';
 import { streamCsv } from '../utils/csv';
-import { recordAuditEvent } from '../utils/auditTrail';
+import { submitAuditEvent } from '../utils/audit';
 
 const EMAIL_FLAG = 'EMAIL_NOTIFY_SHIFTS';
 
@@ -290,7 +290,7 @@ export const createShift = async (req: Request, res: Response, next: NextFunctio
     } catch {
       // bereits intern geloggt
     }
-    await recordAuditEvent(req, {
+    await submitAuditEvent(req, {
       action: 'SHIFT.CREATE',
       resourceType: 'SHIFT',
       resourceId: shift.id,
@@ -308,7 +308,7 @@ export const createShift = async (req: Request, res: Response, next: NextFunctio
     });
   } catch (error) {
     console.error('Error creating shift:', error);
-    await recordAuditEvent(req, {
+    await submitAuditEvent(req, {
       action: 'SHIFT.CREATE',
       resourceType: 'SHIFT',
       outcome: 'ERROR',
@@ -430,7 +430,7 @@ export const updateShift = async (req: Request, res: Response, next: NextFunctio
     } catch {
       // bereits intern geloggt
     }
-    await recordAuditEvent(req, {
+    await submitAuditEvent(req, {
       action: 'SHIFT.UPDATE',
       resourceType: 'SHIFT',
       resourceId: updatedShift.id,
@@ -449,7 +449,7 @@ export const updateShift = async (req: Request, res: Response, next: NextFunctio
     console.error('Error updating shift:', error);
 
     if (error.code === 'P2025') {
-      await recordAuditEvent(req, {
+      await submitAuditEvent(req, {
         action: 'SHIFT.UPDATE',
         resourceType: 'SHIFT',
         resourceId: req.params.id,
@@ -463,7 +463,7 @@ export const updateShift = async (req: Request, res: Response, next: NextFunctio
       return;
     }
 
-    await recordAuditEvent(req, {
+    await submitAuditEvent(req, {
       action: 'SHIFT.UPDATE',
       resourceType: 'SHIFT',
       resourceId: req.params.id,
@@ -511,7 +511,7 @@ export const deleteShift = async (req: Request, res: Response, next: NextFunctio
     } catch {
       // bereits intern geloggt
     }
-    await recordAuditEvent(req, {
+    await submitAuditEvent(req, {
       action: 'SHIFT.DELETE',
       resourceType: 'SHIFT',
       resourceId: deletedShift.id,
@@ -527,7 +527,7 @@ export const deleteShift = async (req: Request, res: Response, next: NextFunctio
     console.error('Error deleting shift:', error);
 
     if (error.code === 'P2025') {
-      await recordAuditEvent(req, {
+      await submitAuditEvent(req, {
         action: 'SHIFT.DELETE',
         resourceType: 'SHIFT',
         resourceId: req.params.id,
@@ -541,7 +541,7 @@ export const deleteShift = async (req: Request, res: Response, next: NextFunctio
       return;
     }
 
-    await recordAuditEvent(req, {
+    await submitAuditEvent(req, {
       action: 'SHIFT.DELETE',
       resourceType: 'SHIFT',
       resourceId: req.params.id,
@@ -559,7 +559,7 @@ export const assignUserToShift = async (req: Request, res: Response, next: NextF
     const { userId } = req.body;
 
     if (!userId) {
-      await recordAuditEvent(req, {
+      await submitAuditEvent(req, {
         action: 'SHIFT.ASSIGN',
         resourceType: 'SHIFT',
         resourceId: shiftId,
@@ -580,7 +580,7 @@ export const assignUserToShift = async (req: Request, res: Response, next: NextF
     });
 
     if (!shift) {
-      await recordAuditEvent(req, {
+      await submitAuditEvent(req, {
         action: 'SHIFT.ASSIGN',
         resourceType: 'SHIFT',
         resourceId: shiftId,
@@ -605,7 +605,7 @@ export const assignUserToShift = async (req: Request, res: Response, next: NextF
     });
 
     if (existingAssignment) {
-      await recordAuditEvent(req, {
+      await submitAuditEvent(req, {
         action: 'SHIFT.ASSIGN',
         resourceType: 'SHIFT',
         resourceId: shiftId,
@@ -646,7 +646,7 @@ export const assignUserToShift = async (req: Request, res: Response, next: NextF
       },
     });
 
-    await recordAuditEvent(req, {
+    await submitAuditEvent(req, {
       action: 'SHIFT.ASSIGN',
       resourceType: 'SHIFT',
       resourceId: shiftId,
@@ -662,7 +662,7 @@ export const assignUserToShift = async (req: Request, res: Response, next: NextF
     console.error('Error assigning user to shift:', error);
 
     if (error.code === 'P2002') {
-      await recordAuditEvent(req, {
+      await submitAuditEvent(req, {
         action: 'SHIFT.ASSIGN',
         resourceType: 'SHIFT',
         resourceId: req.params.id,
@@ -676,7 +676,7 @@ export const assignUserToShift = async (req: Request, res: Response, next: NextF
       return;
     }
 
-    await recordAuditEvent(req, {
+    await submitAuditEvent(req, {
       action: 'SHIFT.ASSIGN',
       resourceType: 'SHIFT',
       resourceId: req.params.id,
@@ -694,7 +694,7 @@ export const clockIn = async (req: Request, res: Response, next: NextFunction) =
     const userId = (req.user as any)?.id;
     const { at, location, notes } = req.body;
     if (!userId) {
-      await recordAuditEvent(req, {
+      await submitAuditEvent(req, {
         action: 'SHIFT.CLOCK_IN',
         resourceType: 'SHIFT',
         resourceId: shiftId,
@@ -708,7 +708,7 @@ export const clockIn = async (req: Request, res: Response, next: NextFunction) =
       where: { userId_shiftId: { userId, shiftId } },
     });
     if (!assigned) {
-      await recordAuditEvent(req, {
+      await submitAuditEvent(req, {
         action: 'SHIFT.CLOCK_IN',
         resourceType: 'SHIFT',
         resourceId: shiftId,
@@ -720,7 +720,7 @@ export const clockIn = async (req: Request, res: Response, next: NextFunction) =
     }
     const open = await prisma.timeEntry.findFirst({ where: { userId, endTime: null } });
     if (open) {
-      await recordAuditEvent(req, {
+      await submitAuditEvent(req, {
         action: 'SHIFT.CLOCK_IN',
         resourceType: 'SHIFT',
         resourceId: shiftId,
@@ -743,7 +743,7 @@ export const clockIn = async (req: Request, res: Response, next: NextFunction) =
       const hoursRest = (start.getTime() - new Date(last.endTime).getTime()) / 3_600_000;
       if (hoursRest < 11) warnings.push('WARN_REST_PERIOD_LT_11H');
     }
-    await recordAuditEvent(req, {
+    await submitAuditEvent(req, {
       action: 'SHIFT.CLOCK_IN',
       resourceType: 'SHIFT',
       resourceId: shiftId,
@@ -752,7 +752,7 @@ export const clockIn = async (req: Request, res: Response, next: NextFunction) =
     });
     res.json({ success: true, message: 'Clock-in erfasst', data: entry, warnings });
   } catch (error) {
-    await recordAuditEvent(req, {
+    await submitAuditEvent(req, {
       action: 'SHIFT.CLOCK_IN',
       resourceType: 'SHIFT',
       resourceId: req.params.id,
@@ -770,7 +770,7 @@ export const clockOut = async (req: Request, res: Response, next: NextFunction) 
     const userId = (req.user as any)?.id;
     const { at, breakTime, location, notes } = req.body;
     if (!userId) {
-      await recordAuditEvent(req, {
+      await submitAuditEvent(req, {
         action: 'SHIFT.CLOCK_OUT',
         resourceType: 'SHIFT',
         resourceId: shiftId,
@@ -784,7 +784,7 @@ export const clockOut = async (req: Request, res: Response, next: NextFunction) 
       where: { userId_shiftId: { userId, shiftId } },
     });
     if (!assigned) {
-      await recordAuditEvent(req, {
+      await submitAuditEvent(req, {
         action: 'SHIFT.CLOCK_OUT',
         resourceType: 'SHIFT',
         resourceId: shiftId,
@@ -796,7 +796,7 @@ export const clockOut = async (req: Request, res: Response, next: NextFunction) 
     }
     const open = await prisma.timeEntry.findFirst({ where: { userId, endTime: null }, orderBy: { startTime: 'desc' } });
     if (!open) {
-      await recordAuditEvent(req, {
+      await submitAuditEvent(req, {
         action: 'SHIFT.CLOCK_OUT',
         resourceType: 'SHIFT',
         resourceId: shiftId,
@@ -821,7 +821,7 @@ export const clockOut = async (req: Request, res: Response, next: NextFunction) 
       (end.getTime() - new Date(updated.startTime).getTime()) / 3_600_000 - (updated.breakTime ? updated.breakTime / 60 : 0);
     if (durationHours > 12) warnings.push('WARN_SHIFT_GT_12H');
     if (durationHours > 10) warnings.push('WARN_SHIFT_GT_10H');
-    await recordAuditEvent(req, {
+    await submitAuditEvent(req, {
       action: 'SHIFT.CLOCK_OUT',
       resourceType: 'SHIFT',
       resourceId: shiftId,
@@ -830,7 +830,7 @@ export const clockOut = async (req: Request, res: Response, next: NextFunction) 
     });
     res.json({ success: true, message: 'Clock-out erfasst', data: updated, warnings });
   } catch (error) {
-    await recordAuditEvent(req, {
+    await submitAuditEvent(req, {
       action: 'SHIFT.CLOCK_OUT',
       resourceType: 'SHIFT',
       resourceId: req.params.id,
