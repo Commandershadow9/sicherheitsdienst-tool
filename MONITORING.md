@@ -12,11 +12,7 @@ docker compose -f docker-compose.monitoring.yml up -d
 - Alertmanager: `http://<SERVER_IP>:9093`
 
 ## Operations Checklist
-<<<<<<< HEAD
 1. **ENV prüfen:** `.env` im Repo-Root mit `ALERTMANAGER_SLACK_WEBHOOK` (optional `ALERTMANAGER_SLACK_CHANNEL` und `ALERTMANAGER_SLACK_AUDIT_CHANNEL`) sowie optional `ALERTMANAGER_WEBHOOK_URL`/`ALERTMANAGER_WEBHOOK_BEARER` ergänzen.
-=======
-1. **ENV prüfen:** `.env` im Repo-Root mit `ALERTMANAGER_SLACK_WEBHOOK` (optional `ALERTMANAGER_SLACK_CHANNEL` und `ALERTMANAGER_SLACK_AUDIT_CHANNEL`) sowie optional `ALERTMANAGER_WEBHOOK_URL`/`ALERTMANAGER_WEBHOOK_BEARER` ergänzen.
->>>>>>> pr/24
 2. **Stack starten:** `docker compose -f monitoring/docker-compose.monitoring.yml up -d`.
 3. **Status prüfen:** `docker compose -f monitoring/docker-compose.monitoring.yml ps` – alle Services sollten `running` sein.
 4. **Prometheus Targets:** `http://<SERVER_IP>:9090/targets` aufrufen → `sicherheitsdienst-api` muss `UP` sein (sonst Scrape-URL/Firewall prüfen).
@@ -51,17 +47,14 @@ docker compose -f docker-compose.monitoring.yml up -d
 
 
 ### Audit Alerts & Eskalation
-<<<<<<< HEAD
 - **AuditLogQueueGrowing** (Warnung) → Slack (Ops-Kanal) informiert über Queue > 200 für ≥ 2 Minuten.
 - **AuditLogDirectFailures** (Warnung) → Slack (Ops-Kanal) meldet direkte Schreibfehler (> 5 in 5 Minuten).
 - **AuditLogFlushFailures** (Kritisch) → Slack (Ops-Kanal) **und** Ops-Webhook; Flush blockiert → sofort handeln.
 - **AuditLogPruneErrors** (Warnung) → Slack (Ops-Kanal) erinnert an fehlerhafte Retention-Läufe.
-=======
 - **AuditLogQueueGrowing** (Warnung) → Slack (Ops-Kanal) informiert über Queue > 200 für ≥ 2 Minuten.
 - **AuditLogDirectFailures** (Warnung) → Slack (Ops-Kanal) meldet direkte Schreibfehler (> 5 in 5 Minuten).
 - **AuditLogFlushFailures** (Kritisch) → Slack (Ops-Kanal) **und** Ops-Webhook; Flush blockiert → sofort handeln.
 - **AuditLogPruneErrors** (Warnung) → Slack (Ops-Kanal) erinnert an fehlerhafte Retention-Läufe.
->>>>>>> pr/24
 - Slack-Meldungen enthalten Service, Summary, Details & optional `runbook_url`; Ops-Webhook spiegelt kritische Alerts (PagerDuty o. ä.).
 
 ## PromQL Snippets
