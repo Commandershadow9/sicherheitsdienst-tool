@@ -120,6 +120,11 @@ Beispiele
 - `GET /api/users?role=EMPLOYEE&isActive=true&filter[email]=@firma.de`
 - `GET /api/users?role=DISPATCHER` mit `Accept: text/csv` → gefiltertes CSV
 
+## Backend – Fehlerbehandlung & Controller-Stil
+
+- Controller werden sukzessive auf `asyncHandler` mit `next(createError(...))` umgestellt, damit der globale Error-Handler konsistente JSON-Antworten liefert.
+- Der `userController` nutzt bereits dieses Muster inklusive Audit-Events vor dem Throw; weitere Controller sollten ohne manuelle `try/catch`-Blöcke folgen und erwartete 4xx-Fälle per `createError` melden.
+
 ## Monitoring (optional)
 - `docker compose -f monitoring/docker-compose.monitoring.yml up -d`
 - Prometheus: `http://<SERVER_IP>:9090`, Grafana: `http://<SERVER_IP>:3300` (admin/admin), Alertmanager: `http://<SERVER_IP>:9093`
