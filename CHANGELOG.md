@@ -4,6 +4,20 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### Changed
+- ops/compose: PR #22 harmonisiert Readiness-Checks (`/readyz`) in `docker-compose*.yml`, führt `set -e` in Startkommandos ein und setzt `depends_on` auf Health-Conditions.
+- docs: READMEs/GETTING_STARTED/TROUBLESHOOTING zu Healthchecks und Dev-Seeds aktualisiert.
+
+### Fixed
+- backend/typecheck: Prisma-Typ-Drift umgangen (AuditLog-Model, `emailOptIn`) durch entkoppelte Typen in Controllern/Services; Typecheck grün ohne `prisma generate`.
+- backend/audit: Defensive Header-Zugriffe in `utils/audit.ts` verhindern Fehler in Unit-Tests ohne HTTP-Header.
+- backend/incidents: `createIncident` mit Auth/Validierung (401/403/422) und robusten Audit-Events; kein NPE mehr bei leerem Create-Result.
+- backend/notifications: Events-Route nutzt gültigen RBAC-Handler; Rate-Limit-Tests stabil.
+- backend/shifts: Saubere Datumsvalidierung und Audit-Event-Felder für `createShift`.
+
+### Tests
+- Alle Backend-Tests laufen grün (73 Suites, 201 Tests). CI-Fehlerursachen behoben (Socket/Headers/Guards).
+
 ### Added
 - security: Audit-Log-Service toleriert fehlende Prisma-Modelle (Tests/Mocks), bietet `getAuditLogState()` für Laufzeitsnapshots und liefert mit `buildAuditEvent`/`submitAuditEvent` konsistente Audit-Metadaten.
 - docs: Security-Hardening Blueprint (`docs/planning/security-hardening.md`) mit Rate-Limit- und Audit-Trail-Konzept.
