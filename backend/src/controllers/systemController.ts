@@ -148,13 +148,13 @@ export const getSystemStats = async (req: Request, res: Response, next: NextFunc
           where: { status: { in: ['OPEN', 'IN_PROGRESS'] } },
         }),
         prisma.timeEntry.count(),
-        prisma.auditLog.count(),
-        prisma.auditLog.count({ where: { occurredAt: { gte: twentyFourHoursAgo } } }),
-        prisma.auditLog.groupBy({
+        (prisma as any).auditLog.count(),
+        (prisma as any).auditLog.count({ where: { occurredAt: { gte: twentyFourHoursAgo } } }),
+        (prisma as any).auditLog.groupBy({
           by: ['outcome'],
           _count: true,
         }),
-        prisma.auditLog.findFirst({ orderBy: { occurredAt: 'desc' } }),
+        (prisma as any).auditLog.findFirst({ orderBy: { occurredAt: 'desc' } }),
       ]);
 
     // Feature-/Env-Status ableiten
@@ -200,11 +200,11 @@ export const getSystemStats = async (req: Request, res: Response, next: NextFunc
       push: queueSnapshot['notifications-push'] || defaultQueueState('notifications-push'),
     };
 
-    const auditOutcomeCounts = outcomeGroups.reduce<Record<string, number>>((acc, entry) => {
-      const key = entry.outcome ?? 'UNKNOWN';
-      acc[key] = entry._count;
+    const auditOutcomeCounts = outcomeGroups.reduce((acc: Record<string, number>, entry: any) => {
+      const key = entry?.outcome ?? 'UNKNOWN';
+      acc[key] = typeof entry?._count === 'number' ? entry._count : Number(entry?._count || 0);
       return acc;
-    }, {});
+    }, {} as Record<string, number>);
 
     const auditState = getAuditLogState();
 

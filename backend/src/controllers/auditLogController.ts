@@ -1,5 +1,4 @@
 import { Request, Response, NextFunction } from 'express';
-import { Prisma } from '@prisma/client';
 import prisma from '../utils/prisma';
 import { streamCsv } from '../utils/csv';
 
@@ -11,7 +10,7 @@ type ParsedDateRange = {
 };
 
 type FilterResult = {
-  where: Prisma.AuditLogWhereInput;
+  where: Record<string, any>;
   pagination: {
     page: number;
     pageSize: number;
@@ -53,7 +52,7 @@ function buildFilters(query: Request['query']): FilterResult {
     };
   }
 
-  const where: Prisma.AuditLogWhereInput = {};
+  const where: Record<string, any> = {};
   if (typeof query.actorId === 'string' && query.actorId.trim()) {
     where.actorId = query.actorId.trim();
   }
@@ -99,13 +98,13 @@ export const listAuditLogs = async (req: Request, res: Response, next: NextFunct
     }
 
     const [items, total] = await Promise.all([
-      prisma.auditLog.findMany({
+      (prisma as any).auditLog.findMany({
         where: filters.where,
         orderBy: { occurredAt: 'desc' },
         skip: filters.pagination.skip,
         take: filters.pagination.pageSize,
       }),
-      prisma.auditLog.count({ where: filters.where }),
+      (prisma as any).auditLog.count({ where: filters.where }),
     ]);
 
     res.json({
@@ -166,7 +165,7 @@ export const exportAuditLogs = async (req: Request, res: Response, next: NextFun
 
     async function* rows() {
       for (let offset = 0; ; offset += MAX_EXPORT_BATCH) {
-        const batch = await prisma.auditLog.findMany({
+        const batch = await (prisma as any).auditLog.findMany({
           where: filters.where,
           orderBy: { occurredAt: 'desc' },
           skip: offset,

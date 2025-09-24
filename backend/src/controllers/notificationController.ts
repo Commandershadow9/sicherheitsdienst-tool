@@ -215,7 +215,7 @@ export const getMyNotificationPreferences = async (req: Request, res: Response, 
     }
     const data = await prisma.user.findUnique({
       where: { id: req.user.id },
-      select: { emailOptIn: true, pushOptIn: true },
+      select: { emailOptIn: true, pushOptIn: true } as any,
     });
     if (!data) {
       return res.status(404).json({ success: false, message: 'Benutzer nicht gefunden.' });
@@ -254,7 +254,7 @@ export const updateMyNotificationPreferences = async (req: Request, res: Respons
     const updated = await prisma.user.update({
       where: { id: req.user.id },
       data: updates,
-      select: { emailOptIn: true, pushOptIn: true },
+      select: { emailOptIn: true, pushOptIn: true } as any,
     });
     await submitAuditEvent(req, {
       action: 'NOTIFICATION.PREFERENCES.UPDATE',

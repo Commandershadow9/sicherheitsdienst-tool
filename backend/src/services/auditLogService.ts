@@ -21,7 +21,19 @@ export type AuditLogEventInput = {
   occurredAt?: Date;
 };
 
-type AuditLogPayload = Prisma.AuditLogCreateManyInput;
+type AuditLogPayload = {
+  action: string;
+  resourceType: string;
+  resourceId: string | null;
+  actorId: string | null;
+  actorRole: string | null;
+  actorIp: string | null;
+  requestId: string | null;
+  userAgent: string | null;
+  outcome: string | null;
+  occurredAt: Date;
+  data?: any;
+};
 
 const DEFAULT_FLUSH_INTERVAL_MS = 2000;
 const DEFAULT_BATCH_SIZE = 25;
@@ -59,7 +71,7 @@ function toPayload(event: AuditLogEventInput): AuditLogPayload {
   };
 
   if (event.data !== undefined) {
-    payload.data = event.data === null ? Prisma.DbNull : (event.data as Prisma.InputJsonValue);
+    payload.data = event.data === null ? (Prisma as any).DbNull ?? null : (event.data as any);
   }
 
   return payload;

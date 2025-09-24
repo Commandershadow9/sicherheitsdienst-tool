@@ -37,8 +37,8 @@ export async function pruneAuditLogs(options: PruneOptions = {}): Promise<{
 
   logger.info('[audit] pruning audit logs older than %d days (cutoff=%s)%s', retentionDays, cutoff.toISOString(), dryRun ? ' [dry-run]' : '');
 
-  const where = { occurredAt: { lt: cutoff } };
-  const candidates = await prisma.auditLog.count({ where });
+  const where = { occurredAt: { lt: cutoff } } as any;
+  const candidates = await (prisma as any).auditLog.count({ where });
 
   if (dryRun) {
     logger.info('[audit] dry-run: %d entries would be deleted.', candidates);
@@ -46,7 +46,7 @@ export async function pruneAuditLogs(options: PruneOptions = {}): Promise<{
     return { retentionDays, cutoff, deleted: 0, candidates };
   }
 
-  const result = await prisma.auditLog.deleteMany({ where });
+  const result = await (prisma as any).auditLog.deleteMany({ where });
   logger.info('[audit] deleted %d audit log entries older than %s.', result.count, cutoff.toISOString());
   auditLogPruneCounter.inc({ result: 'deleted' }, result.count);
   return { retentionDays, cutoff, deleted: result.count, candidates: result.count };
