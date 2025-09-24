@@ -11,6 +11,24 @@ docker compose -f docker-compose.monitoring.yml up -d
 - Grafana: `http://<SERVER_IP>:3300` (admin/admin)
 - Alertmanager: `http://<SERVER_IP>:9093`
 
+## Operations Checklist
+1. **ENV prüfen:** `.env` im Repo-Root mit `ALERTMANAGER_SLACK_WEBHOOK` (optional `ALERTMANAGER_SLACK_CHANNEL`) sowie optional `ALERTMANAGER_WEBHOOK_URL`/`ALERTMANAGER_WEBHOOK_BEARER` ergänzen.
+2. **Stack starten:** `docker compose -f monitoring/docker-compose.monitoring.yml up -d`.
+3. **Status prüfen:** `docker compose -f monitoring/docker-compose.monitoring.yml ps` – alle Services sollten `running` sein.
+4. **Prometheus Targets:** `http://<SERVER_IP>:9090/targets` aufrufen → `sicherheitsdienst-api` muss `UP` sein (sonst Scrape-URL/Firewall prüfen).
+5. **Grafana Login:** `http://<SERVER_IP>:3300` → admin/admin (Default), Passwort sofort ändern.
+6. **Dashboard importieren (falls Provisioning deaktiviert oder Update nötig):**
+   ```bash
+   cd monitoring
+   GRAFANA_URL=http://<SERVER_IP>:3300 \
+   GRAFANA_USER=admin GRAFANA_PASSWORD=<PASSWORT> \
+   ./scripts/import-dashboard.sh grafana/dashboards/audit-trail.json
+   ```
+7. **Regeln/Config neu laden:**
+   - Prometheus: `PROMETHEUS_URL=http://<SERVER_IP>:9090 ./scripts/reload-prometheus.sh`
+   - Alertmanager: `ALERTMANAGER_URL=http://<SERVER_IP>:9093 ./scripts/reload-alertmanager.sh`
+8. **Alert-Routing testen:** Alertmanager UI `http://<SERVER_IP>:9093` → `Routes` checken; Test-Alert via `amtool`/`promtool` simulieren.
+
 ## Alertmanager Setup & Routing
 - Compose startet `prom/alertmanager` mit `monitoring/alertmanager/config.yml` (Slack + Webhook).
 - ENV vor dem Start setzen (z. B. in `.env` im Repo-Root):
@@ -24,6 +42,14 @@ docker compose -f docker-compose.monitoring.yml up -d
 - Subroute mit `severity="critical"` spiegelt Alerts zusätzlich auf das Ops-Webhook (continue: true).
 - `monitoring/scripts/reload-alertmanager.sh` triggert `/-/reload` (nach Config-Änderungen statt Container-Neustart).
 - Labels nutzen (`service=sicherheitsdienst-api`, `severity=warning|critical`, optional `runbook_url`) – siehe `monitoring/alerts/alerts.yml`.
+
+
+### Audit Alerts & Eskalation
+- **AuditLogQueueGrowing** (Warnung) → Slack informiert über Queue > 200 für ≥ 2 Minuten.
+- **AuditLogDirectFailures** (Warnung) → Slack meldet direkte Schreibfehler (> 5 in 5 Minuten).
+- **AuditLogFlushFailures** (Kritisch) → Slack **und** Ops-Webhook; Flush blockiert → sofort handeln.
+- **AuditLogPruneErrors** (Warnung) → Slack erinnert an fehlerhafte Retention-Läufe.
+- Slack-Meldungen enthalten Service, Summary, Details & optional `runbook_url`; Ops-Webhook spiegelt kritische Alerts (PagerDuty o. ä.).
 
 ## PromQL Snippets
 - p50/p90/p95/p99 (rolling 5m):
