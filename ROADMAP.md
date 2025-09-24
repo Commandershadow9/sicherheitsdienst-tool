@@ -29,6 +29,7 @@ Hinweis: Dieser Abschnitt fasst die tagesaktuellen Ziele aus der ehemaligen Date
 - DX: Swagger UI (nur Dev) unter `/api-docs` verfügbar.
 - Observability: `/api/stats` erweitert (Features/Notifications/Auth/System/Env) und dokumentiert (README + OpenAPI).
 - Observability: `/api/stats` liefert Laufzeit/Event-Loop/Queue & Success-Rates; README Logging-Runbook ergänzt (2025-09-15).
+- Observability: Alertmanager (Slack/Webhook) im Monitoring-Compose, Audit-Trail-Dashboard provisioniert & Runbooks in README/MONITORING aktualisiert (2025-09-20).
 
 ### Neu seit v1.1.1 (Health/Readiness)
 - Liveness/Readiness: `/healthz`, `/readyz` (mit `deps.db`, `deps.smtp`).
@@ -43,7 +44,7 @@ Hinweis: Dieser Abschnitt fasst die tagesaktuellen Ziele aus der ehemaligen Date
 - ✅ Security-Hardening Phase C: Audit-Events für Auth/Shifts/Notifications + Admin Read-API (`GET /api/audit-logs`) (2025-09-19).
 - ✅ Security-Hardening Phase D: Audit-CSV-Export + `/api/stats`-Kennzahlen (2025-09-19).
 - ✅ Security-Hardening Phase E: Retention-Job (`npm run audit:prune`), Prometheus-Metriken, `/api/stats` Auditdaten (2025-09-19). Nächster Schritt: Dashboards/Alerts feintunen.
-- Telemetry: Prometheus/Grafana Dashboards versionieren, PromQL-Snippets im Monitoring-Runbook ergänzen.
+- Telemetry: SLO-Panels (p95/5xx) & synthetische Checks für Monitoring-Stack ergänzen.
 - Ops/Compose: Healthchecks & Migrationslauf in Docker-Stacks harmonisieren (`docker-compose*.yml`, `.env.example`).
 
 
