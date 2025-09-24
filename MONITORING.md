@@ -12,7 +12,11 @@ docker compose -f docker-compose.monitoring.yml up -d
 - Alertmanager: `http://<SERVER_IP>:9093`
 
 ## Operations Checklist
-1. **ENV prüfen:** `.env` im Repo-Root mit `ALERTMANAGER_SLACK_WEBHOOK` (optional `ALERTMANAGER_SLACK_CHANNEL`) sowie optional `ALERTMANAGER_WEBHOOK_URL`/`ALERTMANAGER_WEBHOOK_BEARER` ergänzen.
+<<<<<<< HEAD
+1. **ENV prüfen:** `.env` im Repo-Root mit `ALERTMANAGER_SLACK_WEBHOOK` (optional `ALERTMANAGER_SLACK_CHANNEL` und `ALERTMANAGER_SLACK_AUDIT_CHANNEL`) sowie optional `ALERTMANAGER_WEBHOOK_URL`/`ALERTMANAGER_WEBHOOK_BEARER` ergänzen.
+=======
+1. **ENV prüfen:** `.env` im Repo-Root mit `ALERTMANAGER_SLACK_WEBHOOK` (optional `ALERTMANAGER_SLACK_CHANNEL` und `ALERTMANAGER_SLACK_AUDIT_CHANNEL`) sowie optional `ALERTMANAGER_WEBHOOK_URL`/`ALERTMANAGER_WEBHOOK_BEARER` ergänzen.
+>>>>>>> pr/24
 2. **Stack starten:** `docker compose -f monitoring/docker-compose.monitoring.yml up -d`.
 3. **Status prüfen:** `docker compose -f monitoring/docker-compose.monitoring.yml ps` – alle Services sollten `running` sein.
 4. **Prometheus Targets:** `http://<SERVER_IP>:9090/targets` aufrufen → `sicherheitsdienst-api` muss `UP` sein (sonst Scrape-URL/Firewall prüfen).
@@ -35,20 +39,29 @@ docker compose -f docker-compose.monitoring.yml up -d
   ```dotenv
   ALERTMANAGER_SLACK_WEBHOOK=https://hooks.slack.com/services/XXX/YYY/ZZZ
   ALERTMANAGER_SLACK_CHANNEL=#on-call
+  ALERTMANAGER_SLACK_AUDIT_CHANNEL=#ops-audit
   ALERTMANAGER_WEBHOOK_URL=https://ops-gateway.internal/hooks/sicherheitsdienst
   ALERTMANAGER_WEBHOOK_BEARER=optional-bearer-token
   ```
 - Slack-Receiver bündelt Alerts via `alertname`/`service` und zeigt Summary/Description + Runbook-Link.
+- Subroute mit `alertname=~"AuditLog.*"` sendet Audit-Warnungen in den dedizierten Ops-Kanal (optional via `ALERTMANAGER_SLACK_AUDIT_CHANNEL` konfigurierbar).
 - Subroute mit `severity="critical"` spiegelt Alerts zusätzlich auf das Ops-Webhook (continue: true).
 - `monitoring/scripts/reload-alertmanager.sh` triggert `/-/reload` (nach Config-Änderungen statt Container-Neustart).
 - Labels nutzen (`service=sicherheitsdienst-api`, `severity=warning|critical`, optional `runbook_url`) – siehe `monitoring/alerts/alerts.yml`.
 
 
 ### Audit Alerts & Eskalation
-- **AuditLogQueueGrowing** (Warnung) → Slack informiert über Queue > 200 für ≥ 2 Minuten.
-- **AuditLogDirectFailures** (Warnung) → Slack meldet direkte Schreibfehler (> 5 in 5 Minuten).
-- **AuditLogFlushFailures** (Kritisch) → Slack **und** Ops-Webhook; Flush blockiert → sofort handeln.
-- **AuditLogPruneErrors** (Warnung) → Slack erinnert an fehlerhafte Retention-Läufe.
+<<<<<<< HEAD
+- **AuditLogQueueGrowing** (Warnung) → Slack (Ops-Kanal) informiert über Queue > 200 für ≥ 2 Minuten.
+- **AuditLogDirectFailures** (Warnung) → Slack (Ops-Kanal) meldet direkte Schreibfehler (> 5 in 5 Minuten).
+- **AuditLogFlushFailures** (Kritisch) → Slack (Ops-Kanal) **und** Ops-Webhook; Flush blockiert → sofort handeln.
+- **AuditLogPruneErrors** (Warnung) → Slack (Ops-Kanal) erinnert an fehlerhafte Retention-Läufe.
+=======
+- **AuditLogQueueGrowing** (Warnung) → Slack (Ops-Kanal) informiert über Queue > 200 für ≥ 2 Minuten.
+- **AuditLogDirectFailures** (Warnung) → Slack (Ops-Kanal) meldet direkte Schreibfehler (> 5 in 5 Minuten).
+- **AuditLogFlushFailures** (Kritisch) → Slack (Ops-Kanal) **und** Ops-Webhook; Flush blockiert → sofort handeln.
+- **AuditLogPruneErrors** (Warnung) → Slack (Ops-Kanal) erinnert an fehlerhafte Retention-Läufe.
+>>>>>>> pr/24
 - Slack-Meldungen enthalten Service, Summary, Details & optional `runbook_url`; Ops-Webhook spiegelt kritische Alerts (PagerDuty o. ä.).
 
 ## PromQL Snippets
