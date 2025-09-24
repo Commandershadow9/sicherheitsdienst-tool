@@ -128,7 +128,9 @@ Beispiele
 
 ## Audit-Trail (Phase E)
 - Prisma-Modell `AuditLog` persistiert sicherheitsrelevante Aktionen (Actor, Ressource, Outcome, optional Payload) in der Tabelle `audit_logs`.
-- Service `logAuditEvent` schreibt synchron; bei Fehlern landen Events in einer In-Memory-Retry-Queue (`flushAuditLogQueue` leert sie batchweise, Default alle 2 s / max. 25 Events) und Prometheus-Metriken zählen direkte/Flush-Erfolge bzw. -Fehler (`audit_log_events_total`, `audit_log_failures_total`, `audit_log_queue_size`).
+- Service `logAuditEvent` schreibt synchron; bei Fehlern landen Events in einer In-Memory-Retry-Queue (`flushAuditLogQueue` leert sie batchweise, Default alle 2 s / max. 25 Events) und Prometheus-Metriken zählen direkte/Flush-Erfolge bzw. -Fehler (`audit_log_events_total`, `audit_log_failures_total`, `audit_log_queue_size`). Fällt das Prisma-Modell `auditLog` (z. B. in Tests) weg, werden Events verlustfrei verworfen und genau einmal gewarnt statt Exceptions zu werfen.
+- `getAuditLogState()` liefert einen Laufzeitsnapshot (Queue-Größe, Flush-Status, Konfiguration) für `/api/stats` bzw. spätere Observability-Auswertungen.
+- Hilfsfunktionen in `utils/audit.ts` sammeln Actor-, Request- und Client-Metadaten (`buildAuditEvent`, `submitAuditEvent`), `recordAuditEvent` nutzt sie für Controller-Aufrufe.
 - Queue ist per ENV einstellbar (`AUDIT_LOG_FLUSH_INTERVAL_MS`, `AUDIT_LOG_BATCH_SIZE`, `AUDIT_LOG_MAX_QUEUE`, `AUDIT_RETENTION_DAYS`); bei voller Queue werden älteste Einträge verworfen (Warn-Log).
 - Events werden für Auth (Login/Refresh), Schichten (Create/Update/Delete, Assign, Clock in/out) und Notification-Opt-Ins/-Outs aufgezeichnet – inkl. Fehlpfaden (z. B. nicht zugewiesen, ungültiger Token).
 - Admins rufen das Journal via `GET /api/audit-logs` (RBAC `ADMIN`) mit Paging & Filtern (`actorId`, `resourceType`, `resourceId`, `action`, `outcome`, `from`, `to`) ab – CSV-Export via `GET /api/audit-logs/export?format=csv` (gleiche Filter).

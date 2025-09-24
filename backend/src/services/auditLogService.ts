@@ -34,6 +34,7 @@ const maxQueueSize = normalizeNumber(process.env.AUDIT_LOG_MAX_QUEUE, DEFAULT_MA
 const pendingQueue: AuditLogPayload[] = [];
 let flushTimer: NodeJS.Timeout | null = null;
 let isFlushing = false;
+let auditModelMissingWarned = false;
 
 function normalizeNumber(raw: string | undefined, fallback: number, min: number): number {
   const parsed = raw ? parseInt(raw, 10) : NaN;
@@ -97,10 +98,32 @@ export function getAuditLogQueueSize(): number {
   return pendingQueue.length;
 }
 
+type AuditModel = {
+  create: (args: { data: AuditLogPayload }) => Promise<unknown>;
+  createMany: (args: { data: AuditLogPayload[] }) => Promise<{ count: number }>;
+};
+
+function getAuditModel(): AuditModel | null {
+  const model = (prisma as unknown as { auditLog?: AuditModel }).auditLog;
+  if (!model || typeof model.create !== 'function' || typeof model.createMany !== 'function') {
+    if (!auditModelMissingWarned && process.env.NODE_ENV !== 'test') {
+      auditModelMissingWarned = true;
+      logger.warn('Audit log model unavailable; dropping audit events.');
+    }
+    return null;
+  }
+  return model;
+}
+
 export async function logAuditEvent(event: AuditLogEventInput): Promise<boolean> {
   const payload = toPayload(event);
+  const auditModel = getAuditModel();
+  if (!auditModel) {
+    auditLogEventCounter.inc({ result: 'dropped_no_model' });
+    return false;
+  }
   try {
-    await prisma.auditLog.create({ data: payload });
+    await auditModel.create({ data: payload });
     auditLogEventCounter.inc({ result: 'direct_success' });
     return true;
   } catch (error) {
@@ -117,11 +140,16 @@ export async function flushAuditLogQueue(): Promise<number> {
     return 0;
   }
 
+  const auditModel = getAuditModel();
+  if (!auditModel) {
+    return 0;
+  }
+
   isFlushing = true;
   const batch = pendingQueue.splice(0, Math.min(batchSize, pendingQueue.length));
 
   try {
-    const result = await prisma.auditLog.createMany({ data: batch });
+    const result = await auditModel.createMany({ data: batch });
     isFlushing = false;
     auditLogEventCounter.inc({ result: 'flush_success' }, result.count);
     if (pendingQueue.length > 0) {
@@ -156,5 +184,17 @@ export function __resetAuditLogService(): void {
   }
   pendingQueue.length = 0;
   isFlushing = false;
+  auditModelMissingWarned = false;
   setQueueSize(0);
+}
+
+export function getAuditLogState() {
+  return {
+    queueSize: pendingQueue.length,
+    flushIntervalMs,
+    batchSize,
+    maxQueueSize,
+    isFlushing,
+    hasScheduledFlush: Boolean(flushTimer),
+  };
 }
