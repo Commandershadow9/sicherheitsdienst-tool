@@ -14,7 +14,7 @@ Du bist Senior-Full-Stack-Entwickler (Node.js, TypeScript, Express, Prisma, Post
 - **Validierung:** Zod (DTOs), zentrale Fehlerbehandlung, klare 4xx/5xx
 - **Tests:** Jest (Unit/Integration), mind. Smoke-Tests pro Endpoint
 - **Qualität:** ESLint + Prettier, .editorconfig, .gitattributes (LF)
-- **Infra:** Docker Compose (api + postgres), Healthchecks, `prisma migrate deploy` beim Start
+- **Infra:** Docker Compose (api + postgres), `/readyz` als Healthcheck-Endpunkt, `prisma migrate deploy` beim Start (Dev: Seed via `SEED_ON_START` steuern)
 - **Commits:** klein, im Imperativ, mit Kontext (z. B. „feat: Site CRUD …“)
 - **API Contracts:** `docs/openapi.yaml` muss für jede Operation `405` → `#/components/responses/MethodNotAllowed` referenzieren (Jest-Contract-Test `openapi.methodnotallowed.contract.test.ts`).
 
@@ -35,7 +35,7 @@ Du bist Senior-Full-Stack-Entwickler (Node.js, TypeScript, Express, Prisma, Post
 2) ✅ **Notifications** – Templates, Echtzeit-Events & Opt-In/Out vorbereitet (Feature-Flags, Tests, Docs) (2025-09-16).
 3) ✅ **Security-Hardening** – Phase E (Retention-Job `npm run audit:prune`, Prometheus-Metriken, `/api/stats` Audit-Kennzahlen) abgeschlossen 2025-09-19; Phase D (Audit-CSV-Export) 2025-09-19; Phase C (Audit-Events + Read-API) 2025-09-19; Phase B (Prisma-AuditLog + Queue) 2025-09-18; Phase A (Blueprint & Limits) 2025-09-17. Audit-Helfer `buildAuditEvent`/`submitAuditEvent` bündeln Actor-Metadaten für Controller. Nächste Schritte: Dashboards & Alerting feintunen.
 4) ✅ **Telemetry/Dashboards** – Monitoring-Compose inkl. Alertmanager (Slack/Webhook), Audit-Trail-Dashboard provisioniert & Runbook in README/MONITORING (2025-09-20). Nächstes Feintuning: SLO-Panels p95/5xx und synthetische Checks.
-5) ⏭️ **Ops/Compose** – Healthchecks & Migrationslauf in Docker-Stacks finalisieren (`docker-compose*.yml`, `.env.example`).
+5) ✅ **Ops/Compose** – Docker-Stacks setzen `/readyz` als Healthcheck, führen `prisma migrate deploy` vor dem API-Start aus und steuern Dev-Seeds über `SEED_ON_START` (2025-09-21).
 6) 🚧 **Controller Error Handling** – `userController` auf `asyncHandler` + `createError` umgestellt, Audit-Events bei Prisma-Fehlern bleiben erhalten (2025-09-21). Nächster Schritt: übrige Controller sukzessive migrieren.
 
 ## PR-Workflow (lokal oder mit `gh`)

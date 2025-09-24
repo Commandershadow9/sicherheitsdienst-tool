@@ -63,14 +63,15 @@ services:
     networks:
       - sicherheitsdienst-network
     healthcheck:
-      test: ['CMD-SHELL', 'wget -qO- http://localhost:3001/api/health || exit 1']
+      test: ['CMD-SHELL', 'wget -qO- http://localhost:3001/readyz || exit 1']
       interval: 15s
       timeout: 5s
       retries: 10
-    # Run DB migrations before starting the server
-    command: >
-      sh -c "npx prisma migrate deploy &&
-             node dist/server.js"
+    # Run DB migrations before starting the server and exit on failure
+    command: >-
+      sh -lc "set -e; \
+      npx prisma migrate deploy && \
+      node dist/server.js"
 
   # Redis (optional, Rate-Limit Store)
   redis:
