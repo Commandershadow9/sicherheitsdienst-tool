@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 ## Unreleased
 
 ### Added
-- security: Konsistenter Audit-Helfer (`buildAuditEvent`/`submitAuditEvent`) für Auth-, User-, Shift-, Incident- und Notification-Controller inkl. Fehlerpfade (Login/Refresh, verbotene Self-Updates, Incident CRUD, Test-Benachrichtigungen).
+- security: Audit-Log-Service toleriert fehlende Prisma-Modelle (Tests/Mocks), bietet `getAuditLogState()` für Laufzeitsnapshots und liefert mit `buildAuditEvent`/`submitAuditEvent` konsistente Audit-Metadaten.
 - docs: Security-Hardening Blueprint (`docs/planning/security-hardening.md`) mit Rate-Limit- und Audit-Trail-Konzept.
 - backend/shifts: Selektive Rate-Limits für Schicht-Zuweisung (`SHIFT_ASSIGN_RATE_LIMIT_*`) sowie Clock-in/out (`SHIFT_CLOCK_RATE_LIMIT_*`) inkl. Tests & ENV-Beispielen.
 - security: Prisma `AuditLog` Modell + Migration, Logging-Service (`logAuditEvent`/`flushAuditLogQueue`) mit Retry-Queue, Tests & Doku (Phase B).
