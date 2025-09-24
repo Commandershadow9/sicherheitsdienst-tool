@@ -30,6 +30,7 @@ Hinweis: Dieser Abschnitt fasst die tagesaktuellen Ziele aus der ehemaligen Date
 - Observability: `/api/stats` erweitert (Features/Notifications/Auth/System/Env) und dokumentiert (README + OpenAPI).
 - Observability: `/api/stats` liefert Laufzeit/Event-Loop/Queue & Success-Rates; README Logging-Runbook ergänzt (2025-09-15).
 - Observability: Alertmanager (Slack/Webhook) im Monitoring-Compose, Audit-Trail-Dashboard provisioniert & Runbooks in README/MONITORING aktualisiert (2025-09-20).
+- Monitoring/Ops: README & MONITORING.md um Betriebs-Checkliste (Ports, Reload-Skripte, Alert-Routing) ergänzt; Audit-Alerts dokumentiert (2025-09-22).
 - Ops/Compose: Docker-Stacks nutzen `/readyz` für Healthchecks, führen `prisma migrate deploy` vor dem Start aus und triggern Dev-Seeds über `SEED_ON_START` (Default true, abschaltbar).
 
 ### Neu seit v1.1.1 (Health/Readiness)

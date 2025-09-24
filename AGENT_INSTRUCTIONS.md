@@ -34,7 +34,7 @@ Du bist Senior-Full-Stack-Entwickler (Node.js, TypeScript, Express, Prisma, Post
 1) ✅ **Observability** – `/api/stats` um Laufzeit-/Queue-/Success-Rate erweitert & README Logging-Runbook (2025-09-15).
 2) ✅ **Notifications** – Templates, Echtzeit-Events & Opt-In/Out vorbereitet (Feature-Flags, Tests, Docs) (2025-09-16).
 3) ✅ **Security-Hardening** – Phase E (Retention-Job `npm run audit:prune`, Prometheus-Metriken, `/api/stats` Audit-Kennzahlen) abgeschlossen 2025-09-19; Phase D (Audit-CSV-Export) 2025-09-19; Phase C (Audit-Events + Read-API) 2025-09-19; Phase B (Prisma-AuditLog + Queue) 2025-09-18; Phase A (Blueprint & Limits) 2025-09-17. Audit-Helfer `buildAuditEvent`/`submitAuditEvent` bündeln Actor-Metadaten für Controller. Nächste Schritte: Dashboards & Alerting feintunen.
-4) ✅ **Telemetry/Dashboards** – Monitoring-Compose inkl. Alertmanager (Slack/Webhook), Audit-Trail-Dashboard provisioniert & Runbook in README/MONITORING (2025-09-20). Nächstes Feintuning: SLO-Panels p95/5xx und synthetische Checks.
+4) ✅ **Telemetry/Dashboards** – Monitoring-Compose inkl. Alertmanager (Slack/Webhook), Audit-Trail-Dashboard provisioniert & Ops-Runbook (README/MONITORING) mit Checklisten/Alert-Routing aktualisiert (2025-09-22). Nächstes Feintuning: SLO-Panels p95/5xx und synthetische Checks.
 5) ✅ **Ops/Compose** – Docker-Stacks setzen `/readyz` als Healthcheck, führen `prisma migrate deploy` vor dem API-Start aus und steuern Dev-Seeds über `SEED_ON_START` (2025-09-21).
 6) 🚧 **Controller Error Handling** – `userController` auf `asyncHandler` + `createError` umgestellt, Audit-Events bei Prisma-Fehlern bleiben erhalten (2025-09-21). Nächster Schritt: übrige Controller sukzessive migrieren.
 
