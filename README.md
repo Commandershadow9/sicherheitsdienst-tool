@@ -68,6 +68,10 @@ WEB (Frontend)
 - `.env.example` im Ordner `frontend/`
 - `VITE_API_BASE_URL`, `VITE_HMR_HOST_SERVER_IP`, `VITE_HMR_CLIENT_PORT=5173` (Compose nutzt `PUBLIC_HOST`)
 
+Monitoring (Compose, optional)
+- `.env` im Repo-Root: `ALERTMANAGER_SLACK_WEBHOOK`, `ALERTMANAGER_SLACK_CHANNEL`, `ALERTMANAGER_WEBHOOK_URL`, `ALERTMANAGER_WEBHOOK_BEARER`
+- Konfigurations-Reload: `monitoring/scripts/reload-prometheus.sh`, `monitoring/scripts/reload-alertmanager.sh`
+
 ## Health & Stats
 - `GET /healthz` → 200 `{ status: "ok" }`
 - `GET /readyz` → prüft DB & optional SMTP (`READINESS_CHECK_SMTP=true`, Timeout `READINESS_SMTP_TIMEOUT_MS`); in Nicht-Prod liefert `deps.smtpMessage` Hinweise bei Fehlern.
@@ -118,7 +122,10 @@ Beispiele
 
 ## Monitoring (optional)
 - `docker compose -f monitoring/docker-compose.monitoring.yml up -d`
-- Prometheus: `http://<SERVER_IP>:9090`, Grafana: `http://<SERVER_IP>:3300` (admin/admin)
+- Prometheus: `http://<SERVER_IP>:9090`, Grafana: `http://<SERVER_IP>:3300` (admin/admin), Alertmanager: `http://<SERVER_IP>:9093`
+- Alertmanager-Config (`monitoring/alertmanager/config.yml`): Slack-Webhook + optionales Ops-WebHook; ENV über `.env` setzen (`ALERTMANAGER_SLACK_WEBHOOK`, `ALERTMANAGER_SLACK_CHANNEL`, `ALERTMANAGER_WEBHOOK_URL`, optional `ALERTMANAGER_WEBHOOK_BEARER`).
+- `monitoring/scripts/reload-prometheus.sh` & `monitoring/scripts/reload-alertmanager.sh` vermeiden Container-Neustarts bei Regel-/Config-Updates.
+- Audit Trail Dashboard wird automatisch provisioniert (`monitoring/grafana/dashboards/audit-trail.json`).
 - Neue Auth-Limiter-Metriken: `app_auth_login_attempts_total`, `app_auth_login_blocked_total` (Dashboard/Alert siehe `MONITORING.md`).
 
 ## Logging

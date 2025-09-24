@@ -9,6 +9,21 @@ docker compose -f docker-compose.monitoring.yml up -d
 ```
 - Prometheus: `http://<SERVER_IP>:9090`
 - Grafana: `http://<SERVER_IP>:3300` (admin/admin)
+- Alertmanager: `http://<SERVER_IP>:9093`
+
+## Alertmanager Setup & Routing
+- Compose startet `prom/alertmanager` mit `monitoring/alertmanager/config.yml` (Slack + Webhook).
+- ENV vor dem Start setzen (z. B. in `.env` im Repo-Root):
+  ```dotenv
+  ALERTMANAGER_SLACK_WEBHOOK=https://hooks.slack.com/services/XXX/YYY/ZZZ
+  ALERTMANAGER_SLACK_CHANNEL=#on-call
+  ALERTMANAGER_WEBHOOK_URL=https://ops-gateway.internal/hooks/sicherheitsdienst
+  ALERTMANAGER_WEBHOOK_BEARER=optional-bearer-token
+  ```
+- Slack-Receiver bündelt Alerts via `alertname`/`service` und zeigt Summary/Description + Runbook-Link.
+- Subroute mit `severity="critical"` spiegelt Alerts zusätzlich auf das Ops-Webhook (continue: true).
+- `monitoring/scripts/reload-alertmanager.sh` triggert `/-/reload` (nach Config-Änderungen statt Container-Neustart).
+- Labels nutzen (`service=sicherheitsdienst-api`, `severity=warning|critical`, optional `runbook_url`) – siehe `monitoring/alerts/alerts.yml`.
 
 ## PromQL Snippets
 - p50/p90/p95/p99 (rolling 5m):
@@ -67,11 +82,16 @@ docker compose -f docker-compose.monitoring.yml up -d
   cd monitoring
   PROMETHEUS_URL=http://localhost:9090 ./scripts/reload-prometheus.sh
   ```
+- Alertmanager Config neu laden (z. B. nach Anpassungen an `monitoring/alertmanager/config.yml`):
+  ```bash
+  cd monitoring
+  ALERTMANAGER_URL=http://localhost:9093 ./scripts/reload-alertmanager.sh
+  ```
 - Alternativ `docker compose -f docker-compose.monitoring.yml restart prometheus grafana`, falls kein API-Zugriff.
-- Alert-Routing: Alertmanager bzw. Grafana Alerting so konfigurieren, dass `service=sicherheitsdienst-api` in den gewünschten Ops-Kanal (Slack, PagerDuty, …) eskaliert.
+- Alert-Routing: Slack/Webhook laufen über Alertmanager (`monitoring/alertmanager/config.yml`); Labels (`severity`, `service`) steuern Eskalation.
 
 Hinweise
 - Scrape‑Target: im Dev häufig `api:3000` (Compose‑Service). Für reines Monitoring‑Compose ggf. `host.docker.internal:3000`/Bridge‑Netz.
-- Ports: Prometheus 9090, Grafana 3000 (kollisionsfrei zu API 3000/FE 5173).
+- Ports: Prometheus 9090, Alertmanager 9093, Grafana 3300 (kollisionsfrei zu API 3000/FE 5173).
 - Optionales Profil: Monitoring‑Compose ist getrennt; kann parallel zum Dev‑Stack laufen.
 - Echtzeit-Events prüfen: `curl -N -H "Authorization: Bearer <TOKEN>" "http://<SERVER_IP>:3000/api/notifications/events?channel=email,push"` (ADMIN/MANAGER/DISPATCHER). Heartbeat alle `NOTIFY_EVENTS_HEARTBEAT_MS` Sekunden (`: ping`).
