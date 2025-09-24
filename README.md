@@ -128,19 +128,23 @@ Beispiele
 - Der `userController` nutzt bereits dieses Muster inklusive Audit-Events vor dem Throw; weitere Controller sollten ohne manuelle `try/catch`-Blöcke folgen und erwartete 4xx-Fälle per `createError` melden.
 
 ## Monitoring (optional)
-- `docker compose -f monitoring/docker-compose.monitoring.yml up -d`
-- Prometheus: `http://<SERVER_IP>:9090`, Grafana: `http://<SERVER_IP>:3300` (admin/admin), Alertmanager: `http://<SERVER_IP>:9093`
-- Alertmanager-Config (`monitoring/alertmanager/config.yml`): Slack-Webhook + optionales Ops-WebHook; ENV über `.env` setzen (`ALERTMANAGER_SLACK_WEBHOOK`, `ALERTMANAGER_SLACK_CHANNEL`, `ALERTMANAGER_WEBHOOK_URL`, optional `ALERTMANAGER_WEBHOOK_BEARER`).
-- `monitoring/scripts/reload-prometheus.sh` & `monitoring/scripts/reload-alertmanager.sh` vermeiden Container-Neustarts bei Regel-/Config-Updates.
-- Audit Trail Dashboard wird automatisch provisioniert (`monitoring/grafana/dashboards/audit-trail.json`).
-- Neue Auth-Limiter-Metriken: `app_auth_login_attempts_total`, `app_auth_login_blocked_total` (Dashboard/Alert siehe `MONITORING.md`).
+- **Compose-Profil starten:** `docker compose -f monitoring/docker-compose.monitoring.yml up -d`
+- **Ports/Services:** Prometheus `9090`, Grafana `3300` (admin/admin), Alertmanager `9093` – alle im Bridge-Netz erreichbar (Remote: `http://<SERVER_IP>:PORT`).
+- **Health-Check nach dem Start:** `docker compose -f monitoring/docker-compose.monitoring.yml ps` prüfen; Prometheus-Targets sollten `UP` melden (`Status`-Tab in Prometheus → `http://<SERVER_IP>:9090/targets`).
+- **Alert-Routing konfigurieren:** ENV in `.env` setzen (`ALERTMANAGER_SLACK_WEBHOOK`, `ALERTMANAGER_SLACK_CHANNEL`, optional `ALERTMANAGER_SLACK_AUDIT_CHANNEL`, `ALERTMANAGER_WEBHOOK_URL`, optional `ALERTMANAGER_WEBHOOK_BEARER`). Slack bündelt alle Alerts; Audit-Warnungen landen im dedizierten Ops-Kanal und `severity="critical"` wird zusätzlich auf das Ops-Webhook gespiegelt.
+- **Dashboards & Regeln verwalten:**
+  - Audit Trail Dashboard (`monitoring/grafana/dashboards/audit-trail.json`) via `monitoring/scripts/import-dashboard.sh` einspielen oder automatisches Provisioning nutzen.
+  - Prometheus-Regeln (`monitoring/alerts/alerts.yml`) nach Änderungen mit `monitoring/scripts/reload-prometheus.sh` neu laden.
+  - Alertmanager-Konfiguration (`monitoring/alertmanager/config.yml`) nach Anpassungen mit `monitoring/scripts/reload-alertmanager.sh` übernehmen.
+- **Audit-Alerts:** Warnungen zu Queue-Wachstum, Direct-/Flush-Fehlern sowie Prune-Errors sind aktiv und werden in den Ops-Slack-Kanal (optional konfigurierbar) plus – bei kritischen Flush-Fehlern – das Ops-Webhook geroutet (Details in `MONITORING.md`).
+- **Neue Auth-Limiter-Metriken:** `app_auth_login_attempts_total`, `app_auth_login_blocked_total` (Dashboard/Alert siehe `MONITORING.md`).
 
 ## Logging
 - Winston schreibt nach `logs/combined.log` und `logs/error.log`; Console-Output übernimmt `LOG_LEVEL` (Dev: `debug`, sonst `info`).
 - Request-ID (`X-Request-ID`) wird in jeden Logeintrag injiziert; strukturierte Logs via `LOG_FORMAT=json`.
 - Für JSON-Shipping (z. B. Loki/ELK) `LOG_FORMAT=json` setzen und `docker compose logs -f api` bzw. Filebeat nutzen.
 
--## Audit-Trail (Phase E)
+## Audit-Trail (Phase E)
 - Prisma-Modell `AuditLog` persistiert sicherheitsrelevante Aktionen (Actor, Ressource, Outcome, optional Payload) in der Tabelle `audit_logs`.
 - Service `logAuditEvent` schreibt synchron; bei Fehlern landen Events in einer In-Memory-Retry-Queue (`flushAuditLogQueue` leert sie batchweise, Default alle 2 s / max. 25 Events) und Prometheus-Metriken zählen direkte/Flush-Erfolge bzw. -Fehler (`audit_log_events_total`, `audit_log_failures_total`, `audit_log_queue_size`). Fällt das Prisma-Modell `auditLog` (z. B. in Tests) weg, werden Events verlustfrei verworfen und genau einmal gewarnt statt Exceptions zu werfen.
 - `getAuditLogState()` liefert einen Laufzeitsnapshot (Queue-Größe, Flush-Status, Konfiguration) für `/api/stats` bzw. spätere Observability-Auswertungen.

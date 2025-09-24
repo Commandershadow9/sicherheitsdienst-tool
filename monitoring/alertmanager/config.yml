@@ -13,6 +13,10 @@ route:
   repeat_interval: 3h
   routes:
     - matchers:
+        - alertname=~"AuditLog.*"
+      receiver: audit-ops-slack
+      continue: true
+    - matchers:
         - severity="critical"
       receiver: ops-webhook
       continue: true
@@ -22,6 +26,20 @@ receivers:
     slack_configs:
       - api_url: '{{ mustEnv "ALERTMANAGER_SLACK_WEBHOOK" }}'
         channel: '{{ if env "ALERTMANAGER_SLACK_CHANNEL" }}{{ env "ALERTMANAGER_SLACK_CHANNEL" }}{{ else }}#on-call{{ end }}'
+        send_resolved: true
+        title: '{{ .CommonLabels.alertname }} ({{ if .CommonLabels.severity }}{{ .CommonLabels.severity }}{{ else }}unknown{{ end }})'
+        text: |-
+          *Service:* {{ if .CommonLabels.service }}{{ .CommonLabels.service }}{{ else }}unbekannt{{ end }}
+          *Summary:* {{ if .CommonAnnotations.summary }}{{ .CommonAnnotations.summary }}{{ else }}Keine Zusammenfassung hinterlegt.{{ end }}
+          *Details:* {{ if .CommonAnnotations.description }}{{ .CommonAnnotations.description }}{{ else }}Keine Beschreibung hinterlegt.{{ end }}
+          {{- if .CommonAnnotations.runbook_url }}
+
+          *Runbook:* {{ .CommonAnnotations.runbook_url }}
+          {{- end }}
+  - name: audit-ops-slack
+    slack_configs:
+      - api_url: '{{ mustEnv "ALERTMANAGER_SLACK_WEBHOOK" }}'
+        channel: '{{ if env "ALERTMANAGER_SLACK_AUDIT_CHANNEL" }}{{ env "ALERTMANAGER_SLACK_AUDIT_CHANNEL" }}{{ else }}#ops-audit{{ end }}'
         send_resolved: true
         title: '{{ .CommonLabels.alertname }} ({{ if .CommonLabels.severity }}{{ .CommonLabels.severity }}{{ else }}unknown{{ end }})'
         text: |-
