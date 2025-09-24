@@ -111,8 +111,30 @@ export const listIncidents = async (req: Request, res: Response, next: NextFunct
 
 export const createIncident = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const userId = (req.user as any)?.id;
+    const user = (req.user as any) || null;
+    if (!user) {
+      await submitAuditEvent(req, {
+        action: 'INCIDENT.CREATE',
+        resourceType: 'INCIDENT',
+        resourceId: null,
+        outcome: 'DENIED',
+        data: { reason: 'UNAUTHENTICATED' },
+      });
+      res.status(401).json({ success: false, message: 'Authentifizierung erforderlich.' });
+      return;
+    }
+    const userId = user.id;
     const { title, description, severity, location, occurredAt } = req.body;
+
+    if (!title || !severity || !location || !occurredAt) {
+      res.status(422).json({ success: false, message: 'Titel, Schweregrad, Ort und occurredAt sind erforderlich.' });
+      return;
+    }
+    const occurred = new Date(occurredAt);
+    if (Number.isNaN(occurred.getTime())) {
+      res.status(422).json({ success: false, message: 'occurredAt ist kein gültiges Datum.' });
+      return;
+    }
     const created = await prisma.incident.create({
       data: {
         title,
@@ -120,16 +142,31 @@ export const createIncident = async (req: Request, res: Response, next: NextFunc
         severity,
         status: 'OPEN',
         location,
-        occurredAt: new Date(occurredAt),
+        occurredAt: occurred,
         reportedBy: userId,
       },
     });
+    if (!created || !(created as any).id) {
+      await submitAuditEvent(req, {
+        action: 'INCIDENT.CREATE.FAIL',
+        resourceType: 'INCIDENT',
+        resourceId: null,
+        outcome: 'FAIL',
+        data: { reason: 'CREATE_RETURNED_EMPTY' },
+      });
+      res.status(422).json({ success: false, message: 'Vorfall konnte nicht erstellt werden.' });
+      return;
+    }
     await submitAuditEvent(req, {
       action: 'INCIDENT.CREATE.SUCCESS',
       resourceType: 'INCIDENT',
-      resourceId: created.id,
+      resourceId: (created as any).id,
       outcome: 'SUCCESS',
-      data: { severity: created.severity, status: created.status, location: created.location },
+      data: {
+        severity: (created as any).severity,
+        status: (created as any).status,
+        location: (created as any).location,
+      },
     });
     res.status(201).json(created);
   } catch (err) {

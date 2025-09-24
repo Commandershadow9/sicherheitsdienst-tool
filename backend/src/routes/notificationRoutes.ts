@@ -10,7 +10,8 @@ import {
   updateMyNotificationPreferences,
   streamNotificationEvents,
 } from '../controllers/notificationController';
-import { notificationsRBAC, notificationStreamRBAC } from '../middleware/rbac';
+import { notificationsRBAC } from '../middleware/rbac';
+import { authorize } from '../middleware/auth';
 import { notificationsTestRateLimit } from '../middleware/rateLimit';
 import methodNotAllowed from '../middleware/methodNotAllowed';
 import { notificationPreferenceSchema } from '../validations/notificationValidation';
@@ -41,7 +42,7 @@ router.put(
 );
 router.all('/preferences/me', authenticate, methodNotAllowed(['GET', 'PUT']));
 
-router.get('/events', authenticate, notificationStreamRBAC, streamNotificationEvents);
+router.get('/events', authenticate, authorize('ADMIN', 'MANAGER', 'DISPATCHER'), streamNotificationEvents);
 router.all('/events', authenticate, methodNotAllowed(['GET']));
 
 export default router;

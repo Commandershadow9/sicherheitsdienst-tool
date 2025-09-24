@@ -249,6 +249,10 @@ export const createShift = async (req: Request, res: Response, next: NextFunctio
     // Zeitvalidierung
     const start = new Date(startTime);
     const end = new Date(endTime);
+    if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
+      res.status(422).json({ success: false, message: 'Start- oder Endzeit ist kein gültiges Datum.' });
+      return;
+    }
 
     if (start >= end) {
       res.status(400).json({
@@ -297,8 +301,8 @@ export const createShift = async (req: Request, res: Response, next: NextFunctio
       outcome: 'SUCCESS',
       data: {
         title: shift.title,
-        startTime: shift.startTime instanceof Date ? shift.startTime.toISOString() : new Date(shift.startTime).toISOString(),
-        endTime: shift.endTime instanceof Date ? shift.endTime.toISOString() : new Date(shift.endTime).toISOString(),
+        startTime: start.toISOString(),
+        endTime: end.toISOString(),
       },
     });
     res.status(201).json({
