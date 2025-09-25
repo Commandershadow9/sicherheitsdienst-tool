@@ -53,6 +53,11 @@ jobs:
           ts="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
           event="${{ github.event_name }}"
 
+          workflow_run_id="$(echo "$GH_EVENT_JSON" | jq -r '.workflow_run.id // empty')"
+          if [ "$event" = "workflow_run" ] && [ -n "$workflow_run_id" ]; then
+            run_url="https://github.com/${repo}/actions/runs/${workflow_run_id}"
+          fi
+
           TITLE=""
           DESC=""
           COLOR=5793266
@@ -131,11 +136,14 @@ jobs:
             DESC="**Akteur:** ${actor}\n**Ergebnis:** ${status}\n${run_url}"
             ICON="https://raw.githubusercontent.com/primer/octicons/main/icons/checklist-24.svg"
             embed_url="$run_url"
+            docker_note="Image Scan (SARIF) & SBOM als Artefakte im Run verfügbar."
+            health_note="• [Artefakte](${run_url}#artifacts) – server.log, healthz.json, readyz.json"
+            metrics_note="• [Artefakte](${run_url}#artifacts) – server.log, metrics.txt\\n• Dashboards: https://github.com/${repo}/blob/main/monitoring/grafana/dashboards/latency-and-errors.json"
             FIELDS=$(jq -n --arg name "$name" --arg repo_url "$repo_url" --arg run "$run_url" \
               '[{"name":"Workflow","value":$name},{"name":"Repository","value":$repo_url}]' \
-              | jq --arg name "$name" --arg note "Image Scan (SARIF) & SBOM als Artefakte im Run verfügbar." \
-                   --arg note2 "Health-Smoke Artefakte (server.log, healthz.json, readyz.json) im Run verfügbar." \
-                    --arg note3 "Metrics-Smoke Artefakte (server.log, metrics.txt) im Run verfügbar." \
+              | jq --arg name "$name" --arg note "$docker_note" \
+                   --arg note2 "$health_note" \
+                   --arg note3 "$metrics_note" \
                 'if $name == "docker-release" then . + [{"name":"Artefakte","value":$note}] elif $name == "health-smoke" then . + [{"name":"Artefakte","value":$note2}] elif $name == "metrics-smoke" then . + [{"name":"Artefakte","value":$note3}] else . end')
           elif [ "$event" = "release" ]; then
             tag='${{ github.event.release.tag_name }}'

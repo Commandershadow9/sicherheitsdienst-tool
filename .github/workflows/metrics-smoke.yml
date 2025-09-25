@@ -5,6 +5,7 @@ on:
     branches: [ main ]
   schedule:
     - cron: '23 03 * * *'
+    - cron: '53 15 * * *'
   workflow_dispatch: {}
 
 concurrency:
@@ -113,6 +114,21 @@ PY
           path: |
             backend/server.log
             metrics.txt
+
+      - name: Publish job summary
+        if: always()
+        env:
+          RUN_URL: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          REPO: ${{ github.repository }}
+        run: |
+          {
+            echo "## Metrics Smoke"
+            echo
+            echo "- Run: [$RUN_URL]($RUN_URL)"
+            echo "- Artifacts: **metrics-smoke-report** (server.log, metrics.txt) – siehe Aktionen-Artefakte dieses Runs."
+            echo "- Dashboards: [Latency & Errors JSON](https://github.com/$REPO/blob/main/monitoring/grafana/dashboards/latency-and-errors.json)"
+            echo "- Monitoring-Runbook: [MONITORING.md](https://github.com/$REPO/blob/main/MONITORING.md#synthetische-checks-blackbox-exporter)"
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Stop app
         if: always()
