@@ -16,7 +16,6 @@ services:
       - ./alertmanager/config.yml:/etc/alertmanager/config.yml:ro
     command:
       - '--config.file=/etc/alertmanager/config.yml'
-      - '--config.expand-env'
       - '--web.listen-address=:9093'
     networks: [ 'obs' ]
 
