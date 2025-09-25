@@ -25,7 +25,7 @@ Stand: 2025-09-15
   - Akzeptanz: Test‑Alerts erscheinen im konfigurierten Slack‑Audit‑Kanal (`ALERTMANAGER_SLACK_AUDIT_CHANNEL`) und Ops‑Webhook empfängt `severity=critical`; Vorgehen in MONITORING.md dokumentiert.
 - [x] CI‑Sichtbarkeit schärfen
   - Akzeptanz: `metrics-smoke` zusätzlich zeitgesteuert (cron) ausführen; Artefakt‑Links in Benachrichtigungen verweisen auf Reports/Dashboards.
-- [ ] Doku‑Feinschliff (Ports/Dashboards)
+- [x] Doku‑Feinschliff (Ports/Dashboards)
   - Akzeptanz: README nennt unterschiedliche Grafana‑Ports (Dev‑Compose 3002 vs. Monitoring 3300) und listet Import‑Befehle für `latency-and-errors`, `top-routes-p95`, `top-routes-5xx`.
 
 Erledigt:

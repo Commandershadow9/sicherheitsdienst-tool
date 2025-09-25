@@ -129,7 +129,7 @@ Beispiele
 
 ## Monitoring (optional)
 - **Compose-Profil starten:** `docker compose -f monitoring/docker-compose.monitoring.yml up -d`
-- **Ports/Services:** Prometheus `9090`, Grafana `3300` (admin/admin), Alertmanager `9093` – alle im Bridge-Netz erreichbar (Remote: `http://<SERVER_IP>:PORT`).
+- **Ports/Services:** Prometheus `9090`, Grafana `3300` (admin/admin), Alertmanager `9093` – alle im Bridge-Netz erreichbar (Remote: `http://<SERVER_IP>:PORT`). Im Dev-Compose (`docker-compose.dev.yml`) läuft Grafana auf Port `3002`.
 - **Health-Check nach dem Start:** `docker compose -f monitoring/docker-compose.monitoring.yml ps` prüfen; Prometheus-Targets sollten `UP` melden (`Status`-Tab in Prometheus → `http://<SERVER_IP>:9090/targets`).
 - **ENV-Vorlagen nutzen:** `cp .env.example .env` (Root), `cp backend/.env.example backend/.env`, `cp frontend/.env.example frontend/.env` – anschließend Werte für Secrets/Hosts ergänzen. Compose lädt das Root-`.env` automatisch.
 - **Alert-Routing konfigurieren:** ENV in `.env` setzen (`ALERTMANAGER_SLACK_WEBHOOK`, `ALERTMANAGER_SLACK_CHANNEL`, optional `ALERTMANAGER_SLACK_AUDIT_CHANNEL`, `ALERTMANAGER_WEBHOOK_URL`, optional `ALERTMANAGER_WEBHOOK_BEARER`). Slack bündelt alle Alerts; Audit-Warnungen landen im dedizierten Ops-Kanal und `severity="critical"` wird zusätzlich auf das Ops-Webhook gespiegelt.
@@ -140,6 +140,14 @@ Beispiele
   - SLO/Fehler‑Dashboards: `monitoring/grafana/dashboards/latency-and-errors.json`, `monitoring/grafana/dashboards/top-routes-p95.json`, `monitoring/grafana/dashboards/top-routes-5xx.json` analog importieren.
   - Prometheus-Regeln (`monitoring/alerts/alerts.yml`) nach Änderungen mit `monitoring/scripts/reload-prometheus.sh` neu laden.
   - Alertmanager-Konfiguration (`monitoring/alertmanager/config.yml`) nach Anpassungen mit `monitoring/scripts/reload-alertmanager.sh` übernehmen.
+- **Dashboards importieren (Beispiele):**
+  ```bash
+  cd monitoring
+  GRAFANA_URL=http://localhost:3300 GRAFANA_USER=admin GRAFANA_PASSWORD=admin \
+    ./scripts/import-dashboard.sh grafana/dashboards/latency-and-errors.json
+  ./scripts/import-dashboard.sh grafana/dashboards/top-routes-p95.json
+  ./scripts/import-dashboard.sh grafana/dashboards/top-routes-5xx.json
+  ```
 - **Audit-Alerts:** Warnungen zu Queue-Wachstum, Direct-/Flush-Fehlern sowie Prune-Errors sind aktiv und werden in den Ops-Slack-Kanal (optional konfigurierbar) plus – bei kritischen Flush-Fehlern – das Ops-Webhook geroutet (Details in `MONITORING.md`).
 - **Neue Auth-Limiter-Metriken:** `app_auth_login_attempts_total`, `app_auth_login_blocked_total` (Dashboard/Alert siehe `MONITORING.md`).
  - Siehe `.env.example` im Repo‑Root für Beispiel‑ENV (inkl. `PUBLIC_HOST` und Alertmanager‑Variablen).
