@@ -5,6 +5,7 @@ import { api } from '@/lib/api'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
+import { cn } from '@/lib/utils'
 
 const schema = z.object({
   title: z.string().min(1, 'Titel ist erforderlich').max(200),
@@ -50,11 +51,15 @@ export default function IncidentForm({ mode }: { mode: 'create'|'edit' }) {
 
   const onSubmit = async (values: FormValues) => {
     try {
+      const payload: FormValues = {
+        ...values,
+        occurredAt: new Date(values.occurredAt).toISOString(),
+      }
       if (mode === 'create') {
-        await api.post('/incidents', values)
+        await api.post('/incidents', payload)
         toast.success('Vorfall erstellt')
       } else if (id) {
-        await api.put(`/incidents/${id}`, values)
+        await api.put(`/incidents/${id}`, payload)
         toast.success('Vorfall aktualisiert')
       }
       nav('/incidents', { replace: true })
@@ -83,18 +88,18 @@ export default function IncidentForm({ mode }: { mode: 'create'|'edit' }) {
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 max-w-2xl">
       <div>
         <label className="block text-sm">Titel</label>
-        <input className="border rounded px-3 py-2 w-full" {...register('title')} />
+        <input className={inputCls} {...register('title')} />
         {errors.title && <p className="text-xs text-destructive">{errors.title.message}</p>}
       </div>
       <div>
         <label className="block text-sm">Beschreibung</label>
-        <textarea className="border rounded px-3 py-2 w-full" rows={4} {...register('description')} />
+        <textarea className={cn(inputCls, 'min-h-[120px]')} rows={4} {...register('description')} />
         {errors.description && <p className="text-xs text-destructive">{errors.description.message}</p>}
       </div>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div>
           <label className="block text-sm">Schwere</label>
-          <select className="border rounded px-3 py-2 w-full" {...register('severity')}>
+          <select className={inputCls} {...register('severity')}>
             <option value="LOW">LOW</option>
             <option value="MEDIUM">MEDIUM</option>
             <option value="HIGH">HIGH</option>
@@ -104,7 +109,7 @@ export default function IncidentForm({ mode }: { mode: 'create'|'edit' }) {
         </div>
         <div>
           <label className="block text-sm">Status</label>
-          <select className="border rounded px-3 py-2 w-full" {...register('status')}>
+          <select className={inputCls} {...register('status')}>
             <option value="OPEN">OPEN</option>
             <option value="IN_PROGRESS">IN_PROGRESS</option>
             <option value="RESOLVED">RESOLVED</option>
@@ -114,13 +119,13 @@ export default function IncidentForm({ mode }: { mode: 'create'|'edit' }) {
         </div>
         <div>
           <label className="block text-sm">Ort</label>
-          <input className="border rounded px-3 py-2 w-full" {...register('location')} />
+          <input className={inputCls} {...register('location')} />
           {errors.location && <p className="text-xs text-destructive">{errors.location.message}</p>}
         </div>
       </div>
       <div>
         <label className="block text-sm">Zeitpunkt</label>
-        <input type="datetime-local" className="border rounded px-3 py-2" {...register('occurredAt')} />
+        <input type="datetime-local" className={inputCls} {...register('occurredAt')} />
         {errors.occurredAt && <p className="text-xs text-destructive">{errors.occurredAt.message}</p>}
       </div>
 
@@ -134,3 +139,4 @@ export default function IncidentForm({ mode }: { mode: 'create'|'edit' }) {
   )
 }
 
+const inputCls = 'border border-border rounded px-3 py-2 w-full bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40'

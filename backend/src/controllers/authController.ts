@@ -79,6 +79,30 @@ export const login = async (req: Request, res: Response): Promise<Response> => {
 
     const accessToken = jwt.sign(payload, jwtSecret, signOptions);
 
+    const refreshSecret = process.env.REFRESH_SECRET;
+    if (!refreshSecret) {
+      console.error('REFRESH_SECRET ist nicht definiert in den Umgebungsvariablen.');
+      await submitAuditEvent(req, {
+        action: 'AUTH.LOGIN.ERROR',
+        resourceType: 'AUTH',
+        resourceId: user.id,
+        actorId: user.id,
+        actorRole: user.role,
+        outcome: 'ERROR',
+        data: { email, reason: 'REFRESH_SECRET_MISSING' },
+      });
+      return res.status(500).json({ success: false, code: 'INTERNAL_SERVER_ERROR', message: 'Server-Konfigurationsfehler: Refresh Secret fehlt.' });
+    }
+
+    const refreshExpRaw = process.env.REFRESH_EXPIRES_IN;
+    const refreshSignOpts: SignOptions = {
+      expiresIn: refreshExpRaw && refreshExpRaw.trim() !== '' ? (refreshExpRaw as any) : ('30d' as any),
+    };
+    if (process.env.JWT_ISSUER) refreshSignOpts.issuer = process.env.JWT_ISSUER;
+    if (process.env.JWT_AUDIENCE) refreshSignOpts.audience = process.env.JWT_AUDIENCE;
+    const refreshPayload = { userId: user.id, role: user.role };
+    const refreshToken = jwt.sign(refreshPayload, refreshSecret, refreshSignOpts);
+
     const { password: _removedPassword, ...userWithoutPassword } = user;
 
     await submitAuditEvent(req, {
@@ -96,7 +120,7 @@ export const login = async (req: Request, res: Response): Promise<Response> => {
       message: 'Login erfolgreich',
       token: accessToken, // Rückwärtskompatibel (bestehende Clients), wird in späterem Schritt vereinheitlicht
       accessToken,
-      // refreshToken wird im separaten /auth/refresh-Flow ausgegeben
+      refreshToken,
       user: userWithoutPassword,
     });
   } catch (error) {
