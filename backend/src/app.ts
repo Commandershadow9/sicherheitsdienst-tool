@@ -2,6 +2,7 @@ import express, { Request, Response, ErrorRequestHandler } from 'express'; // Er
 import morgan from 'morgan';
 import dotenv from 'dotenv';
 import jwt from 'jsonwebtoken';
+import swaggerUi from 'swagger-ui-express';
 import logger from './utils/logger';
 import requestId from './middleware/requestId';
 import { onRequestStart, onResponseStatus } from './utils/stats';
@@ -76,8 +77,6 @@ if (process.env.NODE_ENV !== 'production') {
   // Statische Auslieferung der Spezifikation
   app.use('/api-docs-spec', express.static('docs'));
   // Swagger UI mit Verweis auf die YAML-Spezifikation
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  const swaggerUi = require('swagger-ui-express');
   app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(null, {
     swaggerOptions: { url: '/api-docs-spec/openapi.yaml' },
   }));

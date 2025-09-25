@@ -53,7 +53,7 @@ Erledigt:
 - [x] Notifications: Rate‑Limit produktionsreif (z. B. Token‑Bucket/express-rate-limit) + Env‑Profile
   - Akzeptanz: konfigurierbare Limits; Tests für Grenzen/Eckenfälle. (Umgesetzt: ENV‑Toggle, Standard‑Headers, 429 Retry‑After, Tests.)
 
-- [ ] Codequalität: ESLint‑Warnungen reduzieren
+- [x] Codequalität: ESLint‑Warnungen reduzieren
   - Akzeptanz: ESLint‑Warnungen im Backend auf ≤ 5 reduzieren (ohne Funktionsänderung), Format/Lint‑Regeln beibehalten.
 
 ## Langfristig / Post‑MVP (P3)

@@ -24,35 +24,24 @@ function findOpenApiPath(): string | null {
 }
 
 function parseInfoVersionFromYaml(yamlContent: string): string | null {
-  try {
-    // Try to use 'yaml' parser if available without adding a dep
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const YAML = require('yaml');
-    const doc = YAML.parse(yamlContent);
-    if (doc && doc.info && typeof doc.info.version === 'string') {
-      return doc.info.version;
+  const lines = yamlContent.split(/\r?\n/);
+  let inInfo = false;
+  let infoIndent: number | null = null;
+  for (const line of lines) {
+    const indent = line.search(/\S/);
+    if (/^\s*info\s*:/.test(line)) {
+      inInfo = true;
+      infoIndent = indent === -1 ? 0 : indent;
+      continue;
     }
-  } catch {
-    // Fallback to a minimal parse: look for version under info: block
-    const lines = yamlContent.split(/\r?\n/);
-    let inInfo = false;
-    let infoIndent: number | null = null;
-    for (const line of lines) {
-      const indent = line.search(/\S/);
-      if (/^\s*info\s*:/.test(line)) {
-        inInfo = true;
-        infoIndent = indent === -1 ? 0 : indent;
-        continue;
+    if (inInfo) {
+      const currentIndent = indent === -1 ? 0 : indent;
+      if (infoIndent !== null && currentIndent <= infoIndent) {
+        // left the info block
+        break;
       }
-      if (inInfo) {
-        const currentIndent = indent === -1 ? 0 : indent;
-        if (infoIndent !== null && currentIndent <= infoIndent) {
-          // left the info block
-          break;
-        }
-        const m = line.match(/^\s*version\s*:\s*"?([0-9A-Za-z_.-]+)"?/);
-        if (m) return m[1];
-      }
+      const m = line.match(/^\s*version\s*:\s*"?([0-9A-Za-z_.-]+)"?/);
+      if (m) return m[1];
     }
   }
   return null;
@@ -84,4 +73,3 @@ export function getSpecVersion(): string | null {
   cachedSpecVersion = null;
   return cachedSpecVersion;
 }
-

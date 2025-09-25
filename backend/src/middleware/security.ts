@@ -52,32 +52,11 @@ export function applySecurity(app: Express): void {
   app.use(cors(corsOptions));
 }
 
-// --- Rate limiting helpers ---
-type Key = string;
-type Bucket = { count: number; resetAt: number };
-
 function extractIp(req: Request): string {
   const xff = (req.headers['x-forwarded-for'] as string) || '';
   const firstForwarded = xff.split(',')[0]?.trim();
   const ip = firstForwarded || (req.ip as string) || 'anon';
   return ip;
-}
-
-function send429(res: Response, limit: number, resetAt: number): void {
-  const now = Date.now();
-  const retryAfter = Math.max(0, Math.ceil((resetAt - now) / 1000));
-  res.set('Retry-After', String(retryAfter));
-  res.set('RateLimit-Limit', String(limit));
-  res.set('RateLimit-Remaining', '0');
-  res.set('RateLimit-Reset', String(Math.max(0, Math.ceil((resetAt - now) / 1000))));
-  res.status(429).json({ success: false, message: 'Rate-Limit erreicht.', code: 'TOO_MANY_REQUESTS' });
-}
-
-function setHeaders(res: Response, limit: number, remaining: number, resetAt: number) {
-  const now = Date.now();
-  res.set('RateLimit-Limit', String(limit));
-  res.set('RateLimit-Remaining', String(Math.max(0, remaining)));
-  res.set('RateLimit-Reset', String(Math.max(0, Math.ceil((resetAt - now) / 1000))));
 }
 
 // Redis Store (minimal) für express-rate-limit

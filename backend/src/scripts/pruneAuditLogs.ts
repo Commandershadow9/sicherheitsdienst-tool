@@ -78,6 +78,5 @@ async function main(): Promise<void> {
 }
 
 if (require.main === module) {
-  // eslint-disable-next-line @typescript-eslint/no-floating-promises
-  main();
+  void main();
 }

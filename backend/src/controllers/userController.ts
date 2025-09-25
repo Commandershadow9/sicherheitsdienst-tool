@@ -420,7 +420,7 @@ export const updateUser = async (req: Request, res: Response, next: NextFunction
 };
 
 // DELETE /api/users/:id - Mitarbeiter deaktivieren (soft delete)
-export const deactivateUser = async (req: Request, res: Response, next: NextFunction) => {
+export const deactivateUser = async (req: Request, res: Response, _next: NextFunction) => {
   const { id } = req.params;
 
   const deactivatedUser = await prisma.user

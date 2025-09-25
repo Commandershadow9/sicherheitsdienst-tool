@@ -9,7 +9,9 @@ import {
 } from '../utils/queueStats';
 import { publishNotificationEvent } from '../utils/notificationEvents';
 
-let firebase: any | null = null;
+type FirebaseAdmin = typeof import('firebase-admin');
+
+let firebase: FirebaseAdmin | null = null;
 
 function isFCMConfigured(): boolean {
   const projectId = process.env.FCM_PROJECT_ID;
@@ -18,12 +20,11 @@ function isFCMConfigured(): boolean {
   return !!(projectId && clientEmail && privateKey);
 }
 
-function initFCM() {
+async function initFCM(): Promise<void> {
   if (firebase || !isFCMConfigured()) return;
   try {
-    // Lazy import to avoid dependency in tests if not needed
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const admin = require('firebase-admin');
+    const adminModule = await import('firebase-admin');
+    const admin = (adminModule as { default?: FirebaseAdmin }).default ?? (adminModule as FirebaseAdmin);
     admin.initializeApp({
       credential: admin.credential.cert({
         projectId: process.env.FCM_PROJECT_ID,
@@ -110,7 +111,7 @@ export async function sendPushToUsers(
       });
       return { success: true, count: tokens.length };
     }
-    initFCM();
+    await initFCM();
     if (!firebase) {
       throw new Error('FCM konnte nicht initialisiert werden');
     }

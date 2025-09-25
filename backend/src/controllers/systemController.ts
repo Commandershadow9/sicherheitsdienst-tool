@@ -9,6 +9,8 @@ import { getRuntimeMetrics } from '../utils/runtimeMetrics';
 import { getNotificationStreamStats } from '../utils/notificationEvents';
 import { getAuditLogState } from '../services/auditLogService';
 
+type NodemailerModule = typeof import('nodemailer');
+
 // Lightweight health endpoint (no deps)
 export const healthz = async (_req: Request, res: Response): Promise<void> => {
   res.json({ status: 'ok' });
@@ -22,7 +24,7 @@ export const readyz = async (_req: Request, res: Response): Promise<void> => {
   };
   try {
     await prisma.$queryRaw`SELECT 1`;
-  } catch (err) {
+  } catch {
     deps.db = 'fail';
     res.status(503).json({ status: 'not-ready', deps });
     return;
@@ -42,8 +44,8 @@ export const readyz = async (_req: Request, res: Response): Promise<void> => {
 
     let transport: any;
     try {
-      // eslint-disable-next-line @typescript-eslint/no-var-requires
-      const nodemailer = require('nodemailer');
+      const nodemailerModule = await import('nodemailer');
+      const nodemailer = (nodemailerModule as { default?: NodemailerModule }).default ?? (nodemailerModule as NodemailerModule);
       transport = nodemailer.createTransport({
         host,
         port,
@@ -67,7 +69,7 @@ export const readyz = async (_req: Request, res: Response): Promise<void> => {
       if (transport && typeof transport.close === 'function') {
         try {
           transport.close();
-        } catch (_closeErr) {
+        } catch {
           // ignore close failures
         }
       }

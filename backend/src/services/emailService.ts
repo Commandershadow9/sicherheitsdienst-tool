@@ -75,8 +75,7 @@ export async function sendEmail(
   queueJobStarted(queueName);
   // First try + up to maxRetries additional attempts on transient errors
   // attempt counts total tries; retries happen while attempt <= maxRetries
-  /* eslint-disable no-constant-condition */
-  while (true) {
+  while (attempt <= maxRetries) {
     try {
       if (process.env.SMTP_TEST_FAIL === 'true') {
         throw new Error('Simulated SMTP failure');
@@ -102,7 +101,7 @@ export async function sendEmail(
     } catch (err) {
       const transient = isTransientError(err);
       if (transient && attempt < maxRetries) {
-        attempt++;
+        attempt += 1;
         logger.warn('E-Mail transienter Fehler, versuche erneut (%d/%d): %o', attempt, maxRetries, err);
         if (retryDelayMs > 0) await sleep(retryDelayMs);
         continue;

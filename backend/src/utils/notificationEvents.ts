@@ -70,7 +70,7 @@ function writeEvent(res: Response, event: NotificationEvent) {
     res.write(`id: ${event.id}\n`);
     res.write(`event: ${event.type}\n`);
     res.write(`data: ${JSON.stringify(event)}\n\n`);
-  } catch (err) {
+  } catch {
     // Ignore write errors; cleanup will happen elsewhere
   }
 }
@@ -81,7 +81,7 @@ function cleanupClient(id: string) {
   subscribers.delete(id);
   try {
     client.res.end();
-  } catch (err) {
+  } catch {
     // ignore end failures
   }
 }
@@ -178,7 +178,7 @@ export function resetNotificationEvents() {
   subscribers.forEach((client) => {
     try {
       client.res.end();
-    } catch (err) {
+    } catch {
       // ignore
     }
   });

@@ -6,7 +6,6 @@ import * as siteController from '../controllers/siteController';
 import { asyncHandler } from '../middleware/asyncHandler';
 import { siteListQuerySchema } from '../validations/siteValidation';
 import * as shiftController from '../controllers/shiftController';
-import { shiftListQuerySchema } from '../validations/shiftValidation';
 import { createWriteRateLimit } from '../middleware/rateLimit';
 
 const writeLimiter = createWriteRateLimit();
