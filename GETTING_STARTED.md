@@ -34,10 +34,11 @@ Logins:
 - admin@sicherheitsdienst.de / password123
 - dispatcher@… / thomas.mueller@… / anna.schmidt@… / michael.wagner@… (alle password123)
 
-## 4) ENV (kurz)
-- Backend: `PORT`, `DATABASE_URL` (optional), `JWT_SECRET`, `REFRESH_SECRET`, `RATE_LIMIT_*`, `LOGIN_RATE_LIMIT_MAX/_WINDOW_MS`, `RATE_LIMIT_SKIP_PATHS` (`PUBLIC_HOST` setzt `CORS_ORIGIN` im Compose)
-- Frontend: `VITE_API_BASE_URL`, `VITE_HMR_HOST_SERVER_IP`, `VITE_HMR_CLIENT_PORT=5173`
-- Root/Monitoring: `.env` im Repo‑Root (optional) liefert `ALERTMANAGER_*` Variablen für das separate Monitoring‑Compose (`monitoring/docker-compose.monitoring.yml`).
+## 4) ENV & Beispiele
+- **Root (`.env`):** Wird automatisch von Compose geladen und stellt gemeinsame Variablen bereit. Siehe `.env.example` im Repo-Root (enthält u. a. `PUBLIC_HOST` für Dev-Compose und `ALERTMANAGER_*` für das Monitoring-Profil). Vor dem Start kopieren (`cp .env.example .env`) und Werte anpassen.
+- **Backend (`backend/.env.example`):** Enthält API-spezifische Secrets (`JWT_SECRET`, `REFRESH_SECRET`), optionale Datenbank-Verbindung (`DATABASE_URL`), Rate-Limit-Parameter usw. Für lokale Tests reicht häufig das Default-Setup aus dem Compose, für Standalone-Läufe `cp backend/.env.example backend/.env` nutzen.
+- **Frontend (`frontend/.env.example`):** Konfiguriert den API-Endpunkt (`VITE_API_BASE_URL`) sowie HMR-Einstellungen. Bei Remote-Entwicklung `VITE_API_BASE_URL` auf die externe API-Adresse setzen (Compose übernimmt dies automatisch, wenn `PUBLIC_HOST` gesetzt ist).
+- **Monitoring (`monitoring/docker-compose.monitoring.yml`):** Greift auf die im Root-`.env` hinterlegten `ALERTMANAGER_*` Variablen zurück. Ohne gültigen Slack/Webhook endet Alertmanager mit einem Fehler – daher entweder echte URLs hinterlegen oder eine vorgerenderte Config ohne Templates verwenden.
 
 ## 5) Remote‑Vite & CORS
 - SSH-Tunnel/Dev: `VITE_API_BASE_URL=http://localhost:3000`, CORS_ORIGIN enthält `http://localhost:5173`

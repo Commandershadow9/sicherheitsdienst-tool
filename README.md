@@ -131,7 +131,10 @@ Beispiele
 - **Compose-Profil starten:** `docker compose -f monitoring/docker-compose.monitoring.yml up -d`
 - **Ports/Services:** Prometheus `9090`, Grafana `3300` (admin/admin), Alertmanager `9093` – alle im Bridge-Netz erreichbar (Remote: `http://<SERVER_IP>:PORT`).
 - **Health-Check nach dem Start:** `docker compose -f monitoring/docker-compose.monitoring.yml ps` prüfen; Prometheus-Targets sollten `UP` melden (`Status`-Tab in Prometheus → `http://<SERVER_IP>:9090/targets`).
+- **ENV-Vorlagen nutzen:** `cp .env.example .env` (Root), `cp backend/.env.example backend/.env`, `cp frontend/.env.example frontend/.env` – anschließend Werte für Secrets/Hosts ergänzen. Compose lädt das Root-`.env` automatisch.
 - **Alert-Routing konfigurieren:** ENV in `.env` setzen (`ALERTMANAGER_SLACK_WEBHOOK`, `ALERTMANAGER_SLACK_CHANNEL`, optional `ALERTMANAGER_SLACK_AUDIT_CHANNEL`, `ALERTMANAGER_WEBHOOK_URL`, optional `ALERTMANAGER_WEBHOOK_BEARER`). Slack bündelt alle Alerts; Audit-Warnungen landen im dedizierten Ops-Kanal und `severity="critical"` wird zusätzlich auf das Ops-Webhook gespiegelt.
+- **Alerts testen:** `./monitoring/scripts/send-test-alert.sh AuditLogQueueGrowing` erzeugt einen Dummy-Alert; weitere Typen (`AuditLogDirectFailures`, `AuditLogFlushFailures`, `AuditLogPruneErrors`) prüfen Slack- und Webhook-Routing.
+- **Synthetische Checks:** Der Blackbox-Exporter (Port `9115`) überwacht `/healthz` & `/readyz`; die Panels im Dashboard `latency-and-errors` visualisieren Erfolgsrate und p95-Latenz.
 - **Dashboards & Regeln verwalten:**
   - Audit Trail Dashboard (`monitoring/grafana/dashboards/audit-trail.json`) via `monitoring/scripts/import-dashboard.sh` einspielen oder automatisches Provisioning nutzen.
   - SLO/Fehler‑Dashboards: `monitoring/grafana/dashboards/latency-and-errors.json`, `monitoring/grafana/dashboards/top-routes-p95.json`, `monitoring/grafana/dashboards/top-routes-5xx.json` analog importieren.

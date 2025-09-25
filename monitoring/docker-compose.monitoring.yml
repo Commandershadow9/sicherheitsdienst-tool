@@ -16,6 +16,7 @@ services:
       - ./alertmanager/config.yml:/etc/alertmanager/config.yml:ro
     command:
       - '--config.file=/etc/alertmanager/config.yml'
+      - '--config.expand-env'
       - '--web.listen-address=:9093'
     networks: [ 'obs' ]
 
@@ -32,6 +33,7 @@ services:
       - '--web.enable-lifecycle'
     depends_on:
       - alertmanager
+      - blackbox
     networks: [ 'obs' ]
 
   grafana:
@@ -49,6 +51,18 @@ services:
     networks: [ 'obs' ]
     depends_on:
       - prometheus
+
+
+  blackbox:
+    image: prom/blackbox-exporter:latest
+    container_name: sicherheitsdienst-blackbox
+    ports:
+      - '9115:9115'
+    command:
+      - '--config.file=/etc/blackbox_exporter/config.yml'
+    volumes:
+      - ./blackbox/config.yml:/etc/blackbox_exporter/config.yml:ro
+    networks: [ 'obs' ]
 
 networks:
   obs:

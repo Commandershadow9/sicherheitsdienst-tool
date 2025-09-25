@@ -10,18 +10,18 @@ Stand: 2025-09-15
 - [x] Frontend Feedback für 429 Login
   - Akzeptanz: UI zeigt dedizierten Hinweis + Retry-Countdown, wenn API 429 liefert; UX-Review bestätigt.
 
-- [ ] Monitoring: Alert-Routing (Grafana/Alertmanager) gegen Ops-Kanal verdrahten
+- [x] Monitoring: Alert-Routing (Grafana/Alertmanager) gegen Ops-Kanal verdrahten
   - Akzeptanz: Neue Audit-Warnungen (Queue, Direct/Flush-Failures, Prune) laufen im gewünschten Kanal auf.
-- [ ] Monitoring: Audit-Dashboard (`svc-audit-trail`) auf Prod-Grafana importieren & Panels feinjustieren
+- [x] Monitoring: Audit-Dashboard (`svc-audit-trail`) auf Prod-Grafana importieren & Panels feinjustieren
   - Akzeptanz: Queue/Failures/Prune-Panels zeigen Daten aus Produktions-Prometheus.
-- [ ] Monitoring-Dokumentation: Compose-Ports (Prometheus 9090, Grafana 3300) & Betriebs-Checkliste finalisieren
+- [x] Monitoring-Dokumentation: Compose-Ports (Prometheus 9090, Grafana 3300) & Betriebs-Checkliste finalisieren
   - Akzeptanz: README / MONITORING.md enthalten klare Schritte für Deploy & Betrieb, inkl. Skripte `import-dashboard.sh` und `reload-prometheus.sh`.
 
-- [ ] Monitoring: Synthetische Checks (Blackbox Exporter) für SLOs
+- [x] Monitoring: Synthetische Checks (Blackbox Exporter) für SLOs
   - Akzeptanz: Blackbox‑Exporter als Service in `docker-compose.monitoring.yml`, Prometheus‑Job `blackbox` (HTTP‑Probe `/healthz`/`/readyz`), Panels in `latency-and-errors` zeigen Ergebnisse; MONITORING.md enthält Konfig‑Snippet.
-- [ ] ENV/Onboarding: `.env.example` verlinken und Root‑.env erklären
+- [x] ENV/Onboarding: `.env.example` verlinken und Root‑.env erklären
   - Akzeptanz: GETTING_STARTED.md verlinkt `.env.example` (Root) und erläutert kurz, wann Root‑.env (Monitoring/Compose) vs. Service‑`.env.example` (backend/frontend) genutzt wird.
-- [ ] Alert‑Routing validieren (Slack/Webhook)
+- [x] Alert‑Routing validieren (Slack/Webhook)
   - Akzeptanz: Test‑Alerts erscheinen im konfigurierten Slack‑Audit‑Kanal (`ALERTMANAGER_SLACK_AUDIT_CHANNEL`) und Ops‑Webhook empfängt `severity=critical`; Vorgehen in MONITORING.md dokumentiert.
 - [ ] CI‑Sichtbarkeit schärfen
   - Akzeptanz: `metrics-smoke` zusätzlich zeitgesteuert (cron) ausführen; Artefakt‑Links in Benachrichtigungen verweisen auf Reports/Dashboards.

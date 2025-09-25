@@ -2,7 +2,10 @@
   "id": null,
   "uid": "svc-latency-errors",
   "title": "Service Latency & Errors",
-  "tags": ["sicherheitsdienst", "api"],
+  "tags": [
+    "sicherheitsdienst",
+    "api"
+  ],
   "timezone": "browser",
   "schemaVersion": 38,
   "version": 1,
@@ -11,8 +14,18 @@
     {
       "type": "timeseries",
       "title": "HTTP Latenz p50/p90/p95/p99 (5m)",
-      "gridPos": { "h": 9, "w": 24, "x": 0, "y": 0 },
-      "fieldConfig": { "defaults": { "unit": "s" }, "overrides": [] },
+      "gridPos": {
+        "h": 9,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s"
+        },
+        "overrides": []
+      },
       "targets": [
         {
           "refId": "A",
@@ -39,8 +52,18 @@
     {
       "type": "timeseries",
       "title": "5xx-Rate (rolling 5m)",
-      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 9 },
-      "fieldConfig": { "defaults": { "unit": "percentunit" }, "overrides": [] },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 9
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit"
+        },
+        "overrides": []
+      },
       "targets": [
         {
           "refId": "A",
@@ -48,8 +71,57 @@
           "legendFormat": "5xx rate"
         }
       ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Blackbox Probe Erfolg (/healthz, /readyz)",
+      "gridPos": {
+        "h": 6,
+        "w": 12,
+        "x": 0,
+        "y": 17
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "min": 0,
+          "max": 1
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "avg_over_time(probe_success{instance=~\"http://api:3000/(healthz|readyz)\"}[5m])",
+          "legendFormat": "{{instance}}"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Blackbox Probe Dauer (95. Perzentil, 5m)",
+      "gridPos": {
+        "h": 6,
+        "w": 12,
+        "x": 12,
+        "y": 17
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "histogram_quantile(0.95, sum(rate(probe_duration_seconds_bucket{instance=~\"http://api:3000/(healthz|readyz)\"}[5m])) by (le, instance))",
+          "legendFormat": "p95 {{instance}}"
+        }
+      ]
     }
   ],
-  "templating": { "list": [] }
+  "templating": {
+    "list": []
+  }
 }
-

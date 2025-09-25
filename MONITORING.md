@@ -33,7 +33,8 @@ docker compose -f docker-compose.monitoring.yml up -d
 7. **Regeln/Config neu laden:**
    - Prometheus: `PROMETHEUS_URL=http://<SERVER_IP>:9090 ./scripts/reload-prometheus.sh`
    - Alertmanager: `ALERTMANAGER_URL=http://<SERVER_IP>:9093 ./scripts/reload-alertmanager.sh`
-8. **Alert-Routing testen:** Alertmanager UI `http://<SERVER_IP>:9093` → `Routes` checken; Test-Alert via `amtool`/`promtool` simulieren.
+8. **Alert-Routing testen:** Alertmanager UI `http://<SERVER_IP>:9093` → `Routes` prüfen oder per Skript `./monitoring/scripts/send-test-alert.sh AuditLogQueueGrowing` einen Dummy-Alert in Slack/Webhook auslösen (weitere Typen: `AuditLogDirectFailures`, `AuditLogFlushFailures`, `AuditLogPruneErrors`).
+9. **Blackbox-Checks beobachten:** Prometheus `blackbox`-Job (`http://<SERVER_IP>:9090/targets`) und Grafana-Panels "Blackbox Probe Erfolg"/"Blackbox Probe Dauer" prüfen; Fehler weisen auf Netz-/DNS-Probleme oder auf nicht erreichbare `/healthz`/`/readyz`-Endpunkte hin.
 
 ## Alertmanager Setup & Routing
 - Compose startet `prom/alertmanager` mit `monitoring/alertmanager/config.yml` (Slack + Webhook).
@@ -57,42 +58,13 @@ docker compose -f docker-compose.monitoring.yml up -d
 - **AuditLogDirectFailures** (Warnung) → Slack (Ops-Kanal) meldet direkte Schreibfehler (> 5 in 5 Minuten).
 - **AuditLogFlushFailures** (Kritisch) → Slack (Ops-Kanal) **und** Ops-Webhook; Flush blockiert → sofort handeln.
 - **AuditLogPruneErrors** (Warnung) → Slack (Ops-Kanal) erinnert an fehlerhafte Retention-Läufe.
-- **AuditLogQueueGrowing** (Warnung) → Slack (Ops-Kanal) informiert über Queue > 200 für ≥ 2 Minuten.
-- **AuditLogDirectFailures** (Warnung) → Slack (Ops-Kanal) meldet direkte Schreibfehler (> 5 in 5 Minuten).
-- **AuditLogFlushFailures** (Kritisch) → Slack (Ops-Kanal) **und** Ops-Webhook; Flush blockiert → sofort handeln.
-- **AuditLogPruneErrors** (Warnung) → Slack (Ops-Kanal) erinnert an fehlerhafte Retention-Läufe.
 - Slack-Meldungen enthalten Service, Summary, Details & optional `runbook_url`; Ops-Webhook spiegelt kritische Alerts (PagerDuty o. ä.).
 
 ## Synthetische Checks (Blackbox Exporter)
-- Ziel: Externe SLO‑Messung (HTTP‑Probe) für `/healthz` und `/readyz` — unabhängig vom internen Metrics‑Pfad.
-- Compose‑Service (Beispiel):
-  ```yaml
-  blackbox:
-    image: prom/blackbox-exporter:latest
-    container_name: sicherheitsdienst-blackbox
-    ports:
-      - '9115:9115'
-    networks: [ 'obs' ]
-  ```
-- Prometheus‑Job (Beispiel in `monitoring/prometheus/prometheus.yml`):
-  ```yaml
-  - job_name: 'blackbox'
-    metrics_path: /probe
-    params:
-      module: [http_2xx]
-    static_configs:
-      - targets:
-          - http://api:3000/healthz
-          - http://api:3000/readyz
-    relabel_configs:
-      - source_labels: [__address__]
-        target_label: __param_target
-      - source_labels: [__param_target]
-        target_label: target
-      - target_label: __address__
-        replacement: blackbox:9115
-  ```
-- Dashboard‑Panels: `latency-and-errors.json` enthält p95/Fehler‑Panels; optional eigenes Panel für `probe_success` / `probe_duration_seconds` ergänzen.
+- Compose enthält den Service `blackbox` (Port `9115`) mit Konfiguration `monitoring/blackbox/config.yml` – HTTP-Probe (`http_2xx`) mit 5s Timeout und TLS-Relax für Dev-Stacks.
+- Prometheus-Job `blackbox` (siehe `monitoring/prometheus/prometheus.yml`) tastet `/healthz` und `/readyz` über den Exporter an. Targets lassen sich durch weitere URLs unter `static_configs` erweitern.
+- Neue Grafana-Panels im Dashboard `latency-and-errors.json` visualisieren `probe_success` (rolling 5 Minuten) sowie das p95 der `probe_duration_seconds`.
+- Validierung: `docker compose -f monitoring/docker-compose.monitoring.yml logs blackbox` prüft die Probes; in Grafana sollten die Panels grün sein, sobald die API erreichbar ist.
 
 ## PromQL Snippets
 - p50/p90/p95/p99 (rolling 5m):
@@ -165,6 +137,6 @@ Hinweise
 - Optionales Profil: Monitoring‑Compose ist getrennt; kann parallel zum Dev‑Stack laufen.
 - Echtzeit-Events prüfen: `curl -N -H "Authorization: Bearer <TOKEN>" "http://<SERVER_IP>:3000/api/notifications/events?channel=email,push"` (ADMIN/MANAGER/DISPATCHER). Heartbeat alle `NOTIFY_EVENTS_HEARTBEAT_MS` Sekunden (`: ping`).
 
-Empfehlung: synthetische Checks (Blackbox Exporter)
-- Blackbox‑Exporter als zusätzlichen Service in `docker-compose.monitoring.yml` aufnehmen und in Prometheus als Job `blackbox` konfigurieren (z. B. HTTP‑Probe auf `/healthz` und `/readyz`).
-- Nutzen: Synthetische SLO‑Messung unabhängig vom Applikations‑/Metrics‑Pfad; ergänzt Panels `latency-and-errors`.
+Empfehlung: weitere Ziele für synthetische Checks
+- Zusätzliche URLs (z. B. `/api/stats` oder externe Upstream-Services) in `monitoring/prometheus/prometheus.yml` unter dem `blackbox`-Job ergänzen, um End-to-End SLOs zu erfassen.
+- Nutzen: Synthetische Messung bleibt unabhängig vom internen Metrics-Pfad und erweitert das Dashboard `latency-and-errors` um weitere Services.
