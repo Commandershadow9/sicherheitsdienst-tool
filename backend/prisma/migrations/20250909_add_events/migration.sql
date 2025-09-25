@@ -20,10 +20,17 @@ CREATE TABLE IF NOT EXISTS "events" (
   "updatedAt"     TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
--- Foreign key to sites
-ALTER TABLE "events"
-  ADD CONSTRAINT IF NOT EXISTS "events_siteId_fkey"
-  FOREIGN KEY ("siteId") REFERENCES "sites"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+-- Add FK constraint (idempotent, Postgres-kompatibel)
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'events_siteId_fkey'
+  ) THEN
+    ALTER TABLE "events"
+      ADD CONSTRAINT "events_siteId_fkey"
+      FOREIGN KEY ("siteId") REFERENCES "sites"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+  END IF;
+END $$;
 
 -- Indexes
 CREATE INDEX IF NOT EXISTS "events_start_idx" ON "events" ("startTime");
@@ -43,4 +50,3 @@ CREATE TRIGGER set_updated_at_on_events
 BEFORE UPDATE ON "events"
 FOR EACH ROW
 EXECUTE FUNCTION set_updated_at();
-

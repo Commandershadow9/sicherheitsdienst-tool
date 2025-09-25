@@ -9,8 +9,6 @@ import { getRuntimeMetrics } from '../utils/runtimeMetrics';
 import { getNotificationStreamStats } from '../utils/notificationEvents';
 import { getAuditLogState } from '../services/auditLogService';
 
-type NodemailerModule = typeof import('nodemailer');
-
 // Lightweight health endpoint (no deps)
 export const healthz = async (_req: Request, res: Response): Promise<void> => {
   res.json({ status: 'ok' });
@@ -44,8 +42,8 @@ export const readyz = async (_req: Request, res: Response): Promise<void> => {
 
     let transport: any;
     try {
-      const nodemailerModule = await import('nodemailer');
-      const nodemailer = (nodemailerModule as { default?: NodemailerModule }).default ?? (nodemailerModule as NodemailerModule);
+      const nodemailerModule = (await import('nodemailer')) as { default?: any };
+      const nodemailer = nodemailerModule.default ?? nodemailerModule;
       transport = nodemailer.createTransport({
         host,
         port,

@@ -9,9 +9,7 @@ import {
 } from '../utils/queueStats';
 import { publishNotificationEvent } from '../utils/notificationEvents';
 
-type FirebaseAdmin = typeof import('firebase-admin');
-
-let firebase: FirebaseAdmin | null = null;
+let firebase: any | null = null;
 
 function isFCMConfigured(): boolean {
   const projectId = process.env.FCM_PROJECT_ID;
@@ -23,8 +21,8 @@ function isFCMConfigured(): boolean {
 async function initFCM(): Promise<void> {
   if (firebase || !isFCMConfigured()) return;
   try {
-    const adminModule = await import('firebase-admin');
-    const admin = (adminModule as { default?: FirebaseAdmin }).default ?? (adminModule as FirebaseAdmin);
+    const adminModule = (await import('firebase-admin')) as { default?: any };
+    const admin = adminModule.default ?? adminModule;
     admin.initializeApp({
       credential: admin.credential.cert({
         projectId: process.env.FCM_PROJECT_ID,
