@@ -1,3 +1,5 @@
+import { useCallback } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { ThemeToggle } from '@/components/theme/ThemeToggle'
 import { Button } from '@/components/ui/button'
 import { useAuth } from '@/features/auth/AuthProvider'
@@ -5,8 +7,14 @@ import { LogOut } from 'lucide-react'
 
 export function Header() {
   const { user, logout } = useAuth()
+  const navigate = useNavigate()
 
   const displayName = user ? `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim() || user.email : ''
+
+  const handleLogout = useCallback(() => {
+    logout()
+    navigate('/login', { replace: true })
+  }, [logout, navigate])
 
   return (
     <header className="flex items-center justify-between h-14 border-b border-border px-4">
@@ -21,7 +29,7 @@ export function Header() {
           </div>
         )}
         <ThemeToggle />
-        <Button size="sm" variant="outline" onClick={logout}>
+        <Button size="sm" variant="outline" onClick={handleLogout}>
           <LogOut className="h-4 w-4 mr-1" />
           Abmelden
         </Button>

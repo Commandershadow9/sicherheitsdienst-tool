@@ -75,7 +75,12 @@ export default function Login() {
         toast.error(`Zu viele Versuche. Bitte in ${waitSeconds}s erneut anmelden.`)
         return
       }
-      toast.error('Anmeldung fehlgeschlagen')
+      if (isAxiosError(e)) {
+        const apiMessage = e.response?.data?.message || e.message
+        toast.error(apiMessage || 'Anmeldung fehlgeschlagen')
+      } else {
+        toast.error('Anmeldung fehlgeschlagen')
+      }
     }
   }
 

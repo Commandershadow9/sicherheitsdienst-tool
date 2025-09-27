@@ -118,8 +118,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         try { localStorage.removeItem(LS_KEY) } catch {}
         setTokensState(null)
         setUser(null)
-        // Redirect to login (avoid app being in broken state)
-        try { window.location.assign('/login') } catch {}
       },
     })
     initialized.current = true
@@ -138,9 +136,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     persist(null, null)
     setTokensState(null)
     setUser(null)
-    try {
-      window.location.assign('/login')
-    } catch {}
   }, [persist])
 
   // Fetch user (me) when we have tokens but no user yet
