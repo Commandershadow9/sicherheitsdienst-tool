@@ -214,20 +214,20 @@ enum IncidentStatus {
 
 model EmployeeProfile {
   id               String   @id @default(cuid())
-  userId           String   @unique
+  userId           String   @unique @map("user_id")
   address          Json?
-  birthDate        DateTime?
+  birthDate        DateTime? @map("birth_date")
   phone            String?
-  employmentType   EmploymentType @default(FULL_TIME)
-  employmentStart  DateTime?
-  employmentEnd    DateTime?
-  workSchedule     String?
-  hourlyRate       Decimal? @db.Decimal(10, 2)
-  weeklyTargetHours Int?
-  monthlyTargetHours Int?
+  employmentType   EmploymentType @default(FULL_TIME) @map("employment_type")
+  employmentStart  DateTime? @map("employment_start")
+  employmentEnd    DateTime? @map("employment_end")
+  workSchedule     String? @map("work_schedule")
+  hourlyRate       Decimal? @db.Decimal(10, 2) @map("hourly_rate")
+  weeklyTargetHours Int? @map("weekly_target_hours")
+  monthlyTargetHours Int? @map("monthly_target_hours")
   notes            String?  @db.Text
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
 
   user             User     @relation(fields: [userId], references: [id])
   qualifications   EmployeeQualification[]
@@ -238,11 +238,11 @@ model EmployeeProfile {
 
 model EmployeeQualification {
   id          String   @id @default(cuid())
-  profileId   String
+  profileId   String  @map("profile_id")
   title       String
   description String?
-  validFrom   DateTime?
-  validUntil  DateTime?
+  validFrom   DateTime? @map("valid_from")
+  validUntil  DateTime? @map("valid_until")
 
   profile     EmployeeProfile @relation(fields: [profileId], references: [id])
 
@@ -252,16 +252,16 @@ model EmployeeQualification {
 
 model EmployeeDocument {
   id          String   @id @default(cuid())
-  profileId   String
+  profileId   String @map("profile_id")
   category    DocumentCategory
   filename    String
-  mimeType    String
+  mimeType    String @map("mime_type")
   size        Int
-  storedAt    String
-  issuedAt    DateTime?
-  expiresAt   DateTime?
-  uploadedBy  String
-  createdAt   DateTime @default(now())
+  storedAt    String @map("stored_at")
+  issuedAt    DateTime? @map("issued_at")
+  expiresAt   DateTime? @map("expires_at")
+  uploadedBy  String @map("uploaded_by")
+  createdAt   DateTime @default(now()) @map("created_at")
 
   profile     EmployeeProfile @relation(fields: [profileId], references: [id])
   uploader    User            @relation("EmployeeDocumentUploadedBy", fields: [uploadedBy], references: [id])
@@ -274,17 +274,17 @@ model EmployeeDocument {
 
 model Absence {
   id           String         @id @default(cuid())
-  userId       String
-  createdById  String
-  decidedById  String?
+  userId       String @map("user_id")
+  createdById  String @map("created_by_id")
+  decidedById  String? @map("decided_by_id")
   type         AbsenceType
   status       AbsenceStatus  @default(REQUESTED)
-  startsAt     DateTime
-  endsAt       DateTime
+  startsAt     DateTime @map("starts_at")
+  endsAt       DateTime @map("ends_at")
   reason       String?        @db.Text
-  decisionNote String?        @db.Text
-  createdAt    DateTime       @default(now())
-  updatedAt    DateTime       @updatedAt
+  decisionNote String?        @db.Text @map("decision_note")
+  createdAt    DateTime       @default(now()) @map("created_at")
+  updatedAt    DateTime       @updatedAt @map("updated_at")
 
   user        User @relation("AbsenceUser", fields: [userId], references: [id])
   createdBy   User @relation("AbsenceCreatedBy", fields: [createdById], references: [id])
