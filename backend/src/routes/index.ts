@@ -11,3 +11,4 @@ export { default as eventRoutes } from './eventRoutes';
 export { default as pushRoutes } from './pushRoutes';
 export { default as incidentRoutes } from './incidentRoutes';
 export { default as auditLogRoutes } from './auditLogRoutes';
+export { default as absenceRoutes } from './absenceRoutes';

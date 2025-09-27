@@ -21,6 +21,8 @@ import IncidentsList from '@/features/incidents/IncidentsList'
 import IncidentForm from '@/features/incidents/IncidentForm'
 import RequireRole from '@/features/auth/RequireRole'
 import SystemPage from '@/pages/System'
+import AbsencesList from '@/features/absences/AbsencesList'
+import UserProfile from '@/features/users/UserProfile'
 
 export const router = createBrowserRouter([
   {
@@ -58,9 +60,24 @@ export const router = createBrowserRouter([
               <UsersList />
             </RequireRole>
           ) },
+          { path: 'users/me/profile', element: (
+            <RequireRole roles={['ADMIN','DISPATCHER','EMPLOYEE','MANAGER']}>
+              <UserProfile />
+            </RequireRole>
+          ) },
+          { path: 'users/:id/profile', element: (
+            <RequireRole roles={['ADMIN','DISPATCHER','EMPLOYEE','MANAGER']}>
+              <UserProfile />
+            </RequireRole>
+          ) },
           { path: 'shifts', element: (
             <RequireRole roles={['ADMIN','DISPATCHER','EMPLOYEE','MANAGER']}>
               <ShiftList />
+            </RequireRole>
+          ) },
+          { path: 'absences', element: (
+            <RequireRole roles={['ADMIN','DISPATCHER','EMPLOYEE','MANAGER']}>
+              <AbsencesList />
             </RequireRole>
           ) },
           { path: 'incidents', element: (

@@ -24,6 +24,7 @@ import {
   pushRoutes,
   incidentRoutes,
   auditLogRoutes,
+  absenceRoutes,
 } from './routes';
 import systemRootRoutes from './routes/system';
 
@@ -116,6 +117,7 @@ app.use('/api/events', eventRoutes);
 app.use('/api/push', pushRoutes);
 app.use('/api/incidents', incidentRoutes);
 app.use('/api/audit-logs', auditLogRoutes);
+app.use('/api/absences', absenceRoutes);
 
 // API v1 Alias (OpenAPI servers: /api/v1)
 app.use('/api/v1', systemRoutes);
@@ -128,6 +130,7 @@ app.use('/api/v1/events', eventRoutes);
 app.use('/api/v1/push', pushRoutes);
 app.use('/api/v1/incidents', incidentRoutes);
 app.use('/api/v1/audit-logs', auditLogRoutes);
+app.use('/api/v1/absences', absenceRoutes);
 
 // 404 handler for unmatched routes
 app.use((req: Request, res: Response) => {

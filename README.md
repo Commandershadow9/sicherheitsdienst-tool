@@ -50,6 +50,8 @@ Login‑Demo (Seeds)
   - **Objekte/Sites:** Im Frontend (`/sites`) oder via `POST /api/sites` neue Einsatzorte erfassen. Filter, CSV/XLSX-Export sowie ein Site-spezifischer Schichtüberblick (`/sites/:id/shifts`) sind enthalten.
   - **Dienstmitarbeiter:** Verwaltung läuft über `/users` (Frontend) bzw. `POST /api/users`. Serverseitige Suche/Filter unterstützen große Datenmengen.
   - **Dienste/Schichten:** Unter `/shifts` lassen sich Schichten erstellen, Mitarbeitenden zuordnen und als CSV/XLSX exportieren. Clock-in/out ist RBAC-geschützt.
+  - **Abwesenheiten:** Unter `/absences` beantragen Mitarbeitende Urlaub/Krankheit, Manager genehmigen/lehnen ab. Konflikte mit Schichten werden beim Anlegen angezeigt.
+  - **Mitarbeiterprofil:** `/users/:id/profile` bündelt Stammdaten, Arbeitszeitkennzahlen, Qualifikationen und Dokumente (z. B. Waffenschein, Abmahnungen) – Grundlage für Abrechnung & Arbeitszeitgesetz.
 
 - Seed (manuell)
 - `docker compose -f docker-compose.dev.yml exec api sh -lc 'npm run -s seed'`
@@ -78,6 +80,12 @@ WEB (Frontend)
 Monitoring (Compose, optional)
 - `.env` im Repo-Root: `ALERTMANAGER_SLACK_WEBHOOK`, `ALERTMANAGER_SLACK_CHANNEL`, `ALERTMANAGER_WEBHOOK_URL`, `ALERTMANAGER_WEBHOOK_BEARER`
 - Konfigurations-Reload: `monitoring/scripts/reload-prometheus.sh`, `monitoring/scripts/reload-alertmanager.sh`
+
+## Module & Workflows
+
+- **Abwesenheiten & Urlaub:** `/absences` listet Anträge, Filter (Status, Zeitraum, Nutzer) und erlaubt CSV-Export. Mitarbeitende stellen Anträge, Manager/Admin genehmigen oder lehnen ab; Stornierung erfolgt durch Antragsteller oder Führungskraft. Backend-Endpunkte: `POST /api/absences`, `POST /api/absences/:id/approve|reject|cancel`.
+- **Mitarbeiterprofil & Compliance:** `/users/:id/profile` führt Stammdaten, Arbeitszeitkennzahlen (letzte 7/30 Tage, YTD), Qualifikationen, sowie Dokumente (Waffenschein, Verträge, Abmahnungen). Felder für Stundensatz, Sollstunden und Notizen unterstützen Payroll und Arbeitszeitgesetz. REST: `PUT /api/users/:id/profile`, `POST /api/users/:id/profile/qualifications|documents` etc.
+- **Schicht-/Abwesenheitskonflikte:** Beim Anlegen einer Abwesenheit prüft das Backend aktive Schichtzuweisungen und meldet Konflikte (z. B. Einsatzleiter doppelt belegt). Diese Warnungen werden im Frontend angezeigt.
 
 ## Health & Stats
 - `GET /healthz` → 200 `{ status: "ok" }`

@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom'
-import { LayoutDashboard, Users, CalendarDays, AlertTriangle, Clock, Settings } from 'lucide-react'
+import { LayoutDashboard, Users, CalendarDays, AlertTriangle, Clock, Settings, CalendarClock, UserCircle2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/features/auth/AuthProvider'
 
@@ -7,9 +7,11 @@ const NAV_ALL = [
   { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['ADMIN','DISPATCHER','EMPLOYEE','MANAGER'] as const },
   { to: '/sites', label: 'Standorte', icon: CalendarDays, roles: ['ADMIN','DISPATCHER','MANAGER'] as const },
   { to: '/shifts', label: 'Schichten', icon: Clock, roles: ['ADMIN','DISPATCHER','EMPLOYEE','MANAGER'] as const },
+  { to: '/absences', label: 'Abwesenheiten', icon: CalendarClock, roles: ['ADMIN','DISPATCHER','EMPLOYEE','MANAGER'] as const },
   { to: '/users', label: 'Benutzer', icon: Users, roles: ['ADMIN','DISPATCHER'] as const },
   { to: '/incidents', label: 'Vorfälle', icon: AlertTriangle, roles: ['ADMIN','DISPATCHER','MANAGER'] as const },
   { to: '/system', label: 'System', icon: Settings, roles: ['ADMIN','DISPATCHER','EMPLOYEE','MANAGER'] as const },
+  { to: '/users/me/profile', label: 'Mein Profil', icon: UserCircle2, roles: ['ADMIN','DISPATCHER','EMPLOYEE','MANAGER'] as const },
 ]
 
 export function Sidebar() {
@@ -23,7 +25,7 @@ export function Sidebar() {
         {nav.map((n) => (
           <NavLink
             key={n.to}
-            to={n.to}
+            to={n.to.includes(':self') ? n.to.replace(':self', user?.id ?? 'me') : n.to}
             className={({ isActive }) =>
               cn(
                 'group flex items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-accent hover:text-accent-foreground',

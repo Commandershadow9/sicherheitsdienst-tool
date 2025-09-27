@@ -55,7 +55,7 @@ const memoryStorage = () => {
 
 const storage = memoryStorage()
 
-Object.defineProperty(global, 'localStorage', {
+Object.defineProperty(globalThis, 'localStorage', {
   value: storage,
   configurable: true,
 })
@@ -121,7 +121,8 @@ describe('installAuthInterceptors', () => {
       onLogout: vi.fn(),
     })
 
-    const responseHandler = fake.responseHandlers.at(-1)?.rejected
+    const lastHandler = fake.responseHandlers[fake.responseHandlers.length - 1]
+    const responseHandler = lastHandler?.rejected
     expect(responseHandler).toBeTypeOf('function')
 
     const error = {
@@ -134,7 +135,7 @@ describe('installAuthInterceptors', () => {
     expect(refresh).toHaveBeenCalledTimes(1)
     expect(setTokens).toHaveBeenCalledWith({ accessToken: 'new-access', refreshToken: 'new-refresh' })
     expect(requestSpy).toHaveBeenCalledTimes(1)
-    const retriedConfig = requestSpy.mock.calls[0][0]
+    const retriedConfig = requestSpy.mock.calls[0][0] as { headers: AxiosHeaders }
     const authHeader = retriedConfig.headers.get('Authorization')
     expect(authHeader).toBe('Bearer new-access')
     expect(result.data).toEqual({ ok: true })

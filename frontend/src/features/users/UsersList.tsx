@@ -12,7 +12,7 @@ import { DataTable } from '@/components/table/DataTable'
 import RbacForbidden from '@/components/RbacForbidden'
 import { exportFile } from '@/features/common/export'
 import { toast } from 'sonner'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 
 type User = { id: string; email: string; firstName: string; lastName: string; role: string; isActive: boolean }
 type ListResp = { data: User[]; pagination: { page: number; pageSize: number; total: number; totalPages: number } }
@@ -125,6 +125,15 @@ export default function UsersList() {
           { key: 'email', header: 'E-Mail', sortable: true },
           { key: 'role', header: 'Rolle', sortable: true },
           { key: 'isActive', header: 'Aktiv', sortable: true, render: (u: User) => (u.isActive ? 'Ja' : 'Nein') },
+          {
+            key: 'profile',
+            header: 'Profil',
+            render: (u: User) => (
+              <Link className="underline" to={`/users/${u.id}/profile`}>
+                Anzeigen
+              </Link>
+            ),
+          },
         ]}
         rows={data?.data ?? []}
         loading={isLoading}

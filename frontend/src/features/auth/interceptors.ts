@@ -1,5 +1,4 @@
-import type { AxiosInstance, AxiosResponse, InternalAxiosRequestConfig } from '@/lib/api'
-import { AxiosHeaders } from '@/lib/api'
+import { AxiosHeaders, type AxiosInstance, type AxiosResponse, type InternalAxiosRequestConfig } from '@/lib/api'
 
 type Tokens = { accessToken: string; refreshToken?: string }
 

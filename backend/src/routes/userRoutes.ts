@@ -1,9 +1,15 @@
 import { Router } from 'express';
 import { asyncHandler } from '../middleware/asyncHandler';
 import * as userController from '../controllers/userController';
+import * as employeeProfileController from '../controllers/employeeProfileController';
 import { authenticate, authorize, authorizeSelfOr } from '../middleware/auth';
 import { validate } from '../middleware/validate';
 import { createUserSchema, updateUserSchema } from '../validations/userValidation';
+import {
+  updateEmployeeProfileSchema,
+  createQualificationSchema,
+  createDocumentSchema,
+} from '../validations/employeeProfileValidation';
 import { userListQuerySchema } from '../validators/userValidators';
 import { createWriteRateLimit } from '../middleware/rateLimit';
 
@@ -55,4 +61,48 @@ router.delete(
 // 405
 router.all('/', authenticate, methodNotAllowed(['GET', 'POST']));
 router.all('/:id', authenticate, methodNotAllowed(['GET', 'PUT', 'DELETE']));
+router.get(
+  '/:id/profile',
+  authenticate,
+  authorizeSelfOr('ADMIN', 'MANAGER', 'DISPATCHER'),
+  asyncHandler(employeeProfileController.getProfile),
+);
+router.put(
+  '/:id/profile',
+  authenticate,
+  authorizeSelfOr('ADMIN', 'MANAGER', 'DISPATCHER'),
+  validate(updateEmployeeProfileSchema),
+  asyncHandler(employeeProfileController.upsertProfile),
+);
+router.post(
+  '/:id/profile/qualifications',
+  authenticate,
+  authorizeSelfOr('ADMIN', 'MANAGER'),
+  validate(createQualificationSchema),
+  asyncHandler(employeeProfileController.addQualification),
+);
+router.delete(
+  '/:id/profile/qualifications/:qualificationId',
+  authenticate,
+  authorizeSelfOr('ADMIN', 'MANAGER'),
+  asyncHandler(employeeProfileController.deleteQualification),
+);
+router.post(
+  '/:id/profile/documents',
+  authenticate,
+  authorizeSelfOr('ADMIN', 'MANAGER'),
+  validate(createDocumentSchema),
+  asyncHandler(employeeProfileController.addDocument),
+);
+router.delete(
+  '/:id/profile/documents/:documentId',
+  authenticate,
+  authorizeSelfOr('ADMIN', 'MANAGER'),
+  asyncHandler(employeeProfileController.deleteDocument),
+);
+router.all('/:id/profile', authenticate, methodNotAllowed(['GET', 'PUT']));
+router.all('/:id/profile/qualifications', authenticate, methodNotAllowed(['POST']));
+router.all('/:id/profile/qualifications/:qualificationId', authenticate, methodNotAllowed(['DELETE']));
+router.all('/:id/profile/documents', authenticate, methodNotAllowed(['POST']));
+router.all('/:id/profile/documents/:documentId', authenticate, methodNotAllowed(['DELETE']));
 export default router;

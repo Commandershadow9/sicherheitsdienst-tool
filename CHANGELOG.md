@@ -19,6 +19,9 @@ All notable changes to this project will be documented in this file.
 - Alle Backend-Tests laufen grün (73 Suites, 201 Tests). CI-Fehlerursachen behoben (Socket/Headers/Guards).
 
 ### Added
+- backend/Frontend: Abwesenheitsverwaltung inkl. Genehmigungs-Endpoints (`/api/absences`) und UI-Seite `/absences` mit Konfliktwarnungen, Export und Statusaktionen.
+- Mitarbeiterprofil: Erweiterte Stammdaten (Adresse, Arbeitszeiten, Sollstunden, Stundensatz) sowie Qualifikationen & Dokumente mit Audit-Logging (`/api/users/:id/profile`, `/users/:id/profile`).
+- Zeitübersicht im Profil (letzte 7/30 Tage, YTD) für Abrechnung/Arbeitszeitgesetz; Anzeige bevorstehender genehmigter Abwesenheiten.
 - security: Audit-Log-Service toleriert fehlende Prisma-Modelle (Tests/Mocks), bietet `getAuditLogState()` für Laufzeitsnapshots und liefert mit `buildAuditEvent`/`submitAuditEvent` konsistente Audit-Metadaten.
 - docs: Security-Hardening Blueprint (`docs/planning/security-hardening.md`) mit Rate-Limit- und Audit-Trail-Konzept.
 - backend/shifts: Selektive Rate-Limits für Schicht-Zuweisung (`SHIFT_ASSIGN_RATE_LIMIT_*`) sowie Clock-in/out (`SHIFT_CLOCK_RATE_LIMIT_*`) inkl. Tests & ENV-Beispielen.
