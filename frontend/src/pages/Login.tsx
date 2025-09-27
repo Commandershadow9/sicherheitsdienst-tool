@@ -76,8 +76,12 @@ export default function Login() {
         return
       }
       if (isAxiosError(e)) {
-        const apiMessage = e.response?.data?.message || e.message
-        toast.error(apiMessage || 'Anmeldung fehlgeschlagen')
+        if (!e.response) {
+          toast.error('Server nicht erreichbar. Bitte Netzwerk prüfen oder Backend starten.')
+        } else {
+          const apiMessage = e.response?.data?.message || e.message
+          toast.error(apiMessage || 'Anmeldung fehlgeschlagen')
+        }
       } else {
         toast.error('Anmeldung fehlgeschlagen')
       }

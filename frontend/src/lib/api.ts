@@ -4,9 +4,18 @@ export type { AxiosInstance, AxiosRequestConfig, AxiosResponse, InternalAxiosReq
 export { AxiosHeaders } from 'axios'
 export { isAxiosError } from 'axios'
 
-const base = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000').replace(/\/$/, '')
+const envBase = import.meta.env.VITE_API_BASE_URL
+
+const fallbackBase = (() => {
+  if (envBase && envBase.trim() !== '') return envBase
+  if (typeof window !== 'undefined') return window.location.origin
+  return ''
+})()
+
+const normalizedBase = fallbackBase.replace(/\/$/, '')
 
 export const api = axios.create({
-  baseURL: `${base}/api`,
+  baseURL: normalizedBase ? `${normalizedBase}/api` : '/api',
   withCredentials: true,
+  timeout: 15000,
 })
