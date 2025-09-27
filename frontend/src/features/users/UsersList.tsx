@@ -3,7 +3,6 @@ import React from 'react'
 import { api } from '@/lib/api'
 import { useListParams } from '@/features/common/useQueryParams'
 import { toSearchParams } from '@/features/common/listParams'
-import useDebounce from '@/features/common/useDebounce'
 import { DebouncedInput } from '@/components/inputs/DebouncedInput'
 import { Input } from '@/components/ui/input'
 import { Select } from '@/components/ui/select'
@@ -24,8 +23,6 @@ export default function UsersList() {
   const qk = ['users', params]
   const { tokens } = useAuth()
   const nav = useNavigate()
-  const [search, setSearch] = React.useState<string>(params.query || '')
-  const debounced = useDebounce(search, 300)
   const [downloading, setDownloading] = React.useState<null | { type: 'csv'|'xlsx'; progress?: number }>(null)
   const { data, isLoading, isError, error } = useQuery({
     queryKey: qk,
@@ -37,18 +34,12 @@ export default function UsersList() {
     keepPreviousData: true,
   })
 
-  // apply debounced search to query param
-  React.useEffect(() => {
-    if ((params.query || '') !== debounced) {
-      update({ query: debounced, page: 1 })
+  const handleSearchChange = React.useCallback((v: string) => {
+    if (import.meta.env.DEV) {
+      console.debug('Users search query', v)
     }
-  }, [debounced, params.query, update])
-
-  // keep local input in sync with URL (Back/Forward)
-  React.useEffect(() => {
-    const q = params.query || ''
-    if (q !== search) setSearch(q)
-  }, [params.query, search])
+    update({ query: v, page: 1 })
+  }, [update])
 
   const currentExportParams = React.useMemo(() => {
     const sp = toSearchParams(params)
@@ -79,7 +70,7 @@ export default function UsersList() {
       <h1 className="text-xl font-semibold">Benutzer</h1>
       <div className="flex gap-2 items-end flex-wrap">
         <FormField className="min-w-[220px]" label="Suche" htmlFor="search">
-          <Input id="search" value={search} onChange={(e)=>setSearch(e.target.value)} placeholder="Name oder E-Mail" />
+          <DebouncedInput id="search" value={params.query || ''} onChange={handleSearchChange} placeholder="Name oder E-Mail" />
         </FormField>
         <FormField label="E-Mail">
           <DebouncedInput value={params.filters.email||''} onChange={(v)=>update({filters:{email:v}})} />

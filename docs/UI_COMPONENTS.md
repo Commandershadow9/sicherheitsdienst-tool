@@ -16,13 +16,15 @@ import { Button } from '@/components/ui/button'
 <Button variant="link" onClick={...}>Als Link</Button>
 ```
 
-- Input / Select
+- Input / Select / Textarea
 ```tsx
 import { Input } from '@/components/ui/input'
 import { Select } from '@/components/ui/select'
+import { Textarea } from '@/components/ui/textarea'
 
 <Input placeholder="Suche" />
 <Select defaultValue=""><option value="">Alle</option></Select>
+<Textarea rows={4} placeholder="Beschreibung" />
 ```
 
 - FormField

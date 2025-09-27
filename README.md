@@ -86,6 +86,7 @@ Monitoring (Compose, optional)
 
 ## CORS‑Hinweise
 - Lokale Dev‑Kombi: `VITE_API_BASE_URL=http://localhost:3000`, `CORS_ORIGIN=http://localhost:5173`.
+- Dev-Server lassen zusätzlich automatisch `http://127.0.0.1:5173` sowie Vite-Preview (`http://localhost:4173`, `http://127.0.0.1:4173`) zu – kein manuelles Nachtragen notwendig.
 - Remote: `VITE_API_BASE_URL=http://<SERVER_IP>:3000`, `CORS_ORIGIN=http://<SERVER_IP>:5173` (oder `CORS_ORIGINS` als Allowlist setzen).
 
 ## Export (CSV/XLSX)
@@ -166,7 +167,7 @@ Beispiele
 - Events werden für Auth (Login/Refresh), Users (Create/Update/Deactivate inkl. verbotener Self-Änderungen), Schichten (Create/Update/Delete, Assign, Clock in/out), Incidents (Create/Update/Delete) sowie Notifications (Opt-In/Out & Test-Sendungen inkl. 4xx-Szenarien) aufgezeichnet.
 - Admins rufen das Journal via `GET /api/audit-logs` (RBAC `ADMIN`) mit Paging & Filtern (`actorId`, `resourceType`, `resourceId`, `action`, `outcome`, `from`, `to`) ab – CSV-Export via `GET /api/audit-logs/export?format=csv` (gleiche Filter).
 - `/api/stats` enthält Audit-Kennzahlen (Total, letzte 24 h, Outcome-Verteilung, Queue-State) plus separates `audit`-Objekt mit Queue-Größe, Flush-Status und Timer, wodurch Dashboards den In-Memory-Puffer überwachen können.
-- Helper `buildAuditEvent`/`submitAuditEvent` reichern Actor-, Request- und Client-Informationen konsistent an, Controller rufen sie für alle kritischen Mutationen auf.
+- Helper `buildAuditEvent`/`submitAuditEvent` reichern Actor-, Request- und Client-Informationen konsistent an, fangen fehlende Header/Test-Kontexte ab (nullsafe IP/User-Agent, defensive Datums-Normalisierung) und werden von allen kritischen Controllern aufgerufen.
 - Retention: `npm run audit:prune` löscht Einträge älter als `AUDIT_RETENTION_DAYS` (Default 400 Tage). Dry-Run via `npm run audit:prune -- --dry-run` oder alternativer `--retention-days` Wert.
 - Tests decken Sofort-Schreibpfad, Queueing, Fehlerszenarien sowie Retention-Logik ab.
 
@@ -176,6 +177,7 @@ Beispiele
 - Contract‑Tests: Dredd/Prism Workflow (manuell/cron) – siehe CI
 - DB fehlt: viele Routen funktionieren trotzdem; Seed nur mit `DATABASE_URL`
 - 403 (RBAC): Kein Refresh; UI blendet verbotene Navigation aus, zeigt 403‑Karte.
+- Logout nach Reload: Tokens & User werden aus `localStorage` rehydrisiert. Falls der Browser `localStorage` blockiert oder Drittanbieter-Cookies deaktiviert sind, prüfen ob `about:config`/Private Mode eine Persistenz verhindern.
 
 ## CI Smokes
 - health-smoke: Startet API ohne DB und prüft `/healthz`/`/readyz` inkl. p95‑SLA.

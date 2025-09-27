@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { useAuth } from '@/features/auth/AuthProvider'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { toast } from 'sonner'
-import { isAxiosError } from 'axios'
+import { isAxiosError } from '@/lib/api'
 
 const schema = z.object({
   email: z.string().email(),
@@ -56,6 +56,10 @@ export default function Login() {
       setSecondsLeft(0)
       toast.success('Erfolgreich angemeldet')
       const to = location.state?.from?.pathname || '/dashboard'
+      if (import.meta.env.DEV) {
+        console.debug('Login redirect', { to, state: location.state })
+      }
+      await new Promise((resolve) => setTimeout(resolve, 0))
       navigate(to, { replace: true })
     } catch (e: any) {
       if (isAxiosError(e) && e.response?.status === 429) {

@@ -38,7 +38,6 @@ test('Users: Debounced Suche (~300ms) setzt query-Param und triggert API erst na
   expect(seen.length).toBe(baseLen)
 
   // Jetzt auf Debounce warten und prüfen
-  await expect.poll(() => seen.some((u) => u.includes('query=anna'))).toBeTruthy({ timeout: 10000 })
+  await expect.poll(() => seen.some((u) => u.includes('query=anna')), { timeout: 10000 }).toBe(true)
   await expect(page).toHaveURL(/query=anna/)
 })
-

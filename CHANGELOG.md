@@ -52,6 +52,13 @@ All notable changes to this project will be documented in this file.
 - backend/users: Query‑Validator (Zod) und Export auf Filter vereinheitlicht; `requireRole([])`‑Helper.
 - compose(dev): `SEED_ON_START=true` aktiviert Schema‑Push + Seed beim Start.
 
+### Fixed
+- audit/shifts: `submitAuditEvent` toleriert fehlende Header/Request-Kontexte, normalisiert User-Agent/IP und schreibt Shift-Start/Endzeiten defensiv (`null` statt `Invalid Date`), um Crashs bei Tests, Cronjobs und ungültigen Payloads zu vermeiden.
+- frontend/incidents: Bearbeiten-Formular normalisiert Datum/Uhrzeit zu ISO, verhindert dadurch Validierungsfehler beim Speichern und setzt auf UI-Atoms für konsistente Darkmode-Lesbarkeit.
+- frontend/auth: Tokens & User werden sofort aus `localStorage` rehydrisiert, ProtectedRoute wartet auf Hydration und der Login-Redirect erfolgt erst nach Render, sodass Reloads und schnelle Navigationsfolgen nicht mehr zum Logout führen.
+- frontend/users: Globale Suche nutzt `DebouncedInput`, schreibt den `query`-Parameter zuverlässig zurück und spiegelt Filter/Sortierung in deutschsprachigen Labels.
+- backend/security: CORS-Whitelist ergänzt in Development automatisch `http://localhost:{5173,4173}` und `http://127.0.0.1:{5173,4173}`, wodurch lokale Playwright-Läufe und Dev-Tools ohne zusätzliche ENV funktionieren.
+
 ### Chore
 - Makefile: `api-smoke`, `api-up`, `api-down`, `fe-dev`, `be-dev`.
 

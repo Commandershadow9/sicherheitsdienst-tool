@@ -14,6 +14,12 @@ import { toast } from 'sonner'
 import { exportFile } from '@/features/common/export'
 import { useState } from 'react'
 import RbacForbidden from '@/components/RbacForbidden'
+import {
+  INCIDENT_SEVERITIES,
+  INCIDENT_STATUSES,
+  getIncidentSeverityLabel,
+  getIncidentStatusLabel,
+} from '@/features/incidents/constants'
 
 type Incident = { id: string; title: string; severity: string; status: string; occurredAt: string }
 type ListResp = { data: Incident[]; pagination: { page: number; pageSize: number; total: number; totalPages: number } }
@@ -43,19 +49,19 @@ export default function IncidentsList() {
           <DebouncedInput value={params.filters.title||''} onChange={(v)=>update({filters:{title:v}})} />
         </FormField>
         <FormField label="Schwere">
-          <Select defaultValue={params.filters.severity||''} onChange={(e)=>update({filters:{severity: e.target.value || undefined}})}>
+          <Select value={params.filters.severity ?? ''} onChange={(e)=>update({filters:{severity: e.target.value || undefined}})}>
             <option value="">Alle</option>
-            <option>LOW</option>
-            <option>MEDIUM</option>
-            <option>HIGH</option>
+            {INCIDENT_SEVERITIES.map(option => (
+              <option key={option.value} value={option.value}>{option.label}</option>
+            ))}
           </Select>
         </FormField>
         <FormField label="Status">
-          <Select defaultValue={params.filters.status||''} onChange={(e)=>update({filters:{status: e.target.value || undefined}})}>
+          <Select value={params.filters.status ?? ''} onChange={(e)=>update({filters:{status: e.target.value || undefined}})}>
             <option value="">Alle</option>
-            <option>OPEN</option>
-            <option>IN_PROGRESS</option>
-            <option>CLOSED</option>
+            {INCIDENT_STATUSES.map(option => (
+              <option key={option.value} value={option.value}>{option.label}</option>
+            ))}
           </Select>
         </FormField>
         <FormField label="Datum von">
@@ -112,8 +118,8 @@ export default function IncidentsList() {
       <DataTable
         columns={[
           { key: 'title', header: 'Titel', sortable: true },
-          { key: 'severity', header: 'Schwere', sortable: true },
-          { key: 'status', header: 'Status', sortable: true },
+          { key: 'severity', header: 'Schwere', sortable: true, render: (i: Incident) => getIncidentSeverityLabel(i.severity) },
+          { key: 'status', header: 'Status', sortable: true, render: (i: Incident) => getIncidentStatusLabel(i.status) },
           { key: 'occurredAt', header: 'Zeit', sortable: true, render: (i: Incident) => new Date(i.occurredAt).toLocaleString() },
           { key: 'actions', header: 'Aktionen', render: (i: Incident) => (
             <div className="inline-flex gap-2">

@@ -10,29 +10,54 @@ type AuthCtx = {
   user: User | null
   login: (email: string, password: string) => Promise<void>
   logout: () => void
+  hydrated: boolean
 }
 
 const Ctx = createContext<AuthCtx | null>(null)
 
 const LS_KEY = 'auth';
 
+type StoredAuth = { tokens: Tokens | null; user: User | null }
+
+function readStoredAuth(): StoredAuth {
+  try {
+    const raw = localStorage.getItem(LS_KEY)
+    if (!raw) return { tokens: null, user: null }
+    const parsed = JSON.parse(raw)
+    return {
+      tokens: parsed?.tokens ?? null,
+      user: parsed?.user ?? null,
+    }
+  } catch {
+    return { tokens: null, user: null }
+  }
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [tokens, setTokensState] = useState<Tokens | null>(null)
-  const [user, setUser] = useState<User | null>(null)
+  const storedRef = useRef<StoredAuth | null>(null)
+  if (typeof window !== 'undefined' && storedRef.current === null) {
+    storedRef.current = readStoredAuth()
+  }
+
+  const [tokens, setTokensState] = useState<Tokens | null>(() => storedRef.current?.tokens ?? null)
+  const [user, setUser] = useState<User | null>(() => storedRef.current?.user ?? null)
+  const [hydrated, setHydrated] = useState(() => typeof window === 'undefined' ? false : true)
   const initialized = useRef(false)
   const refreshAttempted = useRef(false)
   const refreshTimer = useRef<number | null>(null)
 
-  // Rehydrate from localStorage
+  // Rehydrate from localStorage (falls initialer Read vor SSR/Build nicht möglich war)
   useEffect(() => {
+    if (storedRef.current) {
+      setHydrated(true)
+      return
+    }
     try {
-      const raw = localStorage.getItem(LS_KEY)
-      if (raw) {
-        const parsed = JSON.parse(raw)
-        if (parsed?.tokens) setTokensState(parsed.tokens)
-        if (parsed?.user) setUser(parsed.user)
-      }
+      const stored = readStoredAuth()
+      if (stored.tokens) setTokensState(stored.tokens)
+      if (stored.user) setUser(stored.user)
     } catch {}
+    setHydrated(true)
   }, [])
 
   // Persist to localStorage
@@ -44,7 +69,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch {}
   }, [tokens, user])
 
-  const setTokens = useCallback((t: Tokens | null) => setTokensState(t), [])
+  const persist = useCallback((nextTokens: Tokens | null, nextUser: User | null) => {
+    try {
+      if (nextTokens?.accessToken) {
+        localStorage.setItem(LS_KEY, JSON.stringify({ tokens: nextTokens, user: nextUser }))
+      } else {
+        localStorage.removeItem(LS_KEY)
+      }
+    } catch {}
+  }, [])
+
+  const setTokens = useCallback((t: Tokens | null) => {
+    persist(t, user)
+    setTokensState(t)
+  }, [persist, user])
 
   const refresh = useCallback(async (refreshToken: string): Promise<Tokens> => {
     const res = await api.post('/auth/refresh', { refreshToken })
@@ -90,15 +128,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const login = useCallback(async (email: string, password: string) => {
     const res = await api.post('/auth/login', { email, password })
     const { accessToken, refreshToken, user: loginUser } = res.data
-    setTokens({ accessToken, refreshToken })
+    const nextTokens = { accessToken, refreshToken }
+    persist(nextTokens, loginUser)
+    setTokensState(nextTokens)
     setUser(loginUser)
-  }, [])
+  }, [persist])
 
   const logout = useCallback(() => {
-    setTokens(null)
+    persist(null, null)
+    setTokensState(null)
     setUser(null)
-    try { localStorage.removeItem(LS_KEY) } catch {}
-  }, [])
+  }, [persist])
 
   // Fetch user (me) when we have tokens but no user yet
   useEffect(() => {
@@ -146,8 +186,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [tokens?.accessToken, tokens?.refreshToken, attemptRefresh])
 
   const value: AuthCtx = useMemo(
-    () => ({ tokens, isAuthenticated: Boolean(tokens?.accessToken), user, login, logout }),
-    [tokens, user, login, logout]
+    () => ({ tokens, isAuthenticated: Boolean(tokens?.accessToken), user, login, logout, hydrated }),
+    [tokens, user, login, logout, hydrated]
   )
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>

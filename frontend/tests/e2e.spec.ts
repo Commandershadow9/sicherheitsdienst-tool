@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test'
 
-const FE = 'http://localhost:5173'
+const FE = process.env.BASE_URL || 'http://localhost:5173'
 
 test('Login → Dashboard sichtbar', async ({ page }) => {
   await page.goto(FE + '/login')
@@ -48,9 +48,10 @@ test('Shifts für erste Site → CSV-Export klickbar (Download)', async ({ page 
   await page.goto(FE + '/sites', { waitUntil: 'load' })
   await page.waitForLoadState('networkidle')
   // Es kann sein, dass noch keine Sites existieren (leere DB). In dem Fall Test soft-skippen.
-  const firstLink = page.getByRole('link', { name: 'Schichten' }).first()
-  if (await firstLink.count()) {
-    await firstLink.first().click()
+  const tableLink = page.locator('table').getByRole('link', { name: 'Schichten' }).first()
+  if (await tableLink.count()) {
+    await tableLink.click()
+    await expect(page).toHaveURL(/\/sites\/[^/]+\/shifts$/, { timeout: 15000 })
     await expect(page.getByRole('heading', { name: /Schichten – Site/ })).toBeVisible({ timeout: 15000 })
     const [download] = await Promise.all([
       page.waitForEvent('download'),

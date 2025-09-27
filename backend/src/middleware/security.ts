@@ -40,6 +40,18 @@ export function applySecurity(app: Express): void {
     }
   }
 
+  if (process.env.NODE_ENV !== 'production') {
+    const devOrigins = [
+      'http://localhost:5173',
+      'http://127.0.0.1:5173',
+      'http://localhost:4173',
+      'http://127.0.0.1:4173',
+    ];
+    for (const origin of devOrigins) {
+      if (!corsAllowlist.includes(origin)) corsAllowlist.push(origin);
+    }
+  }
+
   const corsOptions: CorsOptions = {
     origin: (origin, callback) => {
       if (!origin) return callback(null, true); // healthchecks/curl
