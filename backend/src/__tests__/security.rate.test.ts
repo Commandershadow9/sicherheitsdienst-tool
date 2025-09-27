@@ -30,6 +30,8 @@ jest.mock('@prisma/client', () => ({
 describe('Auth rate limits (IP + per-user/email)', () => {
   beforeAll(() => {
     process.env.JWT_SECRET = 'test-secret';
+    process.env.REFRESH_SECRET = 'refresh-secret';
+    process.env.REFRESH_EXPIRES_IN = '30d';
     process.env.RATE_LIMIT_MAX = '10';
     process.env.RATE_LIMIT_WINDOW_MS = '60000';
   });
@@ -40,6 +42,8 @@ describe('Auth rate limits (IP + per-user/email)', () => {
 
   afterAll(() => {
     delete (process.env as any).JWT_SECRET;
+    delete (process.env as any).REFRESH_SECRET;
+    delete (process.env as any).REFRESH_EXPIRES_IN;
     delete (process.env as any).RATE_LIMIT_MAX;
     delete (process.env as any).RATE_LIMIT_WINDOW_MS;
   });

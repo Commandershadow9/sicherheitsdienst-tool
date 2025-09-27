@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query'
+import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { api } from '@/lib/api'
 import { useListParams } from '@/features/common/useQueryParams'
 import { toSearchParams } from '@/features/common/listParams'
@@ -16,7 +16,7 @@ type ListResp = { data: Shift[]; pagination: { page: number; pageSize: number; t
 
 export default function ShiftList() {
   const { params, update } = useListParams({ page: 1, pageSize: 25, sortBy: 'startTime', sortDir: 'desc' })
-  const { tokens, user } = useAuth()
+  const { user } = useAuth()
   const nav = useNavigate()
   const [downloading, setDownloading] = React.useState<null | { type: 'csv'|'xlsx'; progress?: number }>(null)
   const effectiveParams = React.useMemo(() => {
@@ -26,14 +26,14 @@ export default function ShiftList() {
     return params
   }, [params, user?.role, user?.id])
 
-  const { data, isLoading, isError, error } = useQuery({
+  const { data, isLoading, isError, error } = useQuery<ListResp>({
     queryKey: ['shifts', effectiveParams],
     queryFn: async () => {
       const sp = toSearchParams(effectiveParams)
       const res = await api.get<ListResp>(`/shifts?${sp.toString()}`)
       return res.data
     },
-    keepPreviousData: true,
+    placeholderData: keepPreviousData,
   })
 
   const currentExportParams = React.useMemo(() => {
@@ -48,7 +48,6 @@ export default function ShiftList() {
       await exportFile({
         path: '/shifts',
         accept: type === 'csv' ? 'text/csv' : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        token: tokens?.accessToken,
         filenameHint: type === 'csv' ? 'shifts.csv' : 'shifts.xlsx',
         params: currentExportParams,
         onProgress: ({ percent }) => setDownloading((s)=> s ? { ...s, progress: percent } : s),

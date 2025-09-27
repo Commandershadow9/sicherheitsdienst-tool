@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query'
+import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { api } from '@/lib/api'
 import { useListParams } from '@/features/common/useQueryParams'
 import { toSearchParams } from '@/features/common/listParams'
@@ -26,17 +26,17 @@ type ListResp = { data: Incident[]; pagination: { page: number; pageSize: number
 
 export default function IncidentsList() {
   const { params, update } = useListParams({ page: 1, pageSize: 25, sortBy: 'occurredAt', sortDir: 'desc' })
-  const { tokens, user } = useAuth()
+  const { user } = useAuth()
   const nav = useNavigate()
   const [downloading, setDownloading] = useState<null | { type: 'csv'|'xlsx'; progress?: number }>(null)
-  const { data, isLoading, isError, error } = useQuery({
+  const { data, isLoading, isError, error } = useQuery<ListResp>({
     queryKey: ['incidents', params],
     queryFn: async () => {
       const sp = toSearchParams(params)
       const res = await api.get<ListResp>(`/incidents?${sp.toString()}`)
       return res.data
     },
-    keepPreviousData: true,
+    placeholderData: keepPreviousData,
   })
 
   // Export handled inline below via exportFile helper (sets Authorization header)

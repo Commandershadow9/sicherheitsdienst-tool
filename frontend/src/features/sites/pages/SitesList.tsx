@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query'
+import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { api } from '@/lib/api'
 import { useListParams } from '@/features/common/useQueryParams'
 import { toSearchParams } from '@/features/common/listParams'
@@ -10,7 +10,6 @@ import { FormField } from '@/components/ui/form'
 import { DataTable } from '@/components/table/DataTable'
 import React from 'react'
 import { exportFile } from '@/features/common/export'
-import { useAuth } from '@/features/auth/AuthProvider'
 import { toast } from 'sonner'
 import { Link, useNavigate } from 'react-router-dom'
 import RbacForbidden from '@/components/RbacForbidden'
@@ -20,18 +19,17 @@ type ListResp = { data: Site[]; pagination: { page: number; pageSize: number; to
 
 export default function SitesList() {
   const { params, update } = useListParams({ page: 1, pageSize: 25, sortBy: 'name', sortDir: 'asc' })
-  const { tokens } = useAuth()
   const nav = useNavigate()
   const [downloading, setDownloading] = React.useState<null | { type: 'csv'|'xlsx'; progress?: number }>(null)
   const qk = ['sites', params]
-  const { data, isLoading, isError, error } = useQuery({
+  const { data, isLoading, isError, error } = useQuery<ListResp>({
     queryKey: qk,
     queryFn: async () => {
       const sp = toSearchParams(params)
       const res = await api.get<ListResp>(`/sites?${sp.toString()}`)
       return res.data
     },
-    keepPreviousData: true,
+    placeholderData: keepPreviousData,
   })
 
   const currentExportParams = React.useMemo(() => {

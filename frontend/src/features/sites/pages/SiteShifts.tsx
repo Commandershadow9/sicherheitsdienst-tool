@@ -2,7 +2,6 @@ import React from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { api } from '@/lib/api'
-import { useAuth } from '@/features/auth/AuthProvider'
 import { exportFile } from '@/features/common/export'
 import { toast } from 'sonner'
 
@@ -10,7 +9,6 @@ type Shift = { id: string; title: string; startTime: string; endTime: string; st
 
 export default function SiteShifts() {
   const { id } = useParams<{ id: string }>()
-  const { tokens } = useAuth()
   const nav = useNavigate()
   const [downloading, setDownloading] = React.useState<null | { progress?: number }>(null)
   const { data, isLoading, isError } = useQuery({
@@ -28,7 +26,6 @@ export default function SiteShifts() {
       await exportFile({
         path: `/sites/${id}/shifts`,
         accept: 'text/csv',
-        token: tokens?.accessToken,
         filenameHint: `site_${id}_shifts.csv`,
         onProgress: ({ percent }) => setDownloading({ progress: percent }),
         onUnauthorized: () => nav('/login'),

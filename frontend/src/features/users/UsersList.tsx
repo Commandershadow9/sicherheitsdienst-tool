@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query'
+import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import React from 'react'
 import { api } from '@/lib/api'
 import { useListParams } from '@/features/common/useQueryParams'
@@ -9,7 +9,6 @@ import { Select } from '@/components/ui/select'
 import { Button } from '@/components/ui/button'
 import { FormField } from '@/components/ui/form'
 import { DataTable } from '@/components/table/DataTable'
-import { useAuth } from '@/features/auth/AuthProvider'
 import RbacForbidden from '@/components/RbacForbidden'
 import { exportFile } from '@/features/common/export'
 import { toast } from 'sonner'
@@ -21,17 +20,16 @@ type ListResp = { data: User[]; pagination: { page: number; pageSize: number; to
 export default function UsersList() {
   const { params, update } = useListParams({ page: 1, pageSize: 25, sortBy: 'firstName', sortDir: 'asc', query: '' })
   const qk = ['users', params]
-  const { tokens } = useAuth()
   const nav = useNavigate()
   const [downloading, setDownloading] = React.useState<null | { type: 'csv'|'xlsx'; progress?: number }>(null)
-  const { data, isLoading, isError, error } = useQuery({
+  const { data, isLoading, isError, error } = useQuery<ListResp>({
     queryKey: qk,
     queryFn: async () => {
       const sp = toSearchParams(params)
       const res = await api.get<ListResp>(`/users`, { params: Object.fromEntries(sp.entries()) })
       return res.data
     },
-    keepPreviousData: true,
+    placeholderData: keepPreviousData,
   })
 
   const handleSearchChange = React.useCallback((v: string) => {

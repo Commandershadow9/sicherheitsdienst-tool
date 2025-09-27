@@ -1,4 +1,5 @@
-import type { AxiosInstance, AxiosRequestConfig, AxiosResponse } from '@/lib/api'
+import type { AxiosInstance, AxiosResponse, InternalAxiosRequestConfig } from '@/lib/api'
+import { AxiosHeaders } from '@/lib/api'
 
 type Tokens = { accessToken: string; refreshToken?: string }
 
@@ -19,7 +20,7 @@ export function installAuthInterceptors(
     queue = []
   }
 
-  api.interceptors.request.use((config: AxiosRequestConfig) => {
+  api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
     let tokens = opts.getTokens()
     if (!tokens?.accessToken) {
       try {
@@ -31,8 +32,11 @@ export function installAuthInterceptors(
       } catch {}
     }
     if (tokens?.accessToken) {
-      config.headers = config.headers || {}
-      ;(config.headers as any)['Authorization'] = `Bearer ${tokens.accessToken}`
+      const headers = config.headers instanceof AxiosHeaders
+        ? config.headers
+        : AxiosHeaders.from(config.headers ?? {})
+      headers.set('Authorization', `Bearer ${tokens.accessToken}`)
+      config.headers = headers
     }
     return config
   })
@@ -40,7 +44,7 @@ export function installAuthInterceptors(
   api.interceptors.response.use(
     (res: AxiosResponse) => res,
     async (error) => {
-      const original: AxiosRequestConfig & { _retry?: boolean } = error.config || {}
+      const original = (error.config || {}) as (InternalAxiosRequestConfig & { _retry?: boolean })
       const status = error?.response?.status
       const urlPath = String(original.url || '')
       if (status === 401 && !original._retry && !/\/auth\/(login|refresh)/.test(urlPath)) {
@@ -59,9 +63,12 @@ export function installAuthInterceptors(
           const accessToken = await new Promise<string>((resolve, reject) => {
             queue.push({ resolve, reject })
           })
-          original.headers = original.headers || {}
-          ;(original.headers as any)['Authorization'] = `Bearer ${accessToken}`
-          return api(original)
+          const headers = original.headers instanceof AxiosHeaders
+            ? original.headers
+            : AxiosHeaders.from(original.headers ?? {})
+          headers.set('Authorization', `Bearer ${accessToken}`)
+          original.headers = headers
+          return api.request(original)
         } catch (e) {
           isRefreshing = false
           processQueue(e, null)
