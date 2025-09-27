@@ -138,6 +138,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     persist(null, null)
     setTokensState(null)
     setUser(null)
+    try {
+      window.location.assign('/login')
+    } catch {}
   }, [persist])
 
   // Fetch user (me) when we have tokens but no user yet

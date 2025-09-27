@@ -138,14 +138,31 @@ export default function UserProfile() {
   const navigate = useNavigate()
   const { user, hydrated } = useAuth()
   const queryClient = useQueryClient()
-  const routeId = params.id ?? (location.pathname.includes('/users/me/profile') ? 'me' : undefined)
-  const targetId = routeId === 'me' ? user?.id : routeId
+  const [targetId, setTargetId] = useState<string | null>(() => params.id ?? null)
+  useEffect(() => {
+    if (params.id) {
+      setTargetId(params.id)
+      return
+    }
+    if (location.pathname.includes('/users/me/profile')) {
+      if (user?.id) {
+        setTargetId(user.id)
+      }
+      return
+    }
+    setTargetId(null)
+  }, [params.id, location.pathname, user?.id])
   const [activeTab, setActiveTab] = useState<'overview' | 'details' | 'qualifications' | 'documents' | 'absences'>('overview')
   const [absenceModalOpen, setAbsenceModalOpen] = useState(false)
 
   const { data, isLoading, isError, error } = useQuery({
     queryKey: ['user-profile', targetId],
-    queryFn: () => fetchUserProfile(targetId!),
+    queryFn: () => {
+      if (!targetId) {
+        throw new Error('Kein Nutzerziel definiert')
+      }
+      return fetchUserProfile(targetId)
+    },
     enabled: Boolean(targetId),
   })
 
@@ -363,7 +380,7 @@ export default function UserProfile() {
   const handleNavigateBack = () => navigate(-1)
 
   if (!targetId) {
-    if (!hydrated) {
+    if (!hydrated || location.pathname.includes('/users/me/profile')) {
       return <div>Lade Profil…</div>
     }
     return (

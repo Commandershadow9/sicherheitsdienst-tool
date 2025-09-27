@@ -21,6 +21,7 @@ All notable changes to this project will be documented in this file.
 ### Added
 - frontend/users: Profilseite mit Kachel-Übersicht, Schnellzugriffen und integriertem Abwesenheits-Dialog (Urlaub/Krankheit).
 - frontend/users: Vorlagen für Sicherheitsdienst-Qualifikationen sowie vereinfachte Dokumenterfassung mit automatischen Metadaten.
+- frontend/layout: Kopfbereich zeigt angemeldeten Nutzer und bietet Logout-Schaltfläche.
 - docs: Planung (`docs/planning/employee-profile.md`, `docs/planning/absences.md`) um neue UI-Flows, Quick-Actions und Auto-Genehmigungen ergänzt.
 - backend/Frontend: Abwesenheitsverwaltung inkl. Genehmigungs-Endpoints (`/api/absences`) und UI-Seite `/absences` mit Konfliktwarnungen, Export und Statusaktionen.
 - Mitarbeiterprofil: Erweiterte Stammdaten (Adresse, Arbeitszeiten, Sollstunden, Stundensatz) sowie Qualifikationen & Dokumente mit Audit-Logging (`/api/users/:id/profile`, `/users/:id/profile`).
