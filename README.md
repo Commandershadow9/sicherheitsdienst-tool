@@ -46,6 +46,11 @@ Login‑Demo (Seeds)
 - `admin@sicherheitsdienst.de` / `password123`
 - weitere: `dispatcher@…`, `thomas.mueller@…`, `anna.schmidt@…`, `michael.wagner@…` (alle `password123`)
 
+- **Kern-Entitäten anlegen**
+  - **Objekte/Sites:** Im Frontend (`/sites`) oder via `POST /api/sites` neue Einsatzorte erfassen. Filter, CSV/XLSX-Export sowie ein Site-spezifischer Schichtüberblick (`/sites/:id/shifts`) sind enthalten.
+  - **Dienstmitarbeiter:** Verwaltung läuft über `/users` (Frontend) bzw. `POST /api/users`. Serverseitige Suche/Filter unterstützen große Datenmengen.
+  - **Dienste/Schichten:** Unter `/shifts` lassen sich Schichten erstellen, Mitarbeitenden zuordnen und als CSV/XLSX exportieren. Clock-in/out ist RBAC-geschützt.
+
 - Seed (manuell)
 - `docker compose -f docker-compose.dev.yml exec api sh -lc 'npm run -s seed'`
 

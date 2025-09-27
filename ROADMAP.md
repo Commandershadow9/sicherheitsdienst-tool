@@ -1,6 +1,6 @@
 # Roadmap (nächste 1–2 Sprints)
 
-Aktualisierung: Stand 2025‑09‑15
+Aktualisierung: Stand 2025‑09‑27
 - RBAC‑Feinschliff (401 Refresh 1×, 403 Karte, Navigation ausblenden) umgesetzt (FE/BE).
 - Users‑Liste serverseitig (Suche/Sort/Paging, 300ms Debounce, Export gefiltert) umgesetzt.
 - E2E‑Smokes (Playwright) und API‑Smoke (httpie) in CI aktiv; Artefakte verfügbar.
@@ -11,14 +11,13 @@ Aktualisierung: Stand 2025‑09‑15
 
 Hinweis: Dieser Abschnitt fasst die tagesaktuellen Ziele aus der ehemaligen Datei `docs/ROADMAP.md` zusammen. Quelle bleibt `docs/KONZEPT.pdf` (Roadmap/DoD maßgeblich).
 
-### Heutige Ziele (Bestätigung)
+### Aktuelle Schwerpunkte
+- Feinschliff: Auth-Persistenz absichern (Tests) und Doku-Refresh (README/TODO).
+- Entities im Fokus halten: Sites (Objekte), Users (Dienstmitarbeiter) und Shifts weiterhin CRUD + Exporte; Abwesenheitsplanung als nächster Erweiterungspunkt.
 - Konzepttreu nach `docs/KONZEPT.pdf` arbeiten (Roadmap/DoD einhalten).
 - In kleinen, überprüfbaren Schritten vorgehen (max. 3 Tasks, je ≤ 90 Minuten).
-- Nur UNIFIED DIFF zeigen und Freigabe abwarten.
-- Fokus: OpenAPI v1, Auth/RBAC, Entity „Site“.
-- Jede Aufgabe mit klaren Akzeptanzkriterien hinterlegen.
 
-### Ergebnisse heute (Auszug)
+### Ergebnisse aktuell (Auszug)
 - RBAC (Users): Detail- und Update-Routen abgesichert (ADMIN oder Self-Access); Self-Updates auf Basisfelder beschränkt.
 - Validierung: 422-Fehler enthalten `code: VALIDATION_ERROR` (Middleware + Tests angepasst).
 - OpenAPI: Push-API dokumentiert (`/push/tokens`, `/push/tokens/{token}`, `/push/users/{userId}/opt`) + zusätzlicher Server `http://localhost:3001/api/v1`.

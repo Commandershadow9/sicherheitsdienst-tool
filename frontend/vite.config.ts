@@ -8,6 +8,9 @@ export default defineConfig({
     environment: 'node',
     include: ['src/**/*.test.{ts,tsx}'],
     exclude: ['tests/**/*.spec.ts'],
+    pool: 'forks',
+    minWorkers: 1,
+    maxWorkers: 1,
   },
   server: {
     host: true,

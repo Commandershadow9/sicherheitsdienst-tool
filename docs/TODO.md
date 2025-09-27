@@ -1,8 +1,13 @@
 # TODO – Nächste Schritte (Kurzplanung)
 
-Stand: 2025-09-15
+Stand: 2025-09-27
 
 - ## Kurzfristig (P1, 1–2 Tage)
+- [ ] Doku-Refresh: Quickstart/README um explizite Hinweise zum Anlegen von Objekten (Sites), Diensten (Shifts) und Mitarbeitenden erweitern.
+- [ ] Auth-Feinschliff absichern: Vitest-Suite für `AuthProvider`/Interceptor (Persistenz, Refresh, Logout).
+- [ ] Feingranulare Backlogspflege – Roadmap & dieses TODO-Dokument mit aktuellen Prioritäten synchron halten.
+
+- ## Kurzfristig (Status: abgeschlossen)
 - [x] Login-Limiter Observability
   - Akzeptanz: Auth-Login-Limiter exportiert Prometheus-Zähler (Hits, Blocked); Dashboard + Alert-Empfehlung dokumentiert.
 - [x] Login-Limiter QA
