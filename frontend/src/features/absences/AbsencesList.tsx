@@ -13,22 +13,9 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useMemo, useState } from 'react'
 import { createAbsence, fetchAbsences, approveAbsence, rejectAbsence, cancelAbsence } from './api'
-import type { Absence, AbsenceStatus, AbsenceType } from './types'
+import type { Absence, AbsenceStatus, AbsenceType, ShiftConflict } from './types'
 import { api } from '@/lib/api'
-
-const ABSENCE_TYPES: { value: AbsenceType; label: string }[] = [
-  { value: 'VACATION', label: 'Urlaub' },
-  { value: 'SICKNESS', label: 'Krankheit' },
-  { value: 'SPECIAL_LEAVE', label: 'Sonderurlaub' },
-  { value: 'UNPAID', label: 'Unbezahlt' },
-]
-
-const ABSENCE_STATUSES: { value: AbsenceStatus; label: string }[] = [
-  { value: 'REQUESTED', label: 'Angefragt' },
-  { value: 'APPROVED', label: 'Genehmigt' },
-  { value: 'REJECTED', label: 'Abgelehnt' },
-  { value: 'CANCELLED', label: 'Storniert' },
-]
+import { ABSENCE_TYPES, ABSENCE_STATUSES, getAbsenceStatusLabel, getAbsenceTypeLabel, formatPeriod } from './utils'
 
 const createSchema = z.object({
   userId: z.string().cuid().optional(),
@@ -48,6 +35,7 @@ export default function AbsencesList() {
   const isManager = user?.role === 'ADMIN' || user?.role === 'MANAGER'
   const paramsState = useListParams({ page: 1, pageSize: 25 })
   const { params, update } = paramsState
+  const [conflicts, setConflicts] = useState<ShiftConflict[]>([])
 
   const { data, isLoading, isError, error } = useQuery({
     queryKey: ['absences', params],
@@ -87,6 +75,7 @@ export default function AbsencesList() {
       toast.success('Abwesenheit erfasst')
       queryClient.invalidateQueries({ queryKey: ['absences'] })
       setCreating(false)
+      setConflicts(payload.conflicts ?? [])
       form.reset({
         type: 'VACATION',
         startsAt: '',
@@ -148,18 +137,17 @@ export default function AbsencesList() {
     {
       key: 'type',
       header: 'Art',
-      render: (absence: Absence) => ABSENCE_TYPES.find((t) => t.value === absence.type)?.label ?? absence.type,
+      render: (absence: Absence) => getAbsenceTypeLabel(absence.type),
     },
     {
       key: 'status',
       header: 'Status',
-      render: (absence: Absence) => ABSENCE_STATUSES.find((s) => s.value === absence.status)?.label ?? absence.status,
+      render: (absence: Absence) => getAbsenceStatusLabel(absence.status),
     },
     {
       key: 'period',
       header: 'Zeitraum',
-      render: (absence: Absence) =>
-        `${new Date(absence.startsAt).toLocaleString()} – ${new Date(absence.endsAt).toLocaleString()}`,
+      render: (absence: Absence) => formatPeriod(absence.startsAt, absence.endsAt),
     },
     {
       key: 'reason',
@@ -293,6 +281,24 @@ export default function AbsencesList() {
             </Button>
           </div>
         </form>
+      )}
+
+      {conflicts.length > 0 && (
+        <div className="border border-orange-300 bg-orange-50 text-sm text-orange-900 rounded p-4 space-y-2">
+          <div className="font-semibold">Konflikte mit bestehenden Schichten</div>
+          <ul className="space-y-1">
+            {conflicts.map((shift) => (
+              <li key={shift.id}>
+                <span className="font-medium">{shift.title}</span> · {formatPeriod(shift.startTime, shift.endTime)} ({shift.status})
+              </li>
+            ))}
+          </ul>
+          <div className="flex gap-2">
+            <Button size="sm" variant="ghost" onClick={() => setConflicts([])}>
+              Hinweise ausblenden
+            </Button>
+          </div>
+        </div>
       )}
 
       <div className="grid gap-3 md:grid-cols-5">
