@@ -6,16 +6,26 @@ export { isAxiosError } from 'axios'
 
 const envBase = import.meta.env.VITE_API_BASE_URL
 
-const fallbackBase = (() => {
-  if (envBase && envBase.trim() !== '') return envBase
-  if (typeof window !== 'undefined') return window.location.origin
-  return ''
-})()
+function deriveBaseUrl() {
+  if (envBase && envBase.trim() !== '') {
+    return envBase.trim()
+  }
 
-const normalizedBase = fallbackBase.replace(/\/$/, '')
+  if (typeof window !== 'undefined') {
+    const { protocol, hostname, port } = window.location
+    if (port === '5173' || port === '4173') {
+      return `${protocol}//${hostname}:3000`
+    }
+    return `${protocol}//${hostname}${port ? `:${port}` : ''}`
+  }
+
+  return 'http://localhost:3000'
+}
+
+const normalizedBase = deriveBaseUrl().replace(/\/$/, '')
 
 export const api = axios.create({
-  baseURL: normalizedBase ? `${normalizedBase}/api` : '/api',
+  baseURL: `${normalizedBase}/api`,
   withCredentials: true,
   timeout: 15000,
 })
