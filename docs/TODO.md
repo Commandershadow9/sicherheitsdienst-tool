@@ -1,13 +1,12 @@
 # TODO – Nächste Schritte (Kurzplanung)
 
-Stand: 2025-09-27
+Stand: 2025-10-03
 
 - ## Kurzfristig (P1, 1–2 Tage)
-- [x] Doku-Refresh: Quickstart/README um explizite Hinweise zum Anlegen von Objekten (Sites), Diensten (Shifts) und Mitarbeitenden erweitern.
-- [x] Auth-Feinschliff absichern: Vitest-Suite für `AuthProvider`/Interceptor (Persistenz, Refresh, Logout).
-- [x] Feingranulare Backlogspflege – Roadmap & dieses TODO-Dokument mit aktuellen Prioritäten synchron halten.
-- [x] Abwesenheits- & Urlaubsverwaltung: Datenmodell + API-Entwurf (Requests, Genehmigungen, Kalenderintegration) gemäss `docs/planning/absences.md` vorbereiten.
-- [x] Mitarbeiterprofil erweitern: Pflichtfelder (Adresse, Qualifikationen, Lizenzen), Dokumentablage (z. B. Waffenschein, Abmahnungen) konzipieren (`docs/planning/employee-profile.md`).
+- [ ] Abwesenheiten Phase 2: Dokument-/Attest-Uploads und Kalender-Overlay mit Konflikten prototypisieren.
+- [ ] Abwesenheiten-Benachrichtigungen: Approve/Reject/Cancel per Mail/Push versenden inkl. Tests/Audit.
+- [ ] Profil & Auth Tests: Vitest für `AuthProvider` (Refresh/Logout) nachziehen, Integrationstest für Absence-Konflikte schreiben.
+- [ ] Release v1.3.0: CHANGELOG finalisieren, Docs querlesen, Tag/Release-Skript vorbereiten.
 
 - ## Kurzfristig (Status: abgeschlossen)
 - [x] Login-Limiter Observability
@@ -62,6 +61,10 @@ Erledigt:
 
 - [x] Codequalität: ESLint‑Warnungen reduzieren
   - Akzeptanz: ESLint‑Warnungen im Backend auf ≤ 5 reduzieren (ohne Funktionsänderung), Format/Lint‑Regeln beibehalten.
+
+- [ ] Absences ICS & Kalender: ICS-Export für Abwesenheiten (Pro Nutzer/Team) + Dokumentation (`docs/planning/absences.md`).
+- [ ] Grafana/Alerts: Panels für Absence-Queues, Login-Error-Rate; Slack-Alert bei wachsenden Abwesenheitskonflikten.
+- [ ] Storage Evaluierung: S3/MinIO + Verschlüsselungskonzept für Dokument-Uploads (Profil) ausarbeiten.
 
 ## Langfristig / Post‑MVP (P3)
 - [x] Erweiterte Benachrichtigungen (Real‑Events, Templates, Opt‑In) (2025-09-16)

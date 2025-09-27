@@ -4,7 +4,7 @@ Kurz und lösungsorientiert.
 
 1) 429 beim Login
 - Ursache: Rate‑Limiter. Dev‑Stack ist großzügig, aber kann greifen.
-- Lösung: `docker compose -f docker-compose.dev.yml restart api` und Browser hart neu laden. Bei Bedarf `LOGIN_RATE_LIMIT_MAX/_WINDOW_MS` anpassen (Dev-Compose setzt hohe Werte). Frontend zeigt jetzt Countdown + Hinweis – Wartezeit respektieren.
+- Lösung: `docker compose -f docker-compose.dev.yml restart api` oder ENV-Werte prüfen. Das Frontend blockiert Wiederholungen bis `Retry-After`, zeigt Countdown & Hinweis – Wartezeit respektieren, kein Hard-Reload nötig.
 
 2) 401 auf /api/users
 - Ursache: FE verwendet nicht den zentralen Axios‑Client (kein Authorization Header).
@@ -38,8 +38,8 @@ Kurz und lösungsorientiert.
 - Lösung: Dev-Stack läuft weitgehend ohne DB; für Seeds/Migrationen `DATABASE_URL` setzen (Compose DB vorhanden).
 
 10) Refresh schlägt fehl / Logout
-- Ursache: Refresh-Token ungültig.
-- Lösung: Erneut einloggen. Interceptor räumt Tokens und leitet nach `/login`.
+- Ursache: Refresh-Token ungültig oder Backend nicht erreichbar.
+- Lösung: Erneut einloggen. Interceptor räumt Tokens, leitet nach `/login` und zeigt „Server nicht erreichbar“, falls der API-Host down ist.
 
 11) Full-Reload bei Navigation
 - Ursache: `<a href>` für interne Pfade.

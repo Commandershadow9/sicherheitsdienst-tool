@@ -76,6 +76,8 @@ API (Backend)
 WEB (Frontend)
 - `.env.example` im Ordner `frontend/`
 - `VITE_API_BASE_URL`, `VITE_HMR_HOST_SERVER_IP`, `VITE_HMR_CLIENT_PORT=5173` (Compose nutzt `PUBLIC_HOST`)
+- Kein manuelles Port-Mapping mehr nötig: Der API-Client erkennt lokale Vite-Ports (`5173`/`4173`) und spricht automatisch `:3000` an.
+- Auth-Provider persistiert Access- & Refresh-Token in `localStorage`, führt automatische Refresh-Läufe 30 s vor Ablauf aus und meldet Netzwerkausfälle oder 401/429 direkt im UI.
 
 Monitoring (Compose, optional)
 - `.env` im Repo-Root: `ALERTMANAGER_SLACK_WEBHOOK`, `ALERTMANAGER_SLACK_CHANNEL`, `ALERTMANAGER_WEBHOOK_URL`, `ALERTMANAGER_WEBHOOK_BEARER`
@@ -84,8 +86,9 @@ Monitoring (Compose, optional)
 ## Module & Workflows
 
 - **Abwesenheiten & Urlaub:** `/absences` listet Anträge, Filter (Status, Zeitraum, Nutzer) und erlaubt CSV-Export. Mitarbeitende stellen Anträge, Manager/Admin genehmigen oder lehnen ab; Stornierung erfolgt durch Antragsteller oder Führungskraft. Backend-Endpunkte: `POST /api/absences`, `POST /api/absences/:id/approve|reject|cancel`.
-- **Mitarbeiterprofil & Compliance:** `/users/:id/profile` führt Stammdaten, Arbeitszeitkennzahlen (letzte 7/30 Tage, YTD), Qualifikationen, sowie Dokumente (Waffenschein, Verträge, Abmahnungen). Felder für Stundensatz, Sollstunden und Notizen unterstützen Payroll und Arbeitszeitgesetz. REST: `PUT /api/users/:id/profile`, `POST /api/users/:id/profile/qualifications|documents` etc.
+- **Mitarbeiterprofil & Compliance:** `/users/:id/profile` führt Stammdaten, Arbeitszeitkennzahlen (letzte 7/30 Tage, YTD), Qualifikationen, sowie Dokumente (Waffenschein, Verträge, Abmahnungen). Felder für Stundensatz, Sollstunden und Notizen unterstützen Payroll und Arbeitszeitgesetz. Genehmigte Abwesenheiten (nächste 5) werden direkt im Profil angezeigt; Abwesenheitsdialoge lassen sich von hier aus starten. REST: `PUT /api/users/:id/profile`, `POST /api/users/:id/profile/qualifications|documents` etc.
 - **Schicht-/Abwesenheitskonflikte:** Beim Anlegen einer Abwesenheit prüft das Backend aktive Schichtzuweisungen und meldet Konflikte (z. B. Einsatzleiter doppelt belegt). Diese Warnungen werden im Frontend angezeigt.
+- **Systemdashboard & Monitoring:** `/system` visualisiert `/api/stats` inkl. Queue-States, Audit- und Notification-Kennzahlen, Event-Loop-Auslastung sowie SLO-relevante Metriken – ideal für schnelle Checks ohne Grafana.
 
 ## Health & Stats
 - `GET /healthz` → 200 `{ status: "ok" }`
@@ -185,7 +188,8 @@ Beispiele
 - Tests decken Sofort-Schreibpfad, Queueing, Fehlerszenarien sowie Retention-Logik ab.
 
 ## Troubleshooting (Kurz)
-- 429 beim Login: Dev‑RateLimiter ist nahezu deaktiviert; bei 429 → API neustarten + Browser hart reload. Frontend zeigt Countdown & Hinweis, Wartezeit respektieren (ENV `LOGIN_RATE_LIMIT_MAX/_WINDOW_MS`).
+- 429 beim Login: Dev‑RateLimiter ist nahezu deaktiviert; das Frontend zeigt Countdown & Hinweis und blockiert Wiederholungen bis `Retry-After`. Bei dauerhaften 429 → API neu starten oder ENV prüfen (`LOGIN_RATE_LIMIT_MAX/_WINDOW_MS`).
+- Login- oder Netzwerkausfälle: UI meldet „Server nicht erreichbar“ statt stumm zu hängen. Tokens bleiben trotz Soft-Reload erhalten; harter Reload ist nicht mehr nötig.
 - 401 auf `/api/users`: Frontend MUSS zentralen `api`‑Client nutzen (Token‑Interceptor); keine nackten `fetch/axios`
 - Contract‑Tests: Dredd/Prism Workflow (manuell/cron) – siehe CI
 - DB fehlt: viele Routen funktionieren trotzdem; Seed nur mit `DATABASE_URL`

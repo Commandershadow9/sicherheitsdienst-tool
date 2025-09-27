@@ -1,5 +1,7 @@
 # Abwesenheits- & Urlaubsverwaltung – Entwurf (Stand 2025-10-02)
 
+> Update 2025-10-03: MVP umgesetzt (Backend/Frontend). Dieses Dokument dient weiterhin als Referenz für Erweiterungen (Kalender, Anhänge, Alerts).
+
 ## Zielbild
 Mitarbeitende sollen Abwesenheiten (Urlaub, Krankheit, Sonderurlaub) beantragen können. Disponenten/Manager genehmigen und behalten einen Überblick über Auslastung und Konflikte mit geplanten Schichten. Das Modul bildet die Grundlage für gesetzliche Vorgaben (Arbeitszeitgesetz, Dokumentationspflichten).
 

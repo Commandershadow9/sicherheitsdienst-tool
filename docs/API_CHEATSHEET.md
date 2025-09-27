@@ -147,6 +147,41 @@ http POST "$BASE/api/shifts/$SHIFT_ID/clock-out" "Authorization: Bearer $TOKEN" 
 - `POST /api/shifts/:id/assign` benötigt Rollen `ADMIN` oder `DISPATCHER` und nutzt `SHIFT_ASSIGN_RATE_LIMIT_*` zusätzlich zum globalen Schreib-Limiter.
 - `POST /api/shifts/:id/clock-in` & `POST /api/shifts/:id/clock-out` teilen sich den Limiter `SHIFT_CLOCK_RATE_LIMIT_*`; Header `Retry-After` und `RateLimit-Reset` geben Wartedauer vor.
 
+## Absences
+- RBAC: EMPLOYEE (eigene Anträge), ADMIN/MANAGER/DISPATCHER (alle Anträge); Entscheidungen (`approve/reject`) nur ADMIN/MANAGER
+- Liste mit Filtern (`status`, `type`, `from`, `to`, `userId`)
+```bash
+curl -sS "$BASE/api/absences?page=1&pageSize=25&status=APPROVED" -H "Authorization: Bearer $TOKEN" | jq
+
+# HTTPie
+http "$BASE/api/absences" "Authorization: Bearer $TOKEN" page==1 pageSize==25 status==REQUESTED
+```
+- Antrag stellen (Self-Service; Manager/Admin optional `userId` setzen)
+```bash
+curl -sS -X POST "$BASE/api/absences" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H 'Content-Type: application/json' \
+  -d '{"type":"VACATION","startsAt":"2025-10-10","endsAt":"2025-10-14","reason":"Herbstferien"}' | jq
+
+# Manager legt für Mitarbeitenden an
+http POST "$BASE/api/absences" "Authorization: Bearer $TOKEN_MANAGER" \
+  type=VACATION userId==$USER_ID startsAt=2025-10-10 endsAt=2025-10-14
+```
+- Genehmigen/Ablehnen/Stornieren
+```bash
+ABSENCE_ID=<id>
+curl -sS -X POST "$BASE/api/absences/$ABSENCE_ID/approve" \
+  -H "Authorization: Bearer $TOKEN_MANAGER" \
+  -H 'Content-Type: application/json' \
+  -d '{"decisionNote":"Passt zum Schichtplan"}' | jq
+
+curl -sS -X POST "$BASE/api/absences/$ABSENCE_ID/reject" \
+  -H "Authorization: Bearer $TOKEN_MANAGER" \
+  -d '{"decisionNote":"Schicht nicht abgedeckt"}' | jq
+
+curl -sS -X POST "$BASE/api/absences/$ABSENCE_ID/cancel" -H "Authorization: Bearer $TOKEN" | jq
+```
+
 ## Incidents
 - RBAC: List/Get alle Auth; Create/Update/Delete nur `ADMIN`, `MANAGER`
 - Beispiele

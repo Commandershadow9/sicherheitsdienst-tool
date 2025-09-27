@@ -4,72 +4,30 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
-### Changed
-- ops/compose: PR #22 harmonisiert Readiness-Checks (`/readyz`) in `docker-compose*.yml`, führt `set -e` in Startkommandos ein und setzt `depends_on` auf Health-Conditions.
-- docs: READMEs/GETTING_STARTED/TROUBLESHOOTING zu Healthchecks und Dev-Seeds aktualisiert.
+- Noch nichts – neue Änderungen bitte hier ergänzen.
 
-### Fixed
-- backend/typecheck: Prisma-Typ-Drift umgangen (AuditLog-Model, `emailOptIn`) durch entkoppelte Typen in Controllern/Services; Typecheck grün ohne `prisma generate`.
-- backend/audit: Defensive Header-Zugriffe in `utils/audit.ts` verhindern Fehler in Unit-Tests ohne HTTP-Header.
-- backend/incidents: `createIncident` mit Auth/Validierung (401/403/422) und robusten Audit-Events; kein NPE mehr bei leerem Create-Result.
-- backend/notifications: Events-Route nutzt gültigen RBAC-Handler; Rate-Limit-Tests stabil.
-- backend/shifts: Saubere Datumsvalidierung und Audit-Event-Felder für `createShift`.
-
-### Tests
-- Alle Backend-Tests laufen grün (73 Suites, 201 Tests). CI-Fehlerursachen behoben (Socket/Headers/Guards).
+## v1.3.0 (2025-10-03) – Abwesenheiten & Profilpflege
 
 ### Added
-- frontend/users: Profilseite mit Kachel-Übersicht, Schnellzugriffen und integriertem Abwesenheits-Dialog (Urlaub/Krankheit).
-- frontend/users: Vorlagen für Sicherheitsdienst-Qualifikationen sowie vereinfachte Dokumenterfassung mit automatischen Metadaten.
-- frontend/layout: Kopfbereich zeigt angemeldeten Nutzer und bietet Logout-Schaltfläche.
-- docs: Planung (`docs/planning/employee-profile.md`, `docs/planning/absences.md`) um neue UI-Flows, Quick-Actions und Auto-Genehmigungen ergänzt.
-- backend/Frontend: Abwesenheitsverwaltung inkl. Genehmigungs-Endpoints (`/api/absences`) und UI-Seite `/absences` mit Konfliktwarnungen, Export und Statusaktionen.
-- Mitarbeiterprofil: Erweiterte Stammdaten (Adresse, Arbeitszeiten, Sollstunden, Stundensatz) sowie Qualifikationen & Dokumente mit Audit-Logging (`/api/users/:id/profile`, `/users/:id/profile`).
-- Zeitübersicht im Profil (letzte 7/30 Tage, YTD) für Abrechnung/Arbeitszeitgesetz; Anzeige bevorstehender genehmigter Abwesenheiten.
-- security: Audit-Log-Service toleriert fehlende Prisma-Modelle (Tests/Mocks), bietet `getAuditLogState()` für Laufzeitsnapshots und liefert mit `buildAuditEvent`/`submitAuditEvent` konsistente Audit-Metadaten.
-- docs: Security-Hardening Blueprint (`docs/planning/security-hardening.md`) mit Rate-Limit- und Audit-Trail-Konzept.
-- backend/shifts: Selektive Rate-Limits für Schicht-Zuweisung (`SHIFT_ASSIGN_RATE_LIMIT_*`) sowie Clock-in/out (`SHIFT_CLOCK_RATE_LIMIT_*`) inkl. Tests & ENV-Beispielen.
-- security: Prisma `AuditLog` Modell + Migration, Logging-Service (`logAuditEvent`/`flushAuditLogQueue`) mit Retry-Queue, Tests & Doku (Phase B).
-- security: Audit-Events für Auth/Shifts/Notifications + Admin Read Endpoint `GET /api/audit-logs` inkl. Filter/Paging (Phase C).
-- security: CSV-Export (`GET /api/audit-logs/export`), Retention-Job `npm run audit:prune`, Prometheus Audit-Metriken & `/api/stats` Kennzahlen (Phase D/E).
-- security: CSV-Export (`GET /api/audit-logs/export`) + Audit-Kennzahlen in `/api/stats` (Phase D).
-- notifications: Template-Metadaten (GET `/api/notifications/templates`), Nutzer-Opt-In-API (`/preferences/me`), SSE-Eventstream `/api/notifications/events`, neue Incident-Templates (E-Mail & Push).
-- prisma: `user.emailOptIn` Feld + Migration (`20250916_add_user_email_optin`).
-- docs: README & MONITORING um Notification-Runbook (Templates, Opt-In, SSE) erweitert; `.env.example` mit Incident-Flags & Heartbeat.
-- backend/auth: Login-Rate-Limiter per ENV (`LOGIN_RATE_LIMIT_MAX/_WINDOW_MS`), Compose-Doku aktualisiert.
-- observability: Prometheus-Counter für Login-Limiter (Hits/Blocked) + Dashboard/Alert Doku.
-- observability: `/api/stats` mit Runtime-/Event-Loop-/Queue-Metriken & Notification-Success-Rates; Logging-Runbook (README) + In-Memory-Queue-Tracking.
-- feat(auth/rbac): FE‑Interceptors – 401 genau 1× refresh, 403 zeigt Forbidden‑Karte; Navigation blendet verbotene Menüs aus.
-- feat(users): Server‑getriebene Users‑Tabelle (Suche via `query`, 300ms Debounce, Sort/Paging in URL), Export (CSV/XLSX) nutzt dieselben Filter (ohne Pagination).
-- ui: Base Atoms (Button/Input/Select/Table/Modal), `FormField` Wrapper; DataTable mit Sort‑Icons (lucide) statt Unicode.
-- docs: README Quickstart/E2E/CORS; RBAC‑Beispiele; MONITORING‑Hinweise; UI Components Guide; Maintainers‑Checklist; API Cheatsheet + REST Client Beispiele.
-- ci/e2e: e2e‑smoke Workflow (compose dev: db+api+web) inkl. Artefakte; fast‑smoke Job; e2e‑full Job (Users/Sites/Incidents History/Sort); Playwright retries=1.
-- ci/smoke: API‑Smoke Script (`tools/api-smoke.sh`) + Workflow (`api-smoke`) – Login, Users List/Export, Sites List, Events CSV/PDF, Incidents RBAC.
-- repo: commitlint (Conventional Commits) + PR‑Template Checkliste.
+- Abwesenheitsmodul mit RBAC, Konfliktprüfung, CSV/XLSX-Export und Genehmigungsendpunkten (`/api/absences`, `/absences`).
+- Überarbeitete Mitarbeiterprofile mit Zeitstatistiken, Qualifikationen, Dokumentverwaltung und Vorschau genehmigter Abwesenheiten.
+- Systemdashboard `/system` visualisiert `/api/stats` (Notification-Queues, Audit-Trail, Event-Loop, Feature-Flags).
+- Auth-Flow liefert Refresh-Token beim Login, Interceptor persistiert Tokens und erneuert sie 30 s vor Ablauf.
 
 ### Changed
-- backend/absences: Krankmeldungen (`SICKNESS`) werden bei Erstellung automatisch genehmigt und protokolliert.
-- backend/profile: Dokumentanlage ergänzt fehlende MIME/Size/Pfad-Felder defensiv und erlaubt optionale Wertübergabe in der Validierung.
-- security: Audit-Log-Service wirft bei fehlendem Prisma-Modell keine Fehler mehr, sondern verwirft Events mit Warnung und liefert Laufzeitstatus via `getAuditLogState`.
-- observability: `/api/stats` ergänzt ein separates `audit`-Objekt mit Queue-Größe, Flush-Flags und Intervallen; bestehende `auditTrail.queue`-Daten spiegeln denselben Zustand wider.
-- shifts: `/api/shifts/:id/assign` erfordert nun Rollen `ADMIN`/`DISPATCHER` und trägt Rate-Limit-Header für wiederholte Aufrufe.
-- notifications/test: Channel `push` unterstützt, Validierung via Zod (Template-Key, userIds, Variablen) erweitert; Versand tracked Event-Stream.
-- readiness: SMTP-Verify liefert Diagnose (`deps.smtpMessage`) und schließt Transport nach Erfolg/Fehlschlag.
-- backend/auth: Login-Limiter fällt ohne ENV auf Default (5/15min) zurück und deaktiviert sich nur explizit mit `<=0`.
-- notifications/email: Queue- und Counter-State speichern letzte Zeitstempel/Fehler; Push/E-Mail-Services melden Jobs an Queue-Monitoring.
-- frontend/login: Zeigt bei 429 dedizierten Hinweis inkl. Countdown, blockiert erneute Versuche bis Reset.
-- backend/users: Query‑Validator (Zod) und Export auf Filter vereinheitlicht; `requireRole([])`‑Helper.
-- compose(dev): `SEED_ON_START=true` aktiviert Schema‑Push + Seed beim Start.
+- Login-Seite blockiert Rate-Limits mit Countdown, zeigt Netzwerkfehler und führt keinen Hard-Reload mehr aus.
+- Frontend-API-Client erkennt lokale Vite-Ports (`5173`/`4173`) und mappt automatisch auf `:3000`, plus Same-Origin-Fallback.
+- Incident-UI und Auth-Interceptor wurden vereinheitlicht; Logout-Schaltfläche in der Profilansicht ergänzt.
 
 ### Fixed
-- audit/shifts: `submitAuditEvent` toleriert fehlende Header/Request-Kontexte, normalisiert User-Agent/IP und schreibt Shift-Start/Endzeiten defensiv (`null` statt `Invalid Date`), um Crashs bei Tests, Cronjobs und ungültigen Payloads zu vermeiden.
-- frontend/incidents: Bearbeiten-Formular normalisiert Datum/Uhrzeit zu ISO, verhindert dadurch Validierungsfehler beim Speichern und setzt auf UI-Atoms für konsistente Darkmode-Lesbarkeit.
-- frontend/auth: Tokens & User werden sofort aus `localStorage` rehydrisiert, ProtectedRoute wartet auf Hydration und der Login-Redirect erfolgt erst nach Render, sodass Reloads und schnelle Navigationsfolgen nicht mehr zum Logout führen.
-- frontend/users: Globale Suche nutzt `DebouncedInput`, schreibt den `query`-Parameter zuverlässig zurück und spiegelt Filter/Sortierung in deutschsprachigen Labels.
-- backend/security: CORS-Whitelist ergänzt in Development automatisch `http://localhost:{5173,4173}` und `http://127.0.0.1:{5173,4173}`, wodurch lokale Playwright-Läufe und Dev-Tools ohne zusätzliche ENV funktionieren.
+- Logout funktioniert ohne kompletten Seitenreload; Login-Fehler erscheinen im UI.
+- Prisma-Mappings für underscore-Spalten und Migrationsstart im Dev-Stack wurden bereinigt.
+- API-Ursprungsfallback verhindert Fehler, wenn `VITE_API_BASE_URL` leer ist; Profilziele nutzen stabile IDs.
 
-### Chore
-- Makefile: `api-smoke`, `api-up`, `api-down`, `fe-dev`, `be-dev`.
+### Docs & CI
+- README, ARCHITECTURE, RBAC, TODO, TROUBLESHOOTING & API_CHEATSHEET aktualisiert (Absences, Auth-Refresh, Systemdashboard).
+- Roadmap überarbeitet (Stand 2025-10-03), neue Aufgaben für Anhänge/Kalender & Release v1.3.0 ergänzt.
+- metrics-smoke Reporting verbessert und Monitoring-Dokumentation (Ports, synthetics) erweitert.
 
 ## v1.2.0 (2025-09-13)
 

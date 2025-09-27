@@ -1,5 +1,7 @@
 # Mitarbeiterprofil – Erweiterungen (Stand 2025-10-02)
 
+> Update 2025-10-03: Kernumfang in Backend/Frontend ausgeliefert (Profile-Ansicht mit Zeitkennzahlen, Dokumente, Qualifikationen, Abwesenheiten). Dieses Dokument beschreibt verbleibende Ausbaustufen (z. B. Kalender, Dokument-Uploads).
+
 ## Zielsetzung
 Das Mitarbeiterprofil soll alle relevanten Stammdaten, Qualifikationen und Dokumente bündeln, um operative Entscheidungen (Einsatzplanung, Compliance) zu unterstützen und gesetzliche Nachweispflichten zu erfüllen.
 

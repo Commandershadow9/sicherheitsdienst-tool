@@ -1,25 +1,27 @@
 # Roadmap (nächste 1–2 Sprints)
 
-Aktualisierung: Stand 2025‑09‑27
-- RBAC‑Feinschliff (401 Refresh 1×, 403 Karte, Navigation ausblenden) umgesetzt (FE/BE).
-- Users‑Liste serverseitig (Suche/Sort/Paging, 300ms Debounce, Export gefiltert) umgesetzt.
-- E2E‑Smokes (Playwright) und API‑Smoke (httpie) in CI aktiv; Artefakte verfügbar.
-- UI‑Atoms eingeführt und Listen/Filter konsolidiert.
-- Login‑Bruteforce‑Limiter konfigurierbar (`LOGIN_RATE_LIMIT_MAX/_WINDOW_MS`) mit sicheren Defaults und Dev‑Override.
+Aktualisierung: Stand 2025‑10‑03
+- Abwesenheiten‑Modul (Backend/Frontend) ausgeliefert: CRUD, RBAC, Konfliktwarnungen, Audit-Events, CSV/XLSX-Exports.
+- Mitarbeiterprofil überarbeitet: Zeit-KPIs (7/30 Tage, YTD), Qualifikationen, Dokumente, Abwesenheiten, Self-Service-Telefon/Adresse.
+- Auth-Flow stabilisiert: Refresh-Token beim Login, Interceptor mit Token-Persistenz & Countdown-basiertes Login-UI, Netzwerk-Fehler werden angezeigt.
+- Systemdashboard `/system` zeigt `/api/stats` inklusive Notification-Queues, Audit-Trail, Eventloop-Delay und Feature-Flags.
 
 ## Roadmap – Heute (konsolidiert)
 
 Hinweis: Dieser Abschnitt fasst die tagesaktuellen Ziele aus der ehemaligen Datei `docs/ROADMAP.md` zusammen. Quelle bleibt `docs/KONZEPT.pdf` (Roadmap/DoD maßgeblich).
 
 ### Aktuelle Schwerpunkte
-- Feinschliff: Auth-Persistenz absichern (Tests) und Doku-Refresh (README/TODO).
-- Abwesenheits- & Urlaubsmodul vorbereiten (`docs/planning/absences.md`), inklusive Genehmigungsflow und Kalenderdarstellung.
-- Mitarbeiterprofile ausbauen: Adresse, Qualifikationen sowie Dokumente (z. B. Waffenschein, Abmahnungen) erfassen (`docs/planning/employee-profile.md`).
-- Entities im Fokus halten: Sites (Objekte), Users (Dienstmitarbeiter) und Shifts weiterhin CRUD + Exporte.
-- Konzepttreu nach `docs/KONZEPT.pdf` arbeiten (Roadmap/DoD einhalten).
-- In kleinen, überprüfbaren Schritten vorgehen (max. 3 Tasks, je ≤ 90 Minuten).
+- Abwesenheiten Phase 2: Anhänge/Atteste, Kalender-Overlay und Benachrichtigungen nacharbeiten (`docs/planning/absences.md`).
+- Mitarbeiterprofil Phase 2: Dokument-Upload (Storage/S3), Validierung & HR-Exports, Anbindung an ICS/Outlook vorbereiten (`docs/planning/employee-profile.md`).
+- Release v1.3.0 vorbereiten: CHANGELOG/Docs finalisieren, Tag & Docker-Images, Release-Notes strukturieren.
+- Monitoring & Alerts: Absence-/Login-Metriken in Grafana panels aufnehmen, Thresholds für Refresh-Fehler & Queue-Dauer definieren.
+- DX & Tests: Playwright-Szenarien für Absence-Flow/Profile ergänzen, Auth-Refresh Mocking vereinheitlichen.
 
 ### Ergebnisse aktuell (Auszug)
+- Abwesenheiten: Backend-CRUD, RBAC (Self/Manager), Konfliktwarnungen, Audit-Events und Frontend-Liste inkl. Filter/Exports stehen.
+- Profilansicht: Zeitkennzahlen (7/30 Tage, YTD), Qualifikationen & Dokumente sortiert, Abwesenheits-Preview und Self-Service für Kontaktfelder ausgeliefert.
+- Auth-Flow: Login liefert Refresh-Token, Interceptor persistiert Tokens und behandelt Netzwerkausfälle sowie 401/429 ohne Hard-Reload.
+- Systemdashboard: `/system` konsumiert `/api/stats` (Queues, Notifications, Audit, Eventloop) und ersetzt schnelle Grafana-Blicke.
 - RBAC (Users): Detail- und Update-Routen abgesichert (ADMIN oder Self-Access); Self-Updates auf Basisfelder beschränkt.
 - Validierung: 422-Fehler enthalten `code: VALIDATION_ERROR` (Middleware + Tests angepasst).
 - OpenAPI: Push-API dokumentiert (`/push/tokens`, `/push/tokens/{token}`, `/push/users/{userId}/opt`) + zusätzlicher Server `http://localhost:3001/api/v1`.
@@ -35,6 +37,12 @@ Hinweis: Dieser Abschnitt fasst die tagesaktuellen Ziele aus der ehemaligen Date
 - Monitoring/Ops: Audit-Warnungen werden in den dedizierten Ops-Slack-Kanal geroutet (AuditLogQueue/Direct/Flush/Prune); README & MONITORING.md dokumentieren Slack-Audit-Channel (`ALERTMANAGER_SLACK_AUDIT_CHANNEL`) und Routing (2025-09-22).
 - Ops/Compose: Docker-Stacks nutzen `/readyz` für Healthchecks, führen `prisma migrate deploy` vor dem Start aus und triggern Dev-Seeds über `SEED_ON_START` (Default true, abschaltbar).
 
+### Neu seit v1.2.0 (Absences & Profil)
+- Backend: `Absence`-Modell inkl. Indizes, RBAC-Gates, Konfliktprüfung gegen `shiftAssignment`, Audit-Events für Create/Approve/Reject/Cancel.
+- API: `/api/absences` Liste/Detail/Approve/Reject/Cancel, Query-Filter (`status`, `type`, `from`, `to`, `userId`), CSV/XLSX-Exports.
+- Frontend: Absence-Liste mit Filter/Sort, konfliktbezogene Warnungen, Antragsdialoge (Self & Manager), Profil-Karten mit Abwesenheiten & Zeitkennzahlen.
+- Auth & DX: Login-Countdown bei 429, Netzwerk-Fehlermeldungen, Refresh-Automatik, Port-Autodetektion für 5173/4173.
+
 ### Neu seit v1.1.1 (Health/Readiness)
 - Liveness/Readiness: `/healthz`, `/readyz` (mit `deps.db`, `deps.smtp`).
 - Security: `helmet()` aktiv; CORS per Allowlist (`CORS_ORIGINS`).
@@ -43,12 +51,12 @@ Hinweis: Dieser Abschnitt fasst die tagesaktuellen Ziele aus der ehemaligen Date
 - CI: Health‑Smoke‑Job (baut, startet, prüft `/healthz`/`/readyz`).
 
 ### Nächste Schritte (Kurz-Backlog)
-- ✅ Notifications: Templates/Echtzeit-Events & Opt-In/Out vorbereitet (Feature-Flags, Tests, UI-Hooks) – 2025-09-16.
-- ✅ Security-Hardening Phase B: Prisma-AuditLog + Logging-Utility inkl. Queue/Tests/Docs (2025-09-18).
-- ✅ Security-Hardening Phase C: Audit-Events für Auth/Shifts/Notifications + Admin Read-API (`GET /api/audit-logs`) (2025-09-19).
-- ✅ Security-Hardening Phase D: Audit-CSV-Export + `/api/stats`-Kennzahlen (2025-09-19).
-- ✅ Security-Hardening Phase E: Retention-Job (`npm run audit:prune`), Prometheus-Metriken, `/api/stats` Auditdaten (2025-09-19). Nächster Schritt: Dashboards/Alerts feintunen.
-- Telemetry: SLO-Panels (p95/5xx) & synthetische Checks für Monitoring-Stack ergänzen.
+- [ ] Abwesenheiten Phase 2: Dokument-/Attest-Uploads & Kalender-Overlay (Konfliktvisualisierung) umsetzen.
+- [ ] Benachrichtigungen: E-Mail/Push für `approve/reject/cancel` triggern, Templates & Tests ergänzen.
+- [ ] Profil-Uploads: Storage (S3/MinIO) für Dokumente anbinden, RBAC & Audit erweitern.
+- [ ] Tests: Playwright-Szenarien für Absence-Flow & Profil-Bearbeitung, Vitest für Auth-Refresh & Konflikt-Helper.
+- [ ] API-Tests: Integrationstests für Abwesenheitskonflikte, Statuswechsel & Audit-Events.
+- [ ] Observability: Grafana-Panels für Absence-Queues/Login-Errors, Alerts auf Refresh-Failrate & Queue-Delay.
 
 Ziel: Konkrete, messbare Aufgaben mit klaren Akzeptanzkriterien (Given/When/Then).
 
