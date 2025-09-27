@@ -13,7 +13,9 @@ Hinweis: Dieser Abschnitt fasst die tagesaktuellen Ziele aus der ehemaligen Date
 
 ### Aktuelle Schwerpunkte
 - Feinschliff: Auth-Persistenz absichern (Tests) und Doku-Refresh (README/TODO).
-- Entities im Fokus halten: Sites (Objekte), Users (Dienstmitarbeiter) und Shifts weiterhin CRUD + Exporte; Abwesenheitsplanung als nächster Erweiterungspunkt.
+- Abwesenheits- & Urlaubsmodul vorbereiten (`docs/planning/absences.md`), inklusive Genehmigungsflow und Kalenderdarstellung.
+- Mitarbeiterprofile ausbauen: Adresse, Qualifikationen sowie Dokumente (z. B. Waffenschein, Abmahnungen) erfassen (`docs/planning/employee-profile.md`).
+- Entities im Fokus halten: Sites (Objekte), Users (Dienstmitarbeiter) und Shifts weiterhin CRUD + Exporte.
 - Konzepttreu nach `docs/KONZEPT.pdf` arbeiten (Roadmap/DoD einhalten).
 - In kleinen, überprüfbaren Schritten vorgehen (max. 3 Tasks, je ≤ 90 Minuten).
 

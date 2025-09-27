@@ -8,7 +8,7 @@ export default defineConfig({
     environment: 'node',
     include: ['src/**/*.test.{ts,tsx}'],
     exclude: ['tests/**/*.spec.ts'],
-    pool: 'forks',
+    pool: 'threads',
     minWorkers: 1,
     maxWorkers: 1,
   },

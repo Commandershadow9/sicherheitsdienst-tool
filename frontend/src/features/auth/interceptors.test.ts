@@ -1,12 +1,41 @@
 import { describe, expect, it, beforeEach, vi } from 'vitest'
-import axios from 'axios'
 import { installAuthInterceptors } from './interceptors'
+import { AxiosHeaders } from '@/lib/api'
 
 type Tokens = { accessToken: string; refreshToken?: string }
 
-const createInstance = () => axios.create({ baseURL: 'http://test.local', adapter: (config) => adapter(config) })
+type FakeAxios = ReturnType<typeof createFakeAxios>
 
-let adapter: (config: any) => Promise<any>
+const createFakeAxios = () => {
+  const requestHandlers: Array<(config: any) => any> = []
+  const responseHandlers: Array<{ fulfilled?: (value: any) => any; rejected?: (error: any) => any }> = []
+
+  const api = {
+    interceptors: {
+      request: {
+        use(fulfilled: (config: any) => any) {
+          requestHandlers.push(fulfilled)
+          return requestHandlers.length - 1
+        },
+      },
+      response: {
+        use(_fulfilled: ((value: any) => any) | undefined, rejected: (error: any) => any) {
+          responseHandlers.push({ fulfilled: _fulfilled, rejected })
+          return responseHandlers.length - 1
+        },
+      },
+    },
+    async request(config: any) {
+      let nextConfig = config
+      for (const handler of requestHandlers) {
+        nextConfig = await handler(nextConfig)
+      }
+      return { status: 200, statusText: 'OK', data: { ok: true }, headers: {}, config: nextConfig }
+    },
+  }
+
+  return { api: api as any, requestHandlers, responseHandlers }
+}
 
 const memoryStorage = () => {
   let store: Record<string, string> = {}
@@ -39,43 +68,26 @@ describe('installAuthInterceptors', () => {
 
   it('setzt Authorization-Header aus Tokens', async () => {
     const tokens: Tokens = { accessToken: 'abc', refreshToken: 'rt' }
-    adapter = vi.fn(async (config) => {
-      return {
-        status: 200,
-        statusText: 'OK',
-        config,
-        data: { ok: true },
-        headers: {},
-      }
-    })
-    const api = createInstance()
-    const setTokens = vi.fn()
+    const { api, requestHandlers } = createFakeAxios()
 
     installAuthInterceptors(api, {
       getTokens: () => tokens,
-      setTokens,
+      setTokens: vi.fn(),
       refresh: vi.fn(),
       onLogout: vi.fn(),
     })
 
-    await api.get('/users')
+    let config: any = { headers: new AxiosHeaders() }
+    for (const handler of requestHandlers) {
+      config = handler(config)
+    }
 
-    expect(adapter).toHaveBeenCalledTimes(1)
-    const callConfig = adapter.mock.calls[0][0]
-    expect(callConfig.headers?.Authorization).toBe('Bearer abc')
-    expect(setTokens).not.toHaveBeenCalled()
+    expect(config.headers.get('Authorization')).toBe('Bearer abc')
   })
 
   it('liest Tokens aus localStorage wenn Provider nichts liefert', async () => {
     storage.setItem('auth', JSON.stringify({ tokens: { accessToken: 'stored-token' } }))
-    adapter = vi.fn(async (config) => ({
-      status: 200,
-      statusText: 'OK',
-      config,
-      data: {},
-      headers: {},
-    }))
-    const api = createInstance()
+    const { api, requestHandlers } = createFakeAxios()
 
     installAuthInterceptors(api, {
       getTokens: () => null,
@@ -84,54 +96,47 @@ describe('installAuthInterceptors', () => {
       onLogout: vi.fn(),
     })
 
-    await api.get('/sites')
+    let config: any = { headers: new AxiosHeaders() }
+    for (const handler of requestHandlers) {
+      config = handler(config)
+    }
 
-    const callConfig = adapter.mock.calls[0][0]
-    expect(callConfig.headers?.Authorization).toBe('Bearer stored-token')
+    expect(config.headers.get('Authorization')).toBe('Bearer stored-token')
   })
 
   it('refresh Token nach 401 und wiederholt Request', async () => {
-    const setTokens = vi.fn()
+    const fake = createFakeAxios()
+    const api = fake.api
     const refresh = vi.fn(async () => ({ accessToken: 'new-access', refreshToken: 'new-refresh' }))
-
-    const responses: Array<(arg: any) => Promise<any>> = [
-      async (config) => {
-        return Promise.reject({
-          config,
-          response: { status: 401, data: { message: 'unauthorized' }, headers: {}, config },
-        })
-      },
-      async (config) => ({
-        status: 200,
-        statusText: 'OK',
-        config,
-        data: { ok: true },
-        headers: {},
-      }),
-    ]
-
-    adapter = vi.fn(async (config) => {
-      const next = responses.shift()
-      if (!next) throw new Error('unexpected extra call')
-      return next(config)
+    let currentTokens: Tokens | null = { accessToken: 'expired', refreshToken: 'refresh-token' }
+    const setTokens = vi.fn((next: Tokens | null) => {
+      currentTokens = next
     })
-
-    const api = createInstance()
+    const requestSpy = vi.spyOn(api, 'request')
 
     installAuthInterceptors(api, {
-      getTokens: () => ({ accessToken: 'expired', refreshToken: 'refresh-token' }),
+      getTokens: () => currentTokens,
       setTokens,
       refresh,
       onLogout: vi.fn(),
     })
 
-    const result = await api.get('/incidents')
+    const responseHandler = fake.responseHandlers.at(-1)?.rejected
+    expect(responseHandler).toBeTypeOf('function')
 
-    expect(result.data).toEqual({ ok: true })
+    const error = {
+      config: { url: '/incidents', headers: new AxiosHeaders() },
+      response: { status: 401 },
+    }
+
+    const result = await responseHandler!(error)
+
     expect(refresh).toHaveBeenCalledTimes(1)
     expect(setTokens).toHaveBeenCalledWith({ accessToken: 'new-access', refreshToken: 'new-refresh' })
-    const configs = adapter.mock.calls.map((c) => c[0])
-    expect(configs[0].headers?.Authorization).toBe('Bearer expired')
-    expect(configs[1].headers?.Authorization).toBe('Bearer new-access')
+    expect(requestSpy).toHaveBeenCalledTimes(1)
+    const retriedConfig = requestSpy.mock.calls[0][0]
+    const authHeader = retriedConfig.headers.get('Authorization')
+    expect(authHeader).toBe('Bearer new-access')
+    expect(result.data).toEqual({ ok: true })
   })
 })

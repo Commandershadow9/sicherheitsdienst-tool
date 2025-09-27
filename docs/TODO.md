@@ -3,9 +3,11 @@
 Stand: 2025-09-27
 
 - ## Kurzfristig (P1, 1–2 Tage)
-- [ ] Doku-Refresh: Quickstart/README um explizite Hinweise zum Anlegen von Objekten (Sites), Diensten (Shifts) und Mitarbeitenden erweitern.
-- [ ] Auth-Feinschliff absichern: Vitest-Suite für `AuthProvider`/Interceptor (Persistenz, Refresh, Logout).
+- [x] Doku-Refresh: Quickstart/README um explizite Hinweise zum Anlegen von Objekten (Sites), Diensten (Shifts) und Mitarbeitenden erweitern.
+- [x] Auth-Feinschliff absichern: Vitest-Suite für `AuthProvider`/Interceptor (Persistenz, Refresh, Logout).
 - [ ] Feingranulare Backlogspflege – Roadmap & dieses TODO-Dokument mit aktuellen Prioritäten synchron halten.
+- [ ] Abwesenheits- & Urlaubsverwaltung: Datenmodell + API-Entwurf (Requests, Genehmigungen, Kalenderintegration) gemäss `docs/planning/absences.md` vorbereiten.
+- [ ] Mitarbeiterprofil erweitern: Pflichtfelder (Adresse, Qualifikationen, Lizenzen), Dokumentablage (z. B. Waffenschein, Abmahnungen) konzipieren (`docs/planning/employee-profile.md`).
 
 - ## Kurzfristig (Status: abgeschlossen)
 - [x] Login-Limiter Observability

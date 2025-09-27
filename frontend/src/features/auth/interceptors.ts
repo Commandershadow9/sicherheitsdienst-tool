@@ -50,19 +50,22 @@ export function installAuthInterceptors(
       if (status === 401 && !original._retry && !/\/auth\/(login|refresh)/.test(urlPath)) {
         original._retry = true
         try {
+          let accessToken: string
           if (!isRefreshing) {
             isRefreshing = true
             const rt = opts.getTokens()?.refreshToken
             if (!rt) throw error
             const newTokens = await opts.refresh(rt)
             opts.setTokens(newTokens)
+            accessToken = newTokens.accessToken
             isRefreshing = false
             processQueue(null, newTokens.accessToken)
+          } else {
+            // wait until refresh resolves wenn bereits ein Refresh-Lauf aktiv ist
+            accessToken = await new Promise<string>((resolve, reject) => {
+              queue.push({ resolve, reject })
+            })
           }
-          // wait until refresh resolves if already running
-          const accessToken = await new Promise<string>((resolve, reject) => {
-            queue.push({ resolve, reject })
-          })
           const headers = original.headers instanceof AxiosHeaders
             ? original.headers
             : AxiosHeaders.from(original.headers ?? {})
