@@ -175,11 +175,20 @@ export const createAbsence = async (req: Request, res: Response, next: NextFunct
       throw createError(422, 'Enddatum muss nach dem Startdatum liegen.');
     }
 
+    const shouldAutoApprove =
+      type === AbsenceType.SICKNESS || canManage(actor.role);
+
     const absence = await prisma.absence.create({
       data: {
         userId: targetUserId,
         createdById: actor.id,
         type,
+        status: shouldAutoApprove ? AbsenceStatus.APPROVED : AbsenceStatus.REQUESTED,
+        decidedById: shouldAutoApprove ? actor.id : null,
+        decisionNote:
+          shouldAutoApprove && type === AbsenceType.SICKNESS
+            ? 'Automatisch genehmigt (Krankmeldung)'
+            : null,
         startsAt: startDate,
         endsAt: endDate,
         reason: reason?.trim() || null,
@@ -265,7 +274,12 @@ async function updateAbsenceStatus(
       data: {
         status,
         decisionNote: decisionNote?.trim() || null,
-        decidedById: canManage(actor.role) ? actor.id : absence.status === AbsenceStatus.REQUESTED ? actor.id : absence.userId,
+        decidedById:
+          status === AbsenceStatus.CANCELLED && !canManage(actor.role)
+            ? actor.id
+            : canManage(actor.role)
+            ? actor.id
+            : absence.decidedById,
       },
       select: selectAbsence,
     });

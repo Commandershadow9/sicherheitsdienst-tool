@@ -1,4 +1,4 @@
-# Mitarbeiterprofil – Erweiterungen (Stand 2025-09-27)
+# Mitarbeiterprofil – Erweiterungen (Stand 2025-10-02)
 
 ## Zielsetzung
 Das Mitarbeiterprofil soll alle relevanten Stammdaten, Qualifikationen und Dokumente bündeln, um operative Entscheidungen (Einsatzplanung, Compliance) zu unterstützen und gesetzliche Nachweispflichten zu erfüllen.
@@ -9,7 +9,7 @@ Das Mitarbeiterprofil soll alle relevanten Stammdaten, Qualifikationen und Dokum
 | Stammdaten | Vorname, Nachname, Geburtsdatum, Anschrift (Straße, PLZ, Ort, Land), Telefonnummer, E-Mail | Adresse wird für Einsatzort-Planung und Behördenmeldungen benötigt. |
 | Beschäftigungsdaten | Eintrittsdatum, Vertragsart (Vollzeit/Teilzeit/Minijob), Arbeitszeitmodell, Personalnummer | Grundlage für Arbeitszeit- und Urlaubsberechnung. |
 | Qualifikationen | Liste mit Typ, Beschreibung, Gültigkeitszeitraum (z. B. Sachkunde §34a, Erste Hilfe) | Sollte versioniert werden, um Verlängerungen zu verfolgen. |
-| Nachweise/Dokumente | Hochladbare Dateien (PDF/JPG) wie Waffenschein, Führungszeugnis, Abmahnungen, Zertifikate | Dokumentmetadaten: Typ, Ausstellungsdatum, Ablaufdatum, wer hochgeladen hat. |
+| Nachweise/Dokumente | Hochladbare Dateien (PDF/JPG) wie Waffenschein, Führungszeugnis, Abmahnungen, Zertifikate | Dokumentmetadaten: Typ, Ausstellungs-/Ablaufdatum, Hochlader. Pfad/MIME/Größe werden serverseitig ergänzt. |
 | Sicherheit | Waffensachkunde (ja/nein), Dienstwaffe (ja/nein), Führerschein-Klassen | Wird für Einsatzmatching benötigt. |
 | Notizen | interne Hinweise (sichtbar für ADMIN/MANAGER) | DSGVO-konforme Aufbewahrungsfristen beachten. |
 
@@ -50,9 +50,9 @@ model EmployeeDocument {
   profileId   String
   category    DocumentCategory
   filename    String
-  mimeType    String
-  size        Int
-  storedAt    String   // z. B. S3-Key oder lokaler Pfad
+  mimeType    String   @default("application/pdf")
+  size        Int      @default(0)
+  storedAt    String   @default("internal:auto")
   issuedAt    DateTime?
   expiresAt   DateTime?
   uploadedBy  String
@@ -91,8 +91,11 @@ enum DocumentCategory {
 - Verschlüsselung: Optional serverseitige Verschlüsselung, TLS für Transfers obligatorisch.
 
 ## UI/UX
-- Profilseite mit Tabs: Stammdaten, Qualifikationen, Dokumente, Notizen.
-- Upload-Dialog mit Kategorie-Auswahl und Ablaufdatum.
+- Startansicht zeigt Karten für Kontakt, Beschäftigung, Arbeitszeiten sowie Top-Qualifikationen und zuletzt hochgeladene Dokumente.
+- Schnellzugriffe auf Stammdaten-/Qualifikations-/Dokumenten-Tabs sowie Abwesenheitsdialog.
+- Abwesenheiten-Tab direkt im Profil (Gefiltert auf Nutzer) inkl. Status-Badges, Konflikt-Hinweis und Link zur globalen Übersicht.
+- Upload-Formular fragt nur Kategorie, Dateiname, Ausstellungs- und Ablaufdatum ab; technische Metadaten werden automatisch vom Backend gesetzt.
+- Qualifikationsverwaltung mit Vorlagen für Sicherheitsdienst-Standards (z. B. Sachkunde §34a, Brandschutzhelfer, Waffensachkunde).
 - Badge/Highlight für ablaufende Qualifikationen oder Dokumente.
 - Export (PDF/ZIP) für Mitarbeiterakte (Optional Phase 2).
 
@@ -100,4 +103,3 @@ enum DocumentCategory {
 - Aufbewahrungsfristen: automatische Löschung abgelaufener Dokumente?
 - Integration mit HR-Systemen (Import/Export).
 - Benachrichtigungen bei ablaufenden Qualifikationen/Dokumenten (E-Mail/Push).
-

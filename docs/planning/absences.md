@@ -1,4 +1,4 @@
-# Abwesenheits- & Urlaubsverwaltung – Entwurf (Stand 2025-09-27)
+# Abwesenheits- & Urlaubsverwaltung – Entwurf (Stand 2025-10-02)
 
 ## Zielbild
 Mitarbeitende sollen Abwesenheiten (Urlaub, Krankheit, Sonderurlaub) beantragen können. Disponenten/Manager genehmigen und behalten einen Überblick über Auslastung und Konflikte mit geplanten Schichten. Das Modul bildet die Grundlage für gesetzliche Vorgaben (Arbeitszeitgesetz, Dokumentationspflichten).
@@ -9,6 +9,7 @@ Mitarbeitende sollen Abwesenheiten (Urlaub, Krankheit, Sonderurlaub) beantragen 
 - Zeitraum: ganztägig (Start-/Enddatum), optional Uhrzeiten für halbe Tage.
 - Kommentar-Felder: Antragsteller (Begründung), Entscheidung (Hinweis).
 - Konflikthinweis: Backend liefert bei Überschneidung mit bestehenden Schichten Warnungen zurück.
+- Krankmeldungen („SICKNESS“) werden automatisch genehmigt, Manager/Admin können weiterhin rückwirkend eingreifen.
 
 ## Datenmodell (Skizze)
 ```prisma
@@ -56,7 +57,7 @@ enum AbsenceStatus {
 | `decisionNote` | optional | Kommentar des Entscheiders |
 
 ## API-Entwurf
-- `POST /api/absences` – Antrag erstellen (RBAC: Mitarbeitende dürfen nur für sich, Admin/Manager für alle).
+- `POST /api/absences` – Antrag erstellen (RBAC: Mitarbeitende dürfen nur für sich, Admin/Manager für alle). Krankmeldungen werden serverseitig direkt auf `APPROVED` gesetzt und mit Standard-Decision-Note versehen.
 - `GET /api/absences` – Liste mit Filtern (`userId`, `status`, `type`, `from`, `to`).
 - `GET /api/absences/:id` – Detailansicht inkl. Audit-Historie.
 - `PUT /api/absences/:id/approve` – Genehmigung (erfordert Rolle MANAGER/ADMIN).
@@ -86,7 +87,8 @@ Antwortstruktur (Liste):
 ## UI-Skizze (Frontend)
 - Navigationseintrag „Abwesenheiten“ (ADMIN/MANAGER sehen alle, EMPLOYEE nur eigene).
 - Tabelle: Filter nach Nutzer, Zeitraum, Status, Typ.
-- Button „Antrag stellen“ → Modal/Formular (Type, Zeitraum, Kommentar).
+- Button „Antrag stellen“ → Modal/Formular (Type, Zeitraum, Kommentar) mit Quick-Actions für „Krank (heute)“ und „Urlaub (5 Tage)“.
+- Mitarbeiterprofil bietet ebenfalls einen „Abwesenheit melden“-Dialog; Anträge von dort filtern die globale Liste automatisch auf den gewählten Nutzer.
 - Detail-Sidebar: Entscheidungshistorie, Buttons „Genehmigen/Ablehnen“ (RBAC).
 - Kalender-Overlay (optional v2): Visualisiert Schicht-/Abwesenheitsüberschneidungen.
 
@@ -107,4 +109,3 @@ Antwortstruktur (Liste):
 - Benachrichtigungen (E-Mail/Push) bei Genehmigung/Ablehnung.
 - Synchronisation mit externen Kalendern (ICS-Export) – optional.
 - Auswertungen für Lohnbuchhaltung (Abwesenheitstage/Resturlaub) – später.
-

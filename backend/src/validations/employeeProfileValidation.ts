@@ -40,9 +40,9 @@ export const createDocumentSchema = z.object({
   body: z.object({
     category: z.nativeEnum(DocumentCategory),
     filename: z.string().min(1).max(255),
-    mimeType: z.string().min(1).max(120),
-    size: z.number().int().positive(),
-    storedAt: z.string().min(1).max(500),
+    mimeType: z.string().min(1).max(120).optional(),
+    size: z.number().int().min(0).optional(),
+    storedAt: z.string().min(1).max(500).optional(),
     issuedAt: dateSchema,
     expiresAt: dateSchema,
   }),

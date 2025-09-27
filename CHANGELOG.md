@@ -19,6 +19,9 @@ All notable changes to this project will be documented in this file.
 - Alle Backend-Tests laufen grün (73 Suites, 201 Tests). CI-Fehlerursachen behoben (Socket/Headers/Guards).
 
 ### Added
+- frontend/users: Profilseite mit Kachel-Übersicht, Schnellzugriffen und integriertem Abwesenheits-Dialog (Urlaub/Krankheit).
+- frontend/users: Vorlagen für Sicherheitsdienst-Qualifikationen sowie vereinfachte Dokumenterfassung mit automatischen Metadaten.
+- docs: Planung (`docs/planning/employee-profile.md`, `docs/planning/absences.md`) um neue UI-Flows, Quick-Actions und Auto-Genehmigungen ergänzt.
 - backend/Frontend: Abwesenheitsverwaltung inkl. Genehmigungs-Endpoints (`/api/absences`) und UI-Seite `/absences` mit Konfliktwarnungen, Export und Statusaktionen.
 - Mitarbeiterprofil: Erweiterte Stammdaten (Adresse, Arbeitszeiten, Sollstunden, Stundensatz) sowie Qualifikationen & Dokumente mit Audit-Logging (`/api/users/:id/profile`, `/users/:id/profile`).
 - Zeitübersicht im Profil (letzte 7/30 Tage, YTD) für Abrechnung/Arbeitszeitgesetz; Anzeige bevorstehender genehmigter Abwesenheiten.
@@ -44,6 +47,8 @@ All notable changes to this project will be documented in this file.
 - repo: commitlint (Conventional Commits) + PR‑Template Checkliste.
 
 ### Changed
+- backend/absences: Krankmeldungen (`SICKNESS`) werden bei Erstellung automatisch genehmigt und protokolliert.
+- backend/profile: Dokumentanlage ergänzt fehlende MIME/Size/Pfad-Felder defensiv und erlaubt optionale Wertübergabe in der Validierung.
 - security: Audit-Log-Service wirft bei fehlendem Prisma-Modell keine Fehler mehr, sondern verwirft Events mit Warnung und liefert Laufzeitstatus via `getAuditLogState`.
 - observability: `/api/stats` ergänzt ein separates `audit`-Objekt mit Queue-Größe, Flush-Flags und Intervallen; bestehende `auditTrail.queue`-Daten spiegeln denselben Zustand wider.
 - shifts: `/api/shifts/:id/assign` erfordert nun Rollen `ADMIN`/`DISPATCHER` und trägt Rate-Limit-Header für wiederholte Aufrufe.

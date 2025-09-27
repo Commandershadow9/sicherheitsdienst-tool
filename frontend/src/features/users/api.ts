@@ -107,9 +107,9 @@ export async function addDocument(
   payload: {
     category: DocumentCategory
     filename: string
-    mimeType: string
-    size: number
-    storedAt: string
+    mimeType?: string
+    size?: number
+    storedAt?: string
     issuedAt?: string
     expiresAt?: string
   },
