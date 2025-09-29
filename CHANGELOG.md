@@ -4,7 +4,8 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
-- Noch nichts – neue Änderungen bitte hier ergänzen.
+- Fix: Absence-Status-Updates setzen `decidedById` nur bei echten Entscheidungen und lassen den API-Start im Dev-Compose wieder fehlerfrei durchlaufen (`absenceController`).
+- Docs: Troubleshooting um Hinweis für fehlende `SEED_ON_START`-Variable ergänzt.
 
 ## v1.3.0 (2025-10-03) – Abwesenheiten & Profilpflege
 

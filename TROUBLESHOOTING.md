@@ -20,7 +20,7 @@ Kurz und lösungsorientiert.
 
 5) API startet neu oder bricht sofort ab
 - Ursache: `npx prisma migrate deploy` oder der optionale Seed schlägt fehl; der Startbefehl bricht mit Fehlercode ab.
-- Lösung: `docker compose logs -f api` prüfen, Migration/Seed korrigieren. Falls Seeds nicht benötigt werden: `SEED_ON_START=false` setzen und Stack neu starten.
+- Lösung: `docker compose logs -f api` prüfen, Migration/Seed korrigieren. Falls Seeds nicht benötigt werden: `SEED_ON_START=false` setzen und Stack neu starten. Hinweis: Wenn Compose beim Start "`SEED_ON_START` variable is not set" meldet, `SEED_ON_START=true` im Root-`.env` ergänzen.
 
 6) Frontend lädt endlos / API nicht erreichbar
 - Ursache: `VITE_API_BASE_URL` zeigt auf `localhost`, wenn Compose ohne `PUBLIC_HOST` gestartet wurde.

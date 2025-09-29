@@ -14,6 +14,7 @@ const selectAbsence = {
   endsAt: true,
   reason: true,
   decisionNote: true,
+  decidedById: true,
   createdAt: true,
   updatedAt: true,
   user: {
@@ -269,17 +270,16 @@ async function updateAbsenceStatus(
       throw createError(403, 'Genehmigte Abwesenheiten dürfen nur von Manager/Admin storniert werden.');
     }
 
+    const isManager = canManage(actor.role);
+    const decidedByIdUpdate =
+      isManager || (status === AbsenceStatus.CANCELLED && !isManager) ? actor.id : undefined;
+
     const updated = await prisma.absence.update({
       where: { id },
       data: {
         status,
         decisionNote: decisionNote?.trim() || null,
-        decidedById:
-          status === AbsenceStatus.CANCELLED && !canManage(actor.role)
-            ? actor.id
-            : canManage(actor.role)
-            ? actor.id
-            : absence.decidedById,
+        ...(decidedByIdUpdate !== undefined ? { decidedById: decidedByIdUpdate } : {}),
       },
       select: selectAbsence,
     });
