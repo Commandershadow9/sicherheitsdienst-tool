@@ -84,17 +84,44 @@ jobs:
               | "- **" + (.id[0:7]) + "**: " + ((.message // "") | gsub("\n"; " ")) + "  — _" + ((.author.username // .author.name) // "unknown") + "_"
             ')"
             [ -z "$COMMITS_RAW" ] && COMMITS_RAW="- (keine Commits übermittelt)"
-            COMMITS_ESC="$(printf "%s" "$COMMITS_RAW" | esc_json)"
+
+            # Wenn Commit-Message zu lang (>1800 Zeichen), aufteilen
+            if [ "${#COMMITS_RAW}" -gt 1800 ]; then
+              # Erste 1800 Zeichen nehmen und bei letztem Zeilenumbruch abschneiden
+              COMMITS_PART1="$(echo "$COMMITS_RAW" | head -c 1800 | sed 's/\(.*\)-.*/\1/')"
+              COMMITS_PART2="$(echo "$COMMITS_RAW" | tail -c +1801)"
+
+              # Falls Teil 2 auch zu lang, nochmal kürzen
+              if [ "${#COMMITS_PART2}" -gt 1800 ]; then
+                COMMITS_PART2="${COMMITS_PART2:0:1800}...\n\n*Weitere Details: ${compare_url}*"
+              fi
+
+              # Zwei separate Embeds erstellen
+              MULTI_EMBED=true
+            else
+              COMMITS_PART1="$COMMITS_RAW"
+              COMMITS_PART2=""
+              MULTI_EMBED=false
+            fi
 
             TITLE="📦 Push auf ${repo} — ${ref}"
-            DESC="**Akteur:** ${actor}\n**Branch:** ${ref}\n**SHA:** \`${short_sha}\`\n**Vergleich:** ${compare_url}"
+            DESC="**Akteur:** ${actor} | **Branch:** ${ref} | **SHA:** \`${short_sha}\`"
             COLOR=5814783
             ICON="https://raw.githubusercontent.com/primer/octicons/main/icons/upload-24.svg"
             embed_url="$compare_url"
-            FIELDS=$(jq -n \
-              --arg commits "$COMMITS_RAW" \
-              --arg links "$(printf "• Repo: %s\n• Actions: %s" "$repo_url" "$run_url")" \
-              '[{"name":"Commits (max 10)","value":$commits},{"name":"Links","value":$links}]')
+
+            # Nur noch Compare-Link (unnötige Links entfernt)
+            if [ "$MULTI_EMBED" = "true" ]; then
+              # Erster Embed (Teil 1)
+              FIELDS=$(jq -n \
+                --arg commits "$COMMITS_PART1" \
+                '[{"name":"Commit Details (Teil 1)","value":$commits}]')
+            else
+              # Single Embed
+              FIELDS=$(jq -n \
+                --arg commits "$COMMITS_PART1" \
+                '[{"name":"Commit Details","value":$commits}]')
+            fi
           elif [ "$event" = "pull_request" ]; then
             pr_title='${{ github.event.pull_request.title }}'
             pr_num='${{ github.event.pull_request.number }}'
@@ -183,6 +210,7 @@ jobs:
               '[{"name":"Release Notes / Changelog","value":$changes},{"name":"Links","value":$links}]')
           fi
 
+          # Erstes Payload erstellen
           jq -n \
             --arg username "GitHub · ${repo}" \
             --arg avatar_url "${avatar}" \
@@ -200,9 +228,38 @@ jobs:
             '{username:$username, avatar_url:$avatar_url, embeds:[{title:$title, url:$url, description:$description, color:($color|tonumber), timestamp:$ts, thumbnail:{url:$icon}, author:{name:$author_name, url:$author_url, icon_url:$author_icon}, fields:$fields, footer:{text:("Automatische Benachrichtigung • " + $date)}}]}' \
             > payload.json
 
+          # Zweites Payload wenn MULTI_EMBED
+          if [ "$event" = "push" ] && [ "${MULTI_EMBED:-false}" = "true" ] && [ -n "${COMMITS_PART2:-}" ]; then
+            FIELDS2=$(jq -n --arg commits "$COMMITS_PART2" '[{"name":"Commit Details (Teil 2)","value":$commits}]')
+            jq -n \
+              --arg username "GitHub · ${repo}" \
+              --arg avatar_url "${avatar}" \
+              --arg title "📦 Push auf ${repo} — ${ref} (Fortsetzung)" \
+              --arg description "**Weitere Commit-Details**" \
+              --arg ts "${ts}" \
+              --arg icon "${ICON}" \
+              --arg date "$(date -u +%Y-%m-%d)" \
+              --argjson fields "$FIELDS2" \
+              --arg color "${COLOR}" \
+              --arg url "$embed_url" \
+              --arg author_name "$actor" \
+              --arg author_url "https://github.com/${actor}" \
+              --arg author_icon "$avatar" \
+              '{username:$username, avatar_url:$avatar_url, embeds:[{title:$title, url:$url, description:$description, color:($color|tonumber), timestamp:$ts, thumbnail:{url:$icon}, author:{name:$author_name, url:$author_url, icon_url:$author_icon}, fields:$fields, footer:{text:("Automatische Benachrichtigung • " + $date)}}]}' \
+              > payload2.json
+            echo "has_payload2=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_payload2=false" >> "$GITHUB_OUTPUT"
+          fi
+
           # als Ausgabe (base64) für den nächsten Step
           base64 -w0 < payload.json > payload.b64 || base64 < payload.json > payload.b64
           echo "payload=$(cat payload.b64)" >> "$GITHUB_OUTPUT"
+
+          if [ -f payload2.json ]; then
+            base64 -w0 < payload2.json > payload2.b64 || base64 < payload2.json > payload2.b64
+            echo "payload2=$(cat payload2.b64)" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Send to Discord (with retry)
         continue-on-error: true
@@ -236,4 +293,28 @@ jobs:
           # finaler Check
           if [ "$http_code" -lt 200 ] || [ "$http_code" -ge 300 ]; then
             echo "::warning::Discord-Request fehlgeschlagen (HTTP $http_code); Workflow wird nicht blockiert."
+          fi
+
+          # Zweiter Post wenn vorhanden
+          if [ "${{ steps.build.outputs.has_payload2 }}" = "true" ]; then
+            echo ""
+            echo "Sende zweiten Post (Fortsetzung)..."
+            sleep 2  # Kurze Pause zwischen Posts
+
+            echo "${{ steps.build.outputs.payload2 }}" | base64 -d > payload2.json || echo "${{ steps.build.outputs.payload2 }}" | base64 -D > payload2.json
+
+            for i in 1 2 3 4 5; do
+              http_code2=$(curl -sS -H "Content-Type: application/json" -d @payload2.json "$URL" -o resp2.txt -w "%{http_code}" || echo "000")
+              echo "Discord HTTP (Teil 2): $http_code2 (try $i)"
+              if [ "$http_code2" -ge 200 ] && [ "$http_code2" -lt 300 ]; then
+                echo "OK"; break
+              fi
+              echo "Antwort:"
+              cat resp2.txt || true
+              sleep $((i*2))
+            done
+
+            if [ "$http_code2" -lt 200 ] || [ "$http_code2" -ge 300 ]; then
+              echo "::warning::Discord-Request Teil 2 fehlgeschlagen (HTTP $http_code2); Workflow wird nicht blockiert."
+            fi
           fi
