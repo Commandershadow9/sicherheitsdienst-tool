@@ -13,7 +13,8 @@ const server = app.listen(PORT, () => {
   logger.info('');
   logger.info('📍 Available Endpoints:');
   logger.info(`   ├─ Welcome:        http://localhost:${PORT}/`);
-  logger.info(`   ├─ Health Check:   http://localhost:${PORT}/api/health`);
+  logger.info(`   ├─ Health:         http://localhost:${PORT}/health (Liveness)`);
+  logger.info(`   ├─ Readiness:      http://localhost:${PORT}/readyz (DB + optional SMTP)`);
   logger.info(`   ├─ System Stats:   http://localhost:${PORT}/api/stats`);
   logger.info(`   ├─ Auth API:       http://localhost:${PORT}/api/auth`);
   logger.info(`   ├─ Audit Logs:     http://localhost:${PORT}/api/audit-logs`);

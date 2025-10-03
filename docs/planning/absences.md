@@ -111,3 +111,12 @@ Antwortstruktur (Liste):
 - Benachrichtigungen (E-Mail/Push) bei Genehmigung/Ablehnung.
 - Synchronisation mit externen Kalendern (ICS-Export) – optional.
 - Auswertungen für Lohnbuchhaltung (Abwesenheitstage/Resturlaub) – später.
+- Workflow-UI für Entscheider: Dashboard mit Filter „zu prüfen“, Sammelaktionen & Konfliktindikatoren.
+- Self-Service-Leitfaden im Profil: Schritt-für-Schritt (Antrag stellen → Status verfolgen → Rückmeldungen einsehen).
+
+## Nächste Schritte (Planung)
+1. **Antragsstrecke Mitarbeitende**: Formular in Profil & globaler Liste vereinheitlichen, Pflichtfelder klar ausweisen, Upload optionaler Nachweise (Attest) ermöglichen.
+2. **Entscheider-Ansicht**: Manager-Board mit Reitern „Neu“, „In Prüfung“, „Erledigt“, inklusive Schnellentscheid (Approve/Reject) und Konfliktlisten.
+3. **Statuskommunikation**: Toast/E-Mail-Benachrichtigung sowie Timeline im Antrag (erstellt → genehmigt/abgelehnt → optionaler Kommentar).
+4. **Kalender-/Planungsintegration**: Überschneidungen in Einsatzplanung sichtbar machen (Shifts farbig markieren, Export als ICS vorbereiten).
+5. **Reporting**: Monatsreport je Mitarbeiter (Urlaubstage, Kranktage) und Export für Personalabteilung.

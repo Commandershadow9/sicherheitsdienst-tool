@@ -4,8 +4,78 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
-- Fix: Absence-Status-Updates setzen `decidedById` nur bei echten Entscheidungen und lassen den API-Start im Dev-Compose wieder fehlerfrei durchlaufen (`absenceController`).
-- Docs: Troubleshooting um Hinweis für fehlende `SEED_ON_START`-Variable ergänzt.
+### Security
+- **DSGVO-Compliance**: Umfassende Sicherheitsmaßnahmen für hochsensible Gesundheitsdaten implementiert
+  - **Verschlüsselung at rest**: LUKS-Verschlüsselung für `/srv/documents` Dokumentenspeicher
+  - **Verschlüsselte Backups**: BorgBackup mit AES-256 und Passphrase-Schutz
+  - **Virenschutz**: ClamAV scannt täglich um 02:30 Uhr, Quarantäne bei Malware-Fund
+  - **Firewall**: UFW aktiv mit Whitelist (nur SSH, API, Frontend, HTTPS-Ports)
+  - **Container-Härtung**: Non-root User (UID 1001:GID 109) mit minimalen Berechtigungen
+  - **Zugriffskontrolle**: RBAC für Dokumente (nur MANAGER Upload/Delete, DISPATCHER Read-Only)
+  - **Audit-Logging**: Alle Zugriffe werden protokolliert
+- **Upload-Limit**: Erhöht auf 50MB für große Dokumente (Base64-Encoding berücksichtigt)
+
+### Added
+- **DSGVO-Dokumentation**: Vollständige Compliance-Dokumentation erstellt (`docs/ops/dsgvo-compliance.md`)
+  - Technische und Organisatorische Maßnahmen (TOM)
+  - Verarbeitungsverzeichnis (Art. 30 DSGVO)
+  - Löschkonzept
+  - Incident Response Plan
+  - Betroffenenrechte
+  - AVV-Anforderungen dokumentiert
+- **HTTPS-Anleitung**: Detaillierte Let's Encrypt Setup-Anleitung für spätere Domain (`docs/ops/setup-https-letsencrypt.md`)
+- **Backup-System**:
+  - Borg-Backup Repository mit verschlüsselten Archiven
+  - Systemd Timer (täglich 03:00 Uhr)
+  - Retention-Policy: 7 täglich, 4 wöchentlich, 12 monatlich
+  - Restore-Funktion getestet und funktionsfähig
+- **Antivirus**:
+  - ClamAV-Daemon läuft kontinuierlich
+  - Systemd Timer für tägliche Scans (02:30 Uhr)
+  - Automatische Quarantäne in `/var/quarantine`
+  - Freshclam hält Virendatenbank aktuell
+- **Nginx**: Reverse Proxy vorbereitet für HTTPS (temporär deaktiviert bis Domain vorhanden)
+- Dokumentenablage: Uploads (PDF/Bild bis 50MB) werden serverseitig dekodiert, virenschutzbereit gespeichert
+- Backend: `/health` als Alias für `/healthz` hinzugefügt (Liveness-Check ohne DB-Abhängigkeit)
+- Ops: Firewall-Konfigurationsskript (`docs/ops/configure-firewall.sh`)
+- Ops: Backup-Setup-Skript (`docs/ops/backup.sh`)
+- Ops: Dokumentenspeicher-Setup-Anleitung (`docs/ops/setup-document-storage.sh`)
+
+### Changed
+- **Frontend API**: Port-Mapping korrigiert (5173/4173 → 3001 statt 3000)
+- **CORS**: Korrekte Origin-Konfiguration für externe IP-Adresse
+- **Docker Compose**: Backend-Volume entfernt (verhinderte Verwendung kompilierter Änderungen)
+- **Dockerfile**:
+  - Logs-Verzeichnis wird mit korrekten Permissions erstellt
+  - Alle Dateien gehören `appuser:svc-docstore`
+- **ROADMAP**: DSGVO-kritische Aufgaben als hohe Priorität hinzugefügt
+- Backend: Bevorstehende Abwesenheiten berücksichtigen jetzt auch laufende genehmigte Abwesenheiten
+- Backend: Dokumentpfade zeigen nur noch interne Referenzen; Dateien landen verschlüsslungsfähig im lokalen Storage
+- Frontend: Datepicker-Hover, „Kein Ablauf"-Shortcut und aktualisierte Upload-Hinweise
+- Docs: Abwesenheits- und Profil-Planung inkl. Storage-Konzept dokumentiert
+
+### Fixed
+- Frontend: Profilansicht rendert wieder zuverlässig; Hook-Reihenfolge wurde stabilisiert
+- Frontend: Datepicker-Icon bleibt im Dark-Mode sichtbar
+- Docker: Healthcheck funktioniert nun zuverlässig – `wget` ist im finalen Image verfügbar
+- Frontend: Login-Problem behoben – CORS und ENV-Variablen korrekt konfiguriert
+- Backend: Container-Berechtigungen für Logs-Verzeichnis korrigiert
+- Backend: Upload-Limit-Fehler behoben (50MB express.json/urlencoded limit)
+
+### Operations
+- **Systemd Services**:
+  - `borg-backup.service` & `borg-backup.timer` - Automatische Backups
+  - `clamscan.service` & `clamscan.timer` - Automatische Virenscans
+- **Backup-Test**: Erfolgreich durchgeführt - Restore nach /tmp/restore-test verifiziert
+- **Hosting-Provider**: IP-Projects GmbH & Co. KG identifiziert (AVV erforderlich)
+
+## v1.3.1 (2025-10-04) – Hotfix Absence Decisions
+
+### Fixed
+- Absence-Status-Updates setzen `decidedById` nur bei echten Entscheidungen und lassen den API-Start im Dev-Compose wieder fehlerfrei durchlaufen (`absenceController`).
+
+### Docs
+- Troubleshooting um Hinweis für fehlende `SEED_ON_START`-Variable ergänzt.
 
 ## v1.3.0 (2025-10-03) – Abwesenheiten & Profilpflege
 

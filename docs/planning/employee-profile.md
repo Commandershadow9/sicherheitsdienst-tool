@@ -83,14 +83,16 @@ enum DocumentCategory {
 - `GET /api/users/:id/profile` – Detail inkl. Qualifikationen & Dokumente.
 - `PUT /api/users/:id/profile` – Stammdaten aktualisieren (RBAC: ADMIN/MANAGER; Mitarbeitende können ausgewählte Felder wie Adresse/Telefon bearbeiten).
 - `POST /api/users/:id/profile/qualifications` – Qualifikation hinzufügen.
-- `POST /api/users/:id/profile/documents` – Dokument-Upload (Multipart, Metadaten).
+- `POST /api/users/:id/profile/documents` – Dokument-Upload (derzeit Base64-Envelope → Speicherung im geschützten Dateisystem).
+- `GET /api/users/:id/profile/documents/:documentId/download` – Geschützter Download mit RBAC/Signaturen.
 - `DELETE ...` – Entfernen einzelner Qualifikationen/Dokumente (RBAC: ADMIN/MANAGER).
 
 ## Dateispeicher & Sicherheit
-- Speicherung bevorzugt in S3-kompatiblem Storage (Versionierung optional).
+- Aktueller Stand (Oktober 2025): Uploads werden serverseitig dekodiert, in `DOCUMENT_STORAGE_ROOT` (standardmäßig `storage/documents`) abgelegt und über eine geschützte Download-Route mit kurzlebigen Sessions ausgeliefert.
+- Zielbild: Ablage auf verschlüsseltem Volume oder S3-kompatiblem Storage (Versionierung optional), Anbindung über private Netzpfade/VPN.
 - Zugriffskontrolle: Dokumente nur für autorisierte Rollen (ADMIN/MANAGER) und betroffene Mitarbeitende.
-- Audit-Events: Upload, Download, Löschung (`EMPLOYEE.DOCUMENT.UPLOAD`, `EMPLOYEE.DOCUMENT.DELETE`).
-- Verschlüsselung: Optional serverseitige Verschlüsselung, TLS für Transfers obligatorisch.
+- Audit-Events: Upload, Download, Löschung (`EMPLOYEE.DOCUMENT.ADD/DELETE/DOWNLOAD`).
+- Verschlüsselung: Festplattenverschlüsselung (z. B. LUKS) oder serverseitige Verschlüsselung im Objekt-Speicher, TLS für Transfers obligatorisch.
 
 ## UI/UX
 - Startansicht zeigt Karten für Kontakt, Beschäftigung, Arbeitszeiten sowie Top-Qualifikationen und zuletzt hochgeladene Dokumente.

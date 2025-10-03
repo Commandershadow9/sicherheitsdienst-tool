@@ -13,6 +13,17 @@ describe('healthz and readyz', () => {
     expect(res.body).toEqual({ status: 'ok' });
   });
 
+  it('GET /health (alias) returns {status:"ok"}', async () => {
+    let app: any;
+    jest.isolateModules(() => {
+      jest.doMock('@prisma/client', () => ({ PrismaClient: jest.fn(() => ({ $queryRaw: jest.fn(async () => 1) })) }));
+      app = require('../app').default;
+    });
+    const res = await request(app).get('/health');
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ status: 'ok' });
+  });
+
   it('GET /readyz returns deps ok (db ok, smtp skip)', async () => {
     let app: any;
     jest.isolateModules(() => {

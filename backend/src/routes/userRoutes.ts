@@ -94,6 +94,12 @@ router.post(
   validate(createDocumentSchema),
   asyncHandler(employeeProfileController.addDocument),
 );
+router.get(
+  '/:id/profile/documents/:documentId/download',
+  authenticate,
+  authorizeSelfOr('ADMIN', 'MANAGER', 'DISPATCHER'),
+  asyncHandler(employeeProfileController.downloadDocument),
+);
 router.delete(
   '/:id/profile/documents/:documentId',
   authenticate,

@@ -138,5 +138,24 @@ dist
 # Playwright artifacts
 **/test-results/
 **/playwright-report/
-\n+# Local backup artifacts
+
+# Document storage (runtime)
+storage/
+
+# Local backup artifacts
 .backups/
+
+# Docker build cache
+[base
+[build
+[deps
+[internal]
+[runner
+exporting
+naming
+reading
+resolving
+transferring
+writing
+CACHED
+=

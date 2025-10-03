@@ -11,13 +11,21 @@ Aktualisierung: Stand 2025‑10‑03
 Hinweis: Dieser Abschnitt fasst die tagesaktuellen Ziele aus der ehemaligen Datei `docs/ROADMAP.md` zusammen. Quelle bleibt `docs/KONZEPT.pdf` (Roadmap/DoD maßgeblich).
 
 ### Aktuelle Schwerpunkte
-- Abwesenheiten Phase 2: Anhänge/Atteste, Kalender-Overlay und Benachrichtigungen nacharbeiten (`docs/planning/absences.md`).
-- Mitarbeiterprofil Phase 2: Dokument-Upload (Storage/S3), Validierung & HR-Exports, Anbindung an ICS/Outlook vorbereiten (`docs/planning/employee-profile.md`).
-- Release v1.3.0 vorbereiten: CHANGELOG/Docs finalisieren, Tag & Docker-Images, Release-Notes strukturieren.
-- Monitoring & Alerts: Absence-/Login-Metriken in Grafana panels aufnehmen, Thresholds für Refresh-Fehler & Queue-Dauer definieren.
-- DX & Tests: Playwright-Szenarien für Absence-Flow/Profile ergänzen, Auth-Refresh Mocking vereinheitlichen.
+- **Abwesenheiten Phase 2**  
+  - Anhänge/Atteste & Kalender-Overlay finalisieren (`docs/planning/absences.md`).  
+  - Benachrichtigungen für Genehmigung/Ablehnung (E-Mail/Push) vorbereiten.
+- **Mitarbeiterprofil Phase 2**  
+  - Dokument-Upload via S3/MinIO samt RBAC/Audit erweitern (`docs/planning/employee-profile.md`).  
+  - Validierung, HR-Exports und ICS/Outlook-Anbindung abstimmen.
+- **Release v1.3.0 Übergabe**  
+  - CHANGELOG/Docs finalisieren, Tag und Docker-Images bereitstellen (`docs/releases/v1.3.0.md`).  
+  - Patch v1.3.1 (Absence-Fix + Troubleshooting) veröffentlichen.
+- **Monitoring & Alerts**  
+  - Absence-/Login-Metriken in Grafana Panels heben, Thresholds für Refresh-Fehler & Queue-Dauer festziehen.
+- **DX & Tests**  
+  - Playwright-Szenarien (Absence-Flow/Profile) sowie vereinheitlichtes Auth-Refresh-Mocking ergänzen.
 
-### Ergebnisse aktuell (Auszug)
+- Benutzerliste: Profil-Aufruf aus der Tabelle funktioniert wieder (Frontend `UsersList`) und zeigt Kontextkarten für Planung.
 - Abwesenheiten: Backend-CRUD, RBAC (Self/Manager), Konfliktwarnungen, Audit-Events und Frontend-Liste inkl. Filter/Exports stehen.
 - Profilansicht: Zeitkennzahlen (7/30 Tage, YTD), Qualifikationen & Dokumente sortiert, Abwesenheits-Preview und Self-Service für Kontaktfelder ausgeliefert.
 - Auth-Flow: Login liefert Refresh-Token, Interceptor persistiert Tokens und behandelt Netzwerkausfälle sowie 401/429 ohne Hard-Reload.
@@ -50,7 +58,35 @@ Hinweis: Dieser Abschnitt fasst die tagesaktuellen Ziele aus der ehemaligen Date
 - OpenAPI: interne Endpunkte als `x-internal: true`, operationId‑Konvention vereinheitlicht, Beispiele korrigiert.
 - CI: Health‑Smoke‑Job (baut, startet, prüft `/healthz`/`/readyz`).
 
+### Einsatzplanung & Staffing – Überblick
+
+| Fokus | Ziel | Status | Nächster Schritt |
+| --- | --- | --- | --- |
+| Abwesenheiten Phase 2 | Dokument-/Attest-Uploads & Kalender-Overlay | Offen | Speicher (S3/MinIO) evaluieren, UI-Flows skizzieren |
+| Benachrichtigungen | E-Mail/Push bei Entscheidungen | Offen | Templates + Tests ergänzen |
+| Mitarbeiterprofil | Dokument-Upload & HR-Exports | Offen | RBAC/Audit anpassen, Exportformate abstimmen |
+| Qualitätssicherung | Playwright + Vitest (Auth/Conflicts) | Geplant | Szenarien/Mocks konsolidieren |
+| API-Tests | Abwesenheits-Konflikte & Audit | Geplant | Contract/Integration vorbereiten |
+| Observability | Grafana-Panels & Alerts | Geplant | Schwellen definieren, Dashboards versionieren |
+
 ### Nächste Schritte (Kurz-Backlog)
+
+#### 🚨 DSGVO-Kritisch (Hohe Priorität)
+- [ ] **HTTPS mit Let's Encrypt einrichten** (benötigt Domain!)
+  - Status: Self-Signed Zertifikat vorbereitet, aber Browser blockiert → Temporär auf HTTP
+  - Wartet auf: Domain-Namen Registrierung
+  - Anleitung: `/docs/ops/setup-https-letsencrypt.md` (zu erstellen)
+  - Nginx-Config bereits vorhanden: `/etc/nginx/sites-available/sicherheitsdienst`
+  - Zertifikat: `/etc/nginx/ssl/selfsigned.{crt,key}` (365 Tage gültig)
+- [ ] **AVV mit Hosting-Provider abschließen**
+  - Provider: IP-Projects GmbH & Co. KG (hosterapi.de)
+  - Kontakt aufnehmen und AVV-Vertrag anfordern
+  - Siehe: `/docs/ops/dsgvo-compliance.md` Abschnitt 1
+- [ ] **Löschkonzept implementieren**
+  - Automatische Löschung inaktiver User nach 6 Monaten
+  - Cronjob/Scheduled Task einrichten
+
+#### Weitere Backlog-Items
 - [ ] Abwesenheiten Phase 2: Dokument-/Attest-Uploads & Kalender-Overlay (Konfliktvisualisierung) umsetzen.
 - [ ] Benachrichtigungen: E-Mail/Push für `approve/reject/cancel` triggern, Templates & Tests ergänzen.
 - [ ] Profil-Uploads: Storage (S3/MinIO) für Dokumente anbinden, RBAC & Audit erweitern.

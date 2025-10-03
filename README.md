@@ -56,11 +56,20 @@ Login‑Demo (Seeds)
 - Seed (manuell)
 - `docker compose -f docker-compose.dev.yml exec api sh -lc 'npm run -s seed'`
 
+## Release-Checkliste (Tag & Container)
+
+1. Lokal prüfen: `npm ci && npm run lint && npm run test`.
+2. Changelog und `docs/releases/vX.Y.Z.md` aktualisieren, Version erhöhen (z. B. `npm version patch --no-git-tag-version`).
+3. Commit schreiben (`chore: release vX.Y.Z`), Tag setzen (`git tag vX.Y.Z`) und Push inkl. Tags durchführen.
+4. Container bauen & veröffentlichen: `docker buildx build -t ghcr.io/<org>/sicherheitsdienst-tool:vX.Y.Z -t ghcr.io/<org>/sicherheitsdienst-tool:latest --push .`.
+5. Deployment aktualisieren (`docker compose pull && docker compose up -d`) und `/readyz` sowie `/system` nach dem Rollout kontrollieren.
+
 ## ENV & Konfiguration
 
 API (Backend)
 - `.env.example` im Ordner `backend/`
 - Minimal: `PORT`, `JWT_SECRET`, `REFRESH_SECRET`
+- Dokumente: `DOCUMENT_STORAGE_ROOT` (Pfad zum verschlüsselten Dokumentenspeicher; default `./storage/documents`)
 - Optional: `DATABASE_URL` (Dev-Compose setzt es bereits), `CORS_ORIGIN|CORS_ORIGINS`, `SEED_ON_START` (steuert automatischen Seed im Dev-Stack), Rate-Limits (siehe unten)
 - Rate-Limits
   - Global: `RATE_LIMIT_MAX`, `RATE_LIMIT_WINDOW_MS`
@@ -91,7 +100,8 @@ Monitoring (Compose, optional)
 - **Systemdashboard & Monitoring:** `/system` visualisiert `/api/stats` inkl. Queue-States, Audit- und Notification-Kennzahlen, Event-Loop-Auslastung sowie SLO-relevante Metriken – ideal für schnelle Checks ohne Grafana.
 
 ## Health & Stats
-- `GET /healthz` → 200 `{ status: "ok" }`
+- `GET /health` → 200 `{ status: "ok" }` (Liveness, alias für `/healthz`)
+- `GET /healthz` → 200 `{ status: "ok" }` (Liveness, ohne Dependency-Checks)
 - `GET /readyz` → prüft DB & optional SMTP (`READINESS_CHECK_SMTP=true`, Timeout `READINESS_SMTP_TIMEOUT_MS`); in Nicht-Prod liefert `deps.smtpMessage` Hinweise bei Fehlern.
 - `GET /api/stats` → Laufzeit-/Systemmetriken, Request-Zähler, Feature-Flags, Notification-Erfolg & Queue-Zustand, Build-Infos
   - `system.resourceUsage` liefert CPU-Zeiten, Page-Faults & Context-Switches; `system.eventLoop.delay/utilization` zeigt Event-Loop-Auslastung.

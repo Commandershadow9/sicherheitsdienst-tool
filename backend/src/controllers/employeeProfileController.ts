@@ -3,6 +3,10 @@ import createError from 'http-errors';
 import { EmploymentType, Prisma } from '@prisma/client';
 import prisma from '../utils/prisma';
 import { submitAuditEvent } from '../utils/audit';
+import logger from '../utils/logger';
+import { saveDocumentFile, removeDocumentFile, resolveDocumentPath } from '../utils/documentStorage';
+import fs from 'fs';
+import path from 'path';
 
 const profileSelect: Prisma.EmployeeProfileSelect = {
   id: true,
@@ -152,11 +156,15 @@ async function fetchProfilePayload(userId: string) {
   }
 
   const timeSummary = await buildTimeSummary(userId);
+  const now = new Date();
   const upcomingAbsences = await prisma.absence.findMany({
     where: {
       userId,
       status: 'APPROVED',
-      startsAt: { gte: new Date() },
+      OR: [
+        { startsAt: { gte: now } },
+        { endsAt: { gte: now } },
+      ],
     },
     orderBy: { startsAt: 'asc' },
     take: 5,
@@ -173,7 +181,10 @@ async function fetchProfilePayload(userId: string) {
     user,
     profile: profile ?? null,
     qualifications: profile?.qualifications ?? [],
-    documents: profile?.documents ?? [],
+    documents: (profile?.documents ?? []).map((doc) => ({
+      ...doc,
+      storedAt: doc.storedAt ? `protected://${doc.id}` : null,
+    })),
     timeSummary,
     upcomingAbsences,
   };
@@ -189,6 +200,20 @@ export const getProfile = async (req: Request, res: Response, next: NextFunction
     next(error);
   }
 };
+
+function decodeBase64Payload(value: string) {
+  const match = value.match(/^data:([^;]+);base64,(.+)$/);
+  if (!match) {
+    throw createError(400, 'Ungültiges Dokumentformat.');
+  }
+  const [, mimeType, base64Data] = match;
+  try {
+    const buffer = Buffer.from(base64Data, 'base64');
+    return { buffer, mimeType };
+  } catch {
+    throw createError(400, 'Dokument konnte nicht dekodiert werden.');
+  }
+}
 
 const SELF_ALLOWED_FIELDS = new Set(['address', 'phone']);
 
@@ -347,18 +372,31 @@ export const addDocument = async (req: Request, res: Response, next: NextFunctio
   try {
     const actor = req.user!;
     const targetUserId = resolveTargetUserId(req);
-    ensureSelfOrManager(req, targetUserId);
+    ensureSelfOrManager(req, targetUserId, ['MANAGER']);
     const profileId = await ensureProfile(targetUserId);
-    const { category, filename, mimeType, size, storedAt, issuedAt, expiresAt } = req.body as Record<string, any>;
+    const { category, filename, mimeType, storedAt, issuedAt, expiresAt } = req.body as Record<string, any>;
 
-    await prisma.employeeDocument.create({
+    if (!storedAt || typeof storedAt !== 'string') {
+      throw createError(400, 'Dokumentdaten fehlen.');
+    }
+
+    const decoded = decodeBase64Payload(storedAt);
+
+    const saveResult = await saveDocumentFile({
+      userId: targetUserId,
+      originalName: filename,
+      buffer: decoded.buffer,
+      mimeType: decoded.mimeType || mimeType,
+    });
+
+    const document = await prisma.employeeDocument.create({
       data: {
         profileId,
         category,
         filename,
-        mimeType: (mimeType as string) || 'application/pdf',
-        size: typeof size === 'number' && size >= 0 ? size : 0,
-        storedAt: (storedAt as string) || `internal:${Date.now()}:${filename}`,
+        mimeType: decoded.mimeType || mimeType || 'application/octet-stream',
+        size: saveResult.size,
+        storedAt: saveResult.storedAt,
         issuedAt: issuedAt ? new Date(issuedAt) : null,
         expiresAt: expiresAt ? new Date(expiresAt) : null,
         uploadedBy: actor.id,
@@ -370,7 +408,7 @@ export const addDocument = async (req: Request, res: Response, next: NextFunctio
       resourceType: 'EMPLOYEE_PROFILE',
       resourceId: targetUserId,
       outcome: 'SUCCESS',
-      data: { category, filename },
+      data: { category, filename, documentId: document.id },
     });
 
     const profileSnapshot = await fetchProfilePayload(targetUserId);
@@ -392,6 +430,7 @@ export const deleteDocument = async (req: Request, res: Response, next: NextFunc
         id: true,
         category: true,
         filename: true,
+        storedAt: true,
         profile: { select: { userId: true } },
       },
     });
@@ -400,6 +439,13 @@ export const deleteDocument = async (req: Request, res: Response, next: NextFunc
     }
 
     await prisma.employeeDocument.delete({ where: { id: documentId } });
+    if (document.storedAt && !document.storedAt.startsWith('data:')) {
+      try {
+        await removeDocumentFile(document.storedAt);
+      } catch (err) {
+        logger.warn('Dokument konnte nicht gelöscht werden', { err });
+      }
+    }
 
     await submitAuditEvent(req, {
       action: 'EMPLOYEE.DOCUMENT.DELETE',
@@ -413,5 +459,44 @@ export const deleteDocument = async (req: Request, res: Response, next: NextFunc
     res.json({ success: true, data: profileSnapshot });
   } catch (error) {
     next(error);
+  }
+};
+
+export const downloadDocument = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const targetUserId = resolveTargetUserId(req);
+    ensureSelfOrManager(req, targetUserId, ['MANAGER', 'DISPATCHER']);
+    const { documentId } = req.params;
+
+    const document = await prisma.employeeDocument.findUnique({
+      where: { id: documentId },
+      select: {
+        id: true,
+        filename: true,
+        mimeType: true,
+        storedAt: true,
+        profile: { select: { userId: true } },
+      },
+    });
+
+    if (!document || document.profile.userId !== targetUserId) {
+      throw createError(404, 'Dokument nicht gefunden.');
+    }
+
+    if (!document.storedAt || document.storedAt.startsWith('data:')) {
+      throw createError(410, 'Dokument ist nicht mehr verfügbar.');
+    }
+
+    const filePath = resolveDocumentPath(document.storedAt);
+
+    const readStream = fs.createReadStream(filePath);
+    readStream.on('error', (err) => next(err instanceof Error ? err : new Error(String(err))));
+
+    const downloadName = path.basename(document.filename || 'dokument');
+    res.setHeader('Content-Type', document.mimeType || 'application/octet-stream');
+    res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(downloadName)}"`);
+    readStream.pipe(res);
+  } catch (error) {
+    next(error instanceof Error ? error : new Error(String(error)));
   }
 };

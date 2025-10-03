@@ -4,7 +4,6 @@ import { api } from '@/lib/api'
 import { useListParams } from '@/features/common/useQueryParams'
 import { toSearchParams } from '@/features/common/listParams'
 import { DebouncedInput } from '@/components/inputs/DebouncedInput'
-import { Input } from '@/components/ui/input'
 import { Select } from '@/components/ui/select'
 import { Button } from '@/components/ui/button'
 import { FormField } from '@/components/ui/form'
@@ -12,7 +11,7 @@ import { DataTable } from '@/components/table/DataTable'
 import RbacForbidden from '@/components/RbacForbidden'
 import { exportFile } from '@/features/common/export'
 import { toast } from 'sonner'
-import { useNavigate, Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 
 type User = { id: string; email: string; firstName: string; lastName: string; role: string; isActive: boolean }
 type ListResp = { data: User[]; pagination: { page: number; pageSize: number; total: number; totalPages: number } }
@@ -21,7 +20,7 @@ export default function UsersList() {
   const { params, update } = useListParams({ page: 1, pageSize: 25, sortBy: 'firstName', sortDir: 'asc', query: '' })
   const qk = ['users', params]
   const nav = useNavigate()
-  const [downloading, setDownloading] = React.useState<null | { type: 'csv'|'xlsx'; progress?: number }>(null)
+  const [downloading, setDownloading] = React.useState<null | { type: 'csv' | 'xlsx'; progress?: number }>(null)
   const { data, isLoading, isError, error } = useQuery<ListResp>({
     queryKey: qk,
     queryFn: async () => {
@@ -45,7 +44,7 @@ export default function UsersList() {
     return sp
   }, [params])
 
-  const doExport = async (type: 'csv'|'xlsx') => {
+  const doExport = async (type: 'csv' | 'xlsx') => {
     try {
       setDownloading({ type, progress: undefined })
       await exportFile({
@@ -63,40 +62,83 @@ export default function UsersList() {
     }
   }
 
+  const toggleRoleFilter = React.useCallback(
+    (role: User['role']) => update({ filters: { role: params.filters.role === role ? undefined : role } }),
+    [params.filters.role, update],
+  )
+
+  const toggleActiveFilter = React.useCallback(
+    (value: 'true' | 'false') => update({ filters: { isActive: params.filters.isActive === value ? undefined : value } }),
+    [params.filters.isActive, update],
+  )
+
   return (
     <div className="space-y-4">
-      <h1 className="text-xl font-semibold">Benutzer</h1>
+      <div className="flex flex-wrap items-center gap-3 justify-between">
+        <h1 className="text-xl font-semibold">Benutzer</h1>
+        <div className="flex flex-wrap gap-2 text-sm">
+          {(['ADMIN', 'MANAGER', 'DISPATCHER', 'EMPLOYEE'] as Array<User['role']>).map((role) => (
+            <Button
+              key={role}
+              variant={params.filters.role === role ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => toggleRoleFilter(role)}
+            >
+              {role}
+            </Button>
+          ))}
+          <Button
+            variant={params.filters.isActive === 'true' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => toggleActiveFilter('true')}
+          >
+            Aktive
+          </Button>
+          <Button
+            variant={params.filters.isActive === 'false' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => toggleActiveFilter('false')}
+          >
+            Inaktive
+          </Button>
+        </div>
+      </div>
+
       <div className="flex gap-2 items-end flex-wrap">
         <FormField className="min-w-[220px]" label="Suche" htmlFor="search">
           <DebouncedInput id="search" value={params.query || ''} onChange={handleSearchChange} placeholder="Name oder E-Mail" />
         </FormField>
         <FormField label="E-Mail">
-          <DebouncedInput value={params.filters.email||''} onChange={(v)=>update({filters:{email:v}})} />
+          <DebouncedInput value={params.filters.email || ''} onChange={(v) => update({ filters: { email: v } })} />
         </FormField>
         <FormField label="Vorname">
-          <DebouncedInput value={params.filters.firstName||''} onChange={(v)=>update({filters:{firstName:v}})} />
+          <DebouncedInput value={params.filters.firstName || ''} onChange={(v) => update({ filters: { firstName: v } })} />
+        </FormField>
+        <FormField label="Nachname">
+          <DebouncedInput value={params.filters.lastName || ''} onChange={(v) => update({ filters: { lastName: v } })} />
         </FormField>
         <FormField label="Rolle">
-          <Select defaultValue={params.filters.role||''} onChange={(e)=>update({filters:{role: e.target.value || undefined}})}>
+          <Select value={params.filters.role || ''} onChange={(e) => update({ filters: { role: e.target.value || undefined } })}>
             <option value="">Alle</option>
-            <option>ADMIN</option>
-            <option>MANAGER</option>
-            <option>EMPLOYEE</option>
+            <option value="ADMIN">ADMIN</option>
+            <option value="MANAGER">MANAGER</option>
+            <option value="DISPATCHER">DISPATCHER</option>
+            <option value="EMPLOYEE">EMPLOYEE</option>
           </Select>
         </FormField>
         <FormField label="Aktiv">
-          <Select defaultValue={params.filters.isActive||''} onChange={(e)=>update({filters:{isActive: e.target.value || undefined}})}>
+          <Select value={params.filters.isActive || ''} onChange={(e) => update({ filters: { isActive: e.target.value || undefined } })}>
             <option value="">Alle</option>
             <option value="true">Ja</option>
             <option value="false">Nein</option>
           </Select>
         </FormField>
         <div className="ml-auto inline-flex gap-2">
-          <Button variant="link" disabled={!!downloading} onClick={()=>doExport('csv')}>
-            Export CSV{downloading?.type==='csv' && (downloading.progress ? ` ${downloading.progress}%` : ' …')}
+          <Button variant="link" disabled={!!downloading} onClick={() => doExport('csv')}>
+            Export CSV{downloading?.type === 'csv' && (downloading.progress ? ` ${downloading.progress}%` : ' …')}
           </Button>
-          <Button variant="link" disabled={!!downloading} onClick={()=>doExport('xlsx')}>
-            Export XLSX{downloading?.type==='xlsx' && (downloading.progress ? ` ${downloading.progress}%` : ' …')}
+          <Button variant="link" disabled={!!downloading} onClick={() => doExport('xlsx')}>
+            Export XLSX{downloading?.type === 'xlsx' && (downloading.progress ? ` ${downloading.progress}%` : ' …')}
           </Button>
         </div>
       </div>
@@ -104,12 +146,16 @@ export default function UsersList() {
       {(Object.keys(params.filters).length > 0 || !!params.sortBy) && (
         <div className="flex justify-end gap-4">
           {Object.keys(params.filters).length > 0 && (
-            <Button variant="link" onClick={() => update({ filters: Object.fromEntries(Object.keys(params.filters).map(k => [k, undefined])), page: 1 })}>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => update({ filters: Object.fromEntries(Object.keys(params.filters).map((k) => [k, undefined])), page: 1 })}
+            >
               Filter zurücksetzen
             </Button>
           )}
           {!!params.sortBy && (
-            <Button variant="link" onClick={()=>update({ sortBy: '', page: 1 })}>
+            <Button variant="ghost" size="sm" onClick={() => update({ sortBy: '', page: 1 })}>
               Sortierung zurücksetzen
             </Button>
           )}
@@ -130,7 +176,7 @@ export default function UsersList() {
             header: 'Profil',
             render: (u: User) => (
               <Link className="underline" to={`/users/${u.id}/profile`}>
-                Anzeigen
+                Profil anzeigen
               </Link>
             ),
           },

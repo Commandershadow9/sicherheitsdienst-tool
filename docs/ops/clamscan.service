@@ -1,0 +1,10 @@
+[Unit]
+Description=Nightly virus scan for document storage
+After=network.target
+
+[Service]
+Type=oneshot
+User=root
+Group=root
+# Replace /srv/documents with DOCUMENT_STORAGE_ROOT
+ExecStart=/usr/bin/clamdscan --fdpass --log=/var/log/clamav/documents.log --move=/var/quarantine /srv/documents

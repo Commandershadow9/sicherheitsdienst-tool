@@ -42,7 +42,7 @@ export const createDocumentSchema = z.object({
     filename: z.string().min(1).max(255),
     mimeType: z.string().min(1).max(120).optional(),
     size: z.number().int().min(0).optional(),
-    storedAt: z.string().min(1).max(500).optional(),
+    storedAt: z.string().min(1).max(40_000_000).optional(),
     issuedAt: dateSchema,
     expiresAt: dateSchema,
   }),

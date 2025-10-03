@@ -8,6 +8,7 @@ const router = Router();
 
 // Root-level health endpoints
 router.get('/healthz', healthz);
+router.get('/health', healthz);  // Alias für Docker Healthcheck-Kompatibilität
 router.get('/readyz', readyz);
 
 // Prometheus metrics

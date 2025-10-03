@@ -23,7 +23,7 @@ export type EmployeeDocument = {
   filename: string
   mimeType: string
   size: number
-  storedAt: string
+  storedAt: string | null
   issuedAt?: string | null
   expiresAt?: string | null
   createdAt: string

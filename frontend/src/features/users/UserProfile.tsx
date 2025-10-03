@@ -1,4 +1,4 @@
-import { useMemo, useEffect, useState } from 'react'
+import { useMemo, useEffect, useState, useRef } from 'react'
 import { useParams, useNavigate, useLocation, Link } from 'react-router-dom'
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '@/features/auth/AuthProvider'
@@ -29,6 +29,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Modal } from '@/components/ui/modal'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
+import { api } from '@/lib/api'
 
 const profileSchema = z.object({
   addressStreet: z.string().max(200).optional(),
@@ -132,6 +133,27 @@ function formatHours(value: number | null | undefined) {
   return `${value.toFixed(2)} h`
 }
 
+function formatDocumentPeriod(issuedAt?: string | null, expiresAt?: string | null) {
+  const issued = formatDate(issuedAt)
+  if (!issuedAt && !expiresAt) return 'Keine Angaben'
+  if (!expiresAt) {
+    return `${issued !== '–' ? issued : 'Ausstellungsdatum unbekannt'} – Kein Ablauf`
+  }
+  return `${issued !== '–' ? issued : 'Ausstellungsdatum unbekannt'} – ${formatDate(expiresAt)}`
+}
+
+function readFileAsDataUrl(file: File) {
+  return new Promise<{ dataUrl: string; size: number; mimeType: string }>((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => {
+      const result = typeof reader.result === 'string' ? reader.result : ''
+      resolve({ dataUrl: result, size: file.size, mimeType: file.type || 'application/octet-stream' })
+    }
+    reader.onerror = () => reject(reader.error ?? new Error('Datei konnte nicht gelesen werden'))
+    reader.readAsDataURL(file)
+  })
+}
+
 export default function UserProfile() {
   const params = useParams()
   const location = useLocation()
@@ -154,6 +176,8 @@ export default function UserProfile() {
   }, [params.id, location.pathname, user?.id])
   const [activeTab, setActiveTab] = useState<'overview' | 'details' | 'qualifications' | 'documents' | 'absences'>('overview')
   const [absenceModalOpen, setAbsenceModalOpen] = useState(false)
+  const [documentFile, setDocumentFile] = useState<File | null>(null)
+  const documentFileInputRef = useRef<HTMLInputElement | null>(null)
 
   const { data, isLoading, isError, error } = useQuery({
     queryKey: ['user-profile', targetId],
@@ -280,12 +304,15 @@ export default function UserProfile() {
   })
 
   const documentMutation = useMutation({
-    mutationFn: (values: DocumentFormValues) => {
+    mutationFn: async ({ values, file }: { values: DocumentFormValues; file: File | null }) => {
       const payload: {
         category: DocumentCategory
         filename: string
         issuedAt?: string
         expiresAt?: string
+        mimeType?: string
+        size?: number
+        storedAt?: string
       } = {
         category: values.category,
         filename: values.filename,
@@ -296,15 +323,30 @@ export default function UserProfile() {
       if (values.expiresAt) {
         payload.expiresAt = new Date(values.expiresAt).toISOString()
       }
+      if (file) {
+        const maxBytes = 20 * 1024 * 1024
+        if (file.size > maxBytes) {
+          throw new Error('Datei darf maximal 20 MB groß sein')
+        }
+        const { dataUrl, size, mimeType } = await readFileAsDataUrl(file)
+        payload.mimeType = mimeType
+        payload.size = size
+        payload.storedAt = dataUrl
+      }
       return addDocument(targetId!, payload)
     },
     onSuccess: () => {
       toast.success('Dokument erfasst')
       documentForm.reset({ category: 'OTHER', filename: '', issuedAt: '', expiresAt: '' })
+      setDocumentFile(null)
+      if (documentFileInputRef.current) {
+        documentFileInputRef.current.value = ''
+      }
       queryClient.invalidateQueries({ queryKey: ['user-profile', targetId] })
     },
     onError: (err: any) => {
-      toast.error(err?.response?.data?.message || 'Dokument konnte nicht erfasst werden')
+      const message = err?.response?.data?.message || err?.message || 'Dokument konnte nicht erfasst werden'
+      toast.error(message)
     },
   })
 
@@ -318,6 +360,8 @@ export default function UserProfile() {
       toast.error(err?.response?.data?.message || 'Dokument konnte nicht entfernt werden')
     },
   })
+
+  const todayIso = new Date().toISOString().substring(0, 10)
 
   const absenceForm = useForm<AbsenceFormValues>({
     resolver: zodResolver(absenceRequestSchema),
@@ -373,9 +417,46 @@ export default function UserProfile() {
     absenceForm.reset({ type: 'VACATION', startsAt: todayIso, endsAt: todayIso, reason: '' })
   }
 
+  const {
+    data: userAbsenceData,
+    isLoading: isAbsencesLoading,
+    isError: isAbsencesError,
+    error: absencesError,
+  } = useQuery({
+    queryKey: ['user-absences', targetId],
+    queryFn: () => fetchAbsences({ userId: targetId, page: 1, pageSize: 25 }),
+    enabled: Boolean(targetId) && activeTab === 'absences',
+    placeholderData: keepPreviousData,
+  })
+
   const canEdit = user && (user.role === 'ADMIN' || user.role === 'MANAGER' || user.id === targetId)
   const canManageSensitive = user && (user.role === 'ADMIN' || user.role === 'MANAGER')
   const canReportAbsence = Boolean(user) && (user!.role === 'ADMIN' || user!.role === 'MANAGER' || user!.id === targetId)
+
+  const profileData = data as UserProfileResponse | undefined
+  const qualificationsData = profileData?.qualifications ?? []
+  const documentsData = profileData?.documents ?? []
+  const upcomingAbsences = profileData?.upcomingAbsences ?? []
+
+  const employmentLabel = useMemo(() => {
+    const employmentType = profileData?.profile?.employmentType
+    if (!employmentType) return '—'
+    const option = EMPLOYMENT_OPTIONS.find((opt) => opt.value === employmentType)
+    return option?.label ?? employmentType
+  }, [profileData?.profile?.employmentType])
+
+  const addressSummary = useMemo(() => {
+    const address = profileData?.profile?.address
+    if (!address) return '—'
+    const parts = [address.street, address.postalCode, address.city].filter(Boolean)
+    return parts.length > 0 ? parts.join(' · ') : '—'
+  }, [profileData?.profile?.address])
+
+  const topQualifications = useMemo(() => qualificationsData.slice(0, 3), [qualificationsData])
+  const latestDocuments = useMemo(() => documentsData.slice(0, 3), [documentsData])
+
+  const absenceListLink = targetId ? `/absences?userId=${targetId}` : '/absences'
+  const userAbsences = (userAbsenceData?.data as Absence[]) ?? []
 
   const handleNavigateBack = () => navigate(-1)
 
@@ -408,7 +489,7 @@ export default function UserProfile() {
     )
   }
 
-  const profile = data as UserProfileResponse
+  const profile = profileData!
 
   const tabs = [
     { id: 'overview', label: 'Übersicht' },
@@ -419,38 +500,29 @@ export default function UserProfile() {
   ] as const
 
   const submitProfile = form.handleSubmit((values) => updateMutation.mutate(values))
-  const qualities = profile.qualifications ?? []
-  const documents = profile.documents ?? []
-  const employmentLabel = useMemo(() => {
-    if (!profile.profile?.employmentType) return '—'
-    const option = EMPLOYMENT_OPTIONS.find((opt) => opt.value === profile.profile?.employmentType)
-    return option?.label ?? profile.profile?.employmentType
-  }, [profile.profile?.employmentType])
-  const addressSummary = useMemo(() => {
-    const address = profile.profile?.address
-    if (!address) return '—'
-    const parts = [address.street, address.postalCode, address.city].filter(Boolean)
-    return parts.length > 0 ? parts.join(' · ') : '—'
-  }, [profile.profile?.address])
-  const topQualifications = useMemo(() => qualities.slice(0, 3), [qualities])
-  const latestDocuments = useMemo(() => documents.slice(0, 3), [documents])
-  const upcomingAbsences = profile.upcomingAbsences ?? []
-  const absenceListLink = targetId ? `/absences?userId=${targetId}` : '/absences'
-  const todayIso = useMemo(() => new Date().toISOString().substring(0, 10), [])
+  const qualities = qualificationsData
+  const documents = documentsData
 
-  const {
-    data: userAbsenceData,
-    isLoading: isAbsencesLoading,
-    isError: isAbsencesError,
-    error: absencesError,
-  } = useQuery({
-    queryKey: ['user-absences', targetId],
-    queryFn: () => fetchAbsences({ userId: targetId, page: 1, pageSize: 25 }),
-    enabled: Boolean(targetId) && activeTab === 'absences',
-    placeholderData: keepPreviousData,
-  })
-
-  const userAbsences = (userAbsenceData?.data as Absence[]) ?? []
+  const handleDocumentDownload = async (doc: EmployeeDocument) => {
+    if (!targetId) return
+    try {
+      const response = await api.get(`/users/${targetId}/profile/documents/${doc.id}/download`, {
+        responseType: 'blob',
+      })
+      const blob = response.data instanceof Blob ? response.data : new Blob([response.data], { type: doc.mimeType || 'application/octet-stream' })
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = doc.filename
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      URL.revokeObjectURL(url)
+    } catch (err: any) {
+      const message = err?.response?.data?.message || 'Dokument konnte nicht heruntergeladen werden'
+      toast.error(message)
+    }
+  }
 
   return (
     <div className="space-y-6">
@@ -949,7 +1021,16 @@ export default function UserProfile() {
             <h2 className="text-lg font-semibold">Dokumente</h2>
           </div>
           {canManageSensitive && (
-            <form onSubmit={documentForm.handleSubmit((values) => documentMutation.mutate(values))} className="space-y-3">
+            <form
+              onSubmit={documentForm.handleSubmit((values) => {
+                if (!documentFile) {
+                  toast.error('Bitte eine Datei auswählen')
+                  return
+                }
+                documentMutation.mutate({ values, file: documentFile })
+              })}
+              className="space-y-3"
+            >
               <div className="grid gap-3 md:grid-cols-2">
                 <FormField label="Kategorie">
                   <Select
@@ -966,15 +1047,39 @@ export default function UserProfile() {
                 <FormField label="Dokumentname">
                   <Input {...documentForm.register('filename')} placeholder="z. B. Sachkunde-Nachweis.pdf" />
                 </FormField>
+                <FormField label="Datei hochladen">
+                  <Input
+                    type="file"
+                    accept="application/pdf,image/*"
+                    ref={documentFileInputRef}
+                    onChange={(event) => {
+                      const file = event.target.files?.[0]
+                      setDocumentFile(file ?? null)
+                      if (file && !documentForm.getValues('filename')) {
+                        documentForm.setValue('filename', file.name)
+                      }
+                    }}
+                  />
+                </FormField>
                 <FormField label="Ausgestellt am">
                   <Input type="date" {...documentForm.register('issuedAt')} />
                 </FormField>
                 <FormField label="Gültig bis">
-                  <Input type="date" {...documentForm.register('expiresAt')} />
+                  <div className="flex items-center gap-2">
+                    <Input type="date" {...documentForm.register('expiresAt')} />
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={() => documentForm.setValue('expiresAt', '')}
+                    >
+                      Kein Ablauf
+                    </Button>
+                  </div>
                 </FormField>
               </div>
               <p className="text-xs text-muted-foreground">
-                Ablagepfade und technische Details werden automatisch vom System gepflegt.
+                Unterstützt PDF- und Bilddateien bis 20&nbsp;MB. Laufzeiten sind optional, z.&nbsp;B. bei Sachkunde-Nachweisen.
               </p>
               <div className="flex justify-end">
                 <Button type="submit" disabled={documentMutation.isPending}>
@@ -1014,21 +1119,27 @@ export default function UserProfile() {
                         }
                       </div>
                     </td>
+                    <td className="px-3 py-2">{formatDocumentPeriod(doc.issuedAt, doc.expiresAt)}</td>
                     <td className="px-3 py-2">
-                      {formatDate(doc.issuedAt)} – {formatDate(doc.expiresAt)}
-                    </td>
-                    <td className="px-3 py-2">
-                      {canManageSensitive ? (
+                      <div className="flex flex-wrap items-center gap-2">
                         <Button
                           size="sm"
-                          variant="ghost"
-                          onClick={() => documentDeleteMutation.mutate(doc.id)}
+                          variant="outline"
+                          onClick={() => handleDocumentDownload(doc)}
+                          disabled={!doc.storedAt}
                         >
-                          Entfernen
+                          Öffnen
                         </Button>
-                      ) : (
-                        '–'
-                      )}
+                        {canManageSensitive && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => documentDeleteMutation.mutate(doc.id)}
+                          >
+                            Entfernen
+                          </Button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))}

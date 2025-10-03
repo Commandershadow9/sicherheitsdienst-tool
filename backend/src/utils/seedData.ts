@@ -9,12 +9,18 @@ async function main() {
   try {
     // Erst alle bestehenden Daten löschen (für sauberen Start)
     await prisma.shiftAssignment.deleteMany();
-    await prisma.incident.deleteMany();
     await prisma.timeEntry.deleteMany();
+    await prisma.incident.deleteMany();
+    await prisma.absence.deleteMany();
+    await prisma.employeeDocument.deleteMany();
+    await prisma.employeeQualification.deleteMany();
+    await prisma.employeeProfile.deleteMany();
+    await prisma.auditLog.deleteMany();
+    await prisma.deviceToken.deleteMany();
     await prisma.shift.deleteMany();
-    await prisma.user.deleteMany();
-    await prisma.site.deleteMany();
     await prisma.event.deleteMany();
+    await prisma.site.deleteMany();
+    await prisma.user.deleteMany();
 
     console.log('🗑️ Alte Daten gelöscht');
 
