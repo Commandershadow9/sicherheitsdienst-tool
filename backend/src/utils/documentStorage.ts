@@ -36,6 +36,7 @@ export type SaveDocumentParams = {
   originalName: string;
   buffer: Buffer;
   mimeType?: string | null;
+  subFolder?: string; // Optional subfolder (e.g., 'absences')
 };
 
 export type SaveDocumentResult = {
@@ -45,16 +46,18 @@ export type SaveDocumentResult = {
   mimeType?: string | null;
 };
 
-export async function saveDocumentFile({ userId, originalName, buffer, mimeType }: SaveDocumentParams): Promise<SaveDocumentResult> {
+export async function saveDocumentFile({ userId, originalName, buffer, mimeType, subFolder }: SaveDocumentParams): Promise<SaveDocumentResult> {
   const root = getDocumentStorageRoot();
-  const userDir = path.join(root, userId);
+  const userDir = subFolder ? path.join(root, subFolder, userId) : path.join(root, userId);
   await ensureDir(userDir);
   const extension = inferExtension(originalName, mimeType);
   const unique = crypto.randomUUID();
   const fileName = `${unique}${extension}`;
   const absolutePath = path.join(userDir, fileName);
   await fs.writeFile(absolutePath, buffer, { flag: 'w' });
-  const relativePath = path.join(userId, fileName).replace(/\\/g, '/');
+  const relativePath = subFolder
+    ? path.join(subFolder, userId, fileName).replace(/\\/g, '/')
+    : path.join(userId, fileName).replace(/\\/g, '/');
   return {
     storedAt: relativePath,
     absolutePath,

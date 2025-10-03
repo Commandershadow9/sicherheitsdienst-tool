@@ -11,6 +11,9 @@ import {
   approveAbsence,
   rejectAbsence,
   cancelAbsence,
+  uploadAbsenceDocument,
+  downloadAbsenceDocument,
+  deleteAbsenceDocument,
 } from '../controllers/absenceController';
 
 const router = Router();
@@ -28,10 +31,30 @@ router.post(
   asyncHandler(cancelAbsence),
 );
 
+// Document routes
+router.post(
+  '/:id/documents',
+  authorize('ADMIN', 'MANAGER', 'DISPATCHER', 'EMPLOYEE'),
+  asyncHandler(uploadAbsenceDocument),
+);
+router.get(
+  '/:id/documents/:documentId/download',
+  authorize('ADMIN', 'MANAGER', 'DISPATCHER', 'EMPLOYEE'),
+  asyncHandler(downloadAbsenceDocument),
+);
+router.delete(
+  '/:id/documents/:documentId',
+  authorize('ADMIN', 'MANAGER', 'DISPATCHER', 'EMPLOYEE'),
+  asyncHandler(deleteAbsenceDocument),
+);
+
 router.all('/', methodNotAllowed(['GET', 'POST']));
 router.all('/:id', methodNotAllowed(['GET', 'POST']));
 router.all('/:id/approve', methodNotAllowed(['POST']));
 router.all('/:id/reject', methodNotAllowed(['POST']));
 router.all('/:id/cancel', methodNotAllowed(['POST']));
+router.all('/:id/documents', methodNotAllowed(['POST']));
+router.all('/:id/documents/:documentId/download', methodNotAllowed(['GET']));
+router.all('/:id/documents/:documentId', methodNotAllowed(['DELETE']));
 
 export default router;

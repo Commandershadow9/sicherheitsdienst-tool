@@ -5,7 +5,7 @@ export type NotificationTemplateMeta = {
   channel: NotificationChannel;
   name: string;
   description: string;
-  category: 'shift' | 'incident' | 'system';
+  category: 'shift' | 'incident' | 'system' | 'absence';
   featureFlag?: string;
   variables: string[];
   tags?: string[];
@@ -65,6 +65,56 @@ const templates: NotificationTemplateMeta[] = [
     featureFlag: 'PUSH_NOTIFY_INCIDENTS',
     variables: ['title', 'status', 'updatedBy'],
     tags: ['incident', 'mobile'],
+  },
+  {
+    key: 'absence-approved',
+    channel: 'email',
+    name: 'Abwesenheit genehmigt (E-Mail)',
+    description: 'Benachrichtigt Mitarbeitende über genehmigte Abwesenheitsanträge.',
+    category: 'absence',
+    featureFlag: 'EMAIL_NOTIFY_ABSENCES',
+    variables: ['userName', 'type', 'startsAt', 'endsAt', 'decisionNote'],
+    tags: ['absence', 'approval'],
+  },
+  {
+    key: 'absence-rejected',
+    channel: 'email',
+    name: 'Abwesenheit abgelehnt (E-Mail)',
+    description: 'Informiert Mitarbeitende über abgelehnte Abwesenheitsanträge.',
+    category: 'absence',
+    featureFlag: 'EMAIL_NOTIFY_ABSENCES',
+    variables: ['userName', 'type', 'startsAt', 'endsAt', 'decisionNote'],
+    tags: ['absence', 'rejection'],
+  },
+  {
+    key: 'absence-cancelled',
+    channel: 'email',
+    name: 'Abwesenheit storniert (E-Mail)',
+    description: 'Bestätigt die Stornierung einer Abwesenheit.',
+    category: 'absence',
+    featureFlag: 'EMAIL_NOTIFY_ABSENCES',
+    variables: ['userName', 'type', 'startsAt', 'endsAt'],
+    tags: ['absence', 'cancellation'],
+  },
+  {
+    key: 'absence-approved',
+    channel: 'push',
+    name: 'Abwesenheit genehmigt (Push)',
+    description: 'Push-Benachrichtigung bei Genehmigung.',
+    category: 'absence',
+    featureFlag: 'PUSH_NOTIFY_ABSENCES',
+    variables: ['type', 'startsAt', 'endsAt'],
+    tags: ['absence', 'mobile'],
+  },
+  {
+    key: 'absence-rejected',
+    channel: 'push',
+    name: 'Abwesenheit abgelehnt (Push)',
+    description: 'Push-Benachrichtigung bei Ablehnung.',
+    category: 'absence',
+    featureFlag: 'PUSH_NOTIFY_ABSENCES',
+    variables: ['type', 'startsAt', 'endsAt'],
+    tags: ['absence', 'mobile'],
   },
 ];
 

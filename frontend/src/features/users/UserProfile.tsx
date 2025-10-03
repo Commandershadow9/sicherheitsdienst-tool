@@ -503,6 +503,75 @@ export default function UserProfile() {
   const qualities = qualificationsData
   const documents = documentsData
 
+  const handleDocumentPreview = async (doc: EmployeeDocument) => {
+    if (!targetId) return
+    try {
+      const response = await api.get(`/users/${targetId}/profile/documents/${doc.id}/download`, {
+        responseType: 'blob',
+      })
+      const blob = response.data instanceof Blob ? response.data : new Blob([response.data], { type: doc.mimeType || 'application/octet-stream' })
+      const url = URL.createObjectURL(blob)
+
+      // Öffne in neuem Tab zur Vorschau
+      window.open(url, '_blank')
+
+      // URL nach kurzer Zeit freigeben
+      setTimeout(() => URL.revokeObjectURL(url), 100)
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || 'Dokument konnte nicht geladen werden')
+    }
+  }
+
+  const handleAbsenceDocumentPreview = async (absenceId: string, doc: any) => {
+    try {
+      const response = await api.get(`/absences/${absenceId}/documents/${doc.id}/download`, {
+        responseType: 'blob',
+      })
+      const blob = response.data instanceof Blob ? response.data : new Blob([response.data], { type: doc.mimeType || 'application/octet-stream' })
+      const url = URL.createObjectURL(blob)
+
+      // Öffne in neuem Tab zur Vorschau
+      window.open(url, '_blank')
+
+      // URL nach kurzer Zeit freigeben
+      setTimeout(() => URL.revokeObjectURL(url), 100)
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || 'Dokument konnte nicht geladen werden')
+    }
+  }
+
+  const handleAbsenceDocumentUpload = async (absenceId: string, file: File | null | undefined) => {
+    if (!file) return
+
+    try {
+      const maxBytes = 50 * 1024 * 1024 // 50MB
+      if (file.size > maxBytes) {
+        toast.error('Datei darf maximal 50 MB groß sein')
+        return
+      }
+
+      // Read file as base64
+      const reader = new FileReader()
+      reader.onload = async (e) => {
+        const base64 = e.target?.result as string
+        const content = base64.split(',')[1] // Remove data URL prefix
+
+        await api.post(`/absences/${absenceId}/documents`, {
+          filename: file.name,
+          content,
+          mimeType: file.type,
+        })
+
+        toast.success('Dokument hochgeladen')
+        queryClient.invalidateQueries({ queryKey: ['user-absences', targetId] })
+      }
+      reader.readAsDataURL(file)
+    } catch (err: any) {
+      const message = err?.response?.data?.message || 'Dokument konnte nicht hochgeladen werden'
+      toast.error(message)
+    }
+  }
+
   const handleDocumentDownload = async (doc: EmployeeDocument) => {
     if (!targetId) return
     try {
@@ -723,12 +792,23 @@ export default function UserProfile() {
             ) : (
               <ul className="space-y-2 text-sm">
                 {latestDocuments.map((doc) => (
-                  <li key={doc.id}>
-                    <div className="font-medium">{doc.filename}</div>
-                    <div className="text-xs text-muted-foreground">
-                      {DOCUMENT_OPTIONS.find((opt) => opt.value === doc.category)?.label ?? doc.category} ·{' '}
-                      {new Date(doc.createdAt).toLocaleDateString()}
+                  <li key={doc.id} className="flex items-start justify-between gap-2">
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium truncate">{doc.filename}</div>
+                      <div className="text-xs text-muted-foreground">
+                        {DOCUMENT_OPTIONS.find((opt) => opt.value === doc.category)?.label ?? doc.category} ·{' '}
+                        {new Date(doc.createdAt).toLocaleDateString()}
+                      </div>
                     </div>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => handleDocumentPreview(doc)}
+                      disabled={!doc.storedAt}
+                      title="Vorschau"
+                    >
+                      👁️
+                    </Button>
                   </li>
                 ))}
               </ul>
@@ -959,6 +1039,7 @@ export default function UserProfile() {
                       <th className="px-3 py-2">Status</th>
                       <th className="px-3 py-2">Zeitraum</th>
                       <th className="px-3 py-2">Grund / Notiz</th>
+                      <th className="px-3 py-2">Dokumente</th>
                       <th className="px-3 py-2">Angelegt</th>
                     </tr>
                   </thead>
@@ -998,6 +1079,35 @@ export default function UserProfile() {
                               eingereicht durch {absence.createdBy.firstName} {absence.createdBy.lastName}
                             </div>
                           )}
+                        </td>
+                        <td className="px-3 py-2">
+                          <div className="flex flex-col gap-1">
+                            {(absence as any).documents && (absence as any).documents.length > 0 && (
+                              <div className="flex flex-col gap-1 mb-1">
+                                {(absence as any).documents.map((doc: any) => (
+                                  <button
+                                    key={doc.id}
+                                    onClick={() => handleAbsenceDocumentPreview(absence.id, doc)}
+                                    className="text-xs text-blue-600 hover:underline text-left"
+                                    title="Vorschau"
+                                  >
+                                    📎 {doc.filename}
+                                  </button>
+                                ))}
+                              </div>
+                            )}
+                            {canReportAbsence && (
+                              <label className="text-xs cursor-pointer text-blue-600 hover:underline">
+                                + Dokument hochladen
+                                <input
+                                  type="file"
+                                  className="hidden"
+                                  accept=".pdf,.jpg,.jpeg,.png"
+                                  onChange={(e) => handleAbsenceDocumentUpload(absence.id, e.target.files?.[0])}
+                                />
+                              </label>
+                            )}
+                          </div>
                         </td>
                         <td className="px-3 py-2 text-xs text-muted-foreground">
                           {new Date(absence.createdAt).toLocaleDateString()}
@@ -1125,10 +1235,20 @@ export default function UserProfile() {
                         <Button
                           size="sm"
                           variant="outline"
+                          onClick={() => handleDocumentPreview(doc)}
+                          disabled={!doc.storedAt}
+                          title="Vorschau"
+                        >
+                          👁️ Vorschau
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
                           onClick={() => handleDocumentDownload(doc)}
                           disabled={!doc.storedAt}
+                          title="Download"
                         >
-                          Öffnen
+                          ⬇️
                         </Button>
                         {canManageSensitive && (
                           <Button

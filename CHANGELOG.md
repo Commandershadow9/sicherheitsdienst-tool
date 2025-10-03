@@ -2,6 +2,39 @@
 
 All notable changes to this project will be documented in this file.
 
+## [v1.5.0] - 2025-10-03 – Abwesenheiten Phase 2 & Testing 🚀
+
+### Added
+- **Abwesenheiten: Dokument-/Attest-Uploads**
+  - Backend: `AbsenceDocument` Model mit Migration
+  - Backend: API-Endpoints für Upload/Download/Delete von Abwesenheits-Dokumenten
+  - Frontend: Upload-Button direkt in Abwesenheiten-Tabelle
+  - Frontend: Dokumenten-Vorschau (PDF/Bilder) in neuem Browser-Tab
+  - Speicherung in separatem Unterordner: `/srv/documents/absences/{userId}/`
+  - Unterstützt: PDF, JPG, PNG (bis 50MB)
+
+- **Abwesenheiten-Benachrichtigungen**
+  - E-Mail & Push-Templates für Absences hinzugefügt (`absence-approved`, `absence-rejected`, `absence-cancelled`)
+  - Automatische Benachrichtigungen bei Approve/Reject/Cancel
+  - Feature-Flags: `EMAIL_NOTIFY_ABSENCES`, `PUSH_NOTIFY_ABSENCES`
+  - Respektiert User-Opt-In-Einstellungen (`emailOptIn`, `pushOptIn`)
+
+- **Testing-Infrastruktur**
+  - Frontend: Vitest Setup mit jsdom und @testing-library/react
+  - Frontend: 6 AuthProvider-Tests (Login, Logout, Hydration, Token-Refresh)
+  - Frontend: Test-Setup mit localStorage-Mock
+  - Backend: Integrationstest für Absence-Konflikte
+  - Insgesamt 16+ Frontend-Tests passing
+
+### Changed
+- **Dokumentenspeicherung**: Unterstützt nun optionale Unterordner (z.B. `absences/`)
+- **Notification-Templates**: Kategorie `absence` hinzugefügt
+- **Abwesenheiten-Tabelle**: Neue Spalte "Dokumente" mit Upload & Vorschau-Funktionalität
+
+### Improved
+- Konflikt-Erkennung: Backend liefert bereits Schicht-Konflikte bei Abwesenheits-Erstellung
+- Dokumenten-Vorschau: Einheitliche Preview-Funktion für Employee- und Absence-Dokumente
+
 ## [v1.4.0] - 2025-10-03 – Security Milestone 🔒
 
 ### Security

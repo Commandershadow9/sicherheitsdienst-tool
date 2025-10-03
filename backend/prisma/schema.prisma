@@ -290,6 +290,7 @@ model Absence {
   user        User @relation("AbsenceUser", fields: [userId], references: [id])
   createdBy   User @relation("AbsenceCreatedBy", fields: [createdById], references: [id])
   decidedBy   User? @relation("AbsenceDecidedBy", fields: [decidedById], references: [id])
+  documents   AbsenceDocument[]
 
   @@map("absences")
   @@index([status], name: "absences_status_idx")
@@ -327,6 +328,23 @@ enum AbsenceStatus {
   APPROVED
   REJECTED
   CANCELLED
+}
+
+// Abwesenheits-Dokumente (z.B. Krankschreibungen, Atteste)
+model AbsenceDocument {
+  id         String   @id @default(cuid())
+  absenceId  String   @map("absence_id")
+  filename   String
+  mimeType   String   @map("mime_type")
+  size       Int
+  storedAt   String   @map("stored_at")
+  uploadedBy String   @map("uploaded_by")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  absence    Absence  @relation(fields: [absenceId], references: [id], onDelete: Cascade)
+
+  @@map("absence_documents")
+  @@index([absenceId], name: "absence_documents_absence_idx")
 }
 
 // Einsätze / Events
