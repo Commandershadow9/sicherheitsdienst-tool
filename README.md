@@ -6,6 +6,16 @@
 
 Kurzer Überblick, klare Quickstarts und schnelles Troubleshooting für Devs/Ops.
 
+**🔒 Security-Features (v1.4.0+):**
+- ✅ LUKS-Verschlüsselung für Dokumentenspeicher
+- ✅ BorgBackup mit AES-256 (täglich 03:00 Uhr)
+- ✅ ClamAV Antivirus (täglich 02:30 Uhr)
+- ✅ UFW Firewall aktiv
+- ✅ Non-root Container (UID 1001:GID 109)
+- ✅ RBAC für Dokumente (MANAGER/DISPATCHER/EMPLOYEE)
+- ✅ DSGVO-Compliance Dokumentation
+- ⚠️ HTTPS wartet auf Domain (Anleitung: `docs/ops/setup-https-letsencrypt.md`)
+
 - Komponenten
   - Backend (Node.js/Express, Prisma, PostgreSQL)
   - Frontend (Vite/React)

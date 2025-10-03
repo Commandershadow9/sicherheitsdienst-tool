@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## Unreleased
+## [v1.4.0] - 2025-10-03 – Security Milestone 🔒
 
 ### Security
 - **DSGVO-Compliance**: Umfassende Sicherheitsmaßnahmen für hochsensible Gesundheitsdaten implementiert
