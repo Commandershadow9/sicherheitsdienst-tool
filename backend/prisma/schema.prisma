@@ -39,6 +39,8 @@ model User {
   absencesCreated   Absence[]        @relation("AbsenceCreatedBy")
   absencesDecided   Absence[]        @relation("AbsenceDecidedBy")
   documentsUploaded EmployeeDocument[] @relation("EmployeeDocumentUploadedBy")
+  objectClearances  ObjectClearance[]
+  clearancesTrained ObjectClearance[] @relation("ClearanceTrainer")
 
   @@map("users")
   @@index([lastName, firstName], name: "users_name_idx")
@@ -61,6 +63,7 @@ model Site {
   // Beziehungen
   shifts     Shift[]
   events     Event[]
+  clearances ObjectClearance[]
 
   @@unique([name, address], name: "sites_name_address_key")
   @@map("sites")
@@ -226,6 +229,7 @@ model EmployeeProfile {
   hourlyRate       Decimal? @db.Decimal(10, 2) @map("hourly_rate")
   weeklyTargetHours Int? @map("weekly_target_hours")
   monthlyTargetHours Int? @map("monthly_target_hours")
+  annualLeaveDays  Int @default(30) @map("annual_leave_days")
   notes            String?  @db.Text
   createdAt        DateTime @default(now()) @map("created_at")
   updatedAt        DateTime @updatedAt @map("updated_at")
@@ -345,6 +349,37 @@ model AbsenceDocument {
 
   @@map("absence_documents")
   @@index([absenceId], name: "absence_documents_absence_idx")
+}
+
+// Objekt-Einarbeitung / Clearance
+model ObjectClearance {
+  id         String   @id @default(cuid())
+  userId     String   @map("user_id")
+  siteId     String   @map("site_id")
+  trainedAt  DateTime @default(now()) @map("trained_at")
+  trainedBy  String?  @map("trained_by")
+  validUntil DateTime? @map("valid_until")
+  notes      String?  @db.Text
+  status     ClearanceStatus @default(ACTIVE)
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  user       User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  site       Site @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  trainer    User? @relation("ClearanceTrainer", fields: [trainedBy], references: [id])
+
+  @@unique([userId, siteId], name: "object_clearances_user_site_key")
+  @@map("object_clearances")
+  @@index([userId], name: "object_clearances_user_idx")
+  @@index([siteId], name: "object_clearances_site_idx")
+  @@index([status], name: "object_clearances_status_idx")
+  @@index([validUntil], name: "object_clearances_valid_idx")
+}
+
+enum ClearanceStatus {
+  ACTIVE
+  EXPIRED
+  REVOKED
 }
 
 // Einsätze / Events

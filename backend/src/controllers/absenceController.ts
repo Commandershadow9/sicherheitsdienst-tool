@@ -166,6 +166,383 @@ async function findConflictingShifts(userId: string, startsAt: Date, endsAt: Dat
   return assignments.map((a) => a.shift);
 }
 
+type CapacityWarning = {
+  shiftId: string;
+  shiftTitle: string;
+  siteId: string;
+  siteName: string;
+  date: string;
+  required: number;
+  available: number;
+  shortage: number;
+};
+
+type AffectedShift = {
+  id: string;
+  title: string;
+  startTime: string;
+  endTime: string;
+  site: {
+    id: string;
+    name: string;
+  } | null;
+  requiredEmployees: number;
+  availableEmployees: number;
+  hasCapacityWarning: boolean;
+};
+
+async function checkCapacityWarnings(userId: string, startsAt: Date, endsAt: Date): Promise<CapacityWarning[]> {
+  const warnings: CapacityWarning[] = [];
+
+  // 1. Finde alle Schichten des Users im Abwesenheitszeitraum
+  const userShifts = await prisma.shiftAssignment.findMany({
+    where: {
+      userId,
+      shift: {
+        startTime: { lt: endsAt },
+        endTime: { gt: startsAt },
+      },
+      status: { in: ['ASSIGNED', 'CONFIRMED', 'STARTED'] },
+    },
+    select: {
+      shift: {
+        select: {
+          id: true,
+          title: true,
+          siteId: true,
+          site: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+          startTime: true,
+          endTime: true,
+          requiredEmployees: true,
+        },
+      },
+    },
+  });
+
+  // 2. Für jede Schicht: Prüfe Kapazität
+  for (const assignment of userShifts) {
+    const shift = assignment.shift;
+    if (!shift.siteId) continue;
+
+    // Alle anderen Abwesenheiten in diesem Zeitraum finden
+    const otherAbsences = await prisma.absence.findMany({
+      where: {
+        status: 'APPROVED',
+        startsAt: { lt: shift.endTime },
+        endsAt: { gt: shift.startTime },
+      },
+      select: { userId: true },
+    });
+
+    const absentUserIds = new Set(otherAbsences.map((a) => a.userId));
+    absentUserIds.add(userId); // User selbst auch abwesend
+
+    // Alle Mitarbeiter mit Clearance für dieses Objekt
+    const clearedUsers = await prisma.objectClearance.findMany({
+      where: {
+        siteId: shift.siteId,
+        status: 'ACTIVE',
+        OR: [
+          { validUntil: null },
+          { validUntil: { gte: shift.startTime } },
+        ],
+      },
+      select: { userId: true },
+    });
+
+    const clearedUserIds = new Set(clearedUsers.map((c) => c.userId));
+
+    // Verfügbare = Cleared UND NICHT abwesend
+    const availableCount = clearedUsers.filter((c) => !absentUserIds.has(c.userId)).length;
+    const required = shift.requiredEmployees;
+
+    if (availableCount < required) {
+      warnings.push({
+        shiftId: shift.id,
+        shiftTitle: shift.title,
+        siteId: shift.siteId,
+        siteName: shift.site?.name || 'Unbekannt',
+        date: shift.startTime.toISOString().split('T')[0],
+        required,
+        available: availableCount,
+        shortage: required - availableCount,
+      });
+    }
+  }
+
+  return warnings;
+}
+
+// Hilfsfunktion: Lade alle betroffenen Schichten mit Kapazitäts-Infos
+async function getAffectedShiftsWithCapacity(userId: string, startsAt: Date, endsAt: Date): Promise<AffectedShift[]> {
+  const affectedShifts: AffectedShift[] = [];
+
+  // 1. Finde alle Schichten des Users im Abwesenheitszeitraum
+  const userShifts = await prisma.shiftAssignment.findMany({
+    where: {
+      userId,
+      shift: {
+        startTime: { lt: endsAt },
+        endTime: { gt: startsAt },
+      },
+      status: { in: ['ASSIGNED', 'CONFIRMED', 'STARTED'] },
+    },
+    select: {
+      shift: {
+        select: {
+          id: true,
+          title: true,
+          siteId: true,
+          site: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+          startTime: true,
+          endTime: true,
+          requiredEmployees: true,
+        },
+      },
+    },
+  });
+
+  // 2. Für jede Schicht: Berechne Kapazität
+  for (const assignment of userShifts) {
+    const shift = assignment.shift;
+    let availableCount = 0;
+
+    if (shift.siteId) {
+      // Alle anderen Abwesenheiten in diesem Zeitraum finden
+      const otherAbsences = await prisma.absence.findMany({
+        where: {
+          status: 'APPROVED',
+          startsAt: { lt: shift.endTime },
+          endsAt: { gt: shift.startTime },
+        },
+        select: { userId: true },
+      });
+
+      const absentUserIds = new Set(otherAbsences.map((a) => a.userId));
+      absentUserIds.add(userId); // User selbst auch abwesend
+
+      // Alle Mitarbeiter mit Clearance für dieses Objekt
+      const clearedUsers = await prisma.objectClearance.findMany({
+        where: {
+          siteId: shift.siteId,
+          status: 'ACTIVE',
+          OR: [
+            { validUntil: null },
+            { validUntil: { gte: shift.startTime } },
+          ],
+        },
+        select: { userId: true },
+      });
+
+      // Verfügbare = Cleared UND NICHT abwesend
+      availableCount = clearedUsers.filter((c) => !absentUserIds.has(c.userId)).length;
+    }
+
+    const required = shift.requiredEmployees;
+    const hasWarning = availableCount < required;
+
+    affectedShifts.push({
+      id: shift.id,
+      title: shift.title,
+      startTime: shift.startTime.toISOString(),
+      endTime: shift.endTime.toISOString(),
+      site: shift.site,
+      requiredEmployees: required,
+      availableEmployees: availableCount,
+      hasCapacityWarning: hasWarning,
+    });
+  }
+
+  return affectedShifts;
+}
+
+type ReplacementCandidate = {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  clearanceStatus: string;
+  clearanceTrainedAt: string;
+  clearanceValidUntil: string | null;
+};
+
+type LeaveDaysSaldo = {
+  annualLeaveDays: number;
+  takenDays: number;
+  requestedDays: number;
+  remainingDays: number;
+  remainingAfterApproval: number;
+};
+
+// Ersatz-Mitarbeiter finden für eine Schicht
+async function findReplacementCandidates(shiftId: string, absentUserId: string): Promise<ReplacementCandidate[]> {
+  // 1. Lade Schicht-Infos
+  const shift = await prisma.shift.findUnique({
+    where: { id: shiftId },
+    select: {
+      id: true,
+      siteId: true,
+      startTime: true,
+      endTime: true,
+      assignments: {
+        where: { status: { in: ['ASSIGNED', 'CONFIRMED', 'STARTED'] } },
+        select: { userId: true },
+      },
+    },
+  });
+
+  if (!shift || !shift.siteId) {
+    return [];
+  }
+
+  // 2. Bereits zugewiesene Mitarbeiter
+  const assignedUserIds = new Set(shift.assignments.map((a) => a.userId));
+
+  // 3. Abwesende Mitarbeiter im Schicht-Zeitraum
+  const absences = await prisma.absence.findMany({
+    where: {
+      status: 'APPROVED',
+      startsAt: { lt: shift.endTime },
+      endsAt: { gt: shift.startTime },
+    },
+    select: { userId: true },
+  });
+
+  const absentUserIds = new Set(absences.map((a) => a.userId));
+  absentUserIds.add(absentUserId); // Der anfragende User ist auch abwesend
+
+  // 4. Mitarbeiter mit aktiver Clearance für das Objekt
+  const clearances = await prisma.objectClearance.findMany({
+    where: {
+      siteId: shift.siteId,
+      status: 'ACTIVE',
+      OR: [
+        { validUntil: null },
+        { validUntil: { gte: shift.startTime } },
+      ],
+    },
+    select: {
+      userId: true,
+      status: true,
+      trainedAt: true,
+      validUntil: true,
+      user: {
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          email: true,
+        },
+      },
+    },
+  });
+
+  // 5. Filtern: Nicht zugewiesen UND nicht abwesend
+  const candidates = clearances
+    .filter((c) => !assignedUserIds.has(c.userId) && !absentUserIds.has(c.userId))
+    .map((c) => ({
+      id: c.user.id,
+      firstName: c.user.firstName,
+      lastName: c.user.lastName,
+      email: c.user.email,
+      clearanceStatus: c.status,
+      clearanceTrainedAt: c.trainedAt.toISOString(),
+      clearanceValidUntil: c.validUntil?.toISOString() || null,
+    }));
+
+  return candidates;
+}
+
+// Berechne Urlaubstage-Saldo für einen Mitarbeiter
+async function calculateLeaveDaysSaldo(
+  userId: string,
+  currentAbsenceId?: string,
+): Promise<LeaveDaysSaldo | null> {
+  // Lade EmployeeProfile mit annualLeaveDays
+  const profile = await prisma.employeeProfile.findUnique({
+    where: { userId },
+    select: { annualLeaveDays: true },
+  });
+
+  if (!profile) {
+    return null;
+  }
+
+  const annualLeaveDays = profile.annualLeaveDays;
+  const currentYear = new Date().getFullYear();
+  const yearStart = new Date(currentYear, 0, 1);
+  const yearEnd = new Date(currentYear, 11, 31, 23, 59, 59);
+
+  // Genommene Urlaubstage (APPROVED, Typ VACATION im aktuellen Jahr)
+  const takenAbsences = await prisma.absence.findMany({
+    where: {
+      userId,
+      type: 'VACATION',
+      status: 'APPROVED',
+      startsAt: { gte: yearStart, lte: yearEnd },
+    },
+    select: { startsAt: true, endsAt: true },
+  });
+
+  // Beantragte Urlaubstage (REQUESTED, Typ VACATION im aktuellen Jahr)
+  const requestedAbsences = await prisma.absence.findMany({
+    where: {
+      userId,
+      type: 'VACATION',
+      status: 'REQUESTED',
+      startsAt: { gte: yearStart, lte: yearEnd },
+      ...(currentAbsenceId ? { id: { not: currentAbsenceId } } : {}), // Aktueller Antrag nicht mitzählen
+    },
+    select: { startsAt: true, endsAt: true },
+  });
+
+  // Berechne Tage (vereinfacht: Differenz in Tagen)
+  const calculateDays = (absences: Array<{ startsAt: Date; endsAt: Date }>): number => {
+    return absences.reduce((sum, absence) => {
+      const start = new Date(absence.startsAt);
+      const end = new Date(absence.endsAt);
+      const days = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+      return sum + days;
+    }, 0);
+  };
+
+  const takenDays = calculateDays(takenAbsences);
+  const requestedDays = calculateDays(requestedAbsences);
+
+  // Aktueller Antrag
+  let currentAbsenceDays = 0;
+  if (currentAbsenceId) {
+    const currentAbsence = await prisma.absence.findUnique({
+      where: { id: currentAbsenceId },
+      select: { startsAt: true, endsAt: true, type: true },
+    });
+    if (currentAbsence && currentAbsence.type === 'VACATION') {
+      currentAbsenceDays = calculateDays([currentAbsence]);
+    }
+  }
+
+  const remainingDays = annualLeaveDays - takenDays - requestedDays;
+  const remainingAfterApproval = annualLeaveDays - takenDays - requestedDays - currentAbsenceDays;
+
+  return {
+    annualLeaveDays,
+    takenDays,
+    requestedDays,
+    remainingDays,
+    remainingAfterApproval,
+  };
+}
+
 export const createAbsence = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const actor = req.user!;
@@ -188,8 +565,8 @@ export const createAbsence = async (req: Request, res: Response, next: NextFunct
       throw createError(422, 'Enddatum muss nach dem Startdatum liegen.');
     }
 
-    const shouldAutoApprove =
-      type === AbsenceType.SICKNESS || canManage(actor.role);
+    // Nur SICKNESS wird automatisch genehmigt, alle anderen Typen müssen approved werden
+    const shouldAutoApprove = type === AbsenceType.SICKNESS;
 
     const absence = await prisma.absence.create({
       data: {
@@ -199,7 +576,7 @@ export const createAbsence = async (req: Request, res: Response, next: NextFunct
         status: shouldAutoApprove ? AbsenceStatus.APPROVED : AbsenceStatus.REQUESTED,
         decidedById: shouldAutoApprove ? actor.id : null,
         decisionNote:
-          shouldAutoApprove && type === AbsenceType.SICKNESS
+          shouldAutoApprove
             ? 'Automatisch genehmigt (Krankmeldung)'
             : null,
         startsAt: startDate,
@@ -225,6 +602,63 @@ export const createAbsence = async (req: Request, res: Response, next: NextFunct
       },
     });
 
+    // Benachrichtigung an Manager bei Krankmeldung
+    if (type === AbsenceType.SICKNESS) {
+      // Lade Manager/Admin
+      const managers = await prisma.user.findMany({
+        where: {
+          role: { in: ['ADMIN', 'MANAGER'] },
+          emailOptIn: true,
+        },
+        select: { email: true, firstName: true, lastName: true, pushOptIn: true },
+      });
+
+      const employee = await prisma.user.findUnique({
+        where: { id: targetUserId },
+        select: { firstName: true, lastName: true },
+      });
+
+      if (employee) {
+        const employeeName = `${employee.firstName} ${employee.lastName}`;
+        const formatDate = (date: Date) => new Date(date).toLocaleDateString('de-DE');
+
+        const notifData = {
+          employeeName,
+          type: 'SICKNESS',
+          startsAt: formatDate(startDate),
+          endsAt: formatDate(endDate),
+        };
+
+        // Email an alle Manager
+        for (const manager of managers) {
+          if (process.env.EMAIL_NOTIFY_ABSENCES !== 'false') {
+            publishNotificationEvent({
+              channel: 'email',
+              status: 'sent',
+              template: 'absence-sickness-manager',
+              recipient: manager.email,
+              title: `Krankmeldung: ${employeeName}`,
+              body: JSON.stringify(notifData),
+              metadata: { absenceId: absence.id, userId: targetUserId },
+            });
+          }
+
+          // Push an alle Manager mit Opt-In
+          if (manager.pushOptIn && process.env.PUSH_NOTIFY_ABSENCES !== 'false') {
+            publishNotificationEvent({
+              channel: 'push',
+              status: 'sent',
+              template: 'absence-sickness-manager',
+              recipient: manager.email,
+              title: `Krankmeldung: ${employeeName}`,
+              body: `${employeeName} hat sich krankgemeldet: ${notifData.startsAt} - ${notifData.endsAt}`,
+              metadata: { absenceId: absence.id },
+            });
+          }
+        }
+      }
+    }
+
     res.status(201).json({ success: true, data: absence, conflicts });
   } catch (error) {
     next(error);
@@ -237,8 +671,85 @@ export const getAbsenceById = async (req: Request, res: Response, next: NextFunc
     const { id } = req.params;
     const absence = await fetchAbsenceOr404(id);
     ensureAccess(absence, actor);
+
+    // Lade ObjectClearances des betroffenen Mitarbeiters
+    const objectClearances = await prisma.objectClearance.findMany({
+      where: { userId: absence.userId },
+      select: {
+        id: true,
+        status: true,
+        trainedAt: true,
+        validUntil: true,
+        site: {
+          select: {
+            id: true,
+            name: true,
+            address: true,
+          },
+        },
+      },
+      orderBy: { trainedAt: 'desc' },
+    });
+
+    // Lade betroffene Schichten mit Kapazitäts-Infos
+    const affectedShifts = await getAffectedShiftsWithCapacity(
+      absence.userId,
+      new Date(absence.startsAt),
+      new Date(absence.endsAt),
+    );
+
+    // Berechne Urlaubstage-Saldo (nur für VACATION)
+    let leaveDaysSaldo: LeaveDaysSaldo | null = null;
+    if (absence.type === 'VACATION') {
+      leaveDaysSaldo = await calculateLeaveDaysSaldo(absence.userId, absence.id);
+    }
+
     const { userId: _omit, ...rest } = absence;
-    res.json({ data: rest });
+    res.json({
+      data: {
+        ...rest,
+        objectClearances,
+        affectedShifts,
+        leaveDaysSaldo,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Preview: Kapazitätswarnungen OHNE zu genehmigen
+export const previewCapacityWarnings = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const actor = req.user!;
+    const { id } = req.params;
+
+    if (!canManage(actor.role)) {
+      throw createError(403, 'Keine Berechtigung für diese Aktion.');
+    }
+
+    const absence = await prisma.absence.findUnique({
+      where: { id },
+      select: { id: true, userId: true, startsAt: true, endsAt: true, type: true, status: true },
+    });
+
+    if (!absence) {
+      throw createError(404, 'Abwesenheit nicht gefunden.');
+    }
+
+    if (absence.status !== AbsenceStatus.REQUESTED) {
+      throw createError(400, 'Nur offene Anträge können geprüft werden.');
+    }
+
+    // Nur für VACATION prüfen (SICKNESS wird auto-approved, dagegen kann man nichts tun)
+    if (absence.type === 'SICKNESS') {
+      res.json({ warnings: [] });
+      return;
+    }
+
+    const warnings = await checkCapacityWarnings(absence.userId, absence.startsAt, absence.endsAt);
+
+    res.json({ warnings });
   } catch (error) {
     next(error);
   }
@@ -249,7 +760,7 @@ async function updateAbsenceStatus(
   res: Response,
   next: NextFunction,
   status: AbsenceStatus,
-) {
+): Promise<void> {
   try {
     const actor = req.user!;
     const { id } = req.params;
@@ -293,8 +804,14 @@ async function updateAbsenceStatus(
         decisionNote: decisionNote?.trim() || null,
         ...(decidedByIdUpdate !== undefined ? { decidedById: decidedByIdUpdate } : {}),
       },
-      select: selectAbsence,
+      select: { ...selectAbsence, startsAt: true, endsAt: true },
     });
+
+    // Kapazitätswarnungen prüfen bei Genehmigung
+    let capacityWarnings: CapacityWarning[] = [];
+    if (status === AbsenceStatus.APPROVED) {
+      capacityWarnings = await checkCapacityWarnings(absence.userId, updated.startsAt, updated.endsAt);
+    }
 
     await submitAuditEvent(req, {
       action:
@@ -385,19 +902,19 @@ async function updateAbsenceStatus(
       }
     }
 
-    res.json({ success: true, data: updated });
+    res.json({ success: true, data: updated, capacityWarnings });
   } catch (error) {
     next(error);
   }
 }
 
-export const approveAbsence = (req: Request, res: Response, next: NextFunction) =>
+export const approveAbsence = (req: Request, res: Response, next: NextFunction): Promise<void> =>
   updateAbsenceStatus(req, res, next, AbsenceStatus.APPROVED);
 
-export const rejectAbsence = (req: Request, res: Response, next: NextFunction) =>
+export const rejectAbsence = (req: Request, res: Response, next: NextFunction): Promise<void> =>
   updateAbsenceStatus(req, res, next, AbsenceStatus.REJECTED);
 
-export const cancelAbsence = (req: Request, res: Response, next: NextFunction) =>
+export const cancelAbsence = (req: Request, res: Response, next: NextFunction): Promise<void> =>
   updateAbsenceStatus(req, res, next, AbsenceStatus.CANCELLED);
 
 // Upload document for absence
@@ -531,6 +1048,54 @@ export const deleteAbsenceDocument = async (req: Request, res: Response, next: N
     });
 
     res.json({ success: true, message: 'Dokument gelöscht.' });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Ersatz-Mitarbeiter für betroffene Schichten finden
+export const getReplacementCandidates = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const actor = req.user!;
+    const { id } = req.params;
+    const { shiftId } = req.query as { shiftId?: string };
+
+    if (!canManage(actor.role)) {
+      throw createError(403, 'Keine Berechtigung für diese Aktion.');
+    }
+
+    const absence = await prisma.absence.findUnique({
+      where: { id },
+      select: { id: true, userId: true, startsAt: true, endsAt: true },
+    });
+
+    if (!absence) {
+      throw createError(404, 'Abwesenheit nicht gefunden.');
+    }
+
+    // Wenn shiftId angegeben: Nur für diese Schicht
+    if (shiftId) {
+      const candidates = await findReplacementCandidates(shiftId, absence.userId);
+      res.json({ data: { shiftId, candidates } });
+      return;
+    }
+
+    // Sonst: Für alle betroffenen Schichten
+    const affectedShifts = await getAffectedShiftsWithCapacity(
+      absence.userId,
+      new Date(absence.startsAt),
+      new Date(absence.endsAt),
+    );
+
+    const results = await Promise.all(
+      affectedShifts.map(async (shift) => ({
+        shiftId: shift.id,
+        shiftTitle: shift.title,
+        candidates: await findReplacementCandidates(shift.id, absence.userId),
+      })),
+    );
+
+    res.json({ data: results });
   } catch (error) {
     next(error);
   }

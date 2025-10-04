@@ -14,6 +14,8 @@ import {
   uploadAbsenceDocument,
   downloadAbsenceDocument,
   deleteAbsenceDocument,
+  previewCapacityWarnings,
+  getReplacementCandidates,
 } from '../controllers/absenceController';
 
 const router = Router();
@@ -23,6 +25,8 @@ router.use(authenticate);
 router.get('/', authorize('ADMIN', 'MANAGER', 'DISPATCHER', 'EMPLOYEE'), validate(listAbsenceQuerySchema), asyncHandler(listAbsences));
 router.post('/', authorize('ADMIN', 'MANAGER', 'DISPATCHER', 'EMPLOYEE'), validate(createAbsenceSchema), asyncHandler(createAbsence));
 router.get('/:id', authorize('ADMIN', 'MANAGER', 'DISPATCHER', 'EMPLOYEE'), asyncHandler(getAbsenceById));
+router.get('/:id/preview-warnings', authorize('ADMIN', 'MANAGER'), asyncHandler(previewCapacityWarnings));
+router.get('/:id/replacement-candidates', authorize('ADMIN', 'MANAGER'), asyncHandler(getReplacementCandidates));
 router.post('/:id/approve', authorize('ADMIN', 'MANAGER'), validate(absenceDecisionSchema), asyncHandler(approveAbsence));
 router.post('/:id/reject', authorize('ADMIN', 'MANAGER'), validate(absenceDecisionSchema), asyncHandler(rejectAbsence));
 router.post(
@@ -50,6 +54,8 @@ router.delete(
 
 router.all('/', methodNotAllowed(['GET', 'POST']));
 router.all('/:id', methodNotAllowed(['GET', 'POST']));
+router.all('/:id/preview-warnings', methodNotAllowed(['GET']));
+router.all('/:id/replacement-candidates', methodNotAllowed(['GET']));
 router.all('/:id/approve', methodNotAllowed(['POST']));
 router.all('/:id/reject', methodNotAllowed(['POST']));
 router.all('/:id/cancel', methodNotAllowed(['POST']));

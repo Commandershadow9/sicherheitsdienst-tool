@@ -12,10 +12,13 @@ import { z } from 'zod'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useMemo, useState } from 'react'
-import { createAbsence, fetchAbsences, approveAbsence, rejectAbsence, cancelAbsence } from './api'
+import { createAbsence, fetchAbsences, fetchAbsenceById, approveAbsence, rejectAbsence, cancelAbsence, previewCapacityWarnings } from './api'
 import type { Absence, AbsenceStatus, AbsenceType, ShiftConflict } from './types'
 import { api } from '@/lib/api'
 import { ABSENCE_TYPES, ABSENCE_STATUSES, getAbsenceStatusLabel, getAbsenceTypeLabel, formatPeriod } from './utils'
+import { AbsencesCalendar } from './AbsencesCalendar'
+import { AbsenceDetailModal } from './AbsenceDetailModal'
+import { Calendar, List } from 'lucide-react'
 
 const createSchema = z.object({
   userId: z.string().cuid().optional(),
@@ -36,6 +39,8 @@ export default function AbsencesList() {
   const paramsState = useListParams({ page: 1, pageSize: 25 })
   const { params, update } = paramsState
   const [conflicts, setConflicts] = useState<ShiftConflict[]>([])
+  const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list')
+  const [selectedAbsence, setSelectedAbsence] = useState<Absence | null>(null)
 
   const { data, isLoading, isError, error } = useQuery({
     queryKey: ['absences', params],
@@ -127,12 +132,58 @@ export default function AbsencesList() {
   })
 
   const rows = data?.data ?? []
+  const pendingCount = rows.filter((r) => r.status === 'REQUESTED').length
+
+  // Handler: Genehmigen mit Warnungs-Check
+  const handleApprove = async (absence: Absence) => {
+    try {
+      // 1. Preview: Warnungen abrufen
+      const { warnings } = await previewCapacityWarnings(absence.id)
+
+      // 2. Wenn Warnungen existieren → Bestätigung einholen
+      if (warnings && warnings.length > 0) {
+        const warningText = warnings
+          .map((w) => `• ${w.shiftTitle} (${w.siteName}): Benötigt ${w.required}, nur ${w.available} verfügbar → ${w.shortage} fehlen`)
+          .join('\n')
+
+        const confirmed = window.confirm(
+          `⚠️ WARNUNG: Unterbesetzung erkannt!\n\n${warningText}\n\nTrotzdem genehmigen?`
+        )
+
+        if (!confirmed) {
+          return // Abbruch
+        }
+      }
+
+      // 3. Genehmigen (mit oder ohne Warnung)
+      approveMutation.mutate({ id: absence.id })
+    } catch (error: any) {
+      toast.error(error?.response?.data?.message || 'Prüfung fehlgeschlagen')
+    }
+  }
+
+  // Handler: Detailansicht öffnen mit API-Call für vollständige Daten
+  const handleOpenDetail = async (absence: Absence) => {
+    try {
+      const fullAbsence = await fetchAbsenceById(absence.id)
+      setSelectedAbsence(fullAbsence)
+    } catch (error: any) {
+      toast.error(error?.response?.data?.message || 'Laden fehlgeschlagen')
+    }
+  }
 
   const columns = useMemo(() => [
     {
       key: 'employee',
       header: 'Mitarbeiter',
-      render: (absence: Absence) => `${absence.user.firstName} ${absence.user.lastName}`,
+      render: (absence: Absence) => (
+        <button
+          onClick={() => handleOpenDetail(absence)}
+          className="text-blue-600 hover:text-blue-800 hover:underline text-left"
+        >
+          {absence.user.firstName} {absence.user.lastName}
+        </button>
+      ),
     },
     {
       key: 'type',
@@ -165,7 +216,7 @@ export default function AbsencesList() {
               key="approve"
               size="sm"
               variant="secondary"
-              onClick={() => approveMutation.mutate({ id: absence.id })}
+              onClick={() => handleApprove(absence)}
             >
               Genehmigen
             </Button>,
@@ -220,8 +271,34 @@ export default function AbsencesList() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between flex-wrap gap-3">
-        <h1 className="text-xl font-semibold">Abwesenheiten</h1>
-        <Button onClick={() => setCreating((prev) => !prev)}>{creating ? 'Formular schließen' : 'Neue Abwesenheit'}</Button>
+        <div className="flex items-center gap-3">
+          <h1 className="text-xl font-semibold">Abwesenheiten</h1>
+          {isManager && pendingCount > 0 && (
+            <span className="inline-flex items-center rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-medium text-amber-800">
+              {pendingCount} ausstehend
+            </span>
+          )}
+        </div>
+        <div className="flex gap-2 flex-wrap">
+          {isManager && pendingCount > 0 && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => update({ filters: { status: 'REQUESTED' }, page: 1 })}
+            >
+              Ausstehende anzeigen ({pendingCount})
+            </Button>
+          )}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setViewMode(viewMode === 'list' ? 'calendar' : 'list')}
+          >
+            {viewMode === 'list' ? <Calendar className="h-4 w-4 mr-1" /> : <List className="h-4 w-4 mr-1" />}
+            {viewMode === 'list' ? 'Kalender' : 'Liste'}
+          </Button>
+          <Button onClick={() => setCreating((prev) => !prev)}>{creating ? 'Formular schließen' : 'Neue Abwesenheit'}</Button>
+        </div>
       </div>
 
       {creating && (
@@ -301,70 +378,82 @@ export default function AbsencesList() {
         </div>
       )}
 
-      <div className="grid gap-3 md:grid-cols-5">
-        <FormField label="Status">
-          <Select
-            value={params.filters.status ?? ''}
-            onChange={(e) => update({ filters: { status: e.target.value || undefined }, page: 1 })}
-          >
-            <option value="">Alle</option>
-            {ABSENCE_STATUSES.map((s) => (
-              <option key={s.value} value={s.value}>
-                {s.label}
-              </option>
-            ))}
-          </Select>
-        </FormField>
-        <FormField label="Art">
-          <Select
-            value={params.filters.type ?? ''}
-            onChange={(e) => update({ filters: { type: e.target.value || undefined }, page: 1 })}
-          >
-            <option value="">Alle</option>
-            {ABSENCE_TYPES.map((t) => (
-              <option key={t.value} value={t.value}>
-                {t.label}
-              </option>
-            ))}
-          </Select>
-        </FormField>
-        <FormField label="Von">
-          <Input
-            type="date"
-            value={params.filters.from || ''}
-            onChange={(e) => update({ filters: { from: e.target.value || undefined }, page: 1 })}
-          />
-        </FormField>
-        <FormField label="Bis">
-          <Input
-            type="date"
-            value={params.filters.to || ''}
-            onChange={(e) => update({ filters: { to: e.target.value || undefined }, page: 1 })}
-          />
-        </FormField>
-        {isManager && (
-          <FormField label="Mitarbeiter-ID">
-            <Input
-              value={params.filters.userId || ''}
-              onChange={(e) => update({ filters: { userId: e.target.value || undefined }, page: 1 })}
-              placeholder="optional"
-            />
-          </FormField>
-        )}
-      </div>
+      {viewMode === 'list' && (
+        <>
+          <div className="grid gap-3 md:grid-cols-5">
+            <FormField label="Status">
+              <Select
+                value={params.filters.status ?? ''}
+                onChange={(e) => update({ filters: { status: e.target.value || undefined }, page: 1 })}
+              >
+                <option value="">Alle</option>
+                {ABSENCE_STATUSES.map((s) => (
+                  <option key={s.value} value={s.value}>
+                    {s.label}
+                  </option>
+                ))}
+              </Select>
+            </FormField>
+            <FormField label="Art">
+              <Select
+                value={params.filters.type ?? ''}
+                onChange={(e) => update({ filters: { type: e.target.value || undefined }, page: 1 })}
+              >
+                <option value="">Alle</option>
+                {ABSENCE_TYPES.map((t) => (
+                  <option key={t.value} value={t.value}>
+                    {t.label}
+                  </option>
+                ))}
+              </Select>
+            </FormField>
+            <FormField label="Von">
+              <Input
+                type="date"
+                value={params.filters.from || ''}
+                onChange={(e) => update({ filters: { from: e.target.value || undefined }, page: 1 })}
+              />
+            </FormField>
+            <FormField label="Bis">
+              <Input
+                type="date"
+                value={params.filters.to || ''}
+                onChange={(e) => update({ filters: { to: e.target.value || undefined }, page: 1 })}
+              />
+            </FormField>
+            {isManager && (
+              <FormField label="Mitarbeiter-ID">
+                <Input
+                  value={params.filters.userId || ''}
+                  onChange={(e) => update({ filters: { userId: e.target.value || undefined }, page: 1 })}
+                  placeholder="optional"
+                />
+              </FormField>
+            )}
+          </div>
 
-      <DataTable
-        columns={columns}
-        rows={rows}
-        loading={isLoading}
-        error={isError}
-        pagination={{
-          page: data?.pagination.page ?? params.page,
-          pageSize: data?.pagination.pageSize ?? params.pageSize,
-          totalPages: data?.pagination.totalPages ?? 1,
-        }}
-        onPageChange={(page) => update({ page })}
-        onPageSizeChange={(pageSize) => update({ pageSize, page: 1 })}
+          <DataTable
+            columns={columns}
+            rows={rows}
+            loading={isLoading}
+            error={isError}
+            pagination={{
+              page: data?.pagination.page ?? params.page,
+              pageSize: data?.pagination.pageSize ?? params.pageSize,
+              totalPages: data?.pagination.totalPages ?? 1,
+            }}
+            onPageChange={(page) => update({ page })}
+            onPageSizeChange={(pageSize) => update({ pageSize, page: 1 })}
+          />
+        </>
+      )}
+
+      {viewMode === 'calendar' && <AbsencesCalendar absences={rows} />}
+
+      <AbsenceDetailModal
+        absence={selectedAbsence}
+        open={!!selectedAbsence}
+        onClose={() => setSelectedAbsence(null)}
       />
     </div>
   )

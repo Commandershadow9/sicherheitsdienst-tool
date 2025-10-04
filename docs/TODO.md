@@ -1,12 +1,36 @@
 # TODO – Nächste Schritte (Kurzplanung)
 
-Stand: 2025-10-03
+Stand: 2025-10-03 (nach v1.5.1)
 
-- ## Kurzfristig (P1, 1–2 Tage)
-- [ ] Abwesenheiten Phase 2: Dokument-/Attest-Uploads und Kalender-Overlay mit Konflikten prototypisieren.
-- [ ] Abwesenheiten-Benachrichtigungen: Approve/Reject/Cancel per Mail/Push versenden inkl. Tests/Audit.
-- [ ] Profil & Auth Tests: Vitest für `AuthProvider` (Refresh/Logout) nachziehen, Integrationstest für Absence-Konflikte schreiben.
-- [ ] Release v1.3.0: CHANGELOG finalisieren, Docs querlesen, Tag/Release-Skript vorbereiten.
+## Kurzfristig (P1, 1–2 Tage)
+
+### Abwesenheiten: Detailansicht & Kontext (v1.6.0)
+- [ ] **Urlaubsantrag-Detailansicht**:
+  - Modal/Drawer beim Klick auf Abwesenheit
+  - Zeigt: Zeitraum, Grund, Status, Entscheidungs-Notiz
+  - Zeigt: Ersteller vs. Betroffener (falls Admin für Mitarbeiter erstellt)
+- [ ] **Urlaubstage-Saldo**:
+  - Neues Feld: `EmployeeProfile.annualLeaveDays` (z.B. 30)
+  - Berechnung: Verfügbar, Genommen, Beantragt, Verbleibend
+  - Anzeige in Detailansicht: "Nach Genehmigung: X Tage verbleibend"
+- [ ] **Objekt-Zuordnung anzeigen**:
+  - Liste: "Mitarbeiter arbeitet in: Objekt A, Objekt B"
+  - Einarbeitungs-Status: ✅ Aktiv, ⏳ Abgelaufen
+  - Zeigt betroffene Schichten bei Konflikt
+- [ ] **Ersatz-Mitarbeiter-Suche**:
+  - Button "Ersatz finden" bei Kapazitätswarnung
+  - Zeigt verfügbare Mitarbeiter MIT ObjectClearance
+  - Direktes Zuweisen zur Schicht möglich
+  - API: `GET /api/absences/:id/replacement-candidates`
+
+### Abwesenheiten: Abgeschlossen ✅
+- [x] Abwesenheiten Phase 2: Dokument-/Attest-Uploads (v1.5.0)
+- [x] Kalender-Ansicht (v1.5.1)
+- [x] Kapazitätswarnung mit Preview (v1.5.1)
+- [x] Abwesenheiten-Benachrichtigungen: Approve/Reject/Cancel (v1.5.0)
+- [x] Profil & Auth Tests: Vitest + Integrationstest für Absence-Konflikte (v1.5.0)
+- [x] Bug-Fix: Admin-erstellte Urlaube nicht auto-genehmigen (v1.5.1)
+- [x] Manager-Dashboard: Badge + Quick-Filter (v1.5.1)
 
 - ## Kurzfristig (Status: abgeschlossen)
 - [x] Login-Limiter Observability
@@ -47,24 +71,70 @@ Erledigt:
   - Akzeptanz: 2–3 schlanke Tests, keine Ports/DB nötig.
 
 ## Mittelfristig (P2)
+
+### Objekt-Management (v1.7.0)
+- [ ] **Objekt-Verwaltung UI** (Maske zum Anlegen/Bearbeiten):
+  - **Basis-Informationen**:
+    - Name, Standort, Adresse
+    - Verträge, Konzepte, Abrechnungsdaten hochladen (PDF, Dokumente)
+    - RBAC: Mitarbeiter sehen nur relevante Infos, Chef sieht alles
+  - **Schicht-Planung**:
+    - **Standard-Schichten**: "Täglich 06:00-14:00, 2 MA benötigt"
+      - Wochentag-basiert (Mo-Fr, Sa-So unterschiedlich)
+      - Wiederkehrende Schichten definieren
+    - **Sonder-Schichten**: "Nur bei Event XY, 18:00-02:00, 5 MA"
+      - Event-gesteuert (nur wenn bestimmtes Event aktiv)
+      - Temporäre Schichten für spezielle Anlässe
+    - Anzahl benötigter Mitarbeiter pro Schicht
+    - Zeitfenster (von-bis) konfigurieren
+  - **Qualifikationen & Anforderungen**:
+    - Welche Qualifikationen brauchen MA? (§34a, Brandschutz, etc.)
+    - Mindestanforderungen definieren
+    - Automatische Prüfung bei Zuweisung
+  - **Dokumente & Konzepte**:
+    - Sicherheitskonzepte hinterlegen
+    - Einsatzpläne, Notfallpläne
+    - Verträge mit Kunde
+    - Abrechnungsunterlagen
+  - **Übersichtliche Darstellung**:
+    - Alle Infos in Tabs/Sektionen organisiert
+    - Schneller Überblick über aktuelle Besetzung
+    - Integration mit Planungskonzept
+- [ ] **Einarbeitungs-Management**:
+  - UI zum Erstellen/Bearbeiten von ObjectClearance
+  - "Mitarbeiter XY für Objekt Z einarbeiten"
+  - Ablaufdatum (validUntil) verwalten
+  - Status ändern (ACTIVE/EXPIRED/REVOKED)
+  - Bulk-Einarbeitung (alle Mitarbeiter für Objekt)
+  - Automatische Warnungen bei ablaufenden Einarbeitungen
+
+### Absences & Events
+- [ ] **Absences ICS & Kalender**:
+  - ICS-Export für Abwesenheiten (Pro Nutzer/Team)
+  - iCal-Feed für externe Kalender (Google, Outlook)
+  - Dokumentation (`docs/planning/absences.md`)
+- [ ] **Event-Planung mit Kapazitätsprüfung**:
+  - UI für große Events (15+ Mitarbeiter)
+  - Automatische Kapazitätsprüfung bei Event-Erstellung
+  - Partner-Firmen-Integration (Konzept entwickeln)
+  - Vorlaufzeit-Warnungen (Event in 2 Wochen, nur 50% Kapazität)
+
+### Monitoring & Performance
+- [ ] **Grafana/Alerts erweitert**:
+  - Panels für Absence-Queues, Login-Error-Rate
+  - Slack-Alert bei wachsenden Abwesenheitskonflikten
+  - Dashboard für ObjectClearance-Status (Ablaufende Einarbeitungen)
+- [ ] **Storage Evaluierung**:
+  - S3/MinIO für Dokument-Uploads
+  - Verschlüsselungskonzept ausarbeiten
+  - Migration von lokalem Storage zu S3
+
+### Abgeschlossen ✅
 - [x] XLSX‑Exports lokal stabilisieren
-  - Akzeptanz: Tests für XLSX‑Exports erkennen Buffer zuverlässig (lokal/CI); ggf. Content‑Type/Body‑Parser‑Setup prüfen.
 - [x] Reporting/Exports: CSV/Excel für Listen (Employees/Sites/Shifts)
-  - [x] Employees: CSV/XLSX via `Accept` (Filter/Sort unterstützt; README/OpenAPI ergänzt)
-  - [x] Sites: CSV/XLSX
-  - [x] Shifts: CSV/XLSX
-  - Akzeptanz: Endpoint(s) mit Filter/Sort‑Berücksichtigung; Beispiel in README/OpenAPI.
-- [x] Performance: DB‑Index‑Vorschläge (Users.email, Sites (name,address), Shifts (startTime,status))
-  - Akzeptanz: Liste empfohlener Indexe + (optional) Migrationen vorgeschlagen. (Umgesetzt: `docs/DB_INDEXES.md` + Prisma-@@index in Schema.)
-- [x] Notifications: Rate‑Limit produktionsreif (z. B. Token‑Bucket/express-rate-limit) + Env‑Profile
-  - Akzeptanz: konfigurierbare Limits; Tests für Grenzen/Eckenfälle. (Umgesetzt: ENV‑Toggle, Standard‑Headers, 429 Retry‑After, Tests.)
-
+- [x] Performance: DB‑Index‑Vorschläge
+- [x] Notifications: Rate‑Limit produktionsreif
 - [x] Codequalität: ESLint‑Warnungen reduzieren
-  - Akzeptanz: ESLint‑Warnungen im Backend auf ≤ 5 reduzieren (ohne Funktionsänderung), Format/Lint‑Regeln beibehalten.
-
-- [ ] Absences ICS & Kalender: ICS-Export für Abwesenheiten (Pro Nutzer/Team) + Dokumentation (`docs/planning/absences.md`).
-- [ ] Grafana/Alerts: Panels für Absence-Queues, Login-Error-Rate; Slack-Alert bei wachsenden Abwesenheitskonflikten.
-- [ ] Storage Evaluierung: S3/MinIO + Verschlüsselungskonzept für Dokument-Uploads (Profil) ausarbeiten.
 
 ## Langfristig / Post‑MVP (P3)
 - [x] Erweiterte Benachrichtigungen (Real‑Events, Templates, Opt‑In) (2025-09-16)
