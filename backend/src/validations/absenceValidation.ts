@@ -23,6 +23,8 @@ export const listAbsenceQuerySchema = z.object({
   query: z.object({
     page: z.string().regex(/^\d+$/).optional(),
     pageSize: z.string().regex(/^\d+$/).optional(),
+    sortBy: z.string().optional(),
+    sortDir: z.enum(['asc', 'desc']).optional(),
     type: z.nativeEnum(AbsenceType).optional(),
     status: z.nativeEnum(AbsenceStatus).optional(),
     userId: z.string().cuid().optional(),

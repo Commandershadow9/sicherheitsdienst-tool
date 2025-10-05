@@ -1,20 +1,29 @@
 import { Modal } from '@/components/ui/modal'
 import { Button } from '@/components/ui/button'
 import type { ReplacementCandidate } from './types'
+import { useState } from 'react'
+import { toast } from 'sonner'
+import { api } from '@/lib/api'
 
 type ReplacementCandidatesModalProps = {
   open: boolean
   onClose: () => void
+  shiftId: string
   shiftTitle: string
   candidates: ReplacementCandidate[]
+  onAssignSuccess?: (info: { shiftId: string; shiftTitle: string; candidate: ReplacementCandidate }) => void
 }
 
 export function ReplacementCandidatesModal({
   open,
   onClose,
+  shiftId,
   shiftTitle,
   candidates,
+  onAssignSuccess,
 }: ReplacementCandidatesModalProps) {
+  const [assigning, setAssigning] = useState(false)
+
   function formatDate(isoString: string): string {
     const date = new Date(isoString)
     return new Intl.DateTimeFormat('de-DE', {
@@ -22,6 +31,26 @@ export function ReplacementCandidatesModal({
       month: '2-digit',
       day: '2-digit',
     }).format(date)
+  }
+
+  async function handleAssign(candidate: ReplacementCandidate) {
+    const confirmed = window.confirm(
+      `Mitarbeiter ${candidate.firstName} ${candidate.lastName} zur Schicht "${shiftTitle}" zuweisen?`
+    )
+
+    if (!confirmed) return
+
+    setAssigning(true)
+    try {
+      await api.post(`/shifts/${shiftId}/assign`, { userId: candidate.id })
+      toast.success(`${candidate.firstName} ${candidate.lastName} erfolgreich zugewiesen`)
+      onClose()
+      onAssignSuccess?.({ shiftId, shiftTitle, candidate }) // Parent informieren (z.B. für Refresh)
+    } catch (error: any) {
+      toast.error(error?.response?.data?.message || 'Zuweisung fehlgeschlagen')
+    } finally {
+      setAssigning(false)
+    }
   }
 
   return (
@@ -65,12 +94,10 @@ export function ReplacementCandidatesModal({
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={() => {
-                        // TODO: Direkt zur Schicht zuweisen
-                        alert(`Mitarbeiter ${candidate.firstName} ${candidate.lastName} zuweisen`)
-                      }}
+                      onClick={() => handleAssign(candidate)}
+                      disabled={assigning}
                     >
-                      Zuweisen
+                      {assigning ? 'Zuweisen...' : 'Zuweisen'}
                     </Button>
                   </div>
                 </div>

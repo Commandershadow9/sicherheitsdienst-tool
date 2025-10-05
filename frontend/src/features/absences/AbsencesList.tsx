@@ -51,13 +51,12 @@ export default function AbsencesList() {
   const { data: usersData } = useQuery({
     queryKey: ['users', 'for-absences'],
     queryFn: async () => {
-      if (!isManager) return [] as MinimalUser[]
       const res = await api.get<{ data: MinimalUser[] }>('users', {
         params: { page: 1, pageSize: 100, sortBy: 'firstName' },
       })
       return (res.data?.data ?? []).map((u) => ({ id: u.id, firstName: (u as any).firstName, lastName: (u as any).lastName }))
     },
-    enabled: isManager,
+    enabled: isManager && !!user,
     placeholderData: [] as MinimalUser[],
   })
 
@@ -157,8 +156,8 @@ export default function AbsencesList() {
 
       // 3. Genehmigen (mit oder ohne Warnung)
       approveMutation.mutate({ id: absence.id })
-    } catch (error: any) {
-      toast.error(error?.response?.data?.message || 'Prüfung fehlgeschlagen')
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || 'Prüfung fehlgeschlagen')
     }
   }
 
@@ -167,8 +166,8 @@ export default function AbsencesList() {
     try {
       const fullAbsence = await fetchAbsenceById(absence.id)
       setSelectedAbsence(fullAbsence)
-    } catch (error: any) {
-      toast.error(error?.response?.data?.message || 'Laden fehlgeschlagen')
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || 'Laden fehlgeschlagen')
     }
   }
 

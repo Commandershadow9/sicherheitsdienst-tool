@@ -1,9 +1,9 @@
 import { Modal } from '@/components/ui/modal'
 import { Button } from '@/components/ui/button'
 import { formatPeriod, getAbsenceStatusLabel, getAbsenceTypeLabel } from './utils'
-import type { Absence, ClearanceStatus, AffectedShift, ReplacementCandidate } from './types'
-import { ReplacementCandidatesModal } from './ReplacementCandidatesModal'
-import { getReplacementCandidates } from './api'
+import type { Absence, ClearanceStatus, AffectedShift, ReplacementCandidateV2 } from './types'
+import { ReplacementCandidatesModalV2 } from './ReplacementCandidatesModalV2'
+import { getReplacementCandidatesV2, fetchAbsenceById } from './api'
 import { useState } from 'react'
 import { toast } from 'sonner'
 
@@ -69,20 +69,39 @@ function isClearanceExpired(clearance: { status: ClearanceStatus; validUntil?: s
 export function AbsenceDetailModal({ absence, open, onClose }: AbsenceDetailModalProps) {
   const [replacementModalOpen, setReplacementModalOpen] = useState(false)
   const [selectedShift, setSelectedShift] = useState<{ id: string; title: string } | null>(null)
-  const [candidates, setCandidates] = useState<ReplacementCandidate[]>([])
+  const [candidates, setCandidates] = useState<ReplacementCandidateV2[]>([])
   const [loadingCandidates, setLoadingCandidates] = useState(false)
+  const [refreshing, setRefreshing] = useState(false)
+  const [currentAbsence, setCurrentAbsence] = useState<Absence | null>(absence)
 
-  if (!absence) return null
+  // Update currentAbsence wenn props ändern
+  if (absence && absence.id !== currentAbsence?.id) {
+    setCurrentAbsence(absence)
+  }
 
-  const isCreatedByOther = absence.createdBy.id !== absence.user.id
+  if (!currentAbsence) return null
+
+  const isCreatedByOther = currentAbsence.createdBy.id !== currentAbsence.user.id
+
+  const refreshAbsenceData = async () => {
+    setRefreshing(true)
+    try {
+      const updated = await fetchAbsenceById(currentAbsence.id)
+      setCurrentAbsence(updated)
+      toast.success('Daten aktualisiert')
+    } catch (error: any) {
+      toast.error('Aktualisierung fehlgeschlagen')
+    } finally {
+      setRefreshing(false)
+    }
+  }
 
   const handleFindReplacement = async (shift: AffectedShift) => {
     setLoadingCandidates(true)
     try {
-      const result = await getReplacementCandidates(absence.id, shift.id)
-      // Da wir shiftId mitgeben, bekommen wir { shiftId, candidates }
-      const data = result as { shiftId: string; candidates: any[] }
-      setCandidates(data.candidates as ReplacementCandidate[])
+      // v2 API mit Intelligent Scoring (v1.8.0)
+      const result = await getReplacementCandidatesV2(shift.id, currentAbsence?.user.id)
+      setCandidates(result.data)
       setSelectedShift({ id: shift.id, title: shift.title })
       setReplacementModalOpen(true)
     } catch (error: any) {
@@ -100,9 +119,9 @@ export function AbsenceDetailModal({ absence, open, onClose }: AbsenceDetailModa
           <div>
             <h3 className="text-sm font-semibold text-gray-700 mb-2">Betroffener Mitarbeiter</h3>
             <p className="text-base">
-              {absence.user.firstName} {absence.user.lastName}
+              {currentAbsence.user.firstName} {currentAbsence.user.lastName}
             </p>
-            <p className="text-sm text-gray-600">{absence.user.email}</p>
+            <p className="text-sm text-gray-600">{currentAbsence.user.email}</p>
           </div>
 
           {/* Ersteller (nur wenn unterschiedlich) */}
@@ -110,7 +129,7 @@ export function AbsenceDetailModal({ absence, open, onClose }: AbsenceDetailModa
             <div>
               <h3 className="text-sm font-semibold text-gray-700 mb-2">Erstellt von</h3>
               <p className="text-base">
-                {absence.createdBy.firstName} {absence.createdBy.lastName}
+                {currentAbsence.createdBy.firstName} {currentAbsence.createdBy.lastName}
               </p>
               <p className="text-sm text-gray-600">
                 Admin/Manager hat diese Abwesenheit für den Mitarbeiter eingetragen
@@ -121,9 +140,9 @@ export function AbsenceDetailModal({ absence, open, onClose }: AbsenceDetailModa
           {/* Zeitraum */}
           <div>
             <h3 className="text-sm font-semibold text-gray-700 mb-2">Zeitraum</h3>
-            <p className="text-base">{formatPeriod(absence.startsAt, absence.endsAt)}</p>
+            <p className="text-base">{formatPeriod(currentAbsence.startsAt, currentAbsence.endsAt)}</p>
             <p className="text-sm text-gray-600">
-              {formatDate(absence.startsAt)} bis {formatDate(absence.endsAt)}
+              {formatDate(currentAbsence.startsAt)} bis {formatDate(currentAbsence.endsAt)}
             </p>
           </div>
 
@@ -131,59 +150,59 @@ export function AbsenceDetailModal({ absence, open, onClose }: AbsenceDetailModa
           <div className="grid grid-cols-2 gap-4">
             <div>
               <h3 className="text-sm font-semibold text-gray-700 mb-2">Typ</h3>
-              <p className="text-base">{getAbsenceTypeLabel(absence.type)}</p>
+              <p className="text-base">{getAbsenceTypeLabel(currentAbsence.type)}</p>
             </div>
             <div>
               <h3 className="text-sm font-semibold text-gray-700 mb-2">Status</h3>
               <p className="text-base">
                 <span
                   className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                    absence.status === 'APPROVED'
+                    currentAbsence.status === 'APPROVED'
                       ? 'bg-green-100 text-green-800'
-                      : absence.status === 'REJECTED'
+                      : currentAbsence.status === 'REJECTED'
                         ? 'bg-red-100 text-red-800'
-                        : absence.status === 'REQUESTED'
+                        : currentAbsence.status === 'REQUESTED'
                           ? 'bg-yellow-100 text-yellow-800'
                           : 'bg-gray-100 text-gray-800'
                   }`}
                 >
-                  {getAbsenceStatusLabel(absence.status)}
+                  {getAbsenceStatusLabel(currentAbsence.status)}
                 </span>
               </p>
             </div>
           </div>
 
           {/* Urlaubstage-Saldo (nur bei VACATION) */}
-          {absence.type === 'VACATION' && absence.leaveDaysSaldo && (
+          {currentAbsence.type === 'VACATION' && currentAbsence.leaveDaysSaldo && (
             <div className="p-4 bg-blue-50 border border-blue-300 rounded-lg">
               <h3 className="text-sm font-semibold text-gray-700 mb-3">Urlaubstage-Saldo</h3>
               <div className="grid grid-cols-2 gap-3 text-sm">
                 <div>
                   <span className="text-gray-600">Jahresanspruch:</span>
-                  <span className="font-medium ml-2">{absence.leaveDaysSaldo.annualLeaveDays} Tage</span>
+                  <span className="font-medium ml-2">{currentAbsence.leaveDaysSaldo.annualLeaveDays} Tage</span>
                 </div>
                 <div>
                   <span className="text-gray-600">Bereits genommen:</span>
-                  <span className="font-medium ml-2">{absence.leaveDaysSaldo.takenDays} Tage</span>
+                  <span className="font-medium ml-2">{currentAbsence.leaveDaysSaldo.takenDays} Tage</span>
                 </div>
                 <div>
                   <span className="text-gray-600">Beantragt:</span>
-                  <span className="font-medium ml-2">{absence.leaveDaysSaldo.requestedDays} Tage</span>
+                  <span className="font-medium ml-2">{currentAbsence.leaveDaysSaldo.requestedDays} Tage</span>
                 </div>
                 <div>
                   <span className="text-gray-600">Aktuell verfügbar:</span>
-                  <span className="font-medium ml-2">{absence.leaveDaysSaldo.remainingDays} Tage</span>
+                  <span className="font-medium ml-2">{currentAbsence.leaveDaysSaldo.remainingDays} Tage</span>
                 </div>
               </div>
-              {absence.status === 'REQUESTED' && (
+              {currentAbsence.status === 'REQUESTED' && (
                 <div className="mt-3 pt-3 border-t border-blue-400">
                   <span className="text-sm font-semibold text-blue-900">
-                    Nach Genehmigung verbleibend: {absence.leaveDaysSaldo.remainingAfterApproval} Tage
+                    Nach Genehmigung verbleibend: {currentAbsence.leaveDaysSaldo.remainingAfterApproval} Tage
                   </span>
-                  {absence.leaveDaysSaldo.remainingAfterApproval < 0 && (
+                  {currentAbsence.leaveDaysSaldo.remainingAfterApproval < 0 && (
                     <p className="text-xs text-red-700 mt-1">
                       ⚠️ Warnung: Überschreitet verfügbare Urlaubstage um{' '}
-                      {Math.abs(absence.leaveDaysSaldo.remainingAfterApproval)} Tage
+                      {Math.abs(currentAbsence.leaveDaysSaldo.remainingAfterApproval)} Tage
                     </p>
                   )}
                 </div>
@@ -192,11 +211,11 @@ export function AbsenceDetailModal({ absence, open, onClose }: AbsenceDetailModa
           )}
 
           {/* Objekt-Zuordnungen */}
-          {absence.objectClearances && absence.objectClearances.length > 0 && (
+          {currentAbsence.objectClearances && currentAbsence.objectClearances.length > 0 && (
             <div>
               <h3 className="text-sm font-semibold text-gray-700 mb-2">Objekt-Zuordnungen</h3>
               <div className="space-y-2">
-                {absence.objectClearances.map((clearance) => {
+                {currentAbsence.objectClearances.map((clearance) => {
                   const expired = isClearanceExpired(clearance)
                   return (
                     <div
@@ -238,7 +257,7 @@ export function AbsenceDetailModal({ absence, open, onClose }: AbsenceDetailModa
             </div>
           )}
 
-          {absence.objectClearances && absence.objectClearances.length === 0 && (
+          {currentAbsence.objectClearances && currentAbsence.objectClearances.length === 0 && (
             <div className="p-4 bg-gray-50 border border-gray-300 rounded-lg">
               <p className="text-sm text-gray-600">
                 ℹ️ Dieser Mitarbeiter ist aktuell für kein Objekt eingewiesen.
@@ -247,11 +266,11 @@ export function AbsenceDetailModal({ absence, open, onClose }: AbsenceDetailModa
           )}
 
           {/* Betroffene Schichten */}
-          {absence.affectedShifts && absence.affectedShifts.length > 0 && (
+          {currentAbsence.affectedShifts && currentAbsence.affectedShifts.length > 0 && (
             <div>
               <h3 className="text-sm font-semibold text-gray-700 mb-2">Betroffene Schichten</h3>
               <div className="space-y-2">
-                {absence.affectedShifts.map((shift) => {
+                {currentAbsence.affectedShifts.map((shift) => {
                   const startDate = new Date(shift.startTime)
                   const endDate = new Date(shift.endTime)
                   const dateStr = new Intl.DateTimeFormat('de-DE', {
@@ -330,7 +349,7 @@ export function AbsenceDetailModal({ absence, open, onClose }: AbsenceDetailModa
             </div>
           )}
 
-          {absence.affectedShifts && absence.affectedShifts.length === 0 && (
+          {currentAbsence.affectedShifts && currentAbsence.affectedShifts.length === 0 && (
             <div className="p-4 bg-blue-50 border border-blue-300 rounded-lg">
               <p className="text-sm text-gray-600">
                 ℹ️ Keine Schichten im Abwesenheitszeitraum betroffen.
@@ -339,24 +358,24 @@ export function AbsenceDetailModal({ absence, open, onClose }: AbsenceDetailModa
           )}
 
           {/* Grund */}
-          {absence.reason && (
+          {currentAbsence.reason && (
             <div>
               <h3 className="text-sm font-semibold text-gray-700 mb-2">Grund</h3>
-              <p className="text-base whitespace-pre-wrap">{absence.reason}</p>
+              <p className="text-base whitespace-pre-wrap">{currentAbsence.reason}</p>
             </div>
           )}
 
           {/* Entscheidung */}
-          {(absence.decidedBy || absence.decisionNote) && (
+          {(currentAbsence.decidedBy || currentAbsence.decisionNote) && (
             <div>
               <h3 className="text-sm font-semibold text-gray-700 mb-2">Entscheidung</h3>
-              {absence.decidedBy && (
+              {currentAbsence.decidedBy && (
                 <p className="text-sm text-gray-600 mb-1">
-                  Entschieden von: {absence.decidedBy.firstName} {absence.decidedBy.lastName}
+                  Entschieden von: {currentAbsence.decidedBy.firstName} {currentAbsence.decidedBy.lastName}
                 </p>
               )}
-              {absence.decisionNote && (
-                <p className="text-base whitespace-pre-wrap mt-2">{absence.decisionNote}</p>
+              {currentAbsence.decisionNote && (
+                <p className="text-base whitespace-pre-wrap mt-2">{currentAbsence.decisionNote}</p>
               )}
             </div>
           )}
@@ -364,7 +383,7 @@ export function AbsenceDetailModal({ absence, open, onClose }: AbsenceDetailModa
           {/* Erstellt am */}
           <div className="pt-4 border-t">
             <p className="text-xs text-gray-500">
-              Erstellt am {formatDateTime(absence.createdAt)} Uhr
+              Erstellt am {formatDateTime(currentAbsence.createdAt)} Uhr
             </p>
           </div>
         </div>
@@ -378,15 +397,20 @@ export function AbsenceDetailModal({ absence, open, onClose }: AbsenceDetailModa
       </div>
 
       {selectedShift && (
-        <ReplacementCandidatesModal
+        <ReplacementCandidatesModalV2
           open={replacementModalOpen}
           onClose={() => {
             setReplacementModalOpen(false)
             setSelectedShift(null)
             setCandidates([])
           }}
+          shiftId={selectedShift.id}
           shiftTitle={selectedShift.title}
           candidates={candidates}
+          onAssignSuccess={() => {
+            // Detailansicht neu laden, damit aktualisierte Kapazität angezeigt wird
+            refreshAbsenceData()
+          }}
         />
       )}
     </Modal>

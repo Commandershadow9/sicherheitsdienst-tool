@@ -5,6 +5,8 @@ import logger from '../utils/logger';
 import { sendShiftChangedEmail } from '../services/emailService';
 import { streamCsv } from '../utils/csv';
 import { submitAuditEvent } from '../utils/audit';
+import { findReplacementCandidatesForShift } from '../services/replacementService';
+import { calculateCandidateScore } from '../services/intelligentReplacementService';
 
 const EMAIL_FLAG = 'EMAIL_NOTIFY_SHIFTS';
 
@@ -171,6 +173,25 @@ export const getAllShifts = async (req: Request, res: Response, next: NextFuncti
     console.error('Error fetching shifts from database:', error);
     next(error);
     return;
+  }
+};
+
+export const getShiftReplacementCandidates = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { id: shiftId } = req.params;
+    const rawAbsent = req.query.absentUserId;
+    const absentUserId = typeof rawAbsent === 'string' && rawAbsent.trim() !== '' ? rawAbsent : undefined;
+
+    const shiftExists = await prisma.shift.count({ where: { id: shiftId } });
+    if (!shiftExists) {
+      res.status(404).json({ success: false, message: 'Schicht nicht gefunden' });
+      return;
+    }
+
+    const candidates = await findReplacementCandidatesForShift(shiftId, absentUserId);
+    res.json({ data: candidates });
+  } catch (error) {
+    next(error);
   }
 };
 
@@ -852,6 +873,155 @@ export const clockOut = async (req: Request, res: Response, next: NextFunction) 
       outcome: 'ERROR',
       data: { error: error instanceof Error ? error.message : 'UNKNOWN_ERROR' },
     });
+    next(error);
+  }
+};
+
+/**
+ * GET /api/shifts/:id/replacement-candidates-v2
+ *
+ * Intelligente Ersatz-Mitarbeiter-Suche mit Scoring (Phase 2b - v1.8.0)
+ *
+ * Berechnet für jeden Kandidaten einen Score basierend auf:
+ * - Workload (Auslastung)
+ * - Compliance (ArbZG - Ruhezeiten, Wochenlimit)
+ * - Fairness (Vergleich mit Team-Durchschnitt)
+ * - Preferences (Mitarbeiter-Präferenzen)
+ *
+ * Gibt zurück: Sortierte Liste mit Scores, Metriken und Warnungen
+ *
+ * Query-Parameter:
+ * - absentUserId?: string - User der ausfällt (optional)
+ */
+export const getReplacementCandidatesV2 = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const { id: shiftId } = req.params;
+    const rawAbsent = req.query.absentUserId;
+    const absentUserId = typeof rawAbsent === 'string' && rawAbsent.trim() !== '' ? rawAbsent : undefined;
+
+    // Schicht laden
+    const shift = await prisma.shift.findUnique({
+      where: { id: shiftId },
+      include: {
+        assignments: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+                employeeId: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!shift) {
+      res.status(404).json({ success: false, message: 'Schicht nicht gefunden' });
+      return;
+    }
+
+    // Kandidaten ermitteln (alte Logik wiederverwenden)
+    const simpleCandidates = await findReplacementCandidatesForShift(shiftId, absentUserId);
+
+    // Scores für alle Kandidaten berechnen
+    const candidatesWithScores = await Promise.all(
+      simpleCandidates.map(async (candidate) => {
+        try {
+          const score = await calculateCandidateScore(candidate.id, shift);
+
+          return {
+            // User-Basis-Daten
+            id: candidate.id,
+            firstName: candidate.firstName,
+            lastName: candidate.lastName,
+            employeeId: candidate.employeeId,
+
+            // Qualifikationen & Verfügbarkeit (aus alter Logik)
+            hasRequiredQualifications: candidate.hasRequiredQualifications,
+            missingQualifications: candidate.missingQualifications,
+            siteAccessStatus: candidate.siteAccessStatus,
+            isAvailable: candidate.isAvailable,
+
+            // Scoring-Daten (NEU!)
+            score: {
+              total: score.totalScore,
+              recommendation: score.recommendation,
+              color: score.color,
+              workload: score.workloadScore,
+              compliance: score.complianceScore,
+              fairness: score.fairnessScore,
+              preference: score.preferenceScore,
+            },
+
+            // Detail-Metriken
+            metrics: score.metrics,
+
+            // Warnungen
+            warnings: score.warnings,
+          };
+        } catch (error) {
+          // Falls Scoring fehlschlägt, Fallback mit neutralem Score
+          logger.error(`Fehler beim Scoring für User ${candidate.id}:`, error);
+
+          return {
+            id: candidate.id,
+            firstName: candidate.firstName,
+            lastName: candidate.lastName,
+            employeeId: candidate.employeeId,
+            hasRequiredQualifications: candidate.hasRequiredQualifications,
+            missingQualifications: candidate.missingQualifications,
+            siteAccessStatus: candidate.siteAccessStatus,
+            isAvailable: candidate.isAvailable,
+            score: {
+              total: 50,
+              recommendation: 'ACCEPTABLE' as const,
+              color: 'orange' as const,
+              workload: 50,
+              compliance: 50,
+              fairness: 50,
+              preference: 50,
+            },
+            metrics: null,
+            warnings: [
+              {
+                type: 'REST_TIME' as const,
+                severity: 'WARNING' as const,
+                message: 'Scoring-Fehler - Manuelle Prüfung empfohlen',
+              },
+            ],
+          };
+        }
+      })
+    );
+
+    // Sortieren: Beste Scores zuerst
+    const sortedCandidates = candidatesWithScores.sort((a, b) => b.score.total - a.score.total);
+
+    res.json({
+      success: true,
+      data: sortedCandidates,
+      meta: {
+        shift: {
+          id: shift.id,
+          title: shift.title,
+          startTime: shift.startTime,
+          endTime: shift.endTime,
+          siteId: shift.siteId,
+        },
+        totalCandidates: sortedCandidates.length,
+        optimalCandidates: sortedCandidates.filter((c) => c.score.recommendation === 'OPTIMAL').length,
+        goodCandidates: sortedCandidates.filter((c) => c.score.recommendation === 'GOOD').length,
+      },
+    });
+  } catch (error) {
+    logger.error('Error in getReplacementCandidatesV2:', error);
     next(error);
   }
 };

@@ -1,40 +1,166 @@
-import { useQuery } from '@tanstack/react-query'
-import { api } from '@/lib/api'
-
-type Stats = { data: { env: { specVersion: string | null; buildSha: string | null } } }
+import { useCallback, useMemo } from 'react'
+import { RefreshCcw } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { CriticalShiftsCard } from '@/features/dashboard/CriticalShiftsCard'
+import { PendingApprovalsCard } from '@/features/dashboard/PendingApprovalsCard'
+import { WarningsCard } from '@/features/dashboard/WarningsCard'
+import { StatsCard } from '@/features/dashboard/StatsCard'
+import { QuickApprovalModal } from '@/features/dashboard/QuickApprovalModal'
+import { AbsenceDetailModal } from '@/features/absences/AbsenceDetailModal'
+import { ReplacementCandidatesModal } from '@/features/absences/ReplacementCandidatesModal'
+import type { CriticalShift, UpcomingWarning, PendingApproval } from '@/features/dashboard/types'
+import {
+  useDashboardQueries,
+  useApprovalModal,
+  useReplacementModal,
+  useAbsenceDetail,
+  useManualRefresh,
+} from '@/features/dashboard/hooks'
 
 export default function Dashboard() {
-  const { data, isLoading, isError } = useQuery({
-    queryKey: ['stats'],
-    queryFn: async () => {
-      const res = await api.get<Stats>('/stats')
-      return res.data
-    },
-  })
+  // Custom Hooks - State Management vereinfacht!
+  const queries = useDashboardQueries()
+  const approvalModal = useApprovalModal()
+  const replacementModal = useReplacementModal()
+  const absenceDetail = useAbsenceDetail()
+  const { refreshing, handleRefresh } = useManualRefresh(queries)
 
-  const spec = data?.data?.env?.specVersion || 'n/a'
-  const sha = data?.data?.env?.buildSha || 'n/a'
+  // Memoized Values
+  const loadingShiftId = useMemo(
+    () => (replacementModal.loading ? replacementModal.shift?.id ?? null : null),
+    [replacementModal.loading, replacementModal.shift?.id]
+  )
+
+  // Event Handlers (memoized)
+  const handleFindReplacementForCritical = useCallback(
+    (shift: CriticalShift) => {
+      replacementModal.openModal(shift.shiftId, shift.shiftTitle)
+    },
+    [replacementModal]
+  )
+
+  const handleFindReplacementForWarning = useCallback(
+    (warning: UpcomingWarning) => {
+      replacementModal.openModal(warning.shiftId, warning.shiftTitle)
+    },
+    [replacementModal]
+  )
+
+  const handleReplacementAssignSuccess = useCallback(
+    (payload?: { shiftId: string; candidate: { firstName: string; lastName: string } }) => {
+      const info = payload
+        ? {
+            shiftId: payload.shiftId,
+            candidateName: `${payload.candidate.firstName} ${payload.candidate.lastName}`,
+          }
+        : undefined
+      replacementModal.handleAssignmentSuccess(info)
+    },
+    [replacementModal]
+  )
+
+  const handleCriticalRetry = useCallback(() => queries.critical.refetch(), [queries.critical])
+  const handleApprovalsRetry = useCallback(() => queries.approvals.refetch(), [queries.approvals])
+  const handleStatsRetry = useCallback(() => queries.stats.refetch(), [queries.stats])
+  const handleWarningsRetry = useCallback(() => queries.warnings.refetch(), [queries.warnings])
+
+  const handleApprove = useCallback(
+    (approval: PendingApproval) => approvalModal.openModal(approval, 'approve'),
+    [approvalModal]
+  )
+  const handleReject = useCallback(
+    (approval: PendingApproval) => approvalModal.openModal(approval, 'reject'),
+    [approvalModal]
+  )
+
   return (
-    <div className="text-sm">
-      <h1 className="text-2xl font-semibold mb-4">Dashboard</h1>
-      {isLoading && <div>Lade…</div>}
-      {isError && <div className="text-red-600">Fehler beim Laden der Stats</div>}
-      {data && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          <div className="border rounded p-4 bg-card">
-            <div className="text-xs text-muted-foreground">Spec Version</div>
-            <div className="text-lg font-medium">{spec}</div>
-          </div>
-          <div className="border rounded p-4 bg-card">
-            <div className="text-xs text-muted-foreground">Build SHA</div>
-            <div className="text-lg font-mono">{sha}</div>
-          </div>
-          <div className="border rounded p-4 bg-card">
-            <div className="text-xs text-muted-foreground">Health</div>
-            <div className="text-sm">Siehe /healthz und /readyz im Backend</div>
-          </div>
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold">Manager-Dashboard</h1>
+          <p className="text-sm text-muted-foreground">
+            Fokus: Kritische Schichten heute, offene Genehmigungen und Kapazitätswarnungen der nächsten Tage.
+          </p>
         </div>
-      )}
+        <Button variant="outline" size="sm" onClick={handleRefresh} disabled={refreshing}>
+          <RefreshCcw className={`mr-2 h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} aria-hidden />
+          Aktualisieren
+        </Button>
+      </div>
+
+      {/* Dashboard Grid */}
+      <div className="grid gap-6 lg:grid-cols-[2fr_1fr]">
+        {/* Linke Spalte */}
+        <div className="space-y-6">
+          <CriticalShiftsCard
+            shifts={queries.critical.data}
+            isLoading={queries.critical.isLoading}
+            isError={queries.critical.isError}
+            onRetry={handleCriticalRetry}
+            onFindReplacement={handleFindReplacementForCritical}
+            loadingShiftId={loadingShiftId}
+          />
+
+          <PendingApprovalsCard
+            approvals={queries.approvals.data}
+            isLoading={queries.approvals.isLoading}
+            isError={queries.approvals.isError}
+            onRetry={handleApprovalsRetry}
+            onApprove={handleApprove}
+            onReject={handleReject}
+            onOpenDetails={absenceDetail.openDetail}
+            recentAssignments={replacementModal.recentAssignments}
+          />
+        </div>
+
+        {/* Rechte Spalte */}
+        <div className="space-y-6">
+          <StatsCard
+            stats={queries.stats.data}
+            isLoading={queries.stats.isLoading}
+            isError={queries.stats.isError}
+            onRetry={handleStatsRetry}
+          />
+
+          <WarningsCard
+            warnings={queries.warnings.data}
+            isLoading={queries.warnings.isLoading}
+            isError={queries.warnings.isError}
+            onRetry={handleWarningsRetry}
+            onFindReplacement={handleFindReplacementForWarning}
+            loadingShiftId={loadingShiftId}
+          />
+        </div>
+      </div>
+
+      {/* Modals */}
+      <QuickApprovalModal
+        open={approvalModal.open}
+        mode={approvalModal.mode}
+        approval={approvalModal.selectedApproval}
+        warnings={approvalModal.warningDetails}
+        warningsLoading={approvalModal.warningLoading}
+        warningsError={approvalModal.warningError}
+        loading={approvalModal.loading}
+        onClose={approvalModal.closeModal}
+        onSubmit={approvalModal.submitModal}
+      />
+
+      <AbsenceDetailModal
+        absence={absenceDetail.absence}
+        open={absenceDetail.open}
+        onClose={absenceDetail.closeDetail}
+      />
+
+      <ReplacementCandidatesModal
+        open={replacementModal.open}
+        onClose={replacementModal.closeModal}
+        shiftId={replacementModal.shift?.id ?? ''}
+        shiftTitle={replacementModal.shift?.title ?? ''}
+        candidates={replacementModal.candidates}
+        onAssignSuccess={handleReplacementAssignSuccess}
+      />
     </div>
   )
 }

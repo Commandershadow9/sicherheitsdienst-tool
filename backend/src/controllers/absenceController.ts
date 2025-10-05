@@ -6,6 +6,7 @@ import { submitAuditEvent } from '../utils/audit';
 import { saveDocumentFile, resolveDocumentPath, removeDocumentFile } from '../utils/documentStorage';
 import { publishNotificationEvent } from '../utils/notificationEvents';
 import fs from 'fs/promises';
+import { findReplacementCandidatesForShift } from '../services/replacementService';
 
 const PAGE_MAX = 100;
 
@@ -43,15 +44,16 @@ const selectAbsence = {
       lastName: true,
     },
   },
-  documents: {
-    select: {
-      id: true,
-      filename: true,
-      mimeType: true,
-      size: true,
-      createdAt: true,
-    },
-  },
+  // TEMP: documents disabled until migration is fixed
+  // documents: {
+  //   select: {
+  //     id: true,
+  //     filename: true,
+  //     mimeType: true,
+  //     size: true,
+  //     createdAt: true,
+  //   },
+  // },
 } satisfies Prisma.AbsenceSelect;
 
 function ensureDate(value: string, label: string): Date {
@@ -189,6 +191,7 @@ type AffectedShift = {
   requiredEmployees: number;
   availableEmployees: number;
   hasCapacityWarning: boolean;
+  needsReplacement?: boolean;
 };
 
 async function checkCapacityWarnings(userId: string, startsAt: Date, endsAt: Date): Promise<CapacityWarning[]> {
@@ -219,6 +222,14 @@ async function checkCapacityWarnings(userId: string, startsAt: Date, endsAt: Dat
           startTime: true,
           endTime: true,
           requiredEmployees: true,
+          assignments: {
+            where: {
+              status: { in: ['ASSIGNED', 'CONFIRMED', 'STARTED'] },
+            },
+            select: {
+              userId: true,
+            },
+          },
         },
       },
     },
@@ -254,8 +265,6 @@ async function checkCapacityWarnings(userId: string, startsAt: Date, endsAt: Dat
       },
       select: { userId: true },
     });
-
-    const clearedUserIds = new Set(clearedUsers.map((c) => c.userId));
 
     // Verfügbare = Cleared UND NICHT abwesend
     const availableCount = clearedUsers.filter((c) => !absentUserIds.has(c.userId)).length;
@@ -318,7 +327,6 @@ async function getAffectedShiftsWithCapacity(userId: string, startsAt: Date, end
     let availableCount = 0;
 
     if (shift.siteId) {
-      // Alle anderen Abwesenheiten in diesem Zeitraum finden
       const otherAbsences = await prisma.absence.findMany({
         where: {
           status: 'APPROVED',
@@ -331,21 +339,22 @@ async function getAffectedShiftsWithCapacity(userId: string, startsAt: Date, end
       const absentUserIds = new Set(otherAbsences.map((a) => a.userId));
       absentUserIds.add(userId); // User selbst auch abwesend
 
-      // Alle Mitarbeiter mit Clearance für dieses Objekt
-      const clearedUsers = await prisma.objectClearance.findMany({
+      availableCount = await prisma.shiftAssignment.count({
         where: {
-          siteId: shift.siteId,
-          status: 'ACTIVE',
-          OR: [
-            { validUntil: null },
-            { validUntil: { gte: shift.startTime } },
-          ],
+          shiftId: shift.id,
+          status: { in: ['ASSIGNED', 'CONFIRMED', 'STARTED'] },
+          userId: {
+            notIn: Array.from(absentUserIds),
+          },
         },
-        select: { userId: true },
       });
-
-      // Verfügbare = Cleared UND NICHT abwesend
-      availableCount = clearedUsers.filter((c) => !absentUserIds.has(c.userId)).length;
+    } else {
+      availableCount = await prisma.shiftAssignment.count({
+        where: {
+          shiftId: shift.id,
+          status: { in: ['ASSIGNED', 'CONFIRMED', 'STARTED'] },
+        },
+      });
     }
 
     const required = shift.requiredEmployees;
@@ -360,21 +369,12 @@ async function getAffectedShiftsWithCapacity(userId: string, startsAt: Date, end
       requiredEmployees: required,
       availableEmployees: availableCount,
       hasCapacityWarning: hasWarning,
+      needsReplacement: hasWarning,
     });
   }
 
   return affectedShifts;
 }
-
-type ReplacementCandidate = {
-  id: string;
-  firstName: string;
-  lastName: string;
-  email: string;
-  clearanceStatus: string;
-  clearanceTrainedAt: string;
-  clearanceValidUntil: string | null;
-};
 
 type LeaveDaysSaldo = {
   annualLeaveDays: number;
@@ -385,84 +385,6 @@ type LeaveDaysSaldo = {
 };
 
 // Ersatz-Mitarbeiter finden für eine Schicht
-async function findReplacementCandidates(shiftId: string, absentUserId: string): Promise<ReplacementCandidate[]> {
-  // 1. Lade Schicht-Infos
-  const shift = await prisma.shift.findUnique({
-    where: { id: shiftId },
-    select: {
-      id: true,
-      siteId: true,
-      startTime: true,
-      endTime: true,
-      assignments: {
-        where: { status: { in: ['ASSIGNED', 'CONFIRMED', 'STARTED'] } },
-        select: { userId: true },
-      },
-    },
-  });
-
-  if (!shift || !shift.siteId) {
-    return [];
-  }
-
-  // 2. Bereits zugewiesene Mitarbeiter
-  const assignedUserIds = new Set(shift.assignments.map((a) => a.userId));
-
-  // 3. Abwesende Mitarbeiter im Schicht-Zeitraum
-  const absences = await prisma.absence.findMany({
-    where: {
-      status: 'APPROVED',
-      startsAt: { lt: shift.endTime },
-      endsAt: { gt: shift.startTime },
-    },
-    select: { userId: true },
-  });
-
-  const absentUserIds = new Set(absences.map((a) => a.userId));
-  absentUserIds.add(absentUserId); // Der anfragende User ist auch abwesend
-
-  // 4. Mitarbeiter mit aktiver Clearance für das Objekt
-  const clearances = await prisma.objectClearance.findMany({
-    where: {
-      siteId: shift.siteId,
-      status: 'ACTIVE',
-      OR: [
-        { validUntil: null },
-        { validUntil: { gte: shift.startTime } },
-      ],
-    },
-    select: {
-      userId: true,
-      status: true,
-      trainedAt: true,
-      validUntil: true,
-      user: {
-        select: {
-          id: true,
-          firstName: true,
-          lastName: true,
-          email: true,
-        },
-      },
-    },
-  });
-
-  // 5. Filtern: Nicht zugewiesen UND nicht abwesend
-  const candidates = clearances
-    .filter((c) => !assignedUserIds.has(c.userId) && !absentUserIds.has(c.userId))
-    .map((c) => ({
-      id: c.user.id,
-      firstName: c.user.firstName,
-      lastName: c.user.lastName,
-      email: c.user.email,
-      clearanceStatus: c.status,
-      clearanceTrainedAt: c.trainedAt.toISOString(),
-      clearanceValidUntil: c.validUntil?.toISOString() || null,
-    }));
-
-  return candidates;
-}
-
 // Berechne Urlaubstage-Saldo für einen Mitarbeiter
 async function calculateLeaveDaysSaldo(
   userId: string,
@@ -1075,7 +997,7 @@ export const getReplacementCandidates = async (req: Request, res: Response, next
 
     // Wenn shiftId angegeben: Nur für diese Schicht
     if (shiftId) {
-      const candidates = await findReplacementCandidates(shiftId, absence.userId);
+      const candidates = await findReplacementCandidatesForShift(shiftId, absence.userId);
       res.json({ data: { shiftId, candidates } });
       return;
     }
@@ -1091,7 +1013,7 @@ export const getReplacementCandidates = async (req: Request, res: Response, next
       affectedShifts.map(async (shift) => ({
         shiftId: shift.id,
         shiftTitle: shift.title,
-        candidates: await findReplacementCandidates(shift.id, absence.userId),
+        candidates: await findReplacementCandidatesForShift(shift.id, absence.userId),
       })),
     );
 

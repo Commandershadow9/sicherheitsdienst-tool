@@ -15,6 +15,9 @@ async function main() {
     await prisma.employeeDocument.deleteMany();
     await prisma.employeeQualification.deleteMany();
     await prisma.employeeProfile.deleteMany();
+    await prisma.complianceViolation.deleteMany();
+    await prisma.employeeWorkload.deleteMany();
+    await prisma.employeePreferences.deleteMany();
     await prisma.auditLog.deleteMany();
     await prisma.deviceToken.deleteMany();
     await prisma.shift.deleteMany();
@@ -106,6 +109,33 @@ async function main() {
     });
 
     console.log('👥 Mitarbeiter erstellt');
+
+    // Intelligent Replacement System: Default-Präferenzen für alle Mitarbeiter erstellen
+    const allUsers = [_admin, _dispatcher, employee1, employee2, employee3];
+
+    for (const user of allUsers) {
+      await prisma.employeePreferences.create({
+        data: {
+          userId: user.id,
+          prefersNightShifts: false,
+          prefersDayShifts: true,
+          prefersWeekends: false,
+          targetMonthlyHours: 160,
+          minMonthlyHours: 120,
+          maxMonthlyHours: 200,
+          flexibleHours: true,
+          prefersLongShifts: false,
+          prefersShortShifts: false,
+          prefersConsecutiveDays: 5,
+          minRestDaysPerWeek: 2,
+          preferredSiteIds: [],
+          avoidedSiteIds: [],
+          notes: 'Standard-Präferenzen (initialisiert durch Seed)',
+        },
+      });
+    }
+
+    console.log('⚙️ Employee Preferences (Intelligent Replacement) erstellt');
 
     // Beispiel-Sites erstellen
     const sites = await prisma.$transaction([

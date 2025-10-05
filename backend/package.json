@@ -18,6 +18,8 @@
     "db:migrate": "prisma migrate dev",
     "db:seed": "ts-node src/utils/seedData.ts",
     "seed": "npm run db:seed",
+    "seed:test-absences": "ts-node prisma/seeds/test-absences-v1.6.0.ts",
+    "seed:intelligent-replacement": "DATABASE_URL=\"postgresql://admin:admin123@localhost:5432/sicherheitsdienst_db?schema=public\" ts-node prisma/seeds/intelligent-replacement-v1.8.0.ts",
     "db:studio": "prisma studio",
     "db:reset": "prisma migrate reset --force",
     "docker:up": "docker-compose up -d",

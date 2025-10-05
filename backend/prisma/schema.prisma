@@ -1,6 +1,6 @@
 generator client {
-  binaryTargets = ["native","debian-openssl-1.1.x","debian-openssl-3.0.x"]
-  provider = "prisma-client-js"
+  binaryTargets = ["native", "debian-openssl-1.1.x", "debian-openssl-3.0.x"]
+  provider      = "prisma-client-js"
 }
 
 datasource db {
@@ -18,36 +18,39 @@ model User {
   phone     String?
   role      UserRole @default(EMPLOYEE)
   isActive  Boolean  @default(true)
-  
+
   // Arbeitsbezogene Informationen
-  employeeId     String?  @unique
+  employeeId     String?   @unique
   hireDate       DateTime?
   qualifications String[] // Array von Qualifikationen
-  pushOptIn      Boolean  @default(true)
-  emailOptIn     Boolean  @default(true)
-  
+  pushOptIn      Boolean   @default(true)
+  emailOptIn     Boolean   @default(true)
+
   // Zeitstempel
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  
-  // Beziehungen
-  shifts        ShiftAssignment[]
-  timeEntries   TimeEntry[]
-  incidents     Incident[]
-  profile       EmployeeProfile?
-  absencesRequested Absence[]        @relation("AbsenceUser")
-  absencesCreated   Absence[]        @relation("AbsenceCreatedBy")
-  absencesDecided   Absence[]        @relation("AbsenceDecidedBy")
-  documentsUploaded EmployeeDocument[] @relation("EmployeeDocumentUploadedBy")
-  objectClearances  ObjectClearance[]
-  clearancesTrained ObjectClearance[] @relation("ClearanceTrainer")
 
-  @@map("users")
+  // Beziehungen
+  shifts               ShiftAssignment[]
+  timeEntries          TimeEntry[]
+  incidents            Incident[]
+  profile              EmployeeProfile?
+  absencesRequested    Absence[]             @relation("AbsenceUser")
+  absencesCreated      Absence[]             @relation("AbsenceCreatedBy")
+  absencesDecided      Absence[]             @relation("AbsenceDecidedBy")
+  documentsUploaded    EmployeeDocument[]    @relation("EmployeeDocumentUploadedBy")
+  objectClearances     ObjectClearance[]
+  clearancesTrained    ObjectClearance[]     @relation("ClearanceTrainer")
+  deviceTokens         DeviceToken[]
+  preferences          EmployeePreferences?
+  workload             EmployeeWorkload[]
+  complianceViolations ComplianceViolation[]
+
   @@index([lastName, firstName], name: "users_name_idx")
   @@index([createdAt], name: "users_createdAt_idx")
   @@index([isActive], name: "users_isActive_idx")
   @@index([role], name: "users_role_idx")
-  deviceTokens DeviceToken[]
+  @@map("users")
 }
 
 // Einsatzorte/Sites
@@ -66,10 +69,10 @@ model Site {
   clearances ObjectClearance[]
 
   @@unique([name, address], name: "sites_name_address_key")
-  @@map("sites")
   @@index([name], name: "sites_name_idx")
   @@index([city], name: "sites_city_idx")
   @@index([postalCode], name: "sites_postal_idx")
+  @@map("sites")
 }
 
 // Benutzerrollen
@@ -82,34 +85,35 @@ enum UserRole {
 
 // Schichten/Dienste
 model Shift {
-  id          String    @id @default(cuid())
+  id          String   @id @default(cuid())
   siteId      String?
-  site        Site?     @relation(fields: [siteId], references: [id])
+  site        Site?    @relation(fields: [siteId], references: [id])
   title       String
   description String?
   location    String
   startTime   DateTime
   endTime     DateTime
-  
+
   // Anforderungen
-  requiredEmployees Int      @default(1)
+  requiredEmployees      Int      @default(1)
   requiredQualifications String[]
-  
+
   // Status
-  status      ShiftStatus @default(PLANNED)
-  
+  status ShiftStatus @default(PLANNED)
+
   // Zeitstempel
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  
-  // Beziehungen
-  assignments ShiftAssignment[]
-  timeEntries TimeEntry[]
 
-  @@map("shifts")
+  // Beziehungen
+  assignments          ShiftAssignment[]
+  timeEntries          TimeEntry[]
+  complianceViolations ComplianceViolation[]
+
   @@index([startTime], name: "shifts_startTime_idx")
   @@index([status], name: "shifts_status_idx")
   @@index([siteId, startTime], name: "shifts_site_start_idx")
+  @@map("shifts")
 }
 
 enum ShiftStatus {
@@ -121,24 +125,24 @@ enum ShiftStatus {
 
 // Zuweisungen von Mitarbeitern zu Schichten
 model ShiftAssignment {
-  id     String @id @default(cuid())
-  
+  id String @id @default(cuid())
+
   // Beziehungen
   userId  String
   shiftId String
   user    User   @relation(fields: [userId], references: [id])
   shift   Shift  @relation(fields: [shiftId], references: [id])
-  
+
   // Status
   status AssignmentStatus @default(ASSIGNED)
-  
+
   // Zeitstempel
   assignedAt DateTime @default(now())
   updatedAt  DateTime @updatedAt
-  
+
   @@unique([userId, shiftId])
-  @@map("shift_assignments")
   @@index([shiftId], name: "shift_assignments_shift_idx")
+  @@map("shift_assignments")
 }
 
 enum AssignmentStatus {
@@ -152,53 +156,53 @@ enum AssignmentStatus {
 // Zeiterfassung
 model TimeEntry {
   id String @id @default(cuid())
-  
+
   // Beziehung
-  userId String
-  user   User   @relation(fields: [userId], references: [id])
+  userId  String
+  user    User    @relation(fields: [userId], references: [id])
   shiftId String?
   shift   Shift?  @relation(fields: [shiftId], references: [id])
-  
+
   // Zeitdaten
   startTime DateTime
   endTime   DateTime?
-  breakTime Int?      // Pause in Minuten
-  
+  breakTime Int? // Pause in Minuten
+
   // Location (Optional für GPS)
   startLocation String?
   endLocation   String?
-  
+
   // Notizen
   notes String?
-  
+
   // Zeitstempel
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  
-  @@map("time_entries")
+
   @@index([userId, startTime], name: "time_entries_user_start_idx")
+  @@map("time_entries")
 }
 
 // Vorfälle
 model Incident {
-  id          String   @id @default(cuid())
+  id          String           @id @default(cuid())
   title       String
   description String
   severity    IncidentSeverity
-  status      IncidentStatus @default(OPEN)
-  
+  status      IncidentStatus   @default(OPEN)
+
   // Ort und Zeit
-  location  String
+  location   String
   occurredAt DateTime
-  
+
   // Beziehung
   reportedBy String
   user       User   @relation(fields: [reportedBy], references: [id])
-  
+
   // Zeitstempel
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  
+
   @@map("incidents")
 }
 
@@ -217,90 +221,202 @@ enum IncidentStatus {
 }
 
 model EmployeeProfile {
-  id               String   @id @default(cuid())
-  userId           String   @unique @map("user_id")
-  address          Json?
-  birthDate        DateTime? @map("birth_date")
-  phone            String?
-  employmentType   EmploymentType @default(FULL_TIME) @map("employment_type")
-  employmentStart  DateTime? @map("employment_start")
-  employmentEnd    DateTime? @map("employment_end")
-  workSchedule     String? @map("work_schedule")
-  hourlyRate       Decimal? @db.Decimal(10, 2) @map("hourly_rate")
-  weeklyTargetHours Int? @map("weekly_target_hours")
-  monthlyTargetHours Int? @map("monthly_target_hours")
-  annualLeaveDays  Int @default(30) @map("annual_leave_days")
-  notes            String?  @db.Text
-  createdAt        DateTime @default(now()) @map("created_at")
-  updatedAt        DateTime @updatedAt @map("updated_at")
+  id                 String         @id @default(cuid())
+  userId             String         @unique @map("user_id")
+  address            Json?
+  birthDate          DateTime?      @map("birth_date")
+  phone              String?
+  employmentType     EmploymentType @default(FULL_TIME) @map("employment_type")
+  employmentStart    DateTime?      @map("employment_start")
+  employmentEnd      DateTime?      @map("employment_end")
+  workSchedule       String?        @map("work_schedule")
+  hourlyRate         Decimal?       @map("hourly_rate") @db.Decimal(10, 2)
+  weeklyTargetHours  Int?           @map("weekly_target_hours")
+  monthlyTargetHours Int?           @map("monthly_target_hours")
+  annualLeaveDays    Int            @default(30) @map("annual_leave_days")
 
-  user             User     @relation(fields: [userId], references: [id])
-  qualifications   EmployeeQualification[]
-  documents        EmployeeDocument[]
+  // Intelligent Replacement System - v1.8.0
+  targetWeeklyHours     Float   @default(40) @map("target_weekly_hours")
+  contractType          String  @default("FULL_TIME") @map("contract_type")
+  autoAcceptReplacement Boolean @default(false) @map("auto_accept_replacement")
+
+  notes     String?  @db.Text
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user           User                    @relation(fields: [userId], references: [id])
+  qualifications EmployeeQualification[]
+  documents      EmployeeDocument[]
 
   @@map("employee_profiles")
 }
 
 model EmployeeQualification {
-  id          String   @id @default(cuid())
-  profileId   String  @map("profile_id")
+  id          String    @id @default(cuid())
+  profileId   String    @map("profile_id")
   title       String
   description String?
   validFrom   DateTime? @map("valid_from")
   validUntil  DateTime? @map("valid_until")
 
-  profile     EmployeeProfile @relation(fields: [profileId], references: [id])
+  profile EmployeeProfile @relation(fields: [profileId], references: [id])
 
-  @@map("employee_qualifications")
   @@index([profileId, validUntil], name: "employee_qualifications_profile_valid_idx")
+  @@map("employee_qualifications")
 }
 
 model EmployeeDocument {
-  id          String   @id @default(cuid())
-  profileId   String @map("profile_id")
-  category    DocumentCategory
-  filename    String
-  mimeType    String @map("mime_type")
-  size        Int
-  storedAt    String @map("stored_at")
-  issuedAt    DateTime? @map("issued_at")
-  expiresAt   DateTime? @map("expires_at")
-  uploadedBy  String @map("uploaded_by")
-  createdAt   DateTime @default(now()) @map("created_at")
+  id         String           @id @default(cuid())
+  profileId  String           @map("profile_id")
+  category   DocumentCategory
+  filename   String
+  mimeType   String           @map("mime_type")
+  size       Int
+  storedAt   String           @map("stored_at")
+  issuedAt   DateTime?        @map("issued_at")
+  expiresAt  DateTime?        @map("expires_at")
+  uploadedBy String           @map("uploaded_by")
+  createdAt  DateTime         @default(now()) @map("created_at")
 
-  profile     EmployeeProfile @relation(fields: [profileId], references: [id])
-  uploader    User            @relation("EmployeeDocumentUploadedBy", fields: [uploadedBy], references: [id])
+  profile  EmployeeProfile @relation(fields: [profileId], references: [id])
+  uploader User            @relation("EmployeeDocumentUploadedBy", fields: [uploadedBy], references: [id])
 
-  @@map("employee_documents")
   @@index([profileId], name: "employee_documents_profile_idx")
   @@index([category], name: "employee_documents_category_idx")
   @@index([expiresAt], name: "employee_documents_expires_idx")
+  @@map("employee_documents")
 }
 
+// ==================== Intelligent Replacement System (v1.8.0) ====================
+
+// Mitarbeiter-Präferenzen für intelligente Schichtzuweisung
+model EmployeePreferences {
+  id     String @id @default(cuid())
+  userId String @unique @map("user_id")
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Schicht-Präferenzen
+  prefersNightShifts Boolean @default(false) @map("prefers_night_shifts")
+  prefersDayShifts   Boolean @default(true) @map("prefers_day_shifts")
+  prefersWeekends    Boolean @default(false) @map("prefers_weekends")
+
+  // Stunden-Präferenzen
+  targetMonthlyHours Int     @default(160) @map("target_monthly_hours")
+  minMonthlyHours    Int     @default(120) @map("min_monthly_hours")
+  maxMonthlyHours    Int     @default(200) @map("max_monthly_hours")
+  flexibleHours      Boolean @default(true) @map("flexible_hours")
+
+  // Schicht-Länge Präferenzen
+  prefersLongShifts  Boolean @default(false) @map("prefers_long_shifts")
+  prefersShortShifts Boolean @default(false) @map("prefers_short_shifts")
+
+  // Arbeitsrhythmus
+  prefersConsecutiveDays Int? @default(5) @map("prefers_consecutive_days")
+  minRestDaysPerWeek     Int  @default(2) @map("min_rest_days_per_week")
+
+  // Site/Location Präferenzen
+  preferredSiteIds String[] @map("preferred_site_ids")
+  avoidedSiteIds   String[] @map("avoided_site_ids")
+
+  // Sonstiges
+  notes String? @db.Text
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([userId], name: "employee_preferences_user_idx")
+  @@map("employee_preferences")
+}
+
+// Workload-Tracking (Performance-optimiert für Scoring-Engine)
+model EmployeeWorkload {
+  id     String @id @default(cuid())
+  userId String @map("user_id")
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Zeitraum
+  month Int // 1-12
+  year  Int // 2025
+
+  // Aggregierte Metriken (gecached für Performance)
+  totalHours            Float @default(0) @map("total_hours")
+  scheduledHours        Float @default(0) @map("scheduled_hours")
+  nightShiftCount       Int   @default(0) @map("night_shift_count")
+  weekendShiftCount     Int   @default(0) @map("weekend_shift_count")
+  consecutiveDaysWorked Int   @default(0) @map("consecutive_days_worked")
+  restDaysCount         Int   @default(0) @map("rest_days_count")
+
+  // Compliance-Checks
+  maxWeeklyHours            Float  @default(0) @map("max_weekly_hours")
+  minRestHoursBetweenShifts Float? @default(11) @map("min_rest_hours_between_shifts")
+
+  // Fairness-Score (0-100)
+  fairnessScore Int? @map("fairness_score")
+
+  // Metadata
+  lastCalculated DateTime @default(now()) @map("last_calculated")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  @@unique([userId, month, year], name: "employee_workload_user_period_key")
+  @@index([userId, year, month], name: "employee_workloads_user_period_idx")
+  @@index([year, month], name: "employee_workloads_period_idx")
+  @@map("employee_workloads")
+}
+
+// Compliance-Violations (Log für Arbeitszeit-Verstöße)
+model ComplianceViolation {
+  id     String @id @default(cuid())
+  userId String @map("user_id")
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  shiftId String? @map("shift_id")
+  shift   Shift?  @relation(fields: [shiftId], references: [id], onDelete: SetNull)
+
+  violationType String @map("violation_type") // "REST_TIME_VIOLATED", "WEEKLY_HOURS_EXCEEDED", "CONSECUTIVE_DAYS_EXCEEDED"
+  severity      String @map("severity") // "WARNING", "ERROR", "CRITICAL"
+  description   String @db.Text // "Ruhezeit nur 9h statt gesetzlich 11h"
+
+  value     Float? // Tatsächlicher Wert (z.B. 9.0 für 9h Ruhezeit)
+  threshold Float? // Grenzwert (z.B. 11.0 für 11h Mindestpause)
+
+  resolvedAt   DateTime? @map("resolved_at")
+  resolvedBy   String?   @map("resolved_by")
+  resolvedNote String?   @map("resolved_note") @db.Text
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([userId, createdAt], name: "compliance_violations_user_created_idx")
+  @@index([violationType, severity], name: "compliance_violations_type_severity_idx")
+  @@map("compliance_violations")
+}
+
+// ==================== End Intelligent Replacement System ====================
+
 model Absence {
-  id           String         @id @default(cuid())
-  userId       String @map("user_id")
-  createdById  String @map("created_by_id")
-  decidedById  String? @map("decided_by_id")
+  id           String        @id @default(cuid())
+  userId       String        @map("user_id")
+  createdById  String        @map("created_by_id")
+  decidedById  String?       @map("decided_by_id")
   type         AbsenceType
-  status       AbsenceStatus  @default(REQUESTED)
-  startsAt     DateTime @map("starts_at")
-  endsAt       DateTime @map("ends_at")
-  reason       String?        @db.Text
-  decisionNote String?        @db.Text @map("decision_note")
-  createdAt    DateTime       @default(now()) @map("created_at")
-  updatedAt    DateTime       @updatedAt @map("updated_at")
+  status       AbsenceStatus @default(REQUESTED)
+  startsAt     DateTime      @map("starts_at")
+  endsAt       DateTime      @map("ends_at")
+  reason       String?       @db.Text
+  decisionNote String?       @map("decision_note") @db.Text
+  createdAt    DateTime      @default(now()) @map("created_at")
+  updatedAt    DateTime      @updatedAt @map("updated_at")
 
-  user        User @relation("AbsenceUser", fields: [userId], references: [id])
-  createdBy   User @relation("AbsenceCreatedBy", fields: [createdById], references: [id])
-  decidedBy   User? @relation("AbsenceDecidedBy", fields: [decidedById], references: [id])
-  documents   AbsenceDocument[]
+  user      User              @relation("AbsenceUser", fields: [userId], references: [id])
+  createdBy User              @relation("AbsenceCreatedBy", fields: [createdById], references: [id])
+  decidedBy User?             @relation("AbsenceDecidedBy", fields: [decidedById], references: [id])
+  documents AbsenceDocument[]
 
-  @@map("absences")
   @@index([status], name: "absences_status_idx")
   @@index([type], name: "absences_type_idx")
   @@index([startsAt], name: "absences_start_idx")
   @@index([userId, startsAt], name: "absences_user_start_idx")
+  @@map("absences")
 }
 
 enum EmploymentType {
@@ -345,35 +461,35 @@ model AbsenceDocument {
   uploadedBy String   @map("uploaded_by")
   createdAt  DateTime @default(now()) @map("created_at")
 
-  absence    Absence  @relation(fields: [absenceId], references: [id], onDelete: Cascade)
+  absence Absence @relation(fields: [absenceId], references: [id], onDelete: Cascade)
 
-  @@map("absence_documents")
   @@index([absenceId], name: "absence_documents_absence_idx")
+  @@map("absence_documents")
 }
 
 // Objekt-Einarbeitung / Clearance
 model ObjectClearance {
-  id         String   @id @default(cuid())
-  userId     String   @map("user_id")
-  siteId     String   @map("site_id")
-  trainedAt  DateTime @default(now()) @map("trained_at")
-  trainedBy  String?  @map("trained_by")
-  validUntil DateTime? @map("valid_until")
-  notes      String?  @db.Text
+  id         String          @id @default(cuid())
+  userId     String          @map("user_id")
+  siteId     String          @map("site_id")
+  trainedAt  DateTime        @default(now()) @map("trained_at")
+  trainedBy  String?         @map("trained_by")
+  validUntil DateTime?       @map("valid_until")
+  notes      String?         @db.Text
   status     ClearanceStatus @default(ACTIVE)
-  createdAt  DateTime @default(now()) @map("created_at")
-  updatedAt  DateTime @updatedAt @map("updated_at")
+  createdAt  DateTime        @default(now()) @map("created_at")
+  updatedAt  DateTime        @updatedAt @map("updated_at")
 
-  user       User @relation(fields: [userId], references: [id], onDelete: Cascade)
-  site       Site @relation(fields: [siteId], references: [id], onDelete: Cascade)
-  trainer    User? @relation("ClearanceTrainer", fields: [trainedBy], references: [id])
+  user    User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  site    Site  @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  trainer User? @relation("ClearanceTrainer", fields: [trainedBy], references: [id])
 
   @@unique([userId, siteId], name: "object_clearances_user_site_key")
-  @@map("object_clearances")
   @@index([userId], name: "object_clearances_user_idx")
   @@index([siteId], name: "object_clearances_site_idx")
   @@index([status], name: "object_clearances_status_idx")
   @@index([validUntil], name: "object_clearances_valid_idx")
+  @@map("object_clearances")
 }
 
 enum ClearanceStatus {
@@ -384,22 +500,22 @@ enum ClearanceStatus {
 
 // Einsätze / Events
 model Event {
-  id                  String   @id @default(cuid())
+  id                  String      @id @default(cuid())
   title               String
   description         String?
   siteId              String?
-  site                Site?    @relation(fields: [siteId], references: [id])
+  site                Site?       @relation(fields: [siteId], references: [id])
   startTime           DateTime
   endTime             DateTime
   serviceInstructions String
   assignedEmployeeIds String[]
   status              EventStatus @default(PLANNED)
-  createdAt           DateTime @default(now())
-  updatedAt           DateTime @updatedAt
+  createdAt           DateTime    @default(now())
+  updatedAt           DateTime    @updatedAt
 
-  @@map("events")
   @@index([startTime], name: "events_start_idx")
   @@index([siteId, startTime], name: "events_site_start_idx")
+  @@map("events")
 }
 
 enum EventStatus {
@@ -417,19 +533,19 @@ enum DevicePlatform {
 }
 
 model DeviceToken {
-  id          String         @id @default(cuid())
-  userId      String
-  user        User           @relation(fields: [userId], references: [id])
-  platform    DevicePlatform
-  token       String         @unique
-  isActive    Boolean        @default(true)
-  notificationsEnabled Boolean @default(true)
-  lastUsedAt  DateTime?
-  createdAt   DateTime       @default(now())
-  updatedAt   DateTime       @updatedAt
+  id                   String         @id @default(cuid())
+  userId               String
+  user                 User           @relation(fields: [userId], references: [id])
+  platform             DevicePlatform
+  token                String         @unique
+  isActive             Boolean        @default(true)
+  notificationsEnabled Boolean        @default(true)
+  lastUsedAt           DateTime?
+  createdAt            DateTime       @default(now())
+  updatedAt            DateTime       @updatedAt
 
-  @@map("device_tokens")
   @@index([userId], name: "device_tokens_user_idx")
+  @@map("device_tokens")
 }
 
 model AuditLog {
@@ -446,8 +562,8 @@ model AuditLog {
   userAgent    String?
   outcome      String?
 
-  @@map("audit_logs")
   @@index([occurredAt], name: "audit_logs_occurredAt_idx")
   @@index([resourceType, resourceId], name: "audit_logs_resource_idx")
   @@index([actorId, occurredAt], name: "audit_logs_actor_idx")
+  @@map("audit_logs")
 }

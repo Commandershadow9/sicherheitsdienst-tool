@@ -27,6 +27,7 @@ import {
   absenceRoutes,
 } from './routes';
 import systemRootRoutes from './routes/system';
+import dashboardRoutes from './routes/dashboardRoutes';
 
 const app = express();
 // Port-Konstante wird hier nicht benötigt (Server-Start in server.ts)
@@ -100,6 +101,7 @@ app.get('/', (req: Request, res: Response) => {
       shifts: '/api/shifts',
       auditLogs: '/api/audit-logs',
       sites: '/api/sites',
+      dashboard: '/api/dashboard',
     },
     timestamp: new Date().toISOString(),
   });
@@ -120,6 +122,7 @@ app.use('/api/push', pushRoutes);
 app.use('/api/incidents', incidentRoutes);
 app.use('/api/audit-logs', auditLogRoutes);
 app.use('/api/absences', absenceRoutes);
+app.use('/api/dashboard', dashboardRoutes);
 
 // API v1 Alias (OpenAPI servers: /api/v1)
 app.use('/api/v1', systemRoutes);
@@ -133,6 +136,7 @@ app.use('/api/v1/push', pushRoutes);
 app.use('/api/v1/incidents', incidentRoutes);
 app.use('/api/v1/audit-logs', auditLogRoutes);
 app.use('/api/v1/absences', absenceRoutes);
+app.use('/api/v1/dashboard', dashboardRoutes);
 
 // 404 handler for unmatched routes
 app.use((req: Request, res: Response) => {

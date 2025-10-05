@@ -2,6 +2,195 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.8.0] - 2025-10-05 – Intelligente Ersatz-Mitarbeiter-Suche 🤖
+
+### Added
+- **Intelligentes Replacement System (v1.8.0 - Großes Feature!)**:
+  - **Datenmodell (Prisma Schema)**:
+    - `EmployeePreferences` Model für individuelle Präferenzen (Schichtarten, Stunden, Objekte, Arbeitsrhythmus)
+    - `EmployeeWorkload` Model für aggregierte Metriken (Auslastung, Nachtschichten, Compliance-Tracking)
+    - `ComplianceViolation` Model für ArbZG-Verstöße (§3: 48h/Woche, §5: 11h Ruhezeit)
+    - Migration: `20251004212443_add_intelligent_replacement_models`
+  - **Scoring-Engine (Backend)**:
+    - 5 Haupt-Algorithmen mit Tests (31 Unit-Tests, alle ✓):
+      - Workload-Score (70-90% Auslastung = optimal)
+      - Compliance-Score (ArbZG §3 & §5 Prüfung)
+      - Fairness-Score (Team-Durchschnitts-Vergleich)
+      - Preference-Score (Mitarbeiter-Präferenzen-Match)
+      - Total-Score (Gewichtung: 40% Compliance, 30% Präferenz, 20% Fairness, 10% Workload)
+    - Service: `backend/src/services/intelligentReplacementService.ts`
+    - API-Endpoint: `GET /api/shifts/:id/replacement-candidates-v2`
+    - Response-Struktur: sortierte Kandidaten mit Score, Recommendation (OPTIMAL/GOOD/ACCEPTABLE/NOT_RECOMMENDED), Color, Metrics, Warnings
+  - **Frontend Intelligente UI**:
+    - `ReplacementCandidatesModalV2` - Komplett neues Modal mit Scoring-Anzeige
+    - 3 neue UI-Komponenten:
+      - `ScoreRing` - SVG-Kreis-Chart (0-100) mit Farb-Kodierung
+      - `MetricBadge` - Icon + Label + Wert mit Status-Farben
+      - `WarningBadge` - Compliance-Warnungen (Info/Warning/Error Severity)
+    - Lucide Icons Integration (BarChart3, Clock, Moon, Users, AlertCircle, etc.)
+    - Metriken-Grid: Auslastung, Ruhezeit, Nachtschichten, Ersatz-Einsätze
+    - Detail-Scores aufklappbar (Compliance/Präferenz/Fairness/Workload)
+  - **Test-Daten Seed**:
+    - Script: `npm run seed:intelligent-replacement`
+    - 4 Test-Kandidaten mit diversen Profilen (OPTIMAL, GOOD, ACCEPTABLE, NOT_RECOMMENDED)
+    - Realistische Metriken, Präferenzen, Workload-Daten
+  - **Dokumentation**:
+    - Komplette Feature-Spec: `docs/FEATURE_INTELLIGENT_REPLACEMENT.md`
+    - Seed-Anleitung: `backend/prisma/seeds/README.md` (aktualisiert)
+
+### Fixed
+- **Login-Problem nach v1.8.0 Implementierung**:
+  - Root Cause: Backend-Port-Wechsel (3000→3001) + Vite .env-Caching + Docker-Netzwerk-Probleme
+  - **Backend-Infrastruktur**:
+    - Backend von lokal zu Docker verschoben (Container: `sicherheitsdienst-api`)
+    - DATABASE_URL: localhost → db:5432 (Docker-Service-Name)
+    - Backend listen auf 0.0.0.0 statt localhost (externe Erreichbarkeit)
+    - CORS für externe IP konfiguriert (`http://37.114.53.56:5173`)
+  - **Frontend-Konfiguration**:
+    - VITE_API_BASE_URL auf Port 3001 aktualisiert (`frontend/.env`)
+    - Frontend-Container neu erstellt mit `--env-file .env` (Vite lädt .env nur beim Start)
+    - Vite-Cache gelöscht (`node_modules/.vite`)
+  - **Troubleshooting-Dokumentation**:
+    - Neue Doku: `docs/TROUBLESHOOTING_LOGIN.md`
+    - Diagnose-Kommandos (Backend-Status, CORS-Header, Login-Test)
+    - Häufige Fehlerquellen und Lösungen
+  - **Verifikation**:
+    - Backend Health-Check: ✅ 200 OK
+    - CORS-Header: ✅ `Access-Control-Allow-Origin: http://37.114.53.56:5173`
+    - Login-Flow: ✅ Funktioniert (`admin@sicherheitsdienst.de`)
+    - Frontend-Backend-Kommunikation: ✅ Port 3001
+
+### Changed
+- **Backend PORT-Standardwert**: 3000 → 3001 (Docker-Compose-Default)
+- **Backend .env**: DATABASE_URL auskommentiert (wird aus Root-.env geladen)
+- **server.ts**: PORT-Parsing mit `parseInt()` (TypeScript strict mode)
+
+### Technical Debt
+- ⚠️ **Testdaten verloren**: Nach Docker-Migration müssen Seeds neu ausgeführt werden
+- 📝 **TODO**: Integration-Tests für v2 API-Endpoint fehlen noch
+- 📝 **TODO**: Performance-Test für Scoring-Engine (Ziel: < 500ms)
+- 📝 **TODO**: Cron-Jobs für automatische Workload-Berechnung
+
+### Migration Notes
+Wenn du von v1.7.x auf v1.8.0 upgradest:
+
+1. **Datenbank-Migration**:
+   ```bash
+   docker compose exec api npx prisma migrate deploy
+   ```
+
+2. **Seed-Daten neu laden**:
+   ```bash
+   # Test-Abwesenheiten
+   docker compose exec api npm run seed:test-absences
+
+   # Intelligent Replacement Test-Kandidaten
+   docker compose exec api npm run seed:intelligent-replacement
+   ```
+
+3. **Frontend .env prüfen**:
+   ```bash
+   # Muss Port 3001 sein!
+   VITE_API_BASE_URL=http://37.114.53.56:3001
+   ```
+
+4. **Frontend-Container neu erstellen**:
+   ```bash
+   docker stop project-web-1 && docker rm project-web-1
+   docker run -d --name project-web-1 -p 5173:5173 \
+     -v $(pwd)/frontend:/web -w /web --env-file frontend/.env \
+     node:20 sh -c "npm install && npx vite --host 0.0.0.0 --port 5173"
+   ```
+
+## [Unreleased] - 2025-10-04 – v1.7.0 Dashboard Backend & Bugfixes 🎛️
+
+### Added
+- **Manager-Dashboard Backend API** (v1.7.0 Phase 1 - Backend komplett):
+  - 4 neue Dashboard-Endpoints für ADMIN/MANAGER Rollen:
+    - `GET /api/dashboard/critical` - Heute kritische Schichten (unterbesetzt durch Abwesenheiten)
+    - `GET /api/dashboard/pending-approvals` - Ausstehende Genehmigungen mit Kontext (betroffene Schichten, Urlaubstage-Check)
+    - `GET /api/dashboard/warnings?days=7` - Kapazitätswarnungen für nächste N Tage (1-30)
+    - `GET /api/dashboard/stats` - Übersichts-Statistiken (Mitarbeiter, Verfügbarkeit, Abwesenheiten)
+  - Controller: `backend/src/controllers/dashboardController.ts` (450 Zeilen)
+  - Routes: `backend/src/routes/dashboardRoutes.ts`
+  - Dokumentation: `docs/FEATURE_DASHBOARD.md` (vollständige Spec mit UI-Wireframe)
+  - Alle Endpoints manuell getestet und funktionsfähig deployed
+- **Manager-Dashboard Frontend Grundgerüst** (v1.7.0 Phase 2 - Teil 1):
+  - Neue Feature-Struktur unter `frontend/src/features/dashboard/`
+  - Karten für kritische Schichten, Genehmigungen, Warnungen & Stats
+  - QuickApprovalModal mit Kapazitätsprüfung (`previewCapacityWarnings`)
+  - `DashboardPage.tsx` mit React Query (60s Auto-Refresh + manueller Refresh)
+  - Direktes Genehmigen/Ablehnen inkl. AbsenceDetailModal
+- **Dashboard UX Verfeinerung**:
+  - Pending Approvals zeigen jetzt alle betroffenen Schichten inkl. Kapazitätsstatus & Backfill-Hinweis
+  - Ersatz-Zuweisungen invalidieren alle Dashboard-Queries (sichtbares Refresh nach Erfolg)
+  - Kapazitätslogik berücksichtigt tatsächliche Schichtzuweisungen statt nur Clearance-Pools
+- **Shift-Replacement API**:
+  - Service `findReplacementCandidatesForShift` extrahiert (backend/src/services/replacementService.ts)
+  - Endpoint `GET /api/shifts/:id/replacement-candidates` für ADMIN/MANAGER/DISPATCHER
+  - Dashboard Buttons nutzen bestehenden ReplacementCandidatesModal
+- **Tests**:
+  - Vitest: `QuickApprovalModal` deckt Warnungsanzeige & Happy Path (Approve/Reject) ab
+  - Playwright: `dashboard-quick-actions.spec.ts` prüft Genehmigungs-Workflow & Ersatzsuche (Seed-Manager)
+- **Prisma Migrationen nachgezogen**:
+  - `20251005_add_absence_documents_table` erstellt fehlende Tabelle inkl. FK & Index
+  - `20251005_add_object_clearances_table` erstellt Clearances + Enum + Trigger
+
+### Fixed (Session 1 - Bugfixes nach v1.6.0)
+- **Express Routen-Reihenfolge Bug**: `/api/absences/:id/preview-warnings` gab 404 zurück
+  - Spezifische Routen jetzt VOR generischen Routen definiert
+  - Betrifft: preview-warnings, replacement-candidates, approve/reject/cancel
+- **Query Validation**: Frontend sendet `sortBy`/`sortDir`, aber Backend erlaubte es nicht → 400 Error
+  - `sortBy` und `sortDir` zu `listAbsenceQuerySchema` hinzugefügt
+- **401 Unauthorized**: User-Dropdown versuchte zu laden bevor Auth abgeschlossen war
+  - Query jetzt mit `enabled: isManager && !!user` statt nur `isManager`
+- **DB-Fehler**: `absence_documents` Tabelle fehlt in DB (Migration drift)
+  - Temporär: Documents-Select im Controller auskommentiert
+  - TODO: Saubere Migration erstellen
+- **Ersatz-Mitarbeiter Zuweisung**: Implementiert echte Zuweisung statt nur Alert
+  - API-Call zu `POST /shifts/:id/assign` implementiert
+  - Auto-Refresh nach Zuweisung für visuelle Bestätigung
+  - MANAGER Berechtigung für Shift-Zuweisung hinzugefügt
+
+### Known Issues
+- Dokument-Upload für Abwesenheiten weiterhin deaktiviert (Controller noch auf TODO-Liste)
+- Dashboard: Mobile QA ≤768px & CI-Integration für Playwright ausstehend
+
+## [v1.6.0] - 2025-10-04 – Detailansicht & Ersatz-Mitarbeiter-Suche 📋
+
+### Added
+- **Urlaubsantrag-Detailansicht**: Modal mit vollständigen Informationen
+  - Öffnet sich durch Klick auf Mitarbeiter-Namen
+  - Zeigt: Zeitraum, Typ, Status, Grund, Entscheidung
+  - Backend: `GET /api/absences/:id` liefert erweiterte Daten
+- **Urlaubstage-Saldo**: Automatische Berechnung & Anzeige
+  - Jahresanspruch aus `EmployeeProfile.annualLeaveDays`
+  - Bereits genommen, beantragt, verfügbar
+  - Warnung bei Überschreitung
+- **Objekt-Zuordnungen anzeigen**: ObjectClearances mit Status-Icons
+  - ✅ ACTIVE, ⏳ EXPIRED, ❌ REVOKED
+  - Zeigt Site-Name, Adresse, Einweisungsdatum, Gültigkeit
+  - Warnung bei abgelaufenen Einweisungen
+- **Betroffene Schichten**: Mit Kapazitätswarnungen
+  - Zeigt alle Schichten im Abwesenheitszeitraum
+  - Kapazitätsberechnung: verfügbar / benötigt
+  - ⚠️ Warnung bei Unterbesetzung
+- **Ersatz-Mitarbeiter-Suche**: API + UI
+  - "Ersatz finden" Button bei unterbesetzten Schichten
+  - Backend: `GET /api/absences/:id/replacement-candidates`
+  - Filtert nach: ObjectClearance (ACTIVE), keine Konflikte, verfügbar
+  - Modal zeigt: Name, Qualifikationen, Verfügbarkeit
+- **Krankmeldung Manager-Benachrichtigung**: Auto-approved aber Manager wird informiert
+- **Test-Daten Script**: `npm run seed:test-absences`
+  - 8 Mitarbeiter mit unterschiedlichen Urlaubstagen
+  - 4 Sites (Shoppingcenter, Büro, Industrie, Krankenhaus)
+  - 35 Schichten über 2 Wochen
+  - 8 Abwesenheits-Szenarien (REQUESTED, APPROVED, REJECTED, SICKNESS)
+
+### Changed
+- Backend: `getAbsenceById` lädt jetzt zusätzliche Daten (ObjectClearances, AffectedShifts, LeaveDaysSaldo)
+- Migration: `20251004_add_annual_leave_days` fügt `annual_leave_days INT NOT NULL DEFAULT 30` zu `employee_profiles` hinzu
+
 ## [v1.5.0] - 2025-10-03 – Abwesenheiten Phase 2 & Testing 🚀
 
 ### Added

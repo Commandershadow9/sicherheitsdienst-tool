@@ -2,13 +2,13 @@ import app from './app';
 import logger from './utils/logger';
 import prisma from './utils/prisma';
 
-const PORT = process.env.PORT || 3001;
+const PORT = parseInt(process.env.PORT || '3001', 10);
 
-const server = app.listen(PORT, () => {
+const server = app.listen(PORT, '0.0.0.0', () => {
   logger.info('🚀 ================================');
   logger.info('🛡️  Sicherheitsdienst-Tool Backend');
   logger.info('🚀 ================================');
-  logger.info(`📡 Server running on port ${PORT}`);
+  logger.info(`📡 Server running on port ${PORT} (listening on all interfaces)`);
   logger.info(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
   logger.info('');
   logger.info('📍 Available Endpoints:');

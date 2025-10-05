@@ -24,6 +24,40 @@ export type ReplacementCandidate = {
   clearanceValidUntil: string | null
 }
 
+// v2 API - Intelligent Replacement mit Scoring (v1.8.0)
+export type ReplacementCandidateV2 = {
+  id: string
+  firstName: string
+  lastName: string
+  employeeId: string
+  hasRequiredQualifications: boolean
+  missingQualifications: string[]
+  siteAccessStatus: 'CLEARED' | 'NOT_CLEARED' | 'EXPIRED'
+  isAvailable: boolean
+  score: {
+    total: number
+    recommendation: 'OPTIMAL' | 'GOOD' | 'ACCEPTABLE' | 'NOT_RECOMMENDED'
+    color: 'green' | 'yellow' | 'orange' | 'red'
+    workload: number
+    compliance: number
+    fairness: number
+    preference: number
+  }
+  metrics: {
+    currentHours: number
+    targetHours: number
+    utilizationPercent: number
+    restHours: number
+    weeklyHours: number
+    consecutiveDays: number
+    nightShiftCount: number
+    avgNightShiftCount: number
+    replacementCount: number
+    avgReplacementCount: number
+  }
+  warnings: string[]
+}
+
 export type AffectedShift = {
   id: string
   title: string
@@ -36,6 +70,7 @@ export type AffectedShift = {
   requiredEmployees: number
   availableEmployees: number
   hasCapacityWarning: boolean
+  needsReplacement?: boolean
 }
 
 export type LeaveDaysSaldo = {
@@ -94,4 +129,15 @@ export type ShiftConflict = {
   startTime: string
   endTime: string
   status: string
+}
+
+export type CapacityWarning = {
+  shiftId: string
+  shiftTitle: string
+  siteId: string
+  siteName: string
+  date: string
+  required: number
+  available: number
+  shortage: number
 }

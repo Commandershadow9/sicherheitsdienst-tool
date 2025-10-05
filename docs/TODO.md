@@ -1,29 +1,40 @@
 # TODO – Nächste Schritte (Kurzplanung)
 
-Stand: 2025-10-03 (nach v1.5.1)
+Stand: 2025-10-04 (nach v1.6.0 + Bugfixes)
 
 ## Kurzfristig (P1, 1–2 Tage)
 
-### Abwesenheiten: Detailansicht & Kontext (v1.6.0)
-- [ ] **Urlaubsantrag-Detailansicht**:
-  - Modal/Drawer beim Klick auf Abwesenheit
-  - Zeigt: Zeitraum, Grund, Status, Entscheidungs-Notiz
-  - Zeigt: Ersteller vs. Betroffener (falls Admin für Mitarbeiter erstellt)
-- [ ] **Urlaubstage-Saldo**:
-  - Neues Feld: `EmployeeProfile.annualLeaveDays` (z.B. 30)
-  - Berechnung: Verfügbar, Genommen, Beantragt, Verbleibend
-  - Anzeige in Detailansicht: "Nach Genehmigung: X Tage verbleibend"
-- [ ] **Objekt-Zuordnung anzeigen**:
-  - Liste: "Mitarbeiter arbeitet in: Objekt A, Objekt B"
-  - Einarbeitungs-Status: ✅ Aktiv, ⏳ Abgelaufen
-  - Zeigt betroffene Schichten bei Konflikt
-- [ ] **Ersatz-Mitarbeiter-Suche**:
-  - Button "Ersatz finden" bei Kapazitätswarnung
-  - Zeigt verfügbare Mitarbeiter MIT ObjectClearance
-  - Direktes Zuweisen zur Schicht möglich
-  - API: `GET /api/absences/:id/replacement-candidates`
+### Bugfixes 2025-10-04 ✅
+- [x] **Express Routen-Reihenfolge Bug (absenceRoutes.ts)**:
+  - Problem: `/:id/preview-warnings` wurde nach `/:id` definiert → 404 Fehler
+  - Fix: Spezifische Routen (mit mehr Segmenten) jetzt VOR generischen Routen
+  - Betrifft: preview-warnings, replacement-candidates, approve/reject/cancel
+- [x] **Absences Query Validation Bug**:
+  - Problem: Frontend sendet `sortDir=asc`, aber Backend-Validierung erlaubte es nicht → 400 Error
+  - Fix: `sortBy` und `sortDir` zu `listAbsenceQuerySchema` hinzugefügt
+- [x] **401 Unauthorized bei Mitarbeiter-Dropdown**:
+  - Problem: User-Query wurde ausgeführt bevor User geladen war
+  - Fix: `enabled: isManager && !!user` statt nur `isManager` in AbsencesList.tsx
+- [x] **DB-Fehler bei Absences-Liste**:
+  - Problem: `absence_documents` Tabelle fehlt in DB (Migration drift)
+  - Temporärer Fix: Documents-Select im Controller auskommentiert
+  - TODO: Saubere Migration für absence_documents Tabelle erstellen
+- [x] **Ersatz-Mitarbeiter Zuweisung funktioniert nicht**:
+  - Problem: Nur Alert, keine echte Zuweisung
+  - Fix: API-Call zu POST /shifts/:id/assign implementiert
+  - Fix: Auto-Refresh nach Zuweisung (visuelle Bestätigung)
+  - Fix: MANAGER zu authorize() hinzugefügt (shiftRoutes.ts:50)
 
 ### Abwesenheiten: Abgeschlossen ✅
+- [x] **v1.6.0 - Detailansicht & Kontext**:
+  - [x] Urlaubsantrag-Detailansicht (Modal mit vollständigen Informationen)
+  - [x] Urlaubstage-Saldo (EmployeeProfile.annualLeaveDays, Berechnung & Anzeige)
+  - [x] Objekt-Zuordnung anzeigen (ObjectClearances mit Status-Icons)
+  - [x] Betroffene Schichten mit Kapazitätswarnungen
+  - [x] Ersatz-Mitarbeiter-Suche (API + UI mit "Ersatz finden" Button)
+  - [x] Krankmeldung Manager-Benachrichtigung
+  - [x] Test-Daten Script (`npm run seed:test-absences`)
+  - Release: v1.6.0 (2025-10-04)
 - [x] Abwesenheiten Phase 2: Dokument-/Attest-Uploads (v1.5.0)
 - [x] Kalender-Ansicht (v1.5.1)
 - [x] Kapazitätswarnung mit Preview (v1.5.1)
@@ -72,7 +83,190 @@ Erledigt:
 
 ## Mittelfristig (P2)
 
-### Objekt-Management (v1.7.0)
+### Manager-Dashboard v1.7.0 ✅ ABGESCHLOSSEN (mit Refactoring-Bedarf)
+**Entscheidung 2025-10-04**: Dashboard VOR Objekt-Management
+- **User-Feedback**: "Abwesenheiten interessieren mich nur wenn es Probleme gibt"
+- **Ziel**: Workflow-orientiert statt daten-orientiert
+- [x] **Dashboard-Konzept & Wireframe**: ✅ docs/FEATURE_DASHBOARD.md
+- [x] **Backend API-Endpoints**: ✅ FERTIG & GETESTET
+- [x] **Frontend Dashboard-Page**: ✅ FUNKTIONIERT (aber Code-Qualität verbesserungswürdig)
+  - ⚠️ **Problem**: Dashboard.tsx hat 317 Zeilen, 10+ useState, schwer wartbar
+  - ⚠️ **Problem**: Duplizierter Code (Formatter in mehreren Cards)
+  - ⚠️ **Problem**: Keine Memoization → Performance-Probleme
+  - ⚠️ **Problem**: Emoji statt Icons (unprofessionell)
+
+### Dashboard Refactoring v1.7.1 ✅ ABGESCHLOSSEN
+**Warum**: Saubere Basis für komplexe Features (Intelligent Replacement)
+**Siehe**: `docs/FEATURE_INTELLIGENT_REPLACEMENT.md` → Phase 1
+**Datum**: 2025-10-04
+
+- [x] **State-Management vereinfachen**:
+  - [x] `useDashboardQueries()` Hook extrahiert (Dashboard.tsx: 317→171 Zeilen)
+  - [x] `useApprovalModal()` Hook extrahiert
+  - [x] `useReplacementModal()` Hook extrahiert
+  - [x] `useAbsenceDetail()` Hook extrahiert
+  - [x] `useManualRefresh()` Hook extrahiert
+- [x] **Code-Deduplizierung**:
+  - [x] `utils/formatting.ts` - Zentrale Formatter erstellt
+  - [x] Duplikate aus CriticalShiftsCard, PendingApprovalsCard, WarningsCard entfernt
+  - [x] Intl.DateTimeFormat-Instanzen vereinheitlicht
+- [x] **UX-Verbesserungen**:
+  - [x] Icons statt Emoji (Lucide Icons: AlertCircle, Clock, BarChart3, etc.)
+  - [x] Konsistente Icon-Größen und Farben
+  - [x] Bessere visuelle Hierarchie
+- [x] **Performance-Optimierung**:
+  - [x] `useMemo` für berechnete Werte (loadingShiftId in Dashboard)
+  - [x] `useCallback` für alle Event Handlers
+  - [x] CriticalShiftsCard bereits mit useMemo optimiert
+  - [x] Badge-Klassen in Helper-Funktionen extrahiert
+- [x] **Type-Safety**:
+  - [x] PendingApproval Type zu Dashboard imports hinzugefügt
+  - [x] Test-Suite aktualisiert (QuickApprovalModal.test.tsx)
+  - [x] 0 TypeScript-Compiler-Fehler
+
+### Intelligent Replacement System v1.8.0 - **IN ARBEIT** 🤖
+**Vision**: "System empfiehlt den BESTEN Mitarbeiter, nicht nur den verfügbaren"
+**Siehe**: Komplette Spec in `docs/FEATURE_INTELLIGENT_REPLACEMENT.md`
+
+#### Phase 2a: Datenmodell (Prisma Schema) ✅ ABGESCHLOSSEN (2025-10-04)
+- [x] **EmployeePreferences** Model:
+  - [x] Schicht-Präferenzen (prefersNightShifts, prefersDayShifts, prefersWeekends)
+  - [x] Stunden-Präferenzen (targetMonthlyHours: 160, minMonthlyHours: 120, maxMonthlyHours: 200)
+  - [x] Site-Präferenzen (preferredSiteIds[], avoidedSiteIds[])
+  - [x] Arbeitsrhythmus (prefersConsecutiveDays: 5, minRestDaysPerWeek: 2)
+  - [x] Schicht-Länge (prefersLongShifts, prefersShortShifts)
+  - [x] Notizen (Freitext für Besonderheiten)
+- [x] **EmployeeWorkload** Model:
+  - [x] Aggregierte Metriken (totalHours, scheduledHours, nightShiftCount, weekendShiftCount)
+  - [x] Compliance-Checks (maxWeeklyHours, minRestHoursBetweenShifts: 11h default)
+  - [x] Tracking (consecutiveDaysWorked, restDaysCount)
+  - [x] Fairness-Score (0-100)
+  - [x] Performance-optimiert mit month/year unique key + indexes
+- [x] **ComplianceViolation** Model:
+  - [x] Log für Verstöße (violationType, description)
+  - [x] Severity-Level (WARNING, ERROR, CRITICAL)
+  - [x] Werte-Tracking (value, threshold)
+  - [x] Resolution-Tracking (resolvedAt, resolvedBy, resolvedNote)
+  - [x] Indexes für Performance (userId+createdAt, violationType+severity)
+- [x] **EmployeeProfile** Erweiterungen:
+  - [x] targetWeeklyHours: Float (40h default)
+  - [x] contractType: String (FULL_TIME default)
+  - [x] autoAcceptReplacement: Boolean (false default)
+- [x] **Migration & Seeds**:
+  - [x] Prisma Migration `20251004212443_add_intelligent_replacement_models` erfolgreich
+  - [x] Seed-Script erweitert: Default-Präferenzen für alle 5 Test-User
+  - [x] User Relations erweitert (preferences, workload, complianceViolations)
+  - [x] Shift Relations erweitert (complianceViolations)
+  - [x] **Datei**: `backend/prisma/migrations/20251004212443_add_intelligent_replacement_models/migration.sql`
+
+#### Phase 2b: Backend Scoring-Engine ✅ ABGESCHLOSSEN (2025-10-04)
+- [x] **intelligentReplacementService.ts** erstellt:
+  - [x] `calculateWorkloadScore()` - Auslastungs-Bewertung (70-90% = optimal)
+  - [x] `calculateComplianceScore()` - ArbZG §5 (11h Ruhe), §3 (48h/Woche)
+  - [x] `calculateFairnessScore()` - Team-Durchschnitts-Vergleich
+  - [x] `calculatePreferenceScore()` - Mitarbeiter-Präferenzen Match
+  - [x] `calculateTotalScore()` - Gewichtung: Compliance 40%, Preference 30%, Fairness 20%, Workload 10%
+  - [x] `calculateCandidateScore()` - Haupt-Funktion mit Metriken & Warnungen
+  - [x] Helper-Funktionen: findLastShiftEnd, calculateConsecutiveDays, calculateTeamAverages
+- [x] **API-Endpoint implementiert**:
+  - [x] `GET /api/shifts/:id/replacement-candidates-v2` (shiftController.ts)
+  - [x] Route registriert (shiftRoutes.ts) - VOR allgemeiner /:id Route
+  - [x] RBAC: ADMIN, MANAGER, DISPATCHER
+  - [x] Rückgabe: Sortierte Kandidaten mit totalScore, recommendation, color, metrics, warnings
+  - [x] Fallback-Handling bei Scoring-Fehlern
+  - [x] Meta-Informationen: totalCandidates, optimalCandidates, goodCandidates
+- [ ] **Cron-Jobs einrichten** (optional - kann später implementiert werden):
+  - [ ] Tägliche Workload-Berechnung (01:00 Uhr)
+  - [ ] Compliance-Check nach Shift-Assignment (Hook)
+  - [ ] Wöchentliche Fairness-Score-Updates (Montag 02:00 Uhr)
+- [x] **Tests**:
+  - [x] Unit-Tests für alle 5 Scoring-Funktionen (31 Tests, alle ✓)
+  - [x] Testabdeckung: Workload (6), Compliance (6), Fairness (5), Preference (9), Total (5)
+  - [x] **Datei**: `backend/src/services/__tests__/intelligentReplacementService.test.ts`
+  - [ ] Integration-Tests für API-Endpoint (kann später ergänzt werden)
+  - [ ] Performance-Test: < 500ms für Kandidaten-Scoring (kann später ergänzt werden)
+
+#### Phase 2c: Frontend Intelligente UI ✅ ABGESCHLOSSEN (2025-10-05)
+- [x] **ReplacementCandidatesModalV2 erstellt**:
+  - [x] Score-basierte Card-Anzeige (Farben: grün/gelb/orange/rot)
+  - [x] Metriken-Grid (Auslastung, Ruhezeit, Nachtschichten, Ersätze)
+  - [x] Warnungs-Badges anzeigen
+  - [x] Detail-Scores aufklappbar (Compliance/Präferenz/Fairness/Workload)
+  - [x] Sortierung: Beste Kandidaten zuerst (vom Backend)
+  - [x] v2 API Integration (`GET /shifts/:id/replacement-candidates-v2`)
+- [x] **Neue UI-Komponenten**:
+  - [x] `ScoreRing` - Kreis-Chart (0-100) mit SVG
+  - [x] `MetricBadge` - Icon + Label + Wert + Status-Farbe
+  - [x] `WarningBadge` - Warnungs-Icon + Text (Info/Warning/Error)
+  - [x] Lucide Icons Integration (BarChart3, Clock, Moon, Users, etc.)
+- [x] **Frontend-Backend Integration**:
+  - [x] `ReplacementCandidateV2` Type in types.ts
+  - [x] `getReplacementCandidatesV2()` API-Funktion in api.ts
+  - [x] AbsenceDetailModal auf v2 API umgestellt
+  - [x] TypeScript 0 Fehler
+
+#### Phase 2d: Login-Problem & Docker-Migration ✅ ABGESCHLOSSEN (2025-10-05)
+**Problem**: Nach v1.8.0 Implementierung kein Login mehr möglich
+**Root Cause**: Backend-Port-Wechsel (3000→3001), Vite .env-Caching, Docker-Netzwerk-Issues
+- [x] **Infrastruktur-Migration**:
+  - [x] Backend von lokal zu Docker verschoben (sicherheitsdienst-api)
+  - [x] DATABASE_URL von localhost zu db:5432 angepasst
+  - [x] Backend listen auf 0.0.0.0 statt localhost (externe Erreichbarkeit)
+  - [x] CORS für externe IP konfiguriert (http://37.114.53.56:5173)
+- [x] **Frontend-Konfiguration**:
+  - [x] VITE_API_BASE_URL auf Port 3001 aktualisiert
+  - [x] Frontend-Container neu erstellt (--env-file .env)
+  - [x] Vite-Cache gelöscht (node_modules/.vite)
+- [x] **Troubleshooting-Dokumentation**:
+  - [x] `docs/TROUBLESHOOTING_LOGIN.md` erstellt
+  - [x] Diagnose-Kommandos dokumentiert
+  - [x] Häufige Fehlerquellen und Lösungen
+- [x] **Test & Verifikation**:
+  - [x] Backend Health-Check: ✅ 200 OK
+  - [x] CORS-Header: ✅ Access-Control-Allow-Origin korrekt
+  - [x] Login-Flow: ✅ Funktioniert (admin@sicherheitsdienst.de)
+  - [x] Frontend-Backend-Kommunikation: ✅ Port 3001
+- [ ] **Mitarbeiter-Präferenzen-Editor** (optional, später):
+  - [ ] Route `/employees/:id/preferences`
+  - [ ] Formular für alle Präferenz-Felder
+  - [ ] Validierung & Speicherung
+- [ ] **Workload-Dashboard** (optional, später):
+  - [ ] Route `/employees/:id/workload`
+  - [ ] Visualisierung: Auslastung, Nachtschichten, Freitage
+  - [ ] Compliance-Status, Fairness-Score
+  - [ ] Verlauf (6 Monate)
+- [ ] **Team-Fairness-Übersicht** (optional, später):
+  - [ ] Route `/team/fairness`
+  - [ ] Tabelle: Alle Mitarbeiter vergleichen
+  - [ ] Sortierung nach verschiedenen Metriken
+- [ ] **E2E-Tests** (optional, später):
+  - [ ] Playwright: Scoring-Anzeige bei Ersatz-Suche
+  - [ ] Playwright: Präferenzen-Editor
+  - [ ] Playwright: Workload-Dashboard
+
+### ⚠️ AKTUELL: Testdaten wiederherstellen (URGENT)
+**Problem**: Nach Docker-Migration keine Testdaten mehr im Dashboard
+**Betroffene Seeds**:
+- [ ] Test-Absences-Seed (`npm run seed:test-absences`) erneut ausführen
+- [ ] Intelligent-Replacement-Seed (`npm run seed:intelligent-replacement`) erneut ausführen
+- [ ] Verifikation: Dashboard zeigt wieder Critical Shifts, Pending Approvals, Warnings
+
+**Nächste Schritte**:
+1. [ ] Seed-Scripts in Docker-Umgebung ausführen
+2. [ ] Dashboard testen: Alle 4 Test-Kandidaten sichtbar?
+3. [ ] Ersatz-Mitarbeiter-Scoring testen: Farben (grün/gelb/orange/rot) korrekt?
+4. [ ] Metriken-Anzeige testen: Auslastung, Ruhezeit, Nachtschichten
+5. [ ] E2E-Test: Kompletter Workflow (Abwesenheit anlegen → Ersatz finden → Zuweisen)
+
+#### Phase 3: KI-Integration v2.0 (Später)
+- [ ] Predictive Scheduling (ML-Modell)
+- [ ] Automatische Zuweisung (mit Opt-In)
+- [ ] Optimierungs-Algorithmus (Constraint Solver)
+- [ ] Learning from Feedback
+
+- [x] Migration Drift beheben: `absence_documents` & `object_clearances` ✅ (2025-10-05)
+
+### Objekt-Management (v1.8.0) - NACHGEORDNET
 - [ ] **Objekt-Verwaltung UI** (Maske zum Anlegen/Bearbeiten):
   - **Basis-Informationen**:
     - Name, Standort, Adresse

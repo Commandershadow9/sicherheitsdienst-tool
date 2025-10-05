@@ -30,6 +30,22 @@ router.post(
 // GET /api/shifts/:id - Einzelne Schicht
 router.get('/:id', authenticate, asyncHandler(shiftController.getShiftById));
 
+// GET /api/shifts/:id/replacement-candidates-v2 - Intelligente Ersatzkandidaten mit Scoring (v1.8.0)
+router.get(
+  '/:id/replacement-candidates-v2',
+  authenticate,
+  authorize('ADMIN', 'MANAGER', 'DISPATCHER'),
+  asyncHandler(shiftController.getReplacementCandidatesV2),
+);
+
+// GET /api/shifts/:id/replacement-candidates - Ersatzkandidaten für eine Schicht (Legacy)
+router.get(
+  '/:id/replacement-candidates',
+  authenticate,
+  authorize('ADMIN', 'MANAGER', 'DISPATCHER'),
+  asyncHandler(shiftController.getShiftReplacementCandidates),
+);
+
 // PUT /api/shifts/:id - Schicht aktualisieren
 router.put(
   '/:id',
@@ -47,7 +63,7 @@ router.delete('/:id', authenticate, authorize('ADMIN'), writeLimiter, asyncHandl
 router.post(
   '/:id/assign',
   authenticate,
-  authorize('ADMIN', 'DISPATCHER'),
+  authorize('ADMIN', 'MANAGER', 'DISPATCHER'),
   assignLimiter,
   asyncHandler(shiftController.assignUserToShift),
 );
@@ -70,6 +86,8 @@ router.post(
 // 405
 router.all('/', authenticate, methodNotAllowed(['GET', 'POST']));
 router.all('/:id', authenticate, methodNotAllowed(['GET', 'PUT', 'DELETE']));
+router.all('/:id/replacement-candidates-v2', authenticate, methodNotAllowed(['GET']));
+router.all('/:id/replacement-candidates', authenticate, methodNotAllowed(['GET']));
 router.all('/:id/assign', authenticate, methodNotAllowed(['POST']));
 router.all('/:id/clock-in', authenticate, methodNotAllowed(['POST']));
 router.all('/:id/clock-out', authenticate, methodNotAllowed(['POST']));
