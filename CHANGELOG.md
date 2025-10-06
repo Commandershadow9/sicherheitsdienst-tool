@@ -2,6 +2,22 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.8.1] - 2025-10-06 – Discord Notification Fix
+
+### Fixed
+- **Discord-Benachrichtigungen für lange Release-Notes**:
+  - GitHub Actions Workflow `discord-all.yml` - Release-Event-Handler verbessert
+  - Multi-Embed-Support für lange Release-Notes hinzugefügt (analog zu Push-Events)
+  - Character-Limit von 1800 → 1600 Zeichen reduziert (sicherer)
+  - Schnitt an Zeilenumbrüchen statt mitten im Text
+  - Problem: v1.8.0 Release-Notification schlug fehl (HTTP 400: `{"embeds": ["0"]}`)
+  - Lösung: Release-Notes werden jetzt auf 2 separate Embeds aufgeteilt wenn >1600 Zeichen
+  - Workflow-Logs zeigen jetzt: `Discord HTTP: 204` → `OK` (erfolgreich)
+
+**Technischer Patch** - Keine funktionalen Änderungen, nur CI/CD-Verbesserung.
+
+---
+
 ## [1.8.0] - 2025-10-05 – Intelligente Ersatz-Mitarbeiter-Suche 🤖
 
 ### Added
