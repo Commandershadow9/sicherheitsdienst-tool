@@ -200,14 +200,39 @@ jobs:
             [ -z "$TEXT" ] && TEXT="$CHANGELOG_SECTION"
             [ -z "$TEXT" ] && TEXT="(Keine Release-Notes/Changelog gefunden.)"
             CLEAN_SECTION="$(printf '%s' "$TEXT")"
-            if [ "${#CLEAN_SECTION}" -gt 1800 ]; then
-              CLEAN_SECTION="${CLEAN_SECTION:0:1800}\n… (gekürzt)"
+
+            # Wenn Release-Notes zu lang (>1600 Zeichen), aufteilen
+            if [ "${#CLEAN_SECTION}" -gt 1600 ]; then
+              # Erste 1600 Zeichen nehmen und bei letztem Zeilenumbruch abschneiden
+              NOTES_PART1="$(echo "$CLEAN_SECTION" | head -c 1600 | sed 's/\(.*\)\n.*/\1/')"
+              NOTES_PART2="$(echo "$CLEAN_SECTION" | tail -c +1601)"
+
+              # Falls Teil 2 auch zu lang, nochmal kürzen
+              if [ "${#NOTES_PART2}" -gt 1600 ]; then
+                NOTES_PART2="${NOTES_PART2:0:1600}...\n\n*Vollständige Release Notes: ${rurl}*"
+              fi
+
+              # Zwei separate Embeds erstellen
+              MULTI_EMBED=true
+            else
+              NOTES_PART1="$CLEAN_SECTION"
+              NOTES_PART2=""
+              MULTI_EMBED=false
             fi
 
-            FIELDS=$(jq -n \
-              --arg changes "$CLEAN_SECTION" \
-              --arg links "$(printf "• Repo: %s\n• Actions: %s\n• Tag: %s" "$repo_url" "$run_url" "$rurl")" \
-              '[{"name":"Release Notes / Changelog","value":$changes},{"name":"Links","value":$links}]')
+            if [ "$MULTI_EMBED" = "true" ]; then
+              # Erster Embed (Teil 1)
+              FIELDS=$(jq -n \
+                --arg changes "$NOTES_PART1" \
+                --arg links "$(printf "• Vollständige Notes: %s\n• Repository: %s\n• Actions: %s" "$rurl" "$repo_url" "$run_url")" \
+                '[{"name":"Release Notes (Teil 1)","value":$changes},{"name":"Links","value":$links}]')
+            else
+              # Single Embed
+              FIELDS=$(jq -n \
+                --arg changes "$NOTES_PART1" \
+                --arg links "$(printf "• Repo: %s\n• Actions: %s\n• Tag: %s" "$repo_url" "$run_url" "$rurl")" \
+                '[{"name":"Release Notes / Changelog","value":$changes},{"name":"Links","value":$links}]')
+            fi
           fi
 
           # Erstes Payload erstellen
@@ -236,6 +261,28 @@ jobs:
               --arg avatar_url "${avatar}" \
               --arg title "📦 Push auf ${repo} — ${ref} (Fortsetzung)" \
               --arg description "**Weitere Commit-Details**" \
+              --arg ts "${ts}" \
+              --arg icon "${ICON}" \
+              --arg date "$(date -u +%Y-%m-%d)" \
+              --argjson fields "$FIELDS2" \
+              --arg color "${COLOR}" \
+              --arg url "$embed_url" \
+              --arg author_name "$actor" \
+              --arg author_url "https://github.com/${actor}" \
+              --arg author_icon "$avatar" \
+              '{username:$username, avatar_url:$avatar_url, embeds:[{title:$title, url:$url, description:$description, color:($color|tonumber), timestamp:$ts, thumbnail:{url:$icon}, author:{name:$author_name, url:$author_url, icon_url:$author_icon}, fields:$fields, footer:{text:("Automatische Benachrichtigung • " + $date)}}]}' \
+              > payload2.json
+            echo "has_payload2=true" >> "$GITHUB_OUTPUT"
+          elif [ "$event" = "release" ] && [ "${MULTI_EMBED:-false}" = "true" ] && [ -n "${NOTES_PART2:-}" ]; then
+            FIELDS2=$(jq -n \
+              --arg notes "$NOTES_PART2" \
+              --arg rurl "${rurl}" \
+              '[{"name":"Release Notes (Teil 2)","value":$notes},{"name":"Vollständige Notes","value":$rurl}]')
+            jq -n \
+              --arg username "GitHub · ${repo}" \
+              --arg avatar_url "${avatar}" \
+              --arg title "🏷️ Release ${tag} (Fortsetzung)" \
+              --arg description "**Weitere Release-Details**" \
               --arg ts "${ts}" \
               --arg icon "${ICON}" \
               --arg date "$(date -u +%Y-%m-%d)" \
