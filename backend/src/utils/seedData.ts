@@ -1,5 +1,5 @@
 import { PrismaClient } from '@prisma/client';
-import bcrypt from 'bcryptjs';
+import { resetSeedData, createUserWithPassword } from './seedHelpers';
 
 const prisma = new PrismaClient();
 
@@ -7,111 +7,76 @@ async function main() {
   console.log('🌱 Erstelle Test-Daten für Sicherheitsdienst-Tool...');
 
   try {
-    // Erst alle bestehenden Daten löschen (für sauberen Start)
-    await prisma.shiftAssignment.deleteMany();
-    await prisma.timeEntry.deleteMany();
-    await prisma.incident.deleteMany();
-    await prisma.absence.deleteMany();
-    await prisma.employeeDocument.deleteMany();
-    await prisma.employeeQualification.deleteMany();
-    await prisma.employeeProfile.deleteMany();
-    await prisma.complianceViolation.deleteMany();
-    await prisma.employeeWorkload.deleteMany();
-    await prisma.employeePreferences.deleteMany();
-    await prisma.auditLog.deleteMany();
-    await prisma.deviceToken.deleteMany();
-    await prisma.shift.deleteMany();
-    await prisma.event.deleteMany();
-    await prisma.site.deleteMany();
-    await prisma.user.deleteMany();
-
+    await resetSeedData(prisma);
     console.log('🗑️ Alte Daten gelöscht');
 
-    // Test-Mitarbeiter erstellen
-    const hashedPassword = await bcrypt.hash('password123', 12);
-
     // 1. Admin erstellen
-    const _admin = await prisma.user.create({
-      data: {
-        email: 'admin@sicherheitsdienst.de',
-        password: hashedPassword,
-        firstName: 'Max',
-        lastName: 'Mustermann',
-        phone: '+49 123 456789',
-        role: 'ADMIN',
-        employeeId: 'ADM001',
-        hireDate: new Date('2024-01-01'),
-        qualifications: ['Erste Hilfe', 'Brandschutz', 'Wachdienst', 'Führungszeugnis'],
-        isActive: true,
-      },
+    const admin = await createUserWithPassword(prisma, {
+      email: 'admin@sicherheitsdienst.de',
+      firstName: 'Max',
+      lastName: 'Mustermann',
+      phone: '+49 123 456789',
+      role: 'ADMIN',
+      employeeId: 'ADM001',
+      hireDate: new Date('2024-01-01'),
+      qualifications: ['Erste Hilfe', 'Brandschutz', 'Wachdienst', 'Führungszeugnis'],
+      isActive: true,
     });
 
     // 2. Dispatcher/Manager erstellen
-    const _dispatcher = await prisma.user.create({
-      data: {
-        email: 'dispatcher@sicherheitsdienst.de',
-        password: hashedPassword,
-        firstName: 'Sarah',
-        lastName: 'Weber',
-        phone: '+49 123 456788',
-        role: 'DISPATCHER',
-        employeeId: 'DIS001',
-        hireDate: new Date('2024-01-15'),
-        qualifications: ['Erste Hilfe', 'Einsatzplanung', 'Kommunikation'],
-        isActive: true,
-      },
+    const dispatcher = await createUserWithPassword(prisma, {
+      email: 'dispatcher@sicherheitsdienst.de',
+      firstName: 'Sarah',
+      lastName: 'Weber',
+      phone: '+49 123 456788',
+      role: 'DISPATCHER',
+      employeeId: 'DIS001',
+      hireDate: new Date('2024-01-15'),
+      qualifications: ['Erste Hilfe', 'Einsatzplanung', 'Kommunikation'],
+      isActive: true,
     });
 
     // 3. Sicherheitsmitarbeiter erstellen
-    const employee1 = await prisma.user.create({
-      data: {
-        email: 'thomas.mueller@sicherheitsdienst.de',
-        password: hashedPassword,
-        firstName: 'Thomas',
-        lastName: 'Müller',
-        phone: '+49 123 456790',
-        role: 'EMPLOYEE',
-        employeeId: 'SEC001',
-        hireDate: new Date('2024-02-01'),
-        qualifications: ['Erste Hilfe', 'Objektschutz', 'Brandschutz'],
-        isActive: true,
-      },
+    const employee1 = await createUserWithPassword(prisma, {
+      email: 'thomas.mueller@sicherheitsdienst.de',
+      firstName: 'Thomas',
+      lastName: 'Müller',
+      phone: '+49 123 456790',
+      role: 'EMPLOYEE',
+      employeeId: 'SEC001',
+      hireDate: new Date('2024-02-01'),
+      qualifications: ['Erste Hilfe', 'Objektschutz', 'Brandschutz'],
+      isActive: true,
     });
 
-    const employee2 = await prisma.user.create({
-      data: {
-        email: 'anna.schmidt@sicherheitsdienst.de',
-        password: hashedPassword,
-        firstName: 'Anna',
-        lastName: 'Schmidt',
-        phone: '+49 123 456791',
-        role: 'EMPLOYEE',
-        employeeId: 'SEC002',
-        hireDate: new Date('2024-03-01'),
-        qualifications: ['Erste Hilfe', 'Veranstaltungsschutz', 'Personenschutz'],
-        isActive: true,
-      },
+    const employee2 = await createUserWithPassword(prisma, {
+      email: 'anna.schmidt@sicherheitsdienst.de',
+      firstName: 'Anna',
+      lastName: 'Schmidt',
+      phone: '+49 123 456791',
+      role: 'EMPLOYEE',
+      employeeId: 'SEC002',
+      hireDate: new Date('2024-03-01'),
+      qualifications: ['Erste Hilfe', 'Veranstaltungsschutz', 'Personenschutz'],
+      isActive: true,
     });
 
-    const employee3 = await prisma.user.create({
-      data: {
-        email: 'michael.wagner@sicherheitsdienst.de',
-        password: hashedPassword,
-        firstName: 'Michael',
-        lastName: 'Wagner',
-        phone: '+49 123 456792',
-        role: 'EMPLOYEE',
-        employeeId: 'SEC003',
-        hireDate: new Date('2024-04-01'),
-        qualifications: ['Erste Hilfe', 'Objektschutz', 'Wachdienst'],
-        isActive: true,
-      },
+    const employee3 = await createUserWithPassword(prisma, {
+      email: 'michael.wagner@sicherheitsdienst.de',
+      firstName: 'Michael',
+      lastName: 'Wagner',
+      phone: '+49 123 456792',
+      role: 'EMPLOYEE',
+      employeeId: 'SEC003',
+      hireDate: new Date('2024-04-01'),
+      qualifications: ['Erste Hilfe', 'Objektschutz', 'Wachdienst'],
+      isActive: true,
     });
 
     console.log('👥 Mitarbeiter erstellt');
 
     // Intelligent Replacement System: Default-Präferenzen für alle Mitarbeiter erstellen
-    const allUsers = [_admin, _dispatcher, employee1, employee2, employee3];
+    const allUsers = [admin, dispatcher, employee1, employee2, employee3];
 
     for (const user of allUsers) {
       await prisma.employeePreferences.create({

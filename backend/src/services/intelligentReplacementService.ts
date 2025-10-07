@@ -15,6 +15,21 @@
  */
 
 import { PrismaClient, Shift, User, EmployeePreferences, EmployeeWorkload } from '@prisma/client';
+import {
+  calculateWorkloadScore,
+  calculateComplianceScore,
+  calculateFairnessScore,
+  calculatePreferenceScore,
+  calculateTotalScore,
+} from './replacementScoreUtils';
+
+export {
+  calculateWorkloadScore,
+  calculateComplianceScore,
+  calculateFairnessScore,
+  calculatePreferenceScore,
+  calculateTotalScore,
+} from './replacementScoreUtils';
 
 const prisma = new PrismaClient();
 
@@ -59,7 +74,12 @@ export interface CandidateScore {
 
   // Warnungen
   warnings: Array<{
-    type: 'REST_TIME' | 'OVERWORKED' | 'CONSECUTIVE_DAYS' | 'PREFERENCE_MISMATCH';
+    type:
+      | 'REST_TIME'
+      | 'OVERWORKED'
+      | 'CONSECUTIVE_DAYS'
+      | 'PREFERENCE_MISMATCH'
+      | 'PENDING_ABSENCE_REQUEST';
     severity: 'INFO' | 'WARNING' | 'ERROR';
     message: string;
   }>;
@@ -82,201 +102,6 @@ export interface CandidateScore {
  * @param targetHours Ziel-Stunden (aus Preferences oder 160h default)
  * @returns Score 0-100
  */
-export function calculateWorkloadScore(currentHours: number, targetHours: number): number {
-  const utilizationPercent = (currentHours / targetHours) * 100;
-
-  // Optimal: 70-90% Auslastung
-  if (utilizationPercent >= 70 && utilizationPercent <= 90) return 100;
-
-  // Gut: 50-70% oder 90-95%
-  if (
-    (utilizationPercent >= 50 && utilizationPercent < 70) ||
-    (utilizationPercent > 90 && utilizationPercent <= 95)
-  )
-    return 80;
-
-  // Akzeptabel: 30-50% oder 95-100%
-  if (
-    (utilizationPercent >= 30 && utilizationPercent < 50) ||
-    (utilizationPercent > 95 && utilizationPercent <= 100)
-  )
-    return 60;
-
-  // Schlecht: < 30% (unterfordert) oder > 100% (überlastet)
-  if (utilizationPercent < 30) return 40;
-  if (utilizationPercent > 100 && utilizationPercent <= 110) return 40;
-
-  // Kritisch: > 110% (deutlich überlastet)
-  return 0;
-}
-
-/**
- * Berechnet Compliance-Score basierend auf Arbeitszeitgesetz (ArbZG)
- *
- * Prüft:
- * - § 5 ArbZG: Mindestens 11h Ruhezeit zwischen Schichten
- * - § 3 ArbZG: Max 48h pro Woche (Durchschnitt über 6 Monate)
- * - Best Practice: Max 6 Tage in Folge
- *
- * @param restHours Ruhezeit bis zur neuen Schicht (in Stunden)
- * @param weeklyHours Durchschnittliche Wochenstunden (aktuelle Woche)
- * @param consecutiveDays Anzahl konsekutiver Arbeitstage
- * @returns Score 0-100
- */
-export function calculateComplianceScore(
-  restHours: number,
-  weeklyHours: number,
-  consecutiveDays: number
-): number {
-  let score = 100;
-
-  // ArbZG § 5: Mindestens 11h Ruhezeit
-  if (restHours < 11) {
-    if (restHours < 9) score -= 100; // Kritischer Verstoß
-    else if (restHours < 10) score -= 50;
-    else score -= 20;
-  }
-
-  // ArbZG § 3: Max 48h pro Woche (Durchschnitt)
-  if (weeklyHours > 48) {
-    const excess = weeklyHours - 48;
-    score -= Math.min(excess * 5, 50); // -5 Punkte pro Überstunde, max -50
-  }
-
-  // Empfehlung: Max 6 Tage in Folge
-  if (consecutiveDays > 6) {
-    score -= (consecutiveDays - 6) * 10;
-  }
-
-  return Math.max(0, score);
-}
-
-/**
- * Berechnet Fairness-Score basierend auf Vergleich mit Team-Durchschnitt
- *
- * Vergleicht:
- * - Anzahl Nachtschichten im Monat
- * - Anzahl Ersatz-Einsätze (spontane Zuweisungen)
- *
- * @param userNightShifts Nachtschichten des Users
- * @param teamAvgNightShifts Team-Durchschnitt Nachtschichten
- * @param userReplacementCount Ersatz-Einsätze des Users
- * @param teamAvgReplacementCount Team-Durchschnitt Ersatz-Einsätze
- * @returns Score 0-100
- */
-export function calculateFairnessScore(
-  userNightShifts: number,
-  teamAvgNightShifts: number,
-  userReplacementCount: number,
-  teamAvgReplacementCount: number
-): number {
-  let score = 100;
-
-  // Vergleich Nachtschichten
-  const nightShiftDeviation = Math.abs(userNightShifts - teamAvgNightShifts);
-  if (nightShiftDeviation > 2) {
-    score -= nightShiftDeviation * 5; // -5 Punkte pro Abweichung
-  }
-
-  // Vergleich Ersatz-Einsätze
-  const replacementDeviation = Math.abs(userReplacementCount - teamAvgReplacementCount);
-  if (replacementDeviation > 1) {
-    score -= replacementDeviation * 10;
-  }
-
-  return Math.max(0, score);
-}
-
-/**
- * Berechnet Preference-Score basierend auf Mitarbeiter-Präferenzen
- *
- * Prüft Match mit:
- * - Schicht-Typ (Nacht vs Tag)
- * - Stunden-Niveau (Min/Target/Max)
- * - Site-Präferenzen
- * - Wochenend-Präferenzen
- *
- * @param shift Die zu besetzende Schicht
- * @param preferences Mitarbeiter-Präferenzen
- * @param currentHours Aktuelle Monatsstunden
- * @param shiftDurationHours Dauer der Schicht in Stunden
- * @returns Score 0-100
- */
-export function calculatePreferenceScore(
-  shift: Shift,
-  preferences: EmployeePreferences | null,
-  currentHours: number,
-  shiftDurationHours: number
-): number {
-  if (!preferences) return 50; // Neutral, wenn keine Präferenzen vorhanden
-
-  let score = 100;
-
-  // Schicht-Typ Check (Nacht vs Tag)
-  const shiftStart = new Date(shift.startTime);
-  const isNightShift = shiftStart.getHours() >= 22 || shiftStart.getHours() < 6;
-
-  if (isNightShift && !preferences.prefersNightShifts) score -= 30;
-  if (!isNightShift && preferences.prefersNightShifts) score -= 20;
-
-  // Wochenend-Check
-  const isWeekend = shiftStart.getDay() === 0 || shiftStart.getDay() === 6;
-  if (isWeekend && !preferences.prefersWeekends) score -= 15;
-
-  // Stunden-Niveau Check
-  const projectedHours = currentHours + shiftDurationHours;
-  if (projectedHours > preferences.maxMonthlyHours) score -= 40; // Überschreitet Maximum
-  if (projectedHours < preferences.minMonthlyHours) score -= 20; // Unterschreitet Minimum
-
-  // Site-Präferenzen
-  if (shift.siteId) {
-    if (preferences.avoidedSiteIds.includes(shift.siteId)) score -= 50; // Vermiedene Site
-    if (preferences.preferredSiteIds.includes(shift.siteId)) score += 10; // Bevorzugte Site (Bonus)
-  }
-
-  // Schicht-Länge
-  if (shiftDurationHours >= 10 && !preferences.prefersLongShifts) score -= 10;
-  if (shiftDurationHours <= 6 && !preferences.prefersShortShifts) score -= 10;
-
-  return Math.max(0, Math.min(100, score)); // Clamp 0-100
-}
-
-/**
- * Berechnet Gesamt-Score für einen Kandidaten
- *
- * Gewichtung:
- * - Compliance: 40% (gesetzliche Anforderungen!)
- * - Preference: 30% (Mitarbeiter-Zufriedenheit)
- * - Fairness: 20% (gerechte Verteilung)
- * - Workload: 10% (Auslastung)
- *
- * @param workloadScore 0-100
- * @param complianceScore 0-100
- * @param fairnessScore 0-100
- * @param preferenceScore 0-100
- * @returns totalScore 0-100
- */
-export function calculateTotalScore(
-  workloadScore: number,
-  complianceScore: number,
-  fairnessScore: number,
-  preferenceScore: number
-): number {
-  const WEIGHTS = {
-    workload: 0.1,
-    compliance: 0.4,
-    fairness: 0.2,
-    preference: 0.3,
-  };
-
-  return (
-    workloadScore * WEIGHTS.workload +
-    complianceScore * WEIGHTS.compliance +
-    fairnessScore * WEIGHTS.fairness +
-    preferenceScore * WEIGHTS.preference
-  );
-}
-
 /**
  * Bestimmt Empfehlungs-Level basierend auf Score
  *

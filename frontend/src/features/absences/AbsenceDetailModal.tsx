@@ -1,12 +1,13 @@
 import { Modal } from '@/components/ui/modal'
 import { Button } from '@/components/ui/button'
 import { formatPeriod, getAbsenceStatusLabel, getAbsenceTypeLabel } from './utils'
-import type { Absence, ClearanceStatus, AffectedShift, ReplacementCandidateV2 } from './types'
+import type { Absence, ClearanceStatus, AffectedShift } from './types'
 import { ReplacementCandidatesModalV2 } from './ReplacementCandidatesModalV2'
-import { getReplacementCandidatesV2, fetchAbsenceById } from './api'
-import { useState } from 'react'
+import { fetchAbsenceById } from './api'
+import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
 import { useQueryClient } from '@tanstack/react-query'
+import { useReplacementCandidates } from './hooks/useReplacementCandidates'
 
 type AbsenceDetailModalProps = {
   absence: Absence | null
@@ -71,15 +72,18 @@ export function AbsenceDetailModal({ absence, open, onClose }: AbsenceDetailModa
   const queryClient = useQueryClient()
   const [replacementModalOpen, setReplacementModalOpen] = useState(false)
   const [selectedShift, setSelectedShift] = useState<{ id: string; title: string } | null>(null)
-  const [candidates, setCandidates] = useState<ReplacementCandidateV2[]>([])
-  const [loadingCandidates, setLoadingCandidates] = useState(false)
   const [refreshing, setRefreshing] = useState(false)
   const [currentAbsence, setCurrentAbsence] = useState<Absence | null>(absence)
+  const {
+    candidates,
+    loading: candidatesLoading,
+    fetchCandidates,
+    reset: resetCandidates,
+  } = useReplacementCandidates()
 
-  // Update currentAbsence wenn props ändern
-  if (absence && absence.id !== currentAbsence?.id) {
-    setCurrentAbsence(absence)
-  }
+  useEffect(() => {
+    setCurrentAbsence(absence ?? null)
+  }, [absence])
 
   if (!currentAbsence) return null
 
@@ -99,17 +103,12 @@ export function AbsenceDetailModal({ absence, open, onClose }: AbsenceDetailModa
   }
 
   const handleFindReplacement = async (shift: AffectedShift) => {
-    setLoadingCandidates(true)
     try {
-      // v2 API mit Intelligent Scoring (v1.8.0)
-      const result = await getReplacementCandidatesV2(shift.id, currentAbsence?.user.id)
-      setCandidates(result.data)
+      await fetchCandidates(shift.id, currentAbsence?.user.id)
       setSelectedShift({ id: shift.id, title: shift.title })
       setReplacementModalOpen(true)
     } catch (error: any) {
       toast.error(error?.response?.data?.message || 'Laden fehlgeschlagen')
-    } finally {
-      setLoadingCandidates(false)
     }
   }
 
@@ -365,7 +364,7 @@ export function AbsenceDetailModal({ absence, open, onClose }: AbsenceDetailModa
                             size="sm"
                             variant="outline"
                             onClick={() => handleFindReplacement(shift)}
-                            disabled={loadingCandidates}
+                            disabled={candidatesLoading}
                           >
                             🔍 Ersatz finden
                           </Button>
@@ -426,16 +425,16 @@ export function AbsenceDetailModal({ absence, open, onClose }: AbsenceDetailModa
       </div>
 
       {selectedShift && (
-        <ReplacementCandidatesModalV2
-          open={replacementModalOpen}
-          onClose={() => {
-            setReplacementModalOpen(false)
-            setSelectedShift(null)
-            setCandidates([])
-          }}
-          shiftId={selectedShift.id}
-          shiftTitle={selectedShift.title}
-          candidates={candidates}
+      <ReplacementCandidatesModalV2
+        open={replacementModalOpen}
+        onClose={() => {
+          setReplacementModalOpen(false)
+          setSelectedShift(null)
+          resetCandidates()
+        }}
+        shiftId={selectedShift.id}
+        shiftTitle={selectedShift.title}
+        candidates={candidates}
           onAssignSuccess={() => {
             // BUG-004 Fix: Dashboard Auto-Refresh nach Ersatz-Zuweisung
             queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] })

@@ -22,6 +22,7 @@ Kurzer Überblick, klare Quickstarts und schnelles Troubleshooting für Devs/Ops
   - Monitoring (optional als separates Compose‑Profil)
 
 Links
+- Projektstruktur: `docs/STRUCTURE.md`
 - OpenAPI: `docs/openapi.yaml` (Swagger UI im Dev: `/api-docs`)
 - API Cheatsheet: `docs/API_CHEATSHEET.md`
 - VS Code REST Client: `docs/API_EXAMPLES.http`
@@ -39,6 +40,7 @@ Links
 Voraussetzungen
 - Docker + Docker Compose
 - Optional: Node.js 22+ (für lokale FE/BE‑Entwicklung außerhalb von Compose)
+- Dev-Compose Postgres: Nutzer `admin`, Passwort `admin123`, DB `sicherheitsdienst_db`
 
 Start (Dev-Stack)
 - `.env` optional (siehe `.env.example` im jeweiligen Teilprojekt, Compose liest `.env` im Repo-Root – hier z. B. `PUBLIC_HOST=37.114.53.56`)

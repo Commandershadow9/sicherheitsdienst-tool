@@ -3,11 +3,13 @@
  * v1.8.0 - Intelligent Replacement System
  */
 import { AlertCircle, AlertTriangle, Info } from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
 
 type WarningBadgeProps = {
-  text: string
+  message: string
   severity?: 'info' | 'warning' | 'error'
   size?: 'sm' | 'md'
+  icon?: LucideIcon
 }
 
 const SEVERITY_CONFIG = {
@@ -34,9 +36,9 @@ const SEVERITY_CONFIG = {
   },
 }
 
-export function WarningBadge({ text, severity = 'warning', size = 'md' }: WarningBadgeProps) {
+export function WarningBadge({ message, severity = 'warning', size = 'md', icon }: WarningBadgeProps) {
   const config = SEVERITY_CONFIG[severity]
-  const Icon = config.icon
+  const Icon = icon ?? config.icon
   const iconSize = size === 'sm' ? 14 : 16
   const containerClass = size === 'sm' ? 'px-2 py-1' : 'px-3 py-1.5'
   const textSize = size === 'sm' ? 'text-xs' : 'text-sm'
@@ -46,7 +48,7 @@ export function WarningBadge({ text, severity = 'warning', size = 'md' }: Warnin
       className={`flex items-center gap-2 rounded-md border ${config.bgColor} ${config.borderColor} ${containerClass}`}
     >
       <Icon className={config.iconColor} size={iconSize} />
-      <span className={`${config.textColor} ${textSize}`}>{text}</span>
+      <span className={`${config.textColor} ${textSize}`}>{message}</span>
     </div>
   )
 }

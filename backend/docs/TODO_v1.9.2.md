@@ -15,7 +15,7 @@ Siehe [BUGS_v1.9.1.md](./BUGS_v1.9.1.md) für detaillierte Bug-Beschreibungen.
 **Geschätzter Aufwand**: 3-4h
 
 #### Backend Tasks:
-- [ ] `replacementService.ts` - APPROVED Absences filtern
+    - [x] `replacementService.ts` - APPROVED Absences filtern
   ```typescript
   // Location: findReplacementCandidatesForShiftV2()
   const approvedAbsentUserIds = new Set(
@@ -23,7 +23,7 @@ Siehe [BUGS_v1.9.1.md](./BUGS_v1.9.1.md) für detaillierte Bug-Beschreibungen.
   )
   ```
 
-- [ ] `replacementService.ts` - REQUESTED Absences laden
+    - [x] `replacementService.ts` - REQUESTED Absences laden
   ```typescript
   const requestedAbsences = await prisma.absence.findMany({
     where: {
@@ -35,7 +35,7 @@ Siehe [BUGS_v1.9.1.md](./BUGS_v1.9.1.md) für detaillierte Bug-Beschreibungen.
   })
   ```
 
-- [ ] `intelligentReplacementService.ts` - Warning für REQUESTED Absence hinzufügen
+    - [x] `intelligentReplacementService.ts` - Warning für REQUESTED Absence hinzufügen
   ```typescript
   if (hasPendingAbsenceRequest) {
     warnings.push({
@@ -46,15 +46,15 @@ Siehe [BUGS_v1.9.1.md](./BUGS_v1.9.1.md) für detaillierte Bug-Beschreibungen.
   }
   ```
 
-- [ ] Types erweitern
+    - [x] Types erweitern
   ```typescript
   // CandidateScore.warnings.type erweitern:
   type: 'REST_TIME' | 'OVERWORKED' | 'CONSECUTIVE_DAYS' | 'PREFERENCE_MISMATCH' | 'PENDING_ABSENCE_REQUEST'
   ```
 
 #### Frontend Tasks:
-- [ ] `types.ts` - Warning Type erweitern
-- [ ] `ReplacementCandidatesModalV2.tsx` - PENDING_ABSENCE_REQUEST Warning anzeigen
+    - [x] `types.ts` - Warning Type erweitern
+    - [x] `ReplacementCandidatesModalV2.tsx` - PENDING_ABSENCE_REQUEST Warning anzeigen
   ```tsx
   {warning.type === 'PENDING_ABSENCE_REQUEST' && (
     <WarningBadge
@@ -66,11 +66,11 @@ Siehe [BUGS_v1.9.1.md](./BUGS_v1.9.1.md) für detaillierte Bug-Beschreibungen.
   ```
 
 #### Testing:
-- [ ] Test: MA mit APPROVED Urlaub erscheint NICHT in Liste
-- [ ] Test: MA mit APPROVED Krankmeldung erscheint NICHT in Liste
-- [ ] Test: MA mit REQUESTED Urlaub erscheint MIT Warning
-- [ ] Test: Warning zeigt korrektes Datum
-- [ ] Test: Multiple overlapping absences
+    - [x] Test: MA mit APPROVED Urlaub erscheint NICHT in Liste
+    - [x] Test: MA mit APPROVED Krankmeldung erscheint NICHT in Liste
+    - [x] Test: MA mit REQUESTED Urlaub erscheint MIT Warning
+    - [x] Test: Warning zeigt korrektes Datum
+    - [x] Test: Multiple overlapping absences
 
 **Fertig wenn**: Ersatz-Kandidaten mit genehmigten Abwesenheiten werden komplett ausgeschlossen, beantrage Abwesenheiten zeigen prominente Warnung.
 

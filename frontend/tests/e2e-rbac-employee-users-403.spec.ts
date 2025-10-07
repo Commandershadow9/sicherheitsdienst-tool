@@ -1,22 +1,15 @@
 import { test, expect } from '@playwright/test'
-
-const FE = process.env.BASE_URL || 'http://localhost:5173'
+import { login, EMPLOYEE_CREDENTIALS } from './support/auth'
+import { FE_BASE_URL } from './support/env'
 
 test('EMPLOYEE sieht keinen Menüpunkt Benutzer und /users zeigt 403-Karte', async ({ page }) => {
-  await page.goto(FE + '/login')
-  await page.getByLabel('E-Mail').fill('thomas.mueller@sicherheitsdienst.de')
-  await page.getByLabel('Passwort').fill('password123')
-  await Promise.all([
-    page.waitForURL('**/dashboard'),
-    page.getByRole('button', { name: 'Anmelden' }).click(),
-  ])
-  await page.waitForLoadState('networkidle')
+  await login(page, EMPLOYEE_CREDENTIALS)
 
   // Menüpunkt "Benutzer" darf nicht sichtbar sein
   await expect(page.getByRole('link', { name: 'Benutzer' })).toHaveCount(0)
 
   // Direkter Aufruf /users zeigt 403-Karte (ohne Re-Login)
-  await page.goto(FE + '/users', { waitUntil: 'load' })
+  await page.goto(FE_BASE_URL + '/users', { waitUntil: 'load' })
   await page.waitForLoadState('networkidle')
   // großzügiger Timeout, falls Server träge ist; prüfe zwei mögliche Texte
   const forb1 = page.getByText('403 – Zugriff verweigert')

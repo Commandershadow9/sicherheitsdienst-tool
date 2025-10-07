@@ -46,8 +46,18 @@ export type ReplacementCandidateV2 = {
     replacementCount: number;
     avgReplacementCount: number;
   };
-  warnings: string[];
+  warnings: ReplacementCandidateWarning[];
 };
+
+export type ReplacementCandidateWarning = {
+  type: ReplacementWarningType;
+  severity: 'info' | 'warning' | 'error';
+  message: string;
+};
+
+type ReplacementWarningType =
+  | CandidateScore['warnings'][number]['type']
+  | 'PENDING_ABSENCE_REQUEST';
 
 export async function findReplacementCandidatesForShift(
   shiftId: string,
@@ -190,9 +200,14 @@ export async function findReplacementCandidatesForShiftV2(
   });
 
   // Map userId → pending absence info
-  const pendingAbsencesByUser = new Map(
-    requestedAbsences.map((a) => [a.userId, a]),
-  );
+  const pendingAbsencesByUser = requestedAbsences.reduce<
+    Map<string, Array<(typeof requestedAbsences)[number]>>
+  >((map, absence) => {
+    const existing = map.get(absence.userId) ?? [];
+    existing.push(absence);
+    map.set(absence.userId, existing);
+    return map;
+  }, new Map());
 
   // 3. Finde verfügbare Mitarbeiter mit Site-Clearance
   const clearances = await prisma.objectClearance.findMany({
@@ -228,11 +243,10 @@ export async function findReplacementCandidatesForShiftV2(
       try {
         const candidateScore = await calculateCandidateScore(user.id, shift);
 
-        // Check für pending absence request
-        const pendingAbsence = pendingAbsencesByUser.get(user.id);
-        const warnings = [...candidateScore.warnings.map((w) => w.message)];
+        const pendingAbsences = pendingAbsencesByUser.get(user.id) ?? [];
+        const enrichedWarnings: CandidateScore['warnings'] = [...candidateScore.warnings];
 
-        if (pendingAbsence) {
+        if (pendingAbsences.length > 0) {
           const formatDate = (date: Date) =>
             new Intl.DateTimeFormat('de-DE', {
               day: '2-digit',
@@ -240,17 +254,31 @@ export async function findReplacementCandidatesForShiftV2(
               year: 'numeric',
             }).format(date);
 
-          const absenceType =
-            pendingAbsence.type === 'VACATION'
-              ? 'Urlaubsantrag'
-              : pendingAbsence.type === 'SICKNESS'
-                ? 'Krankmeldung'
-                : 'Abwesenheitsantrag';
+          const pendingWarnings = pendingAbsences
+            .sort((a, b) => a.startsAt.getTime() - b.startsAt.getTime())
+            .map((absence) => {
+              const absenceType =
+                absence.type === 'VACATION'
+                  ? 'Urlaubsantrag'
+                  : absence.type === 'SICKNESS'
+                    ? 'Krankmeldung'
+                    : 'Abwesenheitsantrag';
 
-          warnings.unshift(
-            `⚠️ ${absenceType} beantragt: ${formatDate(new Date(pendingAbsence.startsAt))} - ${formatDate(new Date(pendingAbsence.endsAt))}`,
-          );
+              return {
+                type: 'PENDING_ABSENCE_REQUEST' as const,
+                severity: 'WARNING' as const,
+                message: `⚠️ ${absenceType} offen: ${formatDate(absence.startsAt)} – ${formatDate(absence.endsAt)}`,
+              };
+            });
+
+          enrichedWarnings.unshift(...pendingWarnings);
         }
+
+        const warnings: ReplacementCandidateWarning[] = enrichedWarnings.map((warning) => ({
+          type: warning.type,
+          severity: warning.severity.toLowerCase() as ReplacementCandidateWarning['severity'],
+          message: warning.message,
+        }));
 
         // Transform Backend Score Structure → Frontend Expected Structure
         return {
@@ -318,7 +346,13 @@ export async function findReplacementCandidatesForShiftV2(
             replacementCount: 0,
             avgReplacementCount: 0,
           },
-          warnings: ['Fehler beim Berechnen des Scores'],
+          warnings: [
+            {
+              type: 'PREFERENCE_MISMATCH' as const,
+              severity: 'error' as const,
+              message: 'Fehler beim Berechnen des Scores',
+            },
+          ],
         };
       }
     }),

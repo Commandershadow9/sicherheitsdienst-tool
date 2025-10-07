@@ -1,17 +1,11 @@
 import { test, expect } from '@playwright/test'
-
-const FE = process.env.BASE_URL || 'http://localhost:5173'
+import { login } from './support/auth'
+import { FE_BASE_URL } from './support/env'
 
 test('Users: Sortierwechsel (Header-Klick) → URL-Update', async ({ page }) => {
-  await page.goto(FE + '/login')
-  await page.getByLabel('E-Mail').fill('admin@sicherheitsdienst.de')
-  await page.getByLabel('Passwort').fill('password123')
-  await Promise.all([
-    page.waitForURL('**/dashboard'),
-    page.getByRole('button', { name: 'Anmelden' }).click(),
-  ])
+  await login(page)
 
-  await page.goto(FE + '/users')
+  await page.goto(FE_BASE_URL + '/users')
   await expect(page.getByRole('heading', { name: 'Benutzer' })).toBeVisible()
 
   // Klick auf "E-Mail" -> sortBy=email&sortDir=asc
@@ -26,4 +20,3 @@ test('Users: Sortierwechsel (Header-Klick) → URL-Update', async ({ page }) => 
   await page.getByRole('button', { name: /E-Mail/ }).click()
   await expect(page).not.toHaveURL(/sortBy=/)
 })
-

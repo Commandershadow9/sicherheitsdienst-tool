@@ -1,6 +1,6 @@
-# TODO – Nächste Schritte (Kurzplanung)
+# TODO / Roadmap (aktueller Stand)
 
-Stand: 2025-10-04 (nach v1.6.0 + Bugfixes)
+Stand: 2025-10-08 (nach v1.9.2 Planung und Code-Refactoring)
 
 ## Kurzfristig (P1, 1–2 Tage)
 
@@ -18,7 +18,7 @@ Stand: 2025-10-04 (nach v1.6.0 + Bugfixes)
 - [x] **DB-Fehler bei Absences-Liste**:
   - Problem: `absence_documents` Tabelle fehlt in DB (Migration drift)
   - Temporärer Fix: Documents-Select im Controller auskommentiert
-  - TODO: Saubere Migration für absence_documents Tabelle erstellen
+  - ✅ Migration & Controller wieder aktiv (2025-10-08): Tabelle vorhanden, Dokumente werden erneut geladen
 - [x] **Ersatz-Mitarbeiter Zuweisung funktioniert nicht**:
   - Problem: Nur Alert, keine echte Zuweisung
   - Fix: API-Call zu POST /shifts/:id/assign implementiert
@@ -71,6 +71,7 @@ Stand: 2025-10-04 (nach v1.6.0 + Bugfixes)
 
 Erledigt:
 - [x] Auth Login-Limiter konfigurierbar (ENV `LOGIN_RATE_LIMIT_MAX/_WINDOW_MS`, sichere Defaults, Compose Override, Docs aktualisiert).
+- [x] Seeds nutzen gemeinsame Helper (`resetSeedData`, `createUserWithPassword`) (2025-10-08)
 - [x] Swagger UI (Dev) unter `/api-docs` mit YAML‑Quelle (`/api-docs-spec/openapi.yaml`).
 - [x] Users: RBAC‑Negativtests ergänzen (403/401) – analog zu Sites/Shifts
   - Akzeptanz: Tests schlagen korrekt bei EMPLOYEE/anonymous an; CI grün.
@@ -82,6 +83,13 @@ Erledigt:
   - Akzeptanz: 2–3 schlanke Tests, keine Ports/DB nötig.
 
 ## Mittelfristig (P2)
+
+### Mittelfristig – Geplante Releases
+- **v1.10.0 Präferenzen-Editor** (1-2 Wochen) – Mitarbeiter kann Präferenzen pflegen; API `GET/PUT /api/employees/:id/preferences` + UI-Formular
+- **v1.11.0 Workload-Dashboard** (2-3 Wochen) – Mitarbeiter sehen Auslastung/Fairness; API `GET /api/employees/:id/workload`
+- **v1.12.0 Team-Fairness-Übersicht** (3-4 Wochen) – Manager-Vergleichstabelle, Filter & Exporte
+- **v1.13.0 Automatische Workload-Berechnung** (4-5 Wochen) – Cron-Jobs, Compliance-Violations, Benachrichtigungen
+
 
 ### Manager-Dashboard v1.7.0 ✅ ABGESCHLOSSEN (mit Refactoring-Bedarf)
 **Entscheidung 2025-10-04**: Dashboard VOR Objekt-Management
@@ -355,3 +363,12 @@ Erledigt:
 - Vor jedem Merge: Lint/Typecheck/Tests grün; OpenAPI Lint warn‑only toleriert.
 - Doku immer mitführen: README + CHANGELOG + ggf. OpenAPI.
 - `.env.example` aktualisieren, wenn neue ENV hinzukommen.
+
+## Langfristig (Vision)
+- **v2.0.0 Predictive Scheduling** – ML-Modell, Forecasting
+- **v2.1.0 Automatische Zuweisung (Opt-In)** – Auto-Assignment >85 Score, Notifications, Audit
+- **v2.2.0 Constraint Solver** – Optimierungsziel Zufriedenheit/Kosten
+- **v2.3.0 Feedback Loop** – Mitarbeiter Feedback für ML
+- **Objekt-Management Suite** – Objekt-UI, Qualifikationen, Einarbeitungsmanagement
+- **Event-Planung & ICS** – Großveranstaltungen, Kapazitätswarnungen, Kalenderfeeds
+- **Storage/Infra Roadmap** – S3/MinIO, Multi-Tenancy, Billing

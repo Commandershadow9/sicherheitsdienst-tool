@@ -2,13 +2,13 @@ services:
   db:
     image: postgres:16-alpine
     environment:
-      POSTGRES_USER: security
-      POSTGRES_PASSWORD: dev
-      POSTGRES_DB: security
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin123
+      POSTGRES_DB: sicherheitsdienst_db
     volumes:
       - db_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U security -d security"]
+      test: ["CMD-SHELL", "pg_isready -U admin -d sicherheitsdienst_db"]
       interval: 5s
       timeout: 5s
       retries: 20
@@ -27,7 +27,7 @@ services:
       CORS_ORIGIN: http://${PUBLIC_HOST:-localhost}:5173
       RATE_LIMIT_MAX: 100
       RATE_LIMIT_WINDOW_MS: 60000
-      DATABASE_URL: postgresql://security:dev@db:5432/security?schema=public
+      DATABASE_URL: postgresql://admin:admin123@db:5432/sicherheitsdienst_db?schema=public
       SEED_ON_START: "true"
       LOGIN_RATE_LIMIT_MAX: 100
       LOGIN_RATE_LIMIT_WINDOW_MS: 60000

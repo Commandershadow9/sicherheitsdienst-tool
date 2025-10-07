@@ -10,7 +10,21 @@ import type { ReplacementCandidateV2 } from './types'
 import { useState } from 'react'
 import { toast } from 'sonner'
 import { api } from '@/lib/api'
-import { BarChart3, Clock, Moon, Users, TrendingUp, ChevronDown, ChevronUp } from 'lucide-react'
+import {
+  BarChart3,
+  Clock,
+  Moon,
+  Users,
+  TrendingUp,
+  ChevronDown,
+  ChevronUp,
+  CalendarDays,
+  Flame,
+  CalendarRange,
+  Ban,
+} from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
+import type { ReplacementCandidateWarning } from './types'
 
 type ReplacementCandidatesModalV2Props = {
   open: boolean
@@ -27,6 +41,14 @@ const RECOMMENDATION_STYLES = {
   GOOD: 'border-yellow-300 bg-yellow-50',
   ACCEPTABLE: 'border-orange-300 bg-orange-50',
   NOT_RECOMMENDED: 'border-red-300 bg-red-50',
+}
+
+const WARNING_ICON_MAP: Record<ReplacementCandidateWarning['type'], LucideIcon> = {
+  REST_TIME: Clock,
+  OVERWORKED: Flame,
+  CONSECUTIVE_DAYS: CalendarRange,
+  PREFERENCE_MISMATCH: Ban,
+  PENDING_ABSENCE_REQUEST: CalendarDays,
 }
 
 export function ReplacementCandidatesModalV2({
@@ -175,7 +197,13 @@ export function ReplacementCandidatesModalV2({
                     {candidate.warnings.length > 0 && (
                       <div className="mt-3 space-y-1">
                         {candidate.warnings.map((warning, idx) => (
-                          <WarningBadge key={idx} text={warning} severity="warning" size="sm" />
+                          <WarningBadge
+                            key={`${candidate.id}-${warning.type}-${idx}`}
+                            message={warning.message}
+                            severity={warning.severity}
+                            size="sm"
+                            icon={WARNING_ICON_MAP[warning.type]}
+                          />
                         ))}
                       </div>
                     )}

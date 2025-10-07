@@ -11,12 +11,14 @@ import {
   approveAbsence,
   rejectAbsence,
   cancelAbsence,
-  uploadAbsenceDocument,
-  downloadAbsenceDocument,
-  deleteAbsenceDocument,
   previewCapacityWarnings,
   getReplacementCandidates,
 } from '../controllers/absenceController';
+import {
+  uploadAbsenceDocument,
+  downloadAbsenceDocument,
+  deleteAbsenceDocument,
+} from '../controllers/absenceDocumentsController';
 
 const router = Router();
 

@@ -1,19 +1,12 @@
 import { test, expect } from '@playwright/test'
-
-const FE = process.env.BASE_URL || 'http://localhost:5173'
+import { login } from './support/auth'
+import { FE_BASE_URL } from './support/env'
 
 test('Users: Back/Forward bei Suche und Paging', async ({ page }) => {
-  // Login
-  await page.goto(FE + '/login')
-  await page.getByLabel('E-Mail').fill('admin@sicherheitsdienst.de')
-  await page.getByLabel('Passwort').fill('password123')
-  await Promise.all([
-    page.waitForURL('**/dashboard'),
-    page.getByRole('button', { name: 'Anmelden' }).click(),
-  ])
+  await login(page)
 
   // Users
-  await page.goto(FE + '/users')
+  await page.goto(FE_BASE_URL + '/users')
   await expect(page.getByRole('heading', { name: 'Benutzer' })).toBeVisible()
 
   // Suche: anna -> URL hat query=anna
@@ -42,4 +35,3 @@ test('Users: Back/Forward bei Suche und Paging', async ({ page }) => {
     await expect(page.getByText(/Seite\s+1\s+\/\s+\d+/)).toBeVisible()
   }
 })
-

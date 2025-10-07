@@ -8,7 +8,7 @@ import {
   calculateFairnessScore,
   calculatePreferenceScore,
   calculateTotalScore,
-} from '../intelligentReplacementService';
+} from '../replacementScoreUtils';
 import { EmployeePreferences, Shift } from '@prisma/client';
 
 describe('intelligentReplacementService', () => {

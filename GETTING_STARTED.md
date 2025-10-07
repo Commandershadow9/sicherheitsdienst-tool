@@ -7,6 +7,7 @@ Siehe auch: `docs/API_CHEATSHEET.md` für eine kompakte Befehls‑Übersicht (Ba
 ## 1) Voraussetzungen
 - Docker + Docker Compose
 - Optional: Node.js 22+ (für reinen FE/BE‑Dev ohne Compose)
+- Postgres-Credentials im Dev-Compose: `admin` / `admin123`, Datenbank `sicherheitsdienst_db`
 
 ## 2) Dev‑Stack starten
 ```bash

@@ -1,5 +1,5 @@
 import { PrismaClient } from '@prisma/client';
-import bcrypt from 'bcryptjs';
+import { resetSeedData, createUserWithPassword } from './seedHelpers';
 
 const prisma = new PrismaClient();
 
@@ -7,207 +7,151 @@ async function main() {
   console.log('🌱 Erstelle umfassende Test-Szenarien für v1.9.2...');
 
   try {
-    // Aufräumen
-    await prisma.shiftAssignment.deleteMany();
-    await prisma.timeEntry.deleteMany();
-    await prisma.incident.deleteMany();
-    await prisma.absence.deleteMany();
-    await prisma.employeeDocument.deleteMany();
-    await prisma.employeeQualification.deleteMany();
-    await prisma.employeeProfile.deleteMany();
-    await prisma.complianceViolation.deleteMany();
-    await prisma.employeeWorkload.deleteMany();
-    await prisma.employeePreferences.deleteMany();
-    await prisma.objectClearance.deleteMany();
-    await prisma.auditLog.deleteMany();
-    await prisma.deviceToken.deleteMany();
-    await prisma.shift.deleteMany();
-    await prisma.event.deleteMany();
-    await prisma.site.deleteMany();
-    await prisma.user.deleteMany();
-
+    await resetSeedData(prisma);
     console.log('🗑️  Alte Daten gelöscht');
 
-    const hashedPassword = await bcrypt.hash('password123', 12);
-
     // ===== 1. BENUTZER ERSTELLEN =====
-    const admin = await prisma.user.create({
-      data: {
-        email: 'admin@sicherheitsdienst.de',
-        password: hashedPassword,
-        firstName: 'Max',
-        lastName: 'Administrator',
-        phone: '+49 123 000001',
-        role: 'ADMIN',
-        employeeId: 'ADM001',
-        hireDate: new Date('2020-01-01'),
-        qualifications: ['Erste Hilfe', 'Brandschutz', 'Management'],
-        isActive: true,
-      },
+    const admin = await createUserWithPassword(prisma, {
+      email: 'admin@sicherheitsdienst.de',
+      firstName: 'Max',
+      lastName: 'Administrator',
+      phone: '+49 123 000001',
+      role: 'ADMIN',
+      employeeId: 'ADM001',
+      hireDate: new Date('2020-01-01'),
+      qualifications: ['Erste Hilfe', 'Brandschutz', 'Management'],
+      isActive: true,
     });
 
-    const manager = await prisma.user.create({
-      data: {
-        email: 'manager@sicherheitsdienst.de',
-        password: hashedPassword,
-        firstName: 'Lisa',
-        lastName: 'Manager',
-        phone: '+49 123 000002',
-        role: 'MANAGER',
-        employeeId: 'MGR001',
-        hireDate: new Date('2020-06-01'),
-        qualifications: ['Erste Hilfe', 'Einsatzplanung'],
-        isActive: true,
-      },
+    const manager = await createUserWithPassword(prisma, {
+      email: 'manager@sicherheitsdienst.de',
+      firstName: 'Lisa',
+      lastName: 'Manager',
+      phone: '+49 123 000002',
+      role: 'MANAGER',
+      employeeId: 'MGR001',
+      hireDate: new Date('2020-06-01'),
+      qualifications: ['Erste Hilfe', 'Einsatzplanung'],
+      isActive: true,
     });
 
     // Mitarbeiter mit verschiedenen Profilen
     const employees = await Promise.all([
       // Mitarbeiter 1: Wenig Workload, verfügbar
-      prisma.user.create({
-        data: {
-          email: 'thomas.mueller@sec.de',
-          password: hashedPassword,
-          firstName: 'Thomas',
-          lastName: 'Müller',
-          phone: '+49 123 100001',
-          role: 'EMPLOYEE',
-          employeeId: 'EMP001',
-          hireDate: new Date('2023-01-01'),
-          qualifications: ['Erste Hilfe', 'Objektschutz'],
-          isActive: true,
-        },
+      createUserWithPassword(prisma, {
+        email: 'thomas.mueller@sec.de',
+        firstName: 'Thomas',
+        lastName: 'Müller',
+        phone: '+49 123 100001',
+        role: 'EMPLOYEE',
+        employeeId: 'EMP001',
+        hireDate: new Date('2023-01-01'),
+        qualifications: ['Erste Hilfe', 'Objektschutz'],
+        isActive: true,
       }),
       // Mitarbeiter 2: Hohe Workload
-      prisma.user.create({
-        data: {
-          email: 'anna.schmidt@sec.de',
-          password: hashedPassword,
-          firstName: 'Anna',
-          lastName: 'Schmidt',
-          phone: '+49 123 100002',
-          role: 'EMPLOYEE',
-          employeeId: 'EMP002',
-          hireDate: new Date('2023-02-01'),
-          qualifications: ['Erste Hilfe', 'Veranstaltungsschutz'],
-          isActive: true,
-        },
+      createUserWithPassword(prisma, {
+        email: 'anna.schmidt@sec.de',
+        firstName: 'Anna',
+        lastName: 'Schmidt',
+        phone: '+49 123 100002',
+        role: 'EMPLOYEE',
+        employeeId: 'EMP002',
+        hireDate: new Date('2023-02-01'),
+        qualifications: ['Erste Hilfe', 'Veranstaltungsschutz'],
+        isActive: true,
       }),
       // Mitarbeiter 3: Heute abwesend (APPROVED) - macht Schicht kritisch
-      prisma.user.create({
-        data: {
-          email: 'michael.wagner@sec.de',
-          password: hashedPassword,
-          firstName: 'Michael',
-          lastName: 'Wagner',
-          phone: '+49 123 100003',
-          role: 'EMPLOYEE',
-          employeeId: 'EMP003',
-          hireDate: new Date('2023-03-01'),
-          qualifications: ['Erste Hilfe', 'Brandschutz'],
-          isActive: true,
-        },
+      createUserWithPassword(prisma, {
+        email: 'michael.wagner@sec.de',
+        firstName: 'Michael',
+        lastName: 'Wagner',
+        phone: '+49 123 100003',
+        role: 'EMPLOYEE',
+        employeeId: 'EMP003',
+        hireDate: new Date('2023-03-01'),
+        qualifications: ['Erste Hilfe', 'Brandschutz'],
+        isActive: true,
       }),
       // Mitarbeiter 4: Urlaubsantrag eingereicht (REQUESTED) - genug Tage
-      prisma.user.create({
-        data: {
-          email: 'julia.becker@sec.de',
-          password: hashedPassword,
-          firstName: 'Julia',
-          lastName: 'Becker',
-          phone: '+49 123 100004',
-          role: 'EMPLOYEE',
-          employeeId: 'EMP004',
-          hireDate: new Date('2023-04-01'),
-          qualifications: ['Erste Hilfe', 'Personenschutz'],
-          isActive: true,
-        },
+      createUserWithPassword(prisma, {
+        email: 'julia.becker@sec.de',
+        firstName: 'Julia',
+        lastName: 'Becker',
+        phone: '+49 123 100004',
+        role: 'EMPLOYEE',
+        employeeId: 'EMP004',
+        hireDate: new Date('2023-04-01'),
+        qualifications: ['Erste Hilfe', 'Personenschutz'],
+        isActive: true,
       }),
       // Mitarbeiter 5: Urlaubsantrag eingereicht - ÜBERSCHREITET Urlaubstage
-      prisma.user.create({
-        data: {
-          email: 'stefan.fischer@sec.de',
-          password: hashedPassword,
-          firstName: 'Stefan',
-          lastName: 'Fischer',
-          phone: '+49 123 100005',
-          role: 'EMPLOYEE',
-          employeeId: 'EMP005',
-          hireDate: new Date('2023-05-01'),
-          qualifications: ['Erste Hilfe', 'Objektschutz'],
-          isActive: true,
-        },
+      createUserWithPassword(prisma, {
+        email: 'stefan.fischer@sec.de',
+        firstName: 'Stefan',
+        lastName: 'Fischer',
+        phone: '+49 123 100005',
+        role: 'EMPLOYEE',
+        employeeId: 'EMP005',
+        hireDate: new Date('2023-05-01'),
+        qualifications: ['Erste Hilfe', 'Objektschutz'],
+        isActive: true,
       }),
       // Mitarbeiter 6-10: Weitere Mitarbeiter für Replacement
-      prisma.user.create({
-        data: {
-          email: 'petra.hoffmann@sec.de',
-          password: hashedPassword,
-          firstName: 'Petra',
-          lastName: 'Hoffmann',
-          phone: '+49 123 100006',
-          role: 'EMPLOYEE',
-          employeeId: 'EMP006',
-          hireDate: new Date('2023-06-01'),
-          qualifications: ['Erste Hilfe', 'Objektschutz'],
-          isActive: true,
-        },
+      createUserWithPassword(prisma, {
+        email: 'petra.hoffmann@sec.de',
+        firstName: 'Petra',
+        lastName: 'Hoffmann',
+        phone: '+49 123 100006',
+        role: 'EMPLOYEE',
+        employeeId: 'EMP006',
+        hireDate: new Date('2023-06-01'),
+        qualifications: ['Erste Hilfe', 'Objektschutz'],
+        isActive: true,
       }),
-      prisma.user.create({
-        data: {
-          email: 'markus.klein@sec.de',
-          password: hashedPassword,
-          firstName: 'Markus',
-          lastName: 'Klein',
-          phone: '+49 123 100007',
-          role: 'EMPLOYEE',
-          employeeId: 'EMP007',
-          hireDate: new Date('2023-07-01'),
-          qualifications: ['Erste Hilfe', 'Brandschutz'],
-          isActive: true,
-        },
+      createUserWithPassword(prisma, {
+        email: 'markus.klein@sec.de',
+        firstName: 'Markus',
+        lastName: 'Klein',
+        phone: '+49 123 100007',
+        role: 'EMPLOYEE',
+        employeeId: 'EMP007',
+        hireDate: new Date('2023-07-01'),
+        qualifications: ['Erste Hilfe', 'Brandschutz'],
+        isActive: true,
       }),
-      prisma.user.create({
-        data: {
-          email: 'sabine.wolf@sec.de',
-          password: hashedPassword,
-          firstName: 'Sabine',
-          lastName: 'Wolf',
-          phone: '+49 123 100008',
-          role: 'EMPLOYEE',
-          employeeId: 'EMP008',
-          hireDate: new Date('2023-08-01'),
-          qualifications: ['Erste Hilfe', 'Veranstaltungsschutz'],
-          isActive: true,
-        },
+      createUserWithPassword(prisma, {
+        email: 'sabine.wolf@sec.de',
+        firstName: 'Sabine',
+        lastName: 'Wolf',
+        phone: '+49 123 100008',
+        role: 'EMPLOYEE',
+        employeeId: 'EMP008',
+        hireDate: new Date('2023-08-01'),
+        qualifications: ['Erste Hilfe', 'Veranstaltungsschutz'],
+        isActive: true,
       }),
-      prisma.user.create({
-        data: {
-          email: 'daniel.richter@sec.de',
-          password: hashedPassword,
-          firstName: 'Daniel',
-          lastName: 'Richter',
-          phone: '+49 123 100009',
-          role: 'EMPLOYEE',
-          employeeId: 'EMP009',
-          hireDate: new Date('2023-09-01'),
-          qualifications: ['Erste Hilfe', 'Objektschutz'],
-          isActive: true,
-        },
+      createUserWithPassword(prisma, {
+        email: 'daniel.richter@sec.de',
+        firstName: 'Daniel',
+        lastName: 'Richter',
+        phone: '+49 123 100009',
+        role: 'EMPLOYEE',
+        employeeId: 'EMP009',
+        hireDate: new Date('2023-09-01'),
+        qualifications: ['Erste Hilfe', 'Objektschutz'],
+        isActive: true,
       }),
-      prisma.user.create({
-        data: {
-          email: 'claudia.zimmermann@sec.de',
-          password: hashedPassword,
-          firstName: 'Claudia',
-          lastName: 'Zimmermann',
-          phone: '+49 123 100010',
-          role: 'EMPLOYEE',
-          employeeId: 'EMP010',
-          hireDate: new Date('2023-10-01'),
-          qualifications: ['Erste Hilfe', 'Personenschutz'],
-          isActive: true,
-        },
+      createUserWithPassword(prisma, {
+        email: 'claudia.zimmermann@sec.de',
+        firstName: 'Claudia',
+        lastName: 'Zimmermann',
+        phone: '+49 123 100010',
+        role: 'EMPLOYEE',
+        employeeId: 'EMP010',
+        hireDate: new Date('2023-10-01'),
+        qualifications: ['Erste Hilfe', 'Personenschutz'],
+        isActive: true,
       }),
     ]);
 

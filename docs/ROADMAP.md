@@ -1,7 +1,6 @@
-# Roadmap - Sicherheitsdienst-Tool
+# Historische Roadmap (bis v1.8.0)
 
-**Letztes Update**: 2025-10-05 (nach v1.8.0)
-**Aktueller Stand**: v1.8.0 - Intelligente Ersatz-Mitarbeiter-Suche
+*Hinweis*: Diese Roadmap dokumentiert den Stand bis zum Abschluss der intelligenten Ersatzsuche (v1.8.0). Für aktuelle Planung siehe `docs/TODO.md` bzw. `docs/STRUCTURE.md`.
 
 ---
 

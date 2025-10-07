@@ -55,7 +55,18 @@ export type ReplacementCandidateV2 = {
     replacementCount: number
     avgReplacementCount: number
   }
-  warnings: string[]
+  warnings: ReplacementCandidateWarning[]
+}
+
+export type ReplacementCandidateWarning = {
+  type:
+    | 'REST_TIME'
+    | 'OVERWORKED'
+    | 'CONSECUTIVE_DAYS'
+    | 'PREFERENCE_MISMATCH'
+    | 'PENDING_ABSENCE_REQUEST'
+  severity: 'info' | 'warning' | 'error'
+  message: string
 }
 
 export type AffectedShift = {
@@ -111,6 +122,14 @@ export type Absence = {
   objectClearances?: ObjectClearance[]
   affectedShifts?: AffectedShift[]
   leaveDaysSaldo?: LeaveDaysSaldo | null
+  documents?: Array<{
+    id: string
+    filename: string
+    mimeType: string
+    size: number
+    createdAt: string
+    uploadedBy: string
+  }>
 }
 
 export type AbsenceListResponse = {

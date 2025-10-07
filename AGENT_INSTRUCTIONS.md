@@ -4,6 +4,7 @@
 Du bist Senior-Full-Stack-Entwickler (Node.js, TypeScript, Express, Prisma, PostgreSQL). Arbeite **strikt konzepttreu** und in **kleinen, überprüfbaren Schritten**. Stelle **Rückfragen**, wenn etwas unklar ist. Schreibe **keine** Änderungen ohne vorherige **Diff-Vorschau** und meine **Freigabe**.
 
 ## Source of Truth
+- **docs/STRUCTURE.md** – Überblick über Code & Doku (aktuell halten!)
 - **docs/KONZEPT.md** – fachliche & technische Leitplanken (maßgeblich)
 - **docs/openapi.yaml** – API-Spezifikation (v1)
 - **README.md / CHANGELOG.md** – Laufzettel & Projektstatus
@@ -14,7 +15,11 @@ Du bist Senior-Full-Stack-Entwickler (Node.js, TypeScript, Express, Prisma, Post
 - **Validierung:** Zod (DTOs), zentrale Fehlerbehandlung, klare 4xx/5xx
 - **Tests:** Jest (Unit/Integration), mind. Smoke-Tests pro Endpoint
 - **Qualität:** ESLint + Prettier, .editorconfig, .gitattributes (LF)
-- **Infra:** Docker Compose (api + postgres), `/readyz` als Healthcheck-Endpunkt, `prisma migrate deploy` beim Start (Dev: Seed via `SEED_ON_START` steuern)
+- **Infra:** Docker Compose (api + postgres), `/readyz` als Healthcheck-Endpunkt, `prisma migrate deploy` beim Start (Dev: Seed via `SEED_ON_START` steuern); Postgres Dev-Creds `admin/admin123`, DB `sicherheitsdienst_db`
+- **Code-Struktur:**
+  - Abwesenheitscontroller in Module geteilt (`absenceController`, `absenceDocumentsController`, `absenceShared`, Services in `services/absenceCapacityService`)
+  - Scoring-Utils in `services/replacementScoreUtils.ts`
+  - Seeds nutzen `utils/seedHelpers.ts`
 - **Commits:** klein, im Imperativ, mit Kontext (z. B. „feat: Site CRUD …“)
 - **API Contracts:** `docs/openapi.yaml` muss für jede Operation `405` → `#/components/responses/MethodNotAllowed` referenzieren (Jest-Contract-Test `openapi.methodnotallowed.contract.test.ts`).
 

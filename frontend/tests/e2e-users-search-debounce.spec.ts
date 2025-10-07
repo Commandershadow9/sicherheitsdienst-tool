@@ -1,28 +1,20 @@
 import { test, expect } from '@playwright/test'
-
-const FE = process.env.BASE_URL || 'http://localhost:5173'
-const API_BASE = process.env.API_BASE || 'http://localhost:3000'
+import { login } from './support/auth'
+import { FE_BASE_URL, API_BASE_URL } from './support/env'
 
 test('Users: Debounced Suche (~300ms) setzt query-Param und triggert API erst nach Ruhe', async ({ page }) => {
   // Track API calls to /api/users
   const seen: string[] = []
   page.on('request', (req) => {
     const url = req.url()
-    if (url.startsWith(`${API_BASE}/api/users`)) seen.push(url)
+    if (url.startsWith(`${API_BASE_URL}/api/users`)) seen.push(url)
   })
 
   // Login als Admin
-  await page.goto(FE + '/login')
-  await page.getByLabel('E-Mail').fill('admin@sicherheitsdienst.de')
-  await page.getByLabel('Passwort').fill('password123')
-  await Promise.all([
-    page.waitForURL('**/dashboard', { timeout: 45000 }),
-    page.getByRole('button', { name: 'Anmelden' }).click(),
-  ])
-  await page.waitForLoadState('networkidle')
+  await login(page)
 
   // Users-Seite
-  await page.goto(FE + '/users', { waitUntil: 'load' })
+  await page.goto(`${FE_BASE_URL}/users`, { waitUntil: 'load' })
   await page.waitForLoadState('networkidle')
   await expect(page.getByRole('heading', { name: 'Benutzer' })).toBeVisible({ timeout: 15000 })
 

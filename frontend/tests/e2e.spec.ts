@@ -1,28 +1,15 @@
 import { test, expect } from '@playwright/test'
-
-const FE = process.env.BASE_URL || 'http://localhost:5173'
+import { FE_BASE_URL } from './support/env'
+import { login } from './support/auth'
 
 test('Login → Dashboard sichtbar', async ({ page }) => {
-  await page.goto(FE + '/login')
-  await page.getByLabel('E-Mail').fill('admin@sicherheitsdienst.de')
-  await page.getByLabel('Passwort').fill('password123')
-  await Promise.all([
-    page.waitForURL('**/dashboard', { timeout: 45000 }),
-    page.getByRole('button', { name: 'Anmelden' }).click(),
-  ])
-  await page.waitForLoadState('networkidle')
+  await login(page)
   await expect(page.getByRole('heading', { name: 'Dashboard' })).toBeVisible({ timeout: 15000 })
 })
 
 test('Sites-Liste lädt → Wechsel auf Seite 2', async ({ page }) => {
-  await page.goto(FE + '/login')
-  await page.getByLabel('E-Mail').fill('admin@sicherheitsdienst.de')
-  await page.getByLabel('Passwort').fill('password123')
-  await Promise.all([
-    page.waitForURL('**/dashboard', { timeout: 45000 }),
-    page.getByRole('button', { name: 'Anmelden' }).click(),
-  ])
-  await page.goto(FE + '/sites', { waitUntil: 'load' })
+  await login(page)
+  await page.goto(`${FE_BASE_URL}/sites`, { waitUntil: 'load' })
   await page.waitForLoadState('networkidle')
   await expect(page.getByRole('heading', { name: 'Standorte' })).toBeVisible({ timeout: 15000 })
   // Warten bis Tabelle gerendert
@@ -38,14 +25,8 @@ test('Sites-Liste lädt → Wechsel auf Seite 2', async ({ page }) => {
 })
 
 test('Shifts für erste Site → CSV-Export klickbar (Download)', async ({ page }) => {
-  await page.goto(FE + '/login')
-  await page.getByLabel('E-Mail').fill('admin@sicherheitsdienst.de')
-  await page.getByLabel('Passwort').fill('password123')
-  await Promise.all([
-    page.waitForURL('**/dashboard'),
-    page.getByRole('button', { name: 'Anmelden' }).click(),
-  ])
-  await page.goto(FE + '/sites', { waitUntil: 'load' })
+  await login(page)
+  await page.goto(`${FE_BASE_URL}/sites`, { waitUntil: 'load' })
   await page.waitForLoadState('networkidle')
   // Es kann sein, dass noch keine Sites existieren (leere DB). In dem Fall Test soft-skippen.
   const tableLink = page.locator('table').getByRole('link', { name: 'Schichten' }).first()
