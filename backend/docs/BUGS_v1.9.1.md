@@ -1,7 +1,14 @@
 # Bugs & Feature Requests v1.9.1
 
+> **✅ STATUS: ALLE BUGS BEHOBEN IN v1.9.2**
+>
+> Dieses Dokument ist archiviert. Alle hier dokumentierten Bugs wurden in Version v1.9.2 behoben.
+>
+> Siehe [CHANGELOG.md](./CHANGELOG.md) für Details zu den Fixes.
+
 **Datum**: 2025-10-07
 **Gefunden während**: Dashboard & Intelligent Replacement Testing
+**Status**: ✅ Alle behoben in v1.9.2 (07.10.2025)
 
 ---
 

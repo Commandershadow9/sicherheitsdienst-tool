@@ -18,7 +18,7 @@ Willkommen zur Projekt-Dokumentation! Hier findest du alle wichtigen Information
 
 | Dokument | Beschreibung | Status |
 |----------|--------------|--------|
-| [BUGS_v1.9.1.md](./BUGS_v1.9.1.md) | Aktuelle Bugs aus v1.9.1 Testing | Open |
+| [BUGS_v1.9.1.md](./BUGS_v1.9.1.md) | Bugs aus v1.9.1 Testing | ✅ Alle behoben in v1.9.2 |
 
 **Format**: `BUGS_vX.X.X.md` - Ein Dokument pro Minor-Version mit allen gefundenen Bugs.
 
@@ -35,9 +35,9 @@ Willkommen zur Projekt-Dokumentation! Hier findest du alle wichtigen Information
 ## 🚀 Quick Links
 
 ### Für Entwickler:
-- **Aktuelle Bugs fixen**: [BUGS_v1.9.1.md](./BUGS_v1.9.1.md)
-- **Nächste Sprint-Tasks**: [TODO_v1.9.2.md](./TODO_v1.9.2.md)
 - **Was wurde geändert**: [CHANGELOG.md](./CHANGELOG.md)
+- **Nächster Sprint**: [TODO_v1.10.0.md](./TODO_v1.10.0.md) (geplant)
+- **Release Summary**: [v1.9.2_RELEASE_SUMMARY.md](./v1.9.2_RELEASE_SUMMARY.md)
 
 ### Für Product Owner:
 - **Zukünftige Features**: [ROADMAP.md](./ROADMAP.md)
@@ -45,7 +45,8 @@ Willkommen zur Projekt-Dokumentation! Hier findest du alle wichtigen Information
 
 ### Für Tester:
 - **Test-Szenarien**: Siehe jeweilige `BUGS_*.md` und `FEATURE_*.md`
-- **Bekannte Probleme**: [BUGS_v1.9.1.md](./BUGS_v1.9.1.md)
+- **Test-Setup & Login-Daten**: [TEST_SETUP.md](./TEST_SETUP.md)
+- **Deployment Issues**: [DEPLOYMENT_ISSUES.md](./DEPLOYMENT_ISSUES.md)
 
 ---
 
@@ -117,7 +118,8 @@ Bald zu entfernende Features
 ## 🔍 Wie finde ich...?
 
 ### "Welche Bugs gibt es aktuell?"
-→ [BUGS_v1.9.1.md](./BUGS_v1.9.1.md)
+→ Keine offenen Bugs! Alle v1.9.1 Bugs wurden in v1.9.2 behoben
+→ Archiv: [BUGS_v1.9.1.md](./BUGS_v1.9.1.md)
 
 ### "Was wurde in Version X.X.X geändert?"
 → [CHANGELOG.md](./CHANGELOG.md) → Suche nach `[X.X.X]`
@@ -221,5 +223,5 @@ docs/
 ---
 
 **Letzte Aktualisierung**: 2025-10-07
-**Version**: v1.9.1
+**Version**: v1.9.2
 **Maintainer**: Development Team
