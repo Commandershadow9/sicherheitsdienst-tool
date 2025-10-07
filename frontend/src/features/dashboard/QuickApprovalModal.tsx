@@ -64,6 +64,44 @@ export function QuickApprovalModal({
           {approval.reason && <div>Grund: {approval.reason}</div>}
         </div>
 
+        {/* Urlaubstage-Saldo (nur bei VACATION) */}
+        {approval.type === 'VACATION' && approval.leaveDaysSaldo && (
+          <div className="rounded border border-blue-200 bg-blue-50 p-3 text-sm">
+            <h3 className="font-semibold text-gray-800 mb-2">Urlaubstage-Saldo</h3>
+            <div className="grid grid-cols-2 gap-2 text-xs">
+              <div>
+                <span className="text-gray-600">Jahresanspruch:</span>
+                <span className="font-medium ml-2">{approval.leaveDaysSaldo.annualLeaveDays} Tage</span>
+              </div>
+              <div>
+                <span className="text-gray-600">Bereits genommen:</span>
+                <span className="font-medium ml-2">{approval.leaveDaysSaldo.takenDays} Tage</span>
+              </div>
+              <div>
+                <span className="text-gray-600">Beantragt:</span>
+                <span className="font-medium ml-2">{approval.leaveDaysSaldo.requestedDays} Tage</span>
+              </div>
+              <div>
+                <span className="text-gray-600">Aktuell verfügbar:</span>
+                <span className="font-medium ml-2">{approval.leaveDaysSaldo.remainingDays} Tage</span>
+              </div>
+            </div>
+            {mode === 'approve' && (
+              <div className="mt-2 pt-2 border-t border-blue-300">
+                <span className="text-sm font-semibold text-blue-900">
+                  Nach Genehmigung verbleibend: {approval.leaveDaysSaldo.remainingAfterApproval} Tage
+                </span>
+                {approval.leaveDaysSaldo.remainingAfterApproval < 0 && (
+                  <p className="text-xs text-red-700 mt-1">
+                    ⚠️ Warnung: Überschreitet verfügbare Urlaubstage um{' '}
+                    {Math.abs(approval.leaveDaysSaldo.remainingAfterApproval)} Tage
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
         {mode === 'approve' && (
           <div className="rounded border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
             <div className="flex items-center gap-2 font-semibold">

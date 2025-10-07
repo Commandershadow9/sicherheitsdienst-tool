@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import type { PendingApproval } from '../types'
 import type { Absence } from '@/features/absences/types'
@@ -9,6 +10,7 @@ import { fetchAbsenceById } from '@/features/absences/api'
  * Verwaltet: Modal Open/Close, Absence Loading
  */
 export function useAbsenceDetail() {
+  const queryClient = useQueryClient()
   const [open, setOpen] = useState(false)
   const [absence, setAbsence] = useState<Absence | null>(null)
 
@@ -25,7 +27,13 @@ export function useAbsenceDetail() {
   const closeDetail = useCallback(() => {
     setOpen(false)
     setAbsence(null)
-  }, [])
+
+    // BUG-FIX: Dashboard aktualisieren wenn Modal geschlossen wird
+    queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] })
+    queryClient.invalidateQueries({ queryKey: ['dashboard-critical'] })
+    queryClient.invalidateQueries({ queryKey: ['dashboard-approvals'] })
+    queryClient.invalidateQueries({ queryKey: ['dashboard-warnings'] })
+  }, [queryClient])
 
   return {
     open,

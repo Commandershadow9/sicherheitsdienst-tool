@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import prisma from '../utils/prisma';
 import { AbsenceStatus, ShiftStatus, AssignmentStatus } from '@prisma/client';
 import createError from 'http-errors';
+import { calculateLeaveDaysSaldo, type LeaveDaysSaldo } from './absenceController';
 
 type PendingShiftDetail = {
   id: string;
@@ -288,37 +289,14 @@ export const getPendingApprovals = async (req: Request, res: Response, next: Nex
         const affectedShifts = shiftDetails.length;
         const criticalShifts = shiftDetails.filter((shift) => shift.hasCapacityWarning).length;
 
-        // Urlaubstage-Check (nur bei VACATION)
+        // Urlaubstage-Saldo (nur bei VACATION)
+        let leaveDaysSaldo: LeaveDaysSaldo | null = null;
         let leaveDaysExceeded = false;
+
         if (absence.type === 'VACATION') {
-          const profile = await prisma.employeeProfile.findUnique({
-            where: { userId: absence.user.id },
-            select: { annualLeaveDays: true },
-          });
-
-          if (profile) {
-            // Berechne bereits genommene Tage
-            const approvedAbsences = await prisma.absence.findMany({
-              where: {
-                userId: absence.user.id,
-                status: AbsenceStatus.APPROVED,
-                type: 'VACATION',
-              },
-              select: { startsAt: true, endsAt: true },
-            });
-
-            const takenDays = approvedAbsences.reduce((sum, abs) => {
-              const days = Math.ceil(
-                (new Date(abs.endsAt).getTime() - new Date(abs.startsAt).getTime()) / (1000 * 60 * 60 * 24),
-              );
-              return sum + days;
-            }, 0);
-
-            const requestedDays = Math.ceil(
-              (new Date(absence.endsAt).getTime() - new Date(absence.startsAt).getTime()) / (1000 * 60 * 60 * 24),
-            );
-
-            leaveDaysExceeded = takenDays + requestedDays > profile.annualLeaveDays;
+          leaveDaysSaldo = await calculateLeaveDaysSaldo(absence.user.id, absence.id);
+          if (leaveDaysSaldo) {
+            leaveDaysExceeded = leaveDaysSaldo.remainingAfterApproval < 0;
           }
         }
 
@@ -340,6 +318,7 @@ export const getPendingApprovals = async (req: Request, res: Response, next: Nex
           requestedDays,
           reason: absence.reason || null,
           createdAt: absence.createdAt,
+          leaveDaysSaldo,
           warnings: {
             affectedShifts,
             criticalShifts,
@@ -546,6 +525,166 @@ export const getStats = async (req: Request, res: Response, next: NextFunction) 
         upcomingWarnings: Math.min(upcomingShifts, 10), // Placeholder
       },
     });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * GET /api/dashboard/employees/available
+ * Liste aller heute verfügbaren Mitarbeiter
+ */
+export const getAvailableEmployees = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const actor = req.user!;
+
+    if (actor.role !== 'ADMIN' && actor.role !== 'MANAGER') {
+      throw createError(403, 'Keine Berechtigung für Dashboard-Zugriff.');
+    }
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    // Heute abwesende Mitarbeiter-IDs
+    const absentUserIds = await prisma.absence.findMany({
+      where: {
+        status: AbsenceStatus.APPROVED,
+        startsAt: { lte: tomorrow },
+        endsAt: { gte: today },
+      },
+      select: {
+        userId: true,
+      },
+    });
+
+    const absentIds = absentUserIds.map((a) => a.userId);
+
+    // Alle aktiven Mitarbeiter OHNE Abwesenheit
+    const availableEmployees = await prisma.user.findMany({
+      where: {
+        role: 'EMPLOYEE',
+        isActive: true,
+        id: { notIn: absentIds },
+      },
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        email: true,
+        role: true,
+      },
+      orderBy: {
+        lastName: 'asc',
+      },
+    });
+
+    res.json({ data: availableEmployees });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * GET /api/dashboard/employees/on-vacation
+ * Liste aller Mitarbeiter im Urlaub
+ */
+export const getEmployeesOnVacation = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const actor = req.user!;
+
+    if (actor.role !== 'ADMIN' && actor.role !== 'MANAGER') {
+      throw createError(403, 'Keine Berechtigung für Dashboard-Zugriff.');
+    }
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    // Urlaub-Abwesenheiten heute
+    const vacations = await prisma.absence.findMany({
+      where: {
+        status: AbsenceStatus.APPROVED,
+        type: 'VACATION',
+        startsAt: { lte: tomorrow },
+        endsAt: { gte: today },
+      },
+      select: {
+        startsAt: true,
+        endsAt: true,
+        user: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+            role: true,
+          },
+        },
+      },
+    });
+
+    const employees = vacations.map((v) => ({
+      ...v.user,
+      absenceStart: v.startsAt,
+      absenceEnd: v.endsAt,
+    }));
+
+    res.json({ data: employees });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * GET /api/dashboard/employees/on-sick-leave
+ * Liste aller kranken Mitarbeiter
+ */
+export const getEmployeesOnSickLeave = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const actor = req.user!;
+
+    if (actor.role !== 'ADMIN' && actor.role !== 'MANAGER') {
+      throw createError(403, 'Keine Berechtigung für Dashboard-Zugriff.');
+    }
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    // Krankmeldungen heute
+    const sickLeaves = await prisma.absence.findMany({
+      where: {
+        status: AbsenceStatus.APPROVED,
+        type: 'SICKNESS',
+        startsAt: { lte: tomorrow },
+        endsAt: { gte: today },
+      },
+      select: {
+        startsAt: true,
+        endsAt: true,
+        user: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+            role: true,
+          },
+        },
+      },
+    });
+
+    const employees = sickLeaves.map((s) => ({
+      ...s.user,
+      absenceStart: s.startsAt,
+      absenceEnd: s.endsAt,
+    }));
+
+    res.json({ data: employees });
   } catch (error) {
     next(error);
   }

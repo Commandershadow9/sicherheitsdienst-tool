@@ -6,6 +6,9 @@ import {
   getPendingApprovals,
   getWarnings,
   getStats,
+  getAvailableEmployees,
+  getEmployeesOnVacation,
+  getEmployeesOnSickLeave,
 } from '../controllers/dashboardController';
 
 const router = Router();
@@ -36,5 +39,23 @@ router.get('/warnings', authorize('ADMIN', 'MANAGER'), asyncHandler(getWarnings)
  * Übersichts-Statistiken für heute
  */
 router.get('/stats', authorize('ADMIN', 'MANAGER'), asyncHandler(getStats));
+
+/**
+ * GET /api/dashboard/employees/available
+ * Liste aller heute verfügbaren Mitarbeiter
+ */
+router.get('/employees/available', authorize('ADMIN', 'MANAGER'), asyncHandler(getAvailableEmployees));
+
+/**
+ * GET /api/dashboard/employees/on-vacation
+ * Liste aller Mitarbeiter im Urlaub
+ */
+router.get('/employees/on-vacation', authorize('ADMIN', 'MANAGER'), asyncHandler(getEmployeesOnVacation));
+
+/**
+ * GET /api/dashboard/employees/on-sick-leave
+ * Liste aller kranken Mitarbeiter
+ */
+router.get('/employees/on-sick-leave', authorize('ADMIN', 'MANAGER'), asyncHandler(getEmployeesOnSickLeave));
 
 export default router;

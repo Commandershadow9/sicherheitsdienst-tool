@@ -15,6 +15,14 @@ export type CriticalShift = {
   }>
 }
 
+export type LeaveDaysSaldo = {
+  annualLeaveDays: number
+  takenDays: number
+  requestedDays: number
+  remainingDays: number
+  remainingAfterApproval: number
+}
+
 export type PendingApproval = {
   absenceId: string
   employee: {
@@ -29,6 +37,7 @@ export type PendingApproval = {
   requestedDays: number
   reason: string | null
   createdAt: string
+  leaveDaysSaldo: LeaveDaysSaldo | null
   warnings: {
     affectedShifts: number
     criticalShifts: number

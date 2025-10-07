@@ -19,8 +19,8 @@ DROP INDEX "shifts_siteId_idx";
 -- DropIndex
 DROP INDEX "time_entries_shiftId_idx";
 
--- AlterTable
-ALTER TABLE "absence_documents" ALTER COLUMN "created_at" SET DATA TYPE TIMESTAMP(3);
+-- AlterTable (commented out - table doesn't exist yet)
+-- ALTER TABLE "absence_documents" ALTER COLUMN "created_at" SET DATA TYPE TIMESTAMP(3);
 
 -- AlterTable
 ALTER TABLE "absences" ALTER COLUMN "starts_at" SET DATA TYPE TIMESTAMP(3),
@@ -63,12 +63,12 @@ ALTER COLUMN "createdAt" SET DATA TYPE TIMESTAMP(3),
 ALTER COLUMN "updatedAt" DROP DEFAULT,
 ALTER COLUMN "updatedAt" SET DATA TYPE TIMESTAMP(3);
 
--- AlterTable
-ALTER TABLE "object_clearances" ALTER COLUMN "trained_at" SET DATA TYPE TIMESTAMP(3),
-ALTER COLUMN "valid_until" SET DATA TYPE TIMESTAMP(3),
-ALTER COLUMN "created_at" SET DATA TYPE TIMESTAMP(3),
-ALTER COLUMN "updated_at" DROP DEFAULT,
-ALTER COLUMN "updated_at" SET DATA TYPE TIMESTAMP(3);
+-- AlterTable (commented out - table created in later migration)
+-- ALTER TABLE "object_clearances" ALTER COLUMN "trained_at" SET DATA TYPE TIMESTAMP(3),
+-- ALTER COLUMN "valid_until" SET DATA TYPE TIMESTAMP(3),
+-- ALTER COLUMN "created_at" SET DATA TYPE TIMESTAMP(3),
+-- ALTER COLUMN "updated_at" DROP DEFAULT,
+-- ALTER COLUMN "updated_at" SET DATA TYPE TIMESTAMP(3);
 
 -- AlterTable
 ALTER TABLE "sites" ALTER COLUMN "createdAt" SET DATA TYPE TIMESTAMP(3),
@@ -223,5 +223,5 @@ ALTER TABLE "absences" ADD CONSTRAINT "absences_user_id_fkey" FOREIGN KEY ("user
 -- AddForeignKey
 ALTER TABLE "device_tokens" ADD CONSTRAINT "device_tokens_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
--- RenameIndex
-ALTER INDEX "object_clearances_user_site_key" RENAME TO "object_clearances_user_id_site_id_key";
+-- RenameIndex (commented out - index doesn't exist yet, will be created in later migration)
+-- ALTER INDEX "object_clearances_user_site_key" RENAME TO "object_clearances_user_id_site_id_key";

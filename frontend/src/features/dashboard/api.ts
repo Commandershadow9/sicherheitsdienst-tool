@@ -9,7 +9,7 @@ import type {
   DashboardStats,
   StatsResponse,
 } from './types'
-import type { ReplacementCandidate } from '@/features/absences/types'
+import type { ReplacementCandidate, ReplacementCandidateV2 } from '@/features/absences/types'
 
 export async function fetchCriticalShifts() {
   const res = await api.get<CriticalShiftsResponse>('/dashboard/critical')
@@ -34,6 +34,14 @@ export async function fetchDashboardStats() {
 export async function fetchShiftReplacementCandidates(shiftId: string, absentUserId?: string) {
   const params = absentUserId ? { absentUserId } : undefined
   const res = await api.get<{ data: ReplacementCandidate[] }>(`/shifts/${shiftId}/replacement-candidates`, {
+    params,
+  })
+  return res.data.data
+}
+
+export async function fetchShiftReplacementCandidatesV2(shiftId: string, absentUserId?: string) {
+  const params = absentUserId ? { absentUserId } : undefined
+  const res = await api.get<{ data: ReplacementCandidateV2[] }>(`/shifts/${shiftId}/replacement-candidates/v2`, {
     params,
   })
   return res.data.data

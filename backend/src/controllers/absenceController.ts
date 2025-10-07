@@ -6,7 +6,7 @@ import { submitAuditEvent } from '../utils/audit';
 import { saveDocumentFile, resolveDocumentPath, removeDocumentFile } from '../utils/documentStorage';
 import { publishNotificationEvent } from '../utils/notificationEvents';
 import fs from 'fs/promises';
-import { findReplacementCandidatesForShift } from '../services/replacementService';
+import { findReplacementCandidatesForShiftV2 } from '../services/replacementService';
 
 const PAGE_MAX = 100;
 
@@ -376,7 +376,7 @@ async function getAffectedShiftsWithCapacity(userId: string, startsAt: Date, end
   return affectedShifts;
 }
 
-type LeaveDaysSaldo = {
+export type LeaveDaysSaldo = {
   annualLeaveDays: number;
   takenDays: number;
   requestedDays: number;
@@ -386,7 +386,7 @@ type LeaveDaysSaldo = {
 
 // Ersatz-Mitarbeiter finden für eine Schicht
 // Berechne Urlaubstage-Saldo für einen Mitarbeiter
-async function calculateLeaveDaysSaldo(
+export async function calculateLeaveDaysSaldo(
   userId: string,
   currentAbsenceId?: string,
 ): Promise<LeaveDaysSaldo | null> {
@@ -417,13 +417,13 @@ async function calculateLeaveDaysSaldo(
   });
 
   // Beantragte Urlaubstage (REQUESTED, Typ VACATION im aktuellen Jahr)
+  // INKL. current absence (falls vorhanden)
   const requestedAbsences = await prisma.absence.findMany({
     where: {
       userId,
       type: 'VACATION',
       status: 'REQUESTED',
       startsAt: { gte: yearStart, lte: yearEnd },
-      ...(currentAbsenceId ? { id: { not: currentAbsenceId } } : {}), // Aktueller Antrag nicht mitzählen
     },
     select: { startsAt: true, endsAt: true },
   });
@@ -441,20 +441,24 @@ async function calculateLeaveDaysSaldo(
   const takenDays = calculateDays(takenAbsences);
   const requestedDays = calculateDays(requestedAbsences);
 
-  // Aktueller Antrag
+  // Aktueller Antrag (für remainingAfterApproval Berechnung)
   let currentAbsenceDays = 0;
   if (currentAbsenceId) {
     const currentAbsence = await prisma.absence.findUnique({
       where: { id: currentAbsenceId },
-      select: { startsAt: true, endsAt: true, type: true },
+      select: { startsAt: true, endsAt: true, type: true, status: true },
     });
     if (currentAbsence && currentAbsence.type === 'VACATION') {
       currentAbsenceDays = calculateDays([currentAbsence]);
     }
   }
 
-  const remainingDays = annualLeaveDays - takenDays - requestedDays;
-  const remainingAfterApproval = annualLeaveDays - takenDays - requestedDays - currentAbsenceDays;
+  // BUG-002 Fix: Verfügbare Tage = Jahresanspruch - Genommen (NICHT - Beantragt!)
+  // Beantragte Tage sind noch nicht "vergeben", nur in Prüfung
+  const remainingDays = annualLeaveDays - takenDays;
+
+  // Nach Genehmigung DIESES Antrags:
+  const remainingAfterApproval = annualLeaveDays - takenDays - currentAbsenceDays;
 
   return {
     annualLeaveDays,
@@ -997,8 +1001,8 @@ export const getReplacementCandidates = async (req: Request, res: Response, next
 
     // Wenn shiftId angegeben: Nur für diese Schicht
     if (shiftId) {
-      const candidates = await findReplacementCandidatesForShift(shiftId, absence.userId);
-      res.json({ data: { shiftId, candidates } });
+      const candidates = await findReplacementCandidatesForShiftV2(shiftId, absence.userId);
+      res.json({ data: candidates });
       return;
     }
 
@@ -1013,7 +1017,7 @@ export const getReplacementCandidates = async (req: Request, res: Response, next
       affectedShifts.map(async (shift) => ({
         shiftId: shift.id,
         shiftTitle: shift.title,
-        candidates: await findReplacementCandidatesForShift(shift.id, absence.userId),
+        candidates: await findReplacementCandidatesForShiftV2(shift.id, absence.userId),
       })),
     );
 

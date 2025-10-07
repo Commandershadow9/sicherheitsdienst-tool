@@ -30,7 +30,15 @@ router.post(
 // GET /api/shifts/:id - Einzelne Schicht
 router.get('/:id', authenticate, asyncHandler(shiftController.getShiftById));
 
-// GET /api/shifts/:id/replacement-candidates-v2 - Intelligente Ersatzkandidaten mit Scoring (v1.8.0)
+// GET /api/shifts/:id/replacement-candidates/v2 - Intelligente Ersatzkandidaten mit Scoring (v1.8.0)
+router.get(
+  '/:id/replacement-candidates/v2',
+  authenticate,
+  authorize('ADMIN', 'MANAGER', 'DISPATCHER'),
+  asyncHandler(shiftController.getReplacementCandidatesV2),
+);
+
+// GET /api/shifts/:id/replacement-candidates-v2 - Intelligente Ersatzkandidaten mit Scoring (Legacy URL)
 router.get(
   '/:id/replacement-candidates-v2',
   authenticate,
@@ -86,6 +94,7 @@ router.post(
 // 405
 router.all('/', authenticate, methodNotAllowed(['GET', 'POST']));
 router.all('/:id', authenticate, methodNotAllowed(['GET', 'PUT', 'DELETE']));
+router.all('/:id/replacement-candidates/v2', authenticate, methodNotAllowed(['GET']));
 router.all('/:id/replacement-candidates-v2', authenticate, methodNotAllowed(['GET']));
 router.all('/:id/replacement-candidates', authenticate, methodNotAllowed(['GET']));
 router.all('/:id/assign', authenticate, methodNotAllowed(['POST']));

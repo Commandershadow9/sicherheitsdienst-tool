@@ -183,15 +183,22 @@ async function main() {
   // 3. Sites/Objekte erstellen
   console.log('\n📍 Erstelle Sites...')
 
-  const testSite = await prisma.site.create({
-    data: {
+  const testSite = await prisma.site.upsert({
+    where: {
+      sites_name_address_key: {
+        name: 'Test-Objekt Replacement',
+        address: 'Teststraße 1',
+      },
+    },
+    update: {},
+    create: {
       name: 'Test-Objekt Replacement',
       address: 'Teststraße 1',
       city: 'Berlin',
       postalCode: '12345',
     },
   })
-  console.log('✅ Site erstellt:', testSite.name)
+  console.log('✅ Site erstellt/gefunden:', testSite.name)
 
   // 4. Object Clearances erstellen (alle für Test-Site)
   console.log('\n🔐 Erstelle Object Clearances...')

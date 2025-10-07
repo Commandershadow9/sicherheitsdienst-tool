@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from 'react'
+import { useCallback, useMemo, useState, useRef } from 'react'
 import { RefreshCcw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { CriticalShiftsCard } from '@/features/dashboard/CriticalShiftsCard'
@@ -7,8 +7,9 @@ import { WarningsCard } from '@/features/dashboard/WarningsCard'
 import { StatsCard } from '@/features/dashboard/StatsCard'
 import { QuickApprovalModal } from '@/features/dashboard/QuickApprovalModal'
 import { AbsenceDetailModal } from '@/features/absences/AbsenceDetailModal'
-import { ReplacementCandidatesModal } from '@/features/absences/ReplacementCandidatesModal'
-import type { CriticalShift, UpcomingWarning, PendingApproval } from '@/features/dashboard/types'
+import { ReplacementCandidatesModalV2 } from '@/features/absences/ReplacementCandidatesModalV2'
+import { EmployeeListModal } from '@/features/dashboard/EmployeeListModal'
+import type { CriticalShift, UpcomingWarning, PendingApproval, DashboardStats } from '@/features/dashboard/types'
 import {
   useDashboardQueries,
   useApprovalModal,
@@ -24,6 +25,22 @@ export default function Dashboard() {
   const replacementModal = useReplacementModal()
   const absenceDetail = useAbsenceDetail()
   const { refreshing, handleRefresh } = useManualRefresh(queries)
+
+  // Employee List Modal State
+  const [employeeListModal, setEmployeeListModal] = useState<{
+    open: boolean
+    filter: 'all' | 'available' | 'vacation' | 'sick'
+    title: string
+  }>({
+    open: false,
+    filter: 'all',
+    title: '',
+  })
+
+  // Refs für Scroll-Ziele
+  const criticalShiftsRef = useRef<HTMLDivElement>(null)
+  const pendingApprovalsRef = useRef<HTMLDivElement>(null)
+  const warningsRef = useRef<HTMLDivElement>(null)
 
   // Memoized Values
   const loadingShiftId = useMemo(
@@ -73,6 +90,53 @@ export default function Dashboard() {
     [approvalModal]
   )
 
+  // StatsCard Click Handler
+  const handleStatClick = useCallback((statKey: keyof DashboardStats) => {
+    switch (statKey) {
+      case 'totalEmployees':
+        setEmployeeListModal({
+          open: true,
+          filter: 'all',
+          title: 'Alle Mitarbeiter',
+        })
+        break
+      case 'availableToday':
+        setEmployeeListModal({
+          open: true,
+          filter: 'available',
+          title: 'Verfügbare Mitarbeiter (heute)',
+        })
+        break
+      case 'onVacation':
+        setEmployeeListModal({
+          open: true,
+          filter: 'vacation',
+          title: 'Mitarbeiter im Urlaub',
+        })
+        break
+      case 'onSickLeave':
+        setEmployeeListModal({
+          open: true,
+          filter: 'sick',
+          title: 'Kranke Mitarbeiter',
+        })
+        break
+      case 'criticalShiftsToday':
+        criticalShiftsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+        break
+      case 'pendingApprovals':
+        pendingApprovalsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+        break
+      case 'upcomingWarnings':
+        warningsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+        break
+    }
+  }, [])
+
+  const closeEmployeeListModal = useCallback(() => {
+    setEmployeeListModal((prev) => ({ ...prev, open: false }))
+  }, [])
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -93,25 +157,29 @@ export default function Dashboard() {
       <div className="grid gap-6 lg:grid-cols-[2fr_1fr]">
         {/* Linke Spalte */}
         <div className="space-y-6">
-          <CriticalShiftsCard
-            shifts={queries.critical.data}
-            isLoading={queries.critical.isLoading}
-            isError={queries.critical.isError}
-            onRetry={handleCriticalRetry}
-            onFindReplacement={handleFindReplacementForCritical}
-            loadingShiftId={loadingShiftId}
-          />
+          <div ref={criticalShiftsRef}>
+            <CriticalShiftsCard
+              shifts={queries.critical.data}
+              isLoading={queries.critical.isLoading}
+              isError={queries.critical.isError}
+              onRetry={handleCriticalRetry}
+              onFindReplacement={handleFindReplacementForCritical}
+              loadingShiftId={loadingShiftId}
+            />
+          </div>
 
-          <PendingApprovalsCard
-            approvals={queries.approvals.data}
-            isLoading={queries.approvals.isLoading}
-            isError={queries.approvals.isError}
-            onRetry={handleApprovalsRetry}
-            onApprove={handleApprove}
-            onReject={handleReject}
-            onOpenDetails={absenceDetail.openDetail}
-            recentAssignments={replacementModal.recentAssignments}
-          />
+          <div ref={pendingApprovalsRef}>
+            <PendingApprovalsCard
+              approvals={queries.approvals.data}
+              isLoading={queries.approvals.isLoading}
+              isError={queries.approvals.isError}
+              onRetry={handleApprovalsRetry}
+              onApprove={handleApprove}
+              onReject={handleReject}
+              onOpenDetails={absenceDetail.openDetail}
+              recentAssignments={replacementModal.recentAssignments}
+            />
+          </div>
         </div>
 
         {/* Rechte Spalte */}
@@ -121,16 +189,19 @@ export default function Dashboard() {
             isLoading={queries.stats.isLoading}
             isError={queries.stats.isError}
             onRetry={handleStatsRetry}
+            onStatClick={handleStatClick}
           />
 
-          <WarningsCard
-            warnings={queries.warnings.data}
-            isLoading={queries.warnings.isLoading}
-            isError={queries.warnings.isError}
-            onRetry={handleWarningsRetry}
-            onFindReplacement={handleFindReplacementForWarning}
-            loadingShiftId={loadingShiftId}
-          />
+          <div ref={warningsRef}>
+            <WarningsCard
+              warnings={queries.warnings.data}
+              isLoading={queries.warnings.isLoading}
+              isError={queries.warnings.isError}
+              onRetry={handleWarningsRetry}
+              onFindReplacement={handleFindReplacementForWarning}
+              loadingShiftId={loadingShiftId}
+            />
+          </div>
         </div>
       </div>
 
@@ -153,13 +224,20 @@ export default function Dashboard() {
         onClose={absenceDetail.closeDetail}
       />
 
-      <ReplacementCandidatesModal
+      <ReplacementCandidatesModalV2
         open={replacementModal.open}
         onClose={replacementModal.closeModal}
         shiftId={replacementModal.shift?.id ?? ''}
         shiftTitle={replacementModal.shift?.title ?? ''}
         candidates={replacementModal.candidates}
         onAssignSuccess={handleReplacementAssignSuccess}
+      />
+
+      <EmployeeListModal
+        open={employeeListModal.open}
+        onClose={closeEmployeeListModal}
+        filter={employeeListModal.filter}
+        title={employeeListModal.title}
       />
     </div>
   )

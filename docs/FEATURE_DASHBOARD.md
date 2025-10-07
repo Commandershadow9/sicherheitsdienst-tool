@@ -251,6 +251,198 @@ frontend/src/features/dashboard/
 3. [ ] Manuelle Tests mit Seed-Daten
 4. [ ] Responsive Design prüfen (Mobile QA ausstehend)
 
+### Phase 4: Interaktive StatsCard (v1.9.1 - 2025-10-06) ✅ ABGESCHLOSSEN
+1. [x] StatsCard klickbar gemacht
+2. [x] ChevronRight-Icon für klickbare Items
+3. [x] Hover-Effekte (bg-accent, border-primary)
+4. [x] EmployeeListModal erstellt
+5. [x] Backend-Endpoints implementiert:
+   - `GET /api/dashboard/employees/available`
+   - `GET /api/dashboard/employees/on-vacation`
+   - `GET /api/dashboard/employees/on-sick-leave`
+6. [x] Scroll-Funktionalität zu anderen Dashboard-Sections
+7. [x] TypeScript-Kompilierung erfolgreich
+8. [ ] Manuelle Tests im Browser
+
+## 🚀 Zukunfts-Features & Erweiterungen
+
+### Dashboard-Erweiterungen für Manager/Admins (v1.10+)
+
+**Problem**: Dashboard zeigt aktuell nur Abwesenheiten & Schichten, aber das ist nicht alles was wichtig ist.
+
+**Vision**: Das Dashboard wird zum zentralen Hub für ALLE täglichen Aufgaben.
+
+#### Geplante Features:
+
+1. **Termine & Meetings**
+   - Anstehende Termine für Chef/Einsatzleiter
+   - Meetings mit Kunden, Behörden, Team
+   - Integration mit Kalender-System (iCal/Google Calendar)
+   - Erinnerungen 24h/1h vorher
+
+2. **Aufgaben & Todos**
+   - Offene Aufgaben (z.B. "Vertrag mit Objekt XY verlängern")
+   - Prioritäten (Hoch/Mittel/Niedrig)
+   - Deadlines & Fälligkeiten
+   - Erledigte Tasks archivieren
+
+3. **Mitteilungen & Nachrichten**
+   - Mitteilungen von Mitarbeitern (z.B. "Kann nächste Woche nicht")
+   - Nachrichten von Chefs/Einsatzleitern
+   - Ungelesene Nachrichten-Counter
+   - Quick-Reply-Funktion
+
+4. **Bevorstehende wichtige Ereignisse**
+   - Ablaufende Verträge (Objekte, Mitarbeiter)
+   - Ablaufende Qualifikationen (§34a, Brandschutz)
+   - Ablaufende Object Clearances
+   - Geburtstage von Mitarbeitern
+   - Jubiläen
+
+5. **Eigene Schichten** (für Einsatzleiter)
+   - Eigene kommende Schichten anzeigen
+   - Aktuelle Schicht mit Countdown
+   - Nächste Schicht Vorbereitung
+
+6. **Interaktive Übersicht (StatsCard)**
+   - Klick auf "Im Urlaub (2)" → Liste der Mitarbeiter
+   - Klick auf "Krank (1)" → Details zur Krankmeldung
+   - Klick auf "Kritische Schichten (3)" → Scrollt zu Critical Shifts
+   - Klick auf "Offene Genehmigungen (2)" → Scrollt zu Pending Approvals
+
+#### Technische Umsetzung:
+
+```typescript
+// Neue Dashboard-Endpoints (Backend)
+GET /api/dashboard/upcoming-events     // Termine, Ablaufende Dokumente
+GET /api/dashboard/todos               // Aufgaben & Tasks
+GET /api/dashboard/messages            // Nachrichten & Mitteilungen
+GET /api/dashboard/my-shifts           // Eigene Schichten (für Einsatzleiter)
+
+// Neue UI-Komponenten (Frontend)
+<UpcomingEventsCard />    // Termine & wichtige Ereignisse
+<TodosCard />             // Aufgaben-Liste mit Checkboxen
+<MessagesCard />          // Nachrichten-Feed
+<MyShiftsCard />          // Eigene Schichten (nur Einsatzleiter/Manager)
+```
+
+---
+
+### Dashboard für Mitarbeiter (v1.11+)
+
+**Vision**: Mitarbeiter bekommen ihr eigenes Dashboard mit relevanten Infos.
+
+#### Features:
+
+1. **Schicht-Übersicht**
+   - Kommende Schichten (nächste 7 Tage)
+   - Aktuelle Schicht (falls im Dienst)
+   - Nächste Schicht mit Countdown ("In 3 Tagen, 2 Stunden")
+
+2. **Diensttausch**
+   - Offene Tausch-Anfragen
+   - Tausch vorschlagen (direkt aus Dashboard)
+   - Benachrichtigungen bei Tausch-Genehmigung
+
+3. **Nachrichten**
+   - Nachrichten von Einsatzleitern
+   - Nachrichten von Chef/Admin
+   - System-Benachrichtigungen (z.B. "Neue Schicht zugeteilt")
+
+4. **Objektänderungen**
+   - Neue Object Clearances
+   - Geänderte Objekt-Anforderungen
+   - Ablaufende Einarbeitungen
+
+5. **Arbeitszeitübersicht**
+   - Geleistete Stunden (Monat/Jahr)
+   - Urlaubstage (genommen/verfügbar)
+   - Überstunden
+   - Nächste Lohnabrechnung
+
+6. **Dokumente & Compliance**
+   - Ablaufende Qualifikationen (§34a, Erste Hilfe)
+   - Hochzuladende Dokumente (Attest, Bescheinigungen)
+   - Compliance-Status (alles OK? Warnungen?)
+
+#### Beispiel-Layout (Mitarbeiter-Dashboard):
+
+```
+┌─────────────────────────────────────────────────────────┐
+│ 🏠 Mein Dashboard                           [Max Müller] │
+├─────────────────────────────────────────────────────────┤
+│                                                           │
+│ ⏰ MEINE NÄCHSTE SCHICHT                                  │
+│  Shoppingcenter West - Tagschicht                        │
+│  Morgen, 08:00 - 16:00 Uhr (in 18 Stunden)               │
+│  [Details] [Route planen]                                │
+│                                                           │
+│ 📅 KOMMENDE SCHICHTEN (7 Tage)                            │
+│  3 Schichten geplant - [Kalender ansehen]                │
+│                                                           │
+│ 🔁 DIENSTTAUSCH-ANFRAGEN (1)                              │
+│  Lisa Müller möchte mit dir tauschen (12.10.)            │
+│  [Annehmen] [Ablehnen]                                    │
+│                                                           │
+│ 📨 NEUE NACHRICHTEN (2)                                   │
+│  Einsatzleiter: "Bitte 10 Min früher kommen"             │
+│  Chef: "Neues Objekt verfügbar"                          │
+│                                                           │
+│ 📊 ARBEITSZEITÜBERSICHT (Oktober)                         │
+│  120h / 160h geleistet (75%)                             │
+│  Urlaub: 15/30 Tage genommen                             │
+│  [Details ansehen]                                        │
+│                                                           │
+└─────────────────────────────────────────────────────────┘
+```
+
+---
+
+### Technische Architektur
+
+#### Backend-Struktur:
+
+```
+backend/src/
+├── controllers/
+│   ├── dashboardController.ts        # Manager/Admin Dashboard
+│   ├── employeeDashboardController.ts # Mitarbeiter Dashboard
+│   └── todosController.ts            # Aufgaben-Verwaltung
+├── services/
+│   ├── dashboardService.ts
+│   ├── upcomingEventsService.ts      # Termine, Ablaufende Docs
+│   └── messagesService.ts            # Nachrichten-System
+└── models/ (Prisma)
+    ├── Todo.prisma                   # Aufgaben
+    ├── Message.prisma                # Nachrichten
+    └── Event.prisma                  # Termine
+```
+
+#### Frontend-Struktur:
+
+```
+frontend/src/
+├── pages/
+│   ├── Dashboard.tsx                 # Manager/Admin
+│   └── EmployeeDashboard.tsx         # Mitarbeiter
+├── features/dashboard/
+│   ├── CriticalShiftsCard.tsx
+│   ├── PendingApprovalsCard.tsx
+│   ├── StatsCard.tsx                 # 👈 JETZT: Klickbar machen!
+│   ├── WarningsCard.tsx
+│   ├── UpcomingEventsCard.tsx        # NEU
+│   ├── TodosCard.tsx                 # NEU
+│   ├── MessagesCard.tsx              # NEU
+│   └── MyShiftsCard.tsx              # NEU
+└── features/employee-dashboard/
+    ├── MyShiftsCard.tsx
+    ├── ShiftSwapCard.tsx
+    ├── WorkHoursCard.tsx
+    └── ComplianceCard.tsx
+```
+
+---
+
 ## Offene Fragen / Entscheidungen
 
 1. **Navigation**: Soll Dashboard die neue Startseite für Manager sein?
@@ -260,10 +452,14 @@ frontend/src/features/dashboard/
    - Alternative: WebSocket für Real-Time Updates (später)
 
 3. **Mitarbeiter-Rolle**: Sehen Employees auch ein Dashboard?
-   - Vorschlag: Ja, aber vereinfacht (nur eigene Abwesenheiten, eigene Schichten)
+   - ✅ **ENTSCHIEDEN**: Ja, separates Dashboard mit anderen Features (siehe oben)
 
 4. **Badge-Counts**: Soll Navigation Badges haben?
    - Vorschlag: Ja, "Ausstehend (2)" im Sidebar/Header
+
+5. **StatsCard Interaktivität** (v1.9.1):
+   - ✅ **ENTSCHIEDEN**: Klickbar machen - Klick öffnet Details/filterte Listen
+   - Implementierung: Modals oder Navigation zu gefilterten Seiten
 
 ## Akzeptanzkriterien
 

@@ -6,6 +6,7 @@ import { ReplacementCandidatesModalV2 } from './ReplacementCandidatesModalV2'
 import { getReplacementCandidatesV2, fetchAbsenceById } from './api'
 import { useState } from 'react'
 import { toast } from 'sonner'
+import { useQueryClient } from '@tanstack/react-query'
 
 type AbsenceDetailModalProps = {
   absence: Absence | null
@@ -67,6 +68,7 @@ function isClearanceExpired(clearance: { status: ClearanceStatus; validUntil?: s
 }
 
 export function AbsenceDetailModal({ absence, open, onClose }: AbsenceDetailModalProps) {
+  const queryClient = useQueryClient()
   const [replacementModalOpen, setReplacementModalOpen] = useState(false)
   const [selectedShift, setSelectedShift] = useState<{ id: string; title: string } | null>(null)
   const [candidates, setCandidates] = useState<ReplacementCandidateV2[]>([])
@@ -265,12 +267,39 @@ export function AbsenceDetailModal({ absence, open, onClose }: AbsenceDetailModa
             </div>
           )}
 
-          {/* Betroffene Schichten */}
+          {/* Betroffene Schichten - BUG-003 Fix: Kompakte Darstellung */}
           {currentAbsence.affectedShifts && currentAbsence.affectedShifts.length > 0 && (
             <div>
               <h3 className="text-sm font-semibold text-gray-700 mb-2">Betroffene Schichten</h3>
+              {/* Kompakte Übersicht */}
+              <div className="p-4 bg-blue-50 border border-blue-300 rounded-lg mb-3">
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2">
+                    <span className="text-2xl">📅</span>
+                    <div>
+                      <div className="font-medium text-gray-900">
+                        {currentAbsence.affectedShifts.length} {currentAbsence.affectedShifts.length === 1 ? 'Schicht' : 'Schichten'} betroffen
+                      </div>
+                      <div className="text-sm text-gray-600">
+                        {formatPeriod(currentAbsence.startsAt, currentAbsence.endsAt)}
+                      </div>
+                    </div>
+                  </div>
+                  {currentAbsence.affectedShifts.some(s => s.hasCapacityWarning) && (
+                    <div className="ml-auto flex items-center gap-2 px-3 py-1.5 bg-red-100 border border-red-300 rounded text-sm">
+                      <span>⚠️</span>
+                      <span className="font-medium text-red-800">
+                        {currentAbsence.affectedShifts.filter(s => s.hasCapacityWarning).length} unterbesetzt
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+              {/* Detaillierte Liste (unterbesetzt Schichten zuerst) */}
               <div className="space-y-2">
-                {currentAbsence.affectedShifts.map((shift) => {
+                {currentAbsence.affectedShifts
+                  .sort((a, b) => (b.hasCapacityWarning ? 1 : 0) - (a.hasCapacityWarning ? 1 : 0))
+                  .map((shift) => {
                   const startDate = new Date(shift.startTime)
                   const endDate = new Date(shift.endTime)
                   const dateStr = new Intl.DateTimeFormat('de-DE', {
@@ -408,8 +437,15 @@ export function AbsenceDetailModal({ absence, open, onClose }: AbsenceDetailModa
           shiftTitle={selectedShift.title}
           candidates={candidates}
           onAssignSuccess={() => {
+            // BUG-004 Fix: Dashboard Auto-Refresh nach Ersatz-Zuweisung
+            queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] })
+            queryClient.invalidateQueries({ queryKey: ['critical-shifts'] })
+            queryClient.invalidateQueries({ queryKey: ['upcoming-warnings'] })
+
             // Detailansicht neu laden, damit aktualisierte Kapazität angezeigt wird
             refreshAbsenceData()
+
+            toast.success('Ersatz zugewiesen - Dashboard wird aktualisiert')
           }}
         />
       )}

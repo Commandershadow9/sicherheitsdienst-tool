@@ -65,10 +65,7 @@ export interface CandidateScore {
   }>;
 }
 
-interface UserWithRelations extends User {
-  preferences: EmployeePreferences | null;
-  workload: EmployeeWorkload[];
-}
+// Type no longer needed - we use inline types and calculate workload live
 
 // ==================== Scoring-Funktionen ====================
 
@@ -412,6 +409,94 @@ async function calculateTeamAverages(currentMonth: number, currentYear: number) 
 }
 
 /**
+ * Helper: ISO Week Number (YYYY-WW)
+ */
+function getISOWeek(date: Date): string {
+  const target = new Date(date.valueOf());
+  const dayNr = (date.getDay() + 6) % 7;
+  target.setDate(target.getDate() - dayNr + 3);
+  const firstThursday = target.valueOf();
+  target.setMonth(0, 1);
+  if (target.getDay() !== 4) {
+    target.setMonth(0, 1 + ((4 - target.getDay() + 7) % 7));
+  }
+  const weekNumber = 1 + Math.ceil((firstThursday - target.valueOf()) / 604800000);
+  return `${date.getFullYear()}-W${String(weekNumber).padStart(2, '0')}`;
+}
+
+/**
+ * BUG-001 Fix: Berechnet LIVE Workload aus aktuellen Shift Assignments
+ * Statt cached employee_workloads → Score ist jetzt interaktiv und berücksichtigt neue Zuweisungen sofort
+ */
+async function calculateLiveWorkload(
+  userId: string,
+  month: number,
+  year: number,
+): Promise<{
+  totalHours: number;
+  nightShiftCount: number;
+  maxWeeklyHours: number;
+}> {
+  // Monats-Grenzen
+  const monthStart = new Date(year, month - 1, 1);
+  const monthEnd = new Date(year, month, 0, 23, 59, 59, 999);
+
+  // Alle Assignments des Monats laden
+  const assignments = await prisma.shiftAssignment.findMany({
+    where: {
+      userId,
+      status: { in: ['ASSIGNED', 'CONFIRMED', 'STARTED', 'COMPLETED'] },
+      shift: {
+        startTime: { gte: monthStart, lte: monthEnd },
+      },
+    },
+    include: {
+      shift: {
+        select: {
+          startTime: true,
+          endTime: true,
+        },
+      },
+    },
+    orderBy: {
+      shift: {
+        startTime: 'asc',
+      },
+    },
+  });
+
+  // Total Hours berechnen
+  const totalHours = assignments.reduce((sum, assignment) => {
+    const duration =
+      (new Date(assignment.shift.endTime).getTime() - new Date(assignment.shift.startTime).getTime()) /
+      (1000 * 60 * 60);
+    return sum + duration;
+  }, 0);
+
+  // Nachtschichten zählen (22:00-6:00)
+  const nightShiftCount = assignments.filter((assignment) => {
+    const hour = new Date(assignment.shift.startTime).getHours();
+    return hour >= 22 || hour < 6;
+  }).length;
+
+  // Max Weekly Hours berechnen (höchste Wochenstundenzahl im Monat)
+  const weeklyHoursMap = new Map<string, number>(); // ISO Week → Hours
+  assignments.forEach((assignment) => {
+    const startDate = new Date(assignment.shift.startTime);
+    const weekKey = getISOWeek(startDate);
+    const duration =
+      (new Date(assignment.shift.endTime).getTime() - new Date(assignment.shift.startTime).getTime()) /
+      (1000 * 60 * 60);
+
+    weeklyHoursMap.set(weekKey, (weeklyHoursMap.get(weekKey) || 0) + duration);
+  });
+
+  const maxWeeklyHours = Math.max(0, ...Array.from(weeklyHoursMap.values()));
+
+  return { totalHours, nightShiftCount, maxWeeklyHours };
+}
+
+/**
  * Haupt-Funktion: Berechnet Score für einen Kandidaten
  *
  * @param userId User-ID des Kandidaten
@@ -424,14 +509,8 @@ export async function calculateCandidateScore(userId: string, shift: Shift): Pro
     where: { id: userId },
     include: {
       preferences: true,
-      workload: {
-        where: {
-          month: new Date().getMonth() + 1,
-          year: new Date().getFullYear(),
-        },
-      },
     },
-  })) as UserWithRelations | null;
+  })) as (User & { preferences: EmployeePreferences | null }) | null;
 
   if (!user) {
     throw new Error(`User ${userId} not found`);
@@ -442,13 +521,8 @@ export async function calculateCandidateScore(userId: string, shift: Shift): Pro
   const currentMonth = now.getMonth() + 1;
   const currentYear = now.getFullYear();
 
-  // Workload für aktuellen Monat (oder Default-Werte)
-  const workload = user.workload[0] || {
-    totalHours: 0,
-    nightShiftCount: 0,
-    consecutiveDaysWorked: 0,
-    maxWeeklyHours: 0,
-  };
+  // BUG-001 Fix: Workload LIVE aus Assignments berechnen (statt cached employee_workloads)
+  const workload = await calculateLiveWorkload(userId, currentMonth, currentYear);
 
   // Preferences (oder Defaults)
   const preferences = user.preferences;

@@ -5,8 +5,7 @@ import logger from '../utils/logger';
 import { sendShiftChangedEmail } from '../services/emailService';
 import { streamCsv } from '../utils/csv';
 import { submitAuditEvent } from '../utils/audit';
-import { findReplacementCandidatesForShift } from '../services/replacementService';
-import { calculateCandidateScore } from '../services/intelligentReplacementService';
+import { findReplacementCandidatesForShift, findReplacementCandidatesForShiftV2 } from '../services/replacementService';
 
 const EMAIL_FLAG = 'EMAIL_NOTIFY_SHIFTS';
 
@@ -927,79 +926,8 @@ export const getReplacementCandidatesV2 = async (
       return;
     }
 
-    // Kandidaten ermitteln (alte Logik wiederverwenden)
-    const simpleCandidates = await findReplacementCandidatesForShift(shiftId, absentUserId);
-
-    // Scores für alle Kandidaten berechnen
-    const candidatesWithScores = await Promise.all(
-      simpleCandidates.map(async (candidate) => {
-        try {
-          const score = await calculateCandidateScore(candidate.id, shift);
-
-          return {
-            // User-Basis-Daten
-            id: candidate.id,
-            firstName: candidate.firstName,
-            lastName: candidate.lastName,
-            employeeId: candidate.employeeId,
-
-            // Qualifikationen & Verfügbarkeit (aus alter Logik)
-            hasRequiredQualifications: candidate.hasRequiredQualifications,
-            missingQualifications: candidate.missingQualifications,
-            siteAccessStatus: candidate.siteAccessStatus,
-            isAvailable: candidate.isAvailable,
-
-            // Scoring-Daten (NEU!)
-            score: {
-              total: score.totalScore,
-              recommendation: score.recommendation,
-              color: score.color,
-              workload: score.workloadScore,
-              compliance: score.complianceScore,
-              fairness: score.fairnessScore,
-              preference: score.preferenceScore,
-            },
-
-            // Detail-Metriken
-            metrics: score.metrics,
-
-            // Warnungen
-            warnings: score.warnings,
-          };
-        } catch (error) {
-          // Falls Scoring fehlschlägt, Fallback mit neutralem Score
-          logger.error(`Fehler beim Scoring für User ${candidate.id}:`, error);
-
-          return {
-            id: candidate.id,
-            firstName: candidate.firstName,
-            lastName: candidate.lastName,
-            employeeId: candidate.employeeId,
-            hasRequiredQualifications: candidate.hasRequiredQualifications,
-            missingQualifications: candidate.missingQualifications,
-            siteAccessStatus: candidate.siteAccessStatus,
-            isAvailable: candidate.isAvailable,
-            score: {
-              total: 50,
-              recommendation: 'ACCEPTABLE' as const,
-              color: 'orange' as const,
-              workload: 50,
-              compliance: 50,
-              fairness: 50,
-              preference: 50,
-            },
-            metrics: null,
-            warnings: [
-              {
-                type: 'REST_TIME' as const,
-                severity: 'WARNING' as const,
-                message: 'Scoring-Fehler - Manuelle Prüfung empfohlen',
-              },
-            ],
-          };
-        }
-      })
-    );
+    // Kandidaten mit Scoring ermitteln (v1.8.0 - Intelligent Replacement)
+    const candidatesWithScores = await findReplacementCandidatesForShiftV2(shiftId, absentUserId);
 
     // Sortieren: Beste Scores zuerst
     const sortedCandidates = candidatesWithScores.sort((a, b) => b.score.total - a.score.total);

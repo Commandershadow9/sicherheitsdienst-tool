@@ -1,8 +1,8 @@
 import { useState, useCallback } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import type { ReplacementCandidate } from '@/features/absences/types'
-import { fetchShiftReplacementCandidates } from '../api'
+import type { ReplacementCandidateV2 } from '@/features/absences/types'
+import { fetchShiftReplacementCandidatesV2 } from '../api'
 
 type RecentAssignment = {
   candidate: string
@@ -18,7 +18,7 @@ export function useReplacementModal() {
 
   // State
   const [open, setOpen] = useState(false)
-  const [candidates, setCandidates] = useState<ReplacementCandidate[]>([])
+  const [candidates, setCandidates] = useState<ReplacementCandidateV2[]>([])
   const [shift, setShift] = useState<{ id: string; title: string } | null>(null)
   const [loading, setLoading] = useState(false)
   const [recentAssignments, setRecentAssignments] = useState<Record<string, RecentAssignment>>({})
@@ -39,7 +39,7 @@ export function useReplacementModal() {
     setLoading(true)
     setShift({ id: shiftId, title: shiftTitle })
     try {
-      const candidatesList = await fetchShiftReplacementCandidates(shiftId)
+      const candidatesList = await fetchShiftReplacementCandidatesV2(shiftId)
       setCandidates(candidatesList)
       setOpen(true)
     } catch (error: any) {
