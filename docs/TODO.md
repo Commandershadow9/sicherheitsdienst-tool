@@ -33,7 +33,7 @@ Stand: 2025-10-08 (nach v1.9.2 Planung und Code-Refactoring)
   - [x] Betroffene Schichten mit Kapazitätswarnungen
   - [x] Ersatz-Mitarbeiter-Suche (API + UI mit "Ersatz finden" Button)
   - [x] Krankmeldung Manager-Benachrichtigung
-  - [x] Test-Daten Script (`npm run seed:test-absences`)
+  - [x] Test-Daten Script (`npm run seed`)
   - Release: v1.6.0 (2025-10-04)
 - [x] Abwesenheiten Phase 2: Dokument-/Attest-Uploads (v1.5.0)
 - [x] Kalender-Ansicht (v1.5.1)
@@ -50,6 +50,16 @@ Stand: 2025-10-08 (nach v1.9.2 Planung und Code-Refactoring)
   - Akzeptanz: Integrationstest deckt ENV-Overrides (`LOGIN_RATE_LIMIT_MAX/_WINDOW_MS`) ab; Dev-Doku erklärt Default/Fallback klar (README/Troubleshooting aktualisiert, QA-Notiz).
 - [x] Frontend Feedback für 429 Login
   - Akzeptanz: UI zeigt dedizierten Hinweis + Retry-Countdown, wenn API 429 liefert; UX-Review bestätigt.
+- [ ] Login-Limiter Reset-Logik verbessern
+  - Status: Rate-Limit wird aktuell erst nach manuellem Redis-Flush aufgehoben.
+  - Morgen: TTL/Auto-Reset im Limiter implementieren, Unit-Test für Ablauf nach 60 s + README-Hinweis ergänzen.
+- [ ] Dashboard-Kritikdaten automatisiert prüfen
+  - Aufgabe: Integrationstest für `GET /api/dashboard/critical` mit den neuen Feldern (`assignedEmployees`, `absentEmployees`, `coveredAbsences`, `coverageBufferBeforeAbsences`).
+  - Ziel: Sicherstellen, dass „Fehlen“-Berechnung + Gründe bei überbuchten Schichten konsistent bleiben.
+- [ ] Replacement-API Performance-Check abschließen
+  - TODO aus Phase 2b: Lauffähigen Performance-Test (<500 ms) für `findReplacementCandidatesForShiftV2` schreiben, Seed-Daten nutzen.
+- [ ] Seed-Dokumentation in README synchron halten
+  - Aufgabe: Haupt-README um Abschnitt „Testdaten zurücksetzen“ (einheitlich `npm run seed`) erweitern, Screenshots nachziehen wenn verfügbar.
 
 - [x] Monitoring: Alert-Routing (Grafana/Alertmanager) gegen Ops-Kanal verdrahten
   - Akzeptanz: Neue Audit-Warnungen (Queue, Direct/Flush-Failures, Prune) laufen im gewünschten Kanal auf.
@@ -255,8 +265,7 @@ Erledigt:
 ### ⚠️ AKTUELL: Testdaten wiederherstellen (URGENT)
 **Problem**: Nach Docker-Migration keine Testdaten mehr im Dashboard
 **Betroffene Seeds**:
-- [ ] Test-Absences-Seed (`npm run seed:test-absences`) erneut ausführen
-- [ ] Intelligent-Replacement-Seed (`npm run seed:intelligent-replacement`) erneut ausführen
+- [ ] Gesamt-Seed (`npm run seed`) erneut ausführen
 - [ ] Verifikation: Dashboard zeigt wieder Critical Shifts, Pending Approvals, Warnings
 
 **Nächste Schritte**:

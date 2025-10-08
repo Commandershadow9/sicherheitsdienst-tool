@@ -59,6 +59,14 @@ export function CriticalShiftsCard({ shifts, isLoading, isError, onRetry, onFind
                   {shift.availableEmployees} / {shift.requiredEmployees} besetzt
                 </div>
                 <div className="text-xs text-destructive font-semibold">Fehlen: {shift.shortage}</div>
+                <div className="text-xs text-muted-foreground mt-1">
+                  Zugewiesen: {shift.assignedEmployees} · Abwesend: {shift.absentEmployees}
+                </div>
+                {shift.coveredAbsences > 0 && (
+                  <div className="text-[11px] text-muted-foreground">
+                    Bereits durch Reserve abgedeckt: {shift.coveredAbsences}
+                  </div>
+                )}
               </div>
             </div>
 

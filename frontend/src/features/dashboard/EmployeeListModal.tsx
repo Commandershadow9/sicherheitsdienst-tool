@@ -82,9 +82,9 @@ export function EmployeeListModal({ open, onClose, filter, title }: EmployeeList
                 </div>
                 <ul className="space-y-2">
                   {data.map((employee) => {
-                    const hasAbsencePeriod = employee.absenceStart && employee.absenceEnd
-                    const absenceStart = hasAbsencePeriod ? new Date(employee.absenceStart) : null
-                    const absenceEnd = hasAbsencePeriod ? new Date(employee.absenceEnd) : null
+                    const absenceStart = employee.absenceStart ? new Date(employee.absenceStart) : null
+                    const absenceEnd = employee.absenceEnd ? new Date(employee.absenceEnd) : null
+                    const hasAbsencePeriod = Boolean(absenceStart && absenceEnd)
                     const formatDate = (date: Date) => {
                       return date.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: '2-digit' })
                     }

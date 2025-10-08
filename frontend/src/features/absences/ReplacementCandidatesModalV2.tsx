@@ -32,7 +32,7 @@ type ReplacementCandidatesModalV2Props = {
   shiftId: string
   shiftTitle: string
   candidates: ReplacementCandidateV2[]
-  onAssignSuccess?: (info: { shiftId: string; shiftTitle: string; candidateId: string }) => void
+  onAssignSuccess?: (info: { shiftId: string; shiftTitle: string; candidateId: string; candidateName: string }) => void
 }
 
 // Mapping Recommendation -> Border/BG Style
@@ -86,7 +86,12 @@ export function ReplacementCandidatesModalV2({
       await api.post(`/shifts/${shiftId}/assign`, { userId: candidate.id })
       toast.success(`${candidate.firstName} ${candidate.lastName} erfolgreich zugewiesen`)
       onClose()
-      onAssignSuccess?.({ shiftId, shiftTitle, candidateId: candidate.id })
+      onAssignSuccess?.({
+        shiftId,
+        shiftTitle,
+        candidateId: candidate.id,
+        candidateName: `${candidate.firstName} ${candidate.lastName}`,
+      })
     } catch (error: any) {
       toast.error(error?.response?.data?.message || 'Zuweisung fehlgeschlagen')
     } finally {

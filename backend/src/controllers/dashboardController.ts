@@ -201,16 +201,16 @@ export const getCriticalShifts = async (req: Request, res: Response, next: NextF
     const criticalShifts = todayShifts
       .map((shift) => {
         // Verfügbare Mitarbeiter = Zugewiesen MINUS Abwesende
-        const assignedUsers = shift.assignments.map((a) => a.userId);
-        const availableUsers = assignedUsers.filter((userId) => !absentUserIds.has(userId));
-        const availableCount = availableUsers.length;
+        const assignedCount = shift.assignments.length;
+        const absentAssignments = shift.assignments.filter((assignment) => absentUserIds.has(assignment.userId));
+        const absentCount = absentAssignments.length;
+        const availableCount = assignedCount - absentCount;
         const shortage = shift.requiredEmployees - availableCount;
 
         if (shortage <= 0) return null; // Nicht kritisch
 
         // Finde Gründe (welche zugewiesenen Mitarbeiter sind abwesend)
-        const reasons = shift.assignments
-          .filter((a) => absentUserIds.has(a.userId))
+        const reasons = absentAssignments
           .map((a) => {
             const absence = activeAbsences.find((abs) => abs.userId === a.userId)!;
             return {
@@ -218,6 +218,9 @@ export const getCriticalShifts = async (req: Request, res: Response, next: NextF
               reason: absence.type === 'SICKNESS' ? 'Krankmeldung' : 'Urlaub',
             };
           });
+
+        const coverageBufferBeforeAbsences = Math.max(assignedCount - shift.requiredEmployees, 0);
+        const coveredAbsences = Math.max(absentCount - shortage, 0);
 
         return {
           shiftId: shift.id,
@@ -228,6 +231,10 @@ export const getCriticalShifts = async (req: Request, res: Response, next: NextF
           requiredEmployees: shift.requiredEmployees,
           availableEmployees: availableCount,
           shortage,
+          assignedEmployees: assignedCount,
+          absentEmployees: absentCount,
+          coveredAbsences,
+          coverageBufferBeforeAbsences,
           reasons,
         };
       })

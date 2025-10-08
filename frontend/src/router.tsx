@@ -23,6 +23,7 @@ import RequireRole from '@/features/auth/RequireRole'
 import SystemPage from '@/pages/System'
 import AbsencesList from '@/features/absences/AbsencesList'
 import UserProfile from '@/features/users/UserProfile'
+import UserPreferences from '@/features/users/UserPreferences'
 
 export const router = createBrowserRouter([
   {
@@ -68,6 +69,16 @@ export const router = createBrowserRouter([
           { path: 'users/:id/profile', element: (
             <RequireRole roles={['ADMIN','DISPATCHER','EMPLOYEE','MANAGER']}>
               <UserProfile />
+            </RequireRole>
+          ) },
+          { path: 'users/me/preferences', element: (
+            <RequireRole roles={['ADMIN','DISPATCHER','EMPLOYEE','MANAGER']}>
+              <UserPreferences />
+            </RequireRole>
+          ) },
+          { path: 'users/:id/preferences', element: (
+            <RequireRole roles={['ADMIN','DISPATCHER','EMPLOYEE','MANAGER']}>
+              <UserPreferences />
             </RequireRole>
           ) },
           { path: 'shifts', element: (

@@ -59,7 +59,7 @@ oder kürzer:
    - Upload-Routes existieren, werden aber 404/500 geben
 
 2. **Test-Daten**:
-   - Script: `npm run seed:test-absences` (im backend/)
+   - Script: `npm run seed` (im backend/)
    - Voraussetzung: DATABASE_URL muss gesetzt sein
    - Erstellt: 8 Mitarbeiter, 4 Sites, 35 Schichten, 8 Abwesenheits-Szenarien
 
@@ -122,7 +122,7 @@ oder kürzer:
 11. ✅ Migration-Drift geschlossen: `absence_documents`, `object_clearances` als nachträgliche SQL-Migrationen hinzugefügt
 12. ✅ Pending-Approvals UX verbessert: detaillierte Schichtliste inkl. Kapazitätsstatus + softer Refresh nach Ersatz-Zuweisung
 13. ✅ Backend-Kapazitätsberechnung nutzt tatsächliche Schichtzuweisungen (keine bloßen Clearance-Pools mehr)
-14. ✅ Dev-Setup: `.env` auf `PUBLIC_HOST=localhost` gestellt, Docker-Compose neu ausgerollt, DB-Reset + `seed:test-absences`
+14. ✅ Dev-Setup: `.env` auf `PUBLIC_HOST=localhost` gestellt, Docker-Compose neu ausgerollt, DB-Reset + `npm run seed`
 15. ✅ Replacement-Modal meldet jetzt den zugewiesenen Mitarbeiter + Dashboard zeigt sofortigen Status/Toast
 16. ✅ Pending-Karten: Scrollbares Schicht-Panel, Expand/Collapse, 3-Linien Teaser, Hinweise zu Neubefüllung
 
@@ -138,6 +138,14 @@ oder kürzer:
    - Emoji statt Icons (unprofessionell)
 3. ✅ **ENTSCHEIDUNG**: Option A - Refactoring ZUERST, dann Intelligent Replacement
 4. ✅ **Komplette Feature-Spec erstellt**: `docs/FEATURE_INTELLIGENT_REPLACEMENT.md` (1200+ Zeilen)
+
+### Session 5 (2025-10-08) – Konsolidierter Seed & Präferenz-Editor
+- ✅ Einheitsseed implementiert (`npm run seed`): legt komplette Demo-Landschaft an (Admins, Dispatcher, 10 Kernmitarbeiter, Replacement-Kandidaten, Sites, Clearances, Präferenzen, Workloads, Schichten, Abwesenheiten, Events, Vorfälle).
+- ✅ Altes Duo (`seed:test-absences`, `seed:intelligent-replacement`) entfernt, Doku/Guides auf neuen Gesamtseed umgestellt (README, HEUTE_ABEND_TESTEN, Roadmap, Release Notes, Quick-Commands).
+- ✅ Dashboard-Karte erweitert: zeigt jetzt zusätzlich `Zugewiesen`, `Abwesend`, `Bereits abgedeckt`, damit Überbuchungen transparent bleiben.
+- ✅ Employee-Preferences-API (GET/PUT `/api/users/:id/preferences`) + Frontend-Editor (`/users/:id/preferences`, `/users/me/preferences`) verdrahtet; neuer Vitest für API-Stubs (`user.preferences.test.ts`).
+- ✅ Intelligent-Replacement-Jobs aktiviert (Workload-/Fairness-Cron) + Compliance-Hook nach Schichtzuweisungen.
+- ⚠️ Offene Punkte für morgen: Login-Limiter Reset-Logik (TTL), Integrationstest für `GET /api/dashboard/critical`, Performance-Test Replacement-Service (siehe TODO).
    - Phase 1: Dashboard Refactoring (v1.7.1)
    - Phase 2a: Datenmodell (EmployeePreferences, EmployeeWorkload, ComplianceViolation)
    - Phase 2b: Backend Scoring-Engine (Workload/Compliance/Fairness/Preference Scores)

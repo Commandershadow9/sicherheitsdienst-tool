@@ -47,7 +47,7 @@ All notable changes to this project will be documented in this file.
     - Metriken-Grid: Auslastung, Ruhezeit, Nachtschichten, Ersatz-Einsätze
     - Detail-Scores aufklappbar (Compliance/Präferenz/Fairness/Workload)
   - **Test-Daten Seed**:
-    - Script: `npm run seed:intelligent-replacement`
+    - Script: `npm run seed`
     - 4 Test-Kandidaten mit diversen Profilen (OPTIMAL, GOOD, ACCEPTABLE, NOT_RECOMMENDED)
     - Realistische Metriken, Präferenzen, Workload-Daten
   - **Dokumentation**:
@@ -98,10 +98,10 @@ Wenn du von v1.7.x auf v1.8.0 upgradest:
 2. **Seed-Daten neu laden**:
    ```bash
    # Test-Abwesenheiten
-   docker compose exec api npm run seed:test-absences
+   docker compose exec api npm run seed
 
    # Intelligent Replacement Test-Kandidaten
-   docker compose exec api npm run seed:intelligent-replacement
+   docker compose exec api npm run seed
    ```
 
 3. **Frontend .env prüfen**:
@@ -197,7 +197,7 @@ Wenn du von v1.7.x auf v1.8.0 upgradest:
   - Filtert nach: ObjectClearance (ACTIVE), keine Konflikte, verfügbar
   - Modal zeigt: Name, Qualifikationen, Verfügbarkeit
 - **Krankmeldung Manager-Benachrichtigung**: Auto-approved aber Manager wird informiert
-- **Test-Daten Script**: `npm run seed:test-absences`
+- **Test-Daten Script**: `npm run seed`
   - 8 Mitarbeiter mit unterschiedlichen Urlaubstagen
   - 4 Sites (Shoppingcenter, Büro, Industrie, Krankenhaus)
   - 35 Schichten über 2 Wochen

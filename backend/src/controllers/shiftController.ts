@@ -6,6 +6,7 @@ import { sendShiftChangedEmail } from '../services/emailService';
 import { streamCsv } from '../utils/csv';
 import { submitAuditEvent } from '../utils/audit';
 import { findReplacementCandidatesForShift, findReplacementCandidatesForShiftV2 } from '../services/replacementService';
+import { checkComplianceAfterAssignment } from '../jobs/intelligentReplacementJobs';
 
 const EMAIL_FLAG = 'EMAIL_NOTIFY_SHIFTS';
 
@@ -680,6 +681,10 @@ export const assignUserToShift = async (req: Request, res: Response, next: NextF
         },
       },
     });
+
+    checkComplianceAfterAssignment(assignment.id).catch((error: unknown) =>
+      logger.error('Compliance-Check nach Zuweisung fehlgeschlagen: %o', error),
+    );
 
     await submitAuditEvent(req, {
       action: 'SHIFT.ASSIGN',

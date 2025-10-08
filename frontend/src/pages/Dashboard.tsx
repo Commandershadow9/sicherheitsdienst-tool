@@ -64,14 +64,8 @@ export default function Dashboard() {
   )
 
   const handleReplacementAssignSuccess = useCallback(
-    (payload?: { shiftId: string; candidate: { firstName: string; lastName: string } }) => {
-      const info = payload
-        ? {
-            shiftId: payload.shiftId,
-            candidateName: `${payload.candidate.firstName} ${payload.candidate.lastName}`,
-          }
-        : undefined
-      replacementModal.handleAssignmentSuccess(info)
+    (payload?: { shiftId: string; candidateName: string }) => {
+      replacementModal.handleAssignmentSuccess(payload)
     },
     [replacementModal]
   )

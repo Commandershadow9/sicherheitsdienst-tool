@@ -24,23 +24,17 @@ Nach der Docker-Migration sind die Testdaten weg! **Zuerst Seeds ausführen**:
 
 ```bash
 # Im Projekt-Root-Verzeichnis
-
-# Test-Abwesenheiten (Dashboard-Daten)
-docker compose exec api npm run seed:test-absences
-
-# Intelligent Replacement Test-Kandidaten (4 Profile)
-docker compose exec api npm run seed:intelligent-replacement
+docker compose exec api npm run seed
 ```
 
-**Erwartete Ausgabe**:
+**Erwartete Highlights**:
 ```
-✅ Created shift: Test-Schicht für Intelligent Replacement
-✅ Created user: Optimal Candidate (OPTIMAL)
-✅ Created user: Good Candidate (GOOD)
-✅ Created user: Acceptable Candidate (ACCEPTABLE)
-✅ Created user: Not Recommended Candidate (NOT_RECOMMENDED)
-✅ Created absence: Absent Employee krank
-✅ Seed completed successfully!
+👥 Benutzer & Profile erstellt
+🏢 Einsatzorte erstellt
+🎯 Mitarbeiter-Präferenzen gespeichert
+📅 Schichten & Zuweisungen erstellt
+🤖 Intelligent-Replacement-Daten vorbereitet
+🎪 Events (Einsätze) erstellt
 ```
 
 ---
@@ -204,8 +198,8 @@ docker compose restart api
 
 **Lösung**:
 ```bash
-# Seeds erneut ausführen
-docker compose exec api npm run seed:intelligent-replacement
+# Seed erneut ausführen
+docker compose exec api npm run seed
 
 # Logs live beobachten
 docker logs -f sicherheitsdienst-api
@@ -221,7 +215,7 @@ docker logs -f sicherheitsdienst-api
 
 ## 📋 Checkliste für heute Abend
 
-- [ ] **Schritt 1**: Seeds ausführen (test-absences + intelligent-replacement)
+- [ ] **Schritt 1**: Seed ausführen (`npm run seed`)
 - [ ] **Schritt 2**: Login testen (admin@sicherheitsdienst.de)
 - [ ] **Schritt 3**: Dashboard öffnen (Daten sichtbar?)
 - [ ] **Schritt 4**: Ersatz-Mitarbeiter-Modal öffnen
@@ -282,9 +276,8 @@ docker logs -f project-web-1
 # Alle Container-Status
 docker ps
 
-# Seeds erneut ausführen
-docker compose exec api npm run seed:test-absences
-docker compose exec api npm run seed:intelligent-replacement
+# Seed erneut ausführen
+docker compose exec api npm run seed
 
 # Backend neu starten
 docker compose restart api

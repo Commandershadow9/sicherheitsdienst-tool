@@ -9,6 +9,10 @@ export type CriticalShift = {
   requiredEmployees: number
   availableEmployees: number
   shortage: number
+  assignedEmployees: number
+  absentEmployees: number
+  coveredAbsences: number
+  coverageBufferBeforeAbsences: number
   reasons: Array<{
     employeeName: string
     reason: string

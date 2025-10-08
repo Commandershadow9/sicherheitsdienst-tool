@@ -1,8 +1,11 @@
 import app from './app';
 import logger from './utils/logger';
 import prisma from './utils/prisma';
+import { startIntelligentReplacementSchedulers } from './jobs/intelligentReplacementJobs';
 
 const PORT = parseInt(process.env.PORT || '3001', 10);
+
+startIntelligentReplacementSchedulers();
 
 const server = app.listen(PORT, '0.0.0.0', () => {
   logger.info('🚀 ================================');

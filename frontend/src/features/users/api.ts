@@ -52,6 +52,24 @@ export type EmployeeProfile = {
   updatedAt: string
 }
 
+export type EmployeePreferences = {
+  userId: string
+  prefersNightShifts: boolean
+  prefersDayShifts: boolean
+  prefersWeekends: boolean
+  targetMonthlyHours: number
+  minMonthlyHours: number
+  maxMonthlyHours: number
+  flexibleHours: boolean
+  prefersLongShifts: boolean
+  prefersShortShifts: boolean
+  prefersConsecutiveDays: number | null
+  minRestDaysPerWeek: number
+  preferredSiteIds: string[]
+  avoidedSiteIds: string[]
+  notes: string | null
+}
+
 export type UserProfileResponse = {
   user: {
     id: string
@@ -122,5 +140,15 @@ export async function deleteDocument(userId: string, documentId: string) {
   const res = await api.delete<{ success: boolean; data: UserProfileResponse }>(
     `/users/${userId}/profile/documents/${documentId}`,
   )
+  return res.data.data
+}
+
+export async function fetchEmployeePreferences(userId: string) {
+  const res = await api.get<{ success: boolean; data: EmployeePreferences }>(`/users/${userId}/preferences`)
+  return res.data.data
+}
+
+export async function updateEmployeePreferences(userId: string, payload: Partial<EmployeePreferences>) {
+  const res = await api.put<{ success: boolean; data: EmployeePreferences }>(`/users/${userId}/preferences`, payload)
   return res.data.data
 }

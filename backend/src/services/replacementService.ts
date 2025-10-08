@@ -304,12 +304,12 @@ export async function findReplacementCandidatesForShiftV2(
             targetHours: candidateScore.metrics.targetMonthHours,
             utilizationPercent: candidateScore.metrics.utilizationPercent,
             restHours: candidateScore.metrics.restHours,
-            weeklyHours: 0, // TODO: Implement weekly hours tracking
+            weeklyHours: candidateScore.metrics.maxWeeklyHours,
             consecutiveDays: candidateScore.metrics.consecutiveDaysWorked,
             nightShiftCount: candidateScore.metrics.nightShiftsThisMonth,
             avgNightShiftCount: candidateScore.metrics.teamAverageNightShifts,
-            replacementCount: 0, // TODO: Implement replacement count tracking
-            avgReplacementCount: 0, // TODO: Implement team average replacement count
+            replacementCount: candidateScore.metrics.replacementCount,
+            avgReplacementCount: candidateScore.metrics.teamAverageReplacementCount,
           },
           warnings,
         };

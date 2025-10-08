@@ -593,6 +593,8 @@ export default function UserProfile() {
     }
   }
 
+  const preferencePath = params.id === 'me' || !params.id ? '/users/me/preferences' : `/users/${params.id}/preferences`
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between gap-3 flex-wrap">
@@ -602,9 +604,14 @@ export default function UserProfile() {
           </h1>
           <p className="text-sm text-muted-foreground">{profile.user.email}</p>
         </div>
-        <Button variant="secondary" onClick={handleNavigateBack}>
-          Zurück
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => navigate(preferencePath)}>
+            Präferenzen
+          </Button>
+          <Button variant="secondary" onClick={handleNavigateBack}>
+            Zurück
+          </Button>
+        </div>
       </div>
 
       {/* Übersicht */}

@@ -73,9 +73,8 @@
 ### v1.9.0 - Testdaten & Verifikation (ETA: heute Abend)
 **URGENT**: Nach Docker-Migration müssen Seeds neu ausgeführt werden
 
-- [ ] Seeds in Docker-Umgebung ausführen
-  - [ ] `docker compose exec api npm run seed:test-absences`
-  - [ ] `docker compose exec api npm run seed:intelligent-replacement`
+- [ ] Seed in Docker-Umgebung ausführen
+  - [ ] `docker compose exec api npm run seed`
 - [ ] Dashboard testen (4 Test-Kandidaten sichtbar?)
 - [ ] Scoring-Anzeige testen (Farben: grün/gelb/orange/rot)
 - [ ] Metriken-Grid testen (Auslastung, Ruhezeit, Nachtschichten)

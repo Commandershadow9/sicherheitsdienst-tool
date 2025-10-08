@@ -35,6 +35,15 @@ const prisma = new PrismaClient();
 
 // ==================== Types ====================
 
+type TeamAverageCacheEntry = {
+  avgNightShifts: number;
+  avgReplacementCount: number;
+  replacementCounts: Map<string, number>;
+  fetchedAt: number;
+};
+
+const teamAverageCache = new Map<string, TeamAverageCacheEntry>();
+
 export interface CandidateScore {
   userId: string;
   totalScore: number; // 0-100 (gewichteter Durchschnitt)
@@ -52,6 +61,7 @@ export interface CandidateScore {
     currentMonthHours: number;
     targetMonthHours: number;
     utilizationPercent: number;
+    maxWeeklyHours: number;
 
     lastShiftEnd: Date | null;
     nextShiftStart: Date;
@@ -64,6 +74,8 @@ export interface CandidateScore {
 
     nightShiftsThisMonth: number;
     teamAverageNightShifts: number;
+    replacementCount: number;
+    teamAverageReplacementCount: number;
 
     preferenceMatch: {
       shiftType: 'MATCH' | 'NEUTRAL' | 'MISMATCH'; // Nacht vs Tag
@@ -211,7 +223,16 @@ async function calculateConsecutiveDays(userId: string): Promise<number> {
 /**
  * Berechnet Team-Durchschnitt für Fairness-Score
  */
-async function calculateTeamAverages(currentMonth: number, currentYear: number) {
+async function getReplacementStats(currentMonth: number, currentYear: number) {
+  const cacheKey = `${currentYear}-${currentMonth}`;
+  const cached = teamAverageCache.get(cacheKey);
+  if (cached && Date.now() - cached.fetchedAt < 5 * 60 * 1000) {
+    return cached;
+  }
+
+  const monthStart = new Date(currentYear, currentMonth - 1, 1);
+  const monthEnd = new Date(currentYear, currentMonth, 0, 23, 59, 59, 999);
+
   const workloads = await prisma.employeeWorkload.findMany({
     where: {
       month: currentMonth,
@@ -219,24 +240,90 @@ async function calculateTeamAverages(currentMonth: number, currentYear: number) 
     },
   });
 
+  const assignments = await prisma.shiftAssignment.findMany({
+    where: {
+      status: { in: ['ASSIGNED', 'CONFIRMED', 'STARTED', 'COMPLETED'] },
+      assignedAt: {
+        gte: monthStart,
+        lte: monthEnd,
+      },
+      shift: {
+        startTime: {
+          gte: monthStart,
+          lte: monthEnd,
+        },
+      },
+    },
+    select: {
+      userId: true,
+      assignedAt: true,
+      shift: {
+        select: {
+          startTime: true,
+        },
+      },
+    },
+  });
+
   if (workloads.length === 0) {
-    return { avgNightShifts: 0, avgReplacementCount: 0 };
+    const emptyEntry: TeamAverageCacheEntry = {
+      avgNightShifts: 0,
+      avgReplacementCount: 0,
+      replacementCounts: new Map(),
+      fetchedAt: Date.now(),
+    };
+    teamAverageCache.set(cacheKey, emptyEntry);
+    return emptyEntry;
   }
 
   const totalNightShifts = workloads.reduce((sum, w) => sum + w.nightShiftCount, 0);
   const avgNightShifts = totalNightShifts / workloads.length;
 
-  // Replacement Count kann später über ein separates Feld getrackt werden
-  // Für jetzt verwenden wir einen Dummy-Wert
-  const avgReplacementCount = 0;
+  const replacementCounts = new Map<string, number>();
+  let totalReplacements = 0;
 
-  return { avgNightShifts, avgReplacementCount };
+  assignments.forEach((assignment) => {
+    const shiftStart = new Date(assignment.shift.startTime).getTime();
+    const assignedAt = new Date(assignment.assignedAt).getTime();
+    const diffHours = (shiftStart - assignedAt) / (1000 * 60 * 60);
+    if (diffHours <= 24) {
+      const previous = replacementCounts.get(assignment.userId) || 0;
+      replacementCounts.set(assignment.userId, previous + 1);
+      totalReplacements += 1;
+    }
+  });
+
+  const usersConsidered = replacementCounts.size || workloads.length || 1;
+  const avgReplacementCount = usersConsidered ? totalReplacements / usersConsidered : 0;
+
+  const entry: TeamAverageCacheEntry = {
+    avgNightShifts,
+    avgReplacementCount,
+    replacementCounts,
+    fetchedAt: Date.now(),
+  };
+
+  teamAverageCache.set(cacheKey, entry);
+  return entry;
+}
+
+async function calculateTeamAverages(currentMonth: number, currentYear: number) {
+  const { avgNightShifts, avgReplacementCount, replacementCounts } = await getReplacementStats(
+    currentMonth,
+    currentYear,
+  );
+
+  return {
+    avgNightShifts,
+    avgReplacementCount,
+    replacementCounts,
+  };
 }
 
 /**
  * Helper: ISO Week Number (YYYY-WW)
  */
-function getISOWeek(date: Date): string {
+export function getISOWeek(date: Date): string {
   const target = new Date(date.valueOf());
   const dayNr = (date.getDay() + 6) % 7;
   target.setDate(target.getDate() - dayNr + 3);
@@ -366,6 +453,7 @@ export async function calculateCandidateScore(userId: string, shift: Shift): Pro
 
   // Team-Durchschnitte
   const teamAverages = await calculateTeamAverages(currentMonth, currentYear);
+  const userReplacementCount = teamAverages.replacementCounts.get(userId) ?? 0;
 
   // ========== Scores berechnen ==========
   const workloadScore = calculateWorkloadScore(workload.totalHours, targetHours);
@@ -373,7 +461,7 @@ export async function calculateCandidateScore(userId: string, shift: Shift): Pro
   const fairnessScore = calculateFairnessScore(
     workload.nightShiftCount,
     teamAverages.avgNightShifts,
-    0, // TODO: Replacement Count tracken
+    userReplacementCount,
     teamAverages.avgReplacementCount
   );
   const preferenceScore = calculatePreferenceScore(shift, preferences, workload.totalHours, shiftDuration);
@@ -383,12 +471,12 @@ export async function calculateCandidateScore(userId: string, shift: Shift): Pro
 
   // ========== Metriken sammeln ==========
   const isNightShift = shiftStart.getHours() >= 22 || shiftStart.getHours() < 6;
-  const isWeekend = shiftStart.getDay() === 0 || shiftStart.getDay() === 6;
 
   const metrics: CandidateScore['metrics'] = {
     currentMonthHours: workload.totalHours,
     targetMonthHours: targetHours,
     utilizationPercent: (workload.totalHours / targetHours) * 100,
+    maxWeeklyHours: workload.maxWeeklyHours,
 
     lastShiftEnd,
     nextShiftStart: shiftStart,
@@ -401,6 +489,8 @@ export async function calculateCandidateScore(userId: string, shift: Shift): Pro
 
     nightShiftsThisMonth: workload.nightShiftCount,
     teamAverageNightShifts: teamAverages.avgNightShifts,
+    replacementCount: userReplacementCount,
+    teamAverageReplacementCount: teamAverages.avgReplacementCount,
 
     preferenceMatch: {
       shiftType:

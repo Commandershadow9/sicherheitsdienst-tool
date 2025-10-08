@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { asyncHandler } from '../middleware/asyncHandler';
 import * as userController from '../controllers/userController';
 import * as employeeProfileController from '../controllers/employeeProfileController';
+import * as employeePreferencesController from '../controllers/employeePreferencesController';
 import { authenticate, authorize, authorizeSelfOr } from '../middleware/auth';
 import { validate } from '../middleware/validate';
 import { createUserSchema, updateUserSchema } from '../validations/userValidation';
@@ -10,6 +11,7 @@ import {
   createQualificationSchema,
   createDocumentSchema,
 } from '../validations/employeeProfileValidation';
+import { updateEmployeePreferencesSchema } from '../validations/employeePreferencesValidation';
 import { userListQuerySchema } from '../validators/userValidators';
 import { createWriteRateLimit } from '../middleware/rateLimit';
 
@@ -111,4 +113,21 @@ router.all('/:id/profile/qualifications', authenticate, methodNotAllowed(['POST'
 router.all('/:id/profile/qualifications/:qualificationId', authenticate, methodNotAllowed(['DELETE']));
 router.all('/:id/profile/documents', authenticate, methodNotAllowed(['POST']));
 router.all('/:id/profile/documents/:documentId', authenticate, methodNotAllowed(['DELETE']));
+
+router.get(
+  '/:id/preferences',
+  authenticate,
+  authorizeSelfOr('ADMIN', 'MANAGER'),
+  asyncHandler(employeePreferencesController.getEmployeePreferences),
+);
+
+router.put(
+  '/:id/preferences',
+  authenticate,
+  authorizeSelfOr('ADMIN', 'MANAGER'),
+  validate(updateEmployeePreferencesSchema),
+  asyncHandler(employeePreferencesController.upsertEmployeePreferences),
+);
+
+router.all('/:id/preferences', authenticate, methodNotAllowed(['GET', 'PUT']));
 export default router;

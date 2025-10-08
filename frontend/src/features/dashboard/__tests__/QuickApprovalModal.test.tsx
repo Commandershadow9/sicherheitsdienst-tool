@@ -19,6 +19,13 @@ const baseApproval: PendingApproval = {
   requestedDays: 3,
   reason: 'Familientermin',
   createdAt: '2025-10-01T08:00:00Z',
+  leaveDaysSaldo: {
+    annualLeaveDays: 30,
+    takenDays: 12,
+    requestedDays: 3,
+    remainingDays: 15,
+    remainingAfterApproval: 12,
+  },
   warnings: {
     affectedShifts: 2,
     criticalShifts: 1,
