@@ -88,12 +88,15 @@ class RedisRateLimitStore {
     const ttlMs = this.windowMs;
     const multi = this.client.multi();
     multi.incr(redisKey);
-    multi.pexpire(redisKey, ttlMs, 'NX');
+    multi.pexpire(redisKey, ttlMs);
     multi.pttl(redisKey);
     const [countRes, _expireRes, pttlRes] = (await multi.exec()) as any[];
     const totalHits = Number(Array.isArray(countRes) ? countRes[1] : countRes);
-    const pttl = Number(Array.isArray(pttlRes) ? pttlRes[1] : pttlRes);
-    const resetTime = new Date(Date.now() + (pttl > 0 ? pttl : ttlMs));
+    let pttl = Number(Array.isArray(pttlRes) ? pttlRes[1] : pttlRes);
+    if (!Number.isFinite(pttl) || pttl <= 0) {
+      pttl = ttlMs;
+    }
+    const resetTime = new Date(Date.now() + pttl);
     return { totalHits, resetTime };
   }
 
@@ -112,6 +115,8 @@ class RedisRateLimitStore {
   }
 }
 
+const redisStores = new Set<RedisRateLimitStore>();
+
 function createExpressLimiter(opts: {
   windowMs: number;
   max: number;
@@ -124,6 +129,7 @@ function createExpressLimiter(opts: {
   if (useRedis) {
     const client = new Redis(process.env.REDIS_URL as string);
     store = new RedisRateLimitStore(client, opts.windowMs);
+    redisStores.add(store);
   }
 
   const handler = (req: Request, res: Response) => {
@@ -201,6 +207,19 @@ export function loginUserRateLimit(): RequestHandler {
 }
 
 // Test-Helfer (keine Wirkung mit express-rate-limit + Redis; hier nur Stub)
-export function __resetSecurityRateLimitStores() {
+export async function __resetSecurityRateLimitStores() {
   resetAuthLimitCounters();
+  if (!redisStores.size) return;
+  await Promise.all(
+    Array.from(redisStores, async (store) => {
+      try {
+        await store.resetAll();
+      } catch (err) {
+        if (process.env.NODE_ENV !== 'test') {
+          // eslint-disable-next-line no-console
+          console.warn('Failed to reset rate-limit store keyspace', err);
+        }
+      }
+    }),
+  );
 }

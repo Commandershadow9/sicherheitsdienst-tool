@@ -4,7 +4,7 @@ Kurz und lösungsorientiert.
 
 1) 429 beim Login
 - Ursache: Rate‑Limiter. Dev‑Stack ist großzügig, aber kann greifen.
-- Lösung: `docker compose -f docker-compose.dev.yml restart api` oder ENV-Werte prüfen. Das Frontend blockiert Wiederholungen bis `Retry-After`, zeigt Countdown & Hinweis – Wartezeit respektieren, kein Hard-Reload nötig.
+- Lösung: Fenster von `LOGIN_RATE_LIMIT_WINDOW_MS` (Default 15 Min) abwarten – der Limiter setzt sich automatisch zurück. Bei Bedarf ENV-Werte justieren oder `docker compose -f docker-compose.dev.yml restart api`. Das Frontend blockiert Wiederholungen bis `Retry-After`, zeigt Countdown & Hinweis – Wartezeit respektieren, kein Hard-Reload nötig.
 
 2) 401 auf /api/users
 - Ursache: FE verwendet nicht den zentralen Axios‑Client (kein Authorization Header).

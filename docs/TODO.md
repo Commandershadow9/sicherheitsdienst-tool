@@ -50,16 +50,19 @@ Stand: 2025-10-08 (nach v1.9.2 Planung und Code-Refactoring)
   - Akzeptanz: Integrationstest deckt ENV-Overrides (`LOGIN_RATE_LIMIT_MAX/_WINDOW_MS`) ab; Dev-Doku erklärt Default/Fallback klar (README/Troubleshooting aktualisiert, QA-Notiz).
 - [x] Frontend Feedback für 429 Login
   - Akzeptanz: UI zeigt dedizierten Hinweis + Retry-Countdown, wenn API 429 liefert; UX-Review bestätigt.
-- [ ] Login-Limiter Reset-Logik verbessern
-  - Status: Rate-Limit wird aktuell erst nach manuellem Redis-Flush aufgehoben.
-  - Morgen: TTL/Auto-Reset im Limiter implementieren, Unit-Test für Ablauf nach 60 s + README-Hinweis ergänzen.
-- [ ] Dashboard-Kritikdaten automatisiert prüfen
-  - Aufgabe: Integrationstest für `GET /api/dashboard/critical` mit den neuen Feldern (`assignedEmployees`, `absentEmployees`, `coveredAbsences`, `coverageBufferBeforeAbsences`).
-  - Ziel: Sicherstellen, dass „Fehlen“-Berechnung + Gründe bei überbuchten Schichten konsistent bleiben.
-- [ ] Replacement-API Performance-Check abschließen
-  - TODO aus Phase 2b: Lauffähigen Performance-Test (<500 ms) für `findReplacementCandidatesForShiftV2` schreiben, Seed-Daten nutzen.
-- [ ] Seed-Dokumentation in README synchron halten
-  - Aufgabe: Haupt-README um Abschnitt „Testdaten zurücksetzen“ (einheitlich `npm run seed`) erweitern, Screenshots nachziehen wenn verfügbar.
+- [x] Login-Limiter Reset-Logik verbessern
+  - TTL/Auto-Reset greift jetzt auch ohne manuellen Redis-Flush; Tests decken Ablauf nach 200 ms ab, README/Troubleshooting ergänzt.
+- [x] Dashboard-Kritikdaten automatisiert prüfen
+  - Neuer Integrationstest validiert `GET /api/dashboard/critical` inkl. Feldern `assignedEmployees`, `absentEmployees`, `coveredAbsences`, `coverageBufferBeforeAbsences`.
+- [x] Replacement-API Performance-Check abschließen
+  - Performance-Test nutzt reale Scoring-Engine mit 50 Kandidaten und bleibt stabil unter 500 ms.
+- [x] Seed-Dokumentation in README synchron halten
+  - README beschreibt nun explizit das Zurücksetzen der Testdaten via `npm run seed`.
+
+### Kurzfristig (nächste Session)
+- [ ] Abwesenheiten: ICS/Kalender-Export spezifizieren und MVP-Implementierung für `/api/absences/export.ics` vorbereiten (siehe `docs/planning/absences.md`).
+- [ ] Replacement-Service Observability: Prometheus-Kennzahlen für Score-Berechnung und Performance in `/api/stats` einspeisen.
+- [ ] Dashboard UX: StatsCard klickbar machen und Navigation zu gefilterten Ansichten hinterlegen (Feature-Note in `docs/FEATURE_DASHBOARD.md`).
 
 - [x] Monitoring: Alert-Routing (Grafana/Alertmanager) gegen Ops-Kanal verdrahten
   - Akzeptanz: Neue Audit-Warnungen (Queue, Direct/Flush-Failures, Prune) laufen im gewünschten Kanal auf.

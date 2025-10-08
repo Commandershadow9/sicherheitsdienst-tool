@@ -4,17 +4,29 @@ import { findReplacementCandidatesForShiftV2 } from '../replacementService';
 const mockCalculateCandidateScore = jest.fn();
 
 jest.mock('@prisma/client', () => {
-  (global as any).prismaMock = (global as any).prismaMock || {
-    shift: {
-      findUnique: jest.fn(),
-    },
-    absence: {
-      findMany: jest.fn(),
-    },
-    objectClearance: {
-      findMany: jest.fn(),
-    },
-  };
+  (global as any).prismaMock =
+    (global as any).prismaMock ||
+    {
+      shift: {
+        findUnique: jest.fn(),
+      },
+      absence: {
+        findMany: jest.fn(),
+      },
+      objectClearance: {
+        findMany: jest.fn(),
+      },
+      user: {
+        findUnique: jest.fn(),
+      },
+      shiftAssignment: {
+        findMany: jest.fn(),
+        findFirst: jest.fn(),
+      },
+      employeeWorkload: {
+        findMany: jest.fn(),
+      },
+    };
   return { PrismaClient: jest.fn(() => (global as any).prismaMock) };
 });
 
@@ -70,14 +82,18 @@ describe('findReplacementCandidatesForShiftV2', () => {
   beforeEach(() => {
     jest.clearAllMocks();
 
-    (global as any).prismaMock.shift.findUnique.mockReset();
-    (global as any).prismaMock.absence.findMany.mockReset();
-    (global as any).prismaMock.objectClearance.findMany.mockReset();
+  (global as any).prismaMock.shift.findUnique.mockReset();
+  (global as any).prismaMock.absence.findMany.mockReset();
+  (global as any).prismaMock.objectClearance.findMany.mockReset();
+  (global as any).prismaMock.user.findUnique.mockReset();
+  (global as any).prismaMock.shiftAssignment.findMany.mockReset();
+  (global as any).prismaMock.shiftAssignment.findFirst.mockReset();
+  (global as any).prismaMock.employeeWorkload.findMany.mockReset();
 
-    (global as any).prismaMock.shift.findUnique.mockResolvedValue({
-      ...baseShift,
-      assignments: [],
-    });
+  (global as any).prismaMock.shift.findUnique.mockResolvedValue({
+    ...baseShift,
+    assignments: [],
+  });
 
     (global as any).prismaMock.absence.findMany
       .mockResolvedValueOnce([]) // APPROVED absences
@@ -166,44 +182,104 @@ describe('findReplacementCandidatesForShiftV2', () => {
       },
     }));
 
-    (global as any).prismaMock.absence.findMany
-      .mockResolvedValueOnce([]) // APPROVED
-      .mockResolvedValueOnce([]); // REQUESTED
+    const shiftStart = baseShift.startTime;
+
+    (global as any).prismaMock.shift.findUnique.mockResolvedValue({
+      ...baseShift,
+      assignments: [],
+    });
+
+    (global as any).prismaMock.absence.findMany.mockImplementation(({ where }: any) => {
+      if (where?.status === 'APPROVED') {
+        return Promise.resolve([]);
+      }
+      if (where?.status === 'REQUESTED') {
+        return Promise.resolve([]);
+      }
+      return Promise.resolve([]);
+    });
+
     (global as any).prismaMock.objectClearance.findMany.mockResolvedValue(bulkCandidates);
 
-    mockCalculateCandidateScore.mockImplementation((userId: string, shift: any) => ({
-      userId,
-      totalScore: 70,
-      recommendation: 'GOOD',
-      color: 'yellow',
-      workloadScore: 70,
-      complianceScore: 80,
-      fairnessScore: 65,
-      preferenceScore: 75,
-      metrics: {
-        currentMonthHours: 110,
-        targetMonthHours: 160,
-        utilizationPercent: 68.7,
-        maxWeeklyHours: 40,
-        lastShiftEnd: new Date(now.getTime() - 12 * 60 * 60 * 1000),
-        nextShiftStart: shift.startTime,
-        restHours: 12,
-        restHoursRequired: 11,
-        restHoursOK: true,
-        consecutiveDaysWorked: 4,
-        restDaysLast14Days: 10,
-        nightShiftsThisMonth: 3,
-        teamAverageNightShifts: 3.2,
-        replacementCount: 2,
-        teamAverageReplacementCount: 1.4,
-        preferenceMatch: {
-          shiftType: 'MATCH',
-          shiftDuration: 'MATCH',
-          workloadLevel: 'MATCH',
+    (global as any).prismaMock.user.findUnique.mockImplementation(({ where }: any) =>
+      Promise.resolve({
+        id: where.id,
+        firstName: `First${where.id}`,
+        lastName: `Last${where.id}`,
+        preferences: {
+          id: `pref-${where.id}`,
+          userId: where.id,
+          prefersNightShifts: false,
+          prefersDayShifts: true,
+          prefersWeekends: false,
+          targetMonthlyHours: 160,
+          minMonthlyHours: 120,
+          maxMonthlyHours: 200,
+          flexibleHours: true,
+          prefersLongShifts: false,
+          prefersShortShifts: false,
+          prefersConsecutiveDays: 5,
+          minRestDaysPerWeek: 2,
+          preferredSiteIds: [],
+          avoidedSiteIds: [],
+          notes: null,
+          createdAt: new Date(),
+          updatedAt: new Date(),
         },
-      },
-      warnings: [],
-    }));
+      }),
+    );
+
+    (global as any).prismaMock.shiftAssignment.findFirst.mockImplementation(() =>
+      Promise.resolve({
+        shift: {
+          endTime: new Date(shiftStart.getTime() - 12 * 60 * 60 * 1000),
+        },
+      }),
+    );
+
+    (global as any).prismaMock.shiftAssignment.findMany.mockImplementation((args: any) => {
+      if (args?.select?.assignedAt) {
+        return Promise.resolve(
+          bulkCandidates.map((candidate: any, index: number) => ({
+            userId: candidate.userId,
+            assignedAt: new Date(shiftStart.getTime() - (6 + index % 3) * 60 * 60 * 1000),
+            shift: {
+              startTime: new Date(shiftStart.getTime() - (index % 2) * 60 * 60 * 1000),
+            },
+          })),
+        );
+      }
+
+      if (args?.include?.shift) {
+        return Promise.resolve(
+          [
+            { shift: { startTime: new Date(shiftStart.getTime() - 48 * 60 * 60 * 1000), endTime: new Date(shiftStart.getTime() - 40 * 60 * 60 * 1000) } },
+            { shift: { startTime: new Date(shiftStart.getTime() - 32 * 60 * 60 * 1000), endTime: new Date(shiftStart.getTime() - 24 * 60 * 60 * 1000) } },
+            { shift: { startTime: new Date(shiftStart.getTime() - 16 * 60 * 60 * 1000), endTime: new Date(shiftStart.getTime() - 8 * 60 * 60 * 1000) } },
+          ].map((entry) => ({
+            ...entry,
+            userId: args.where?.userId ?? 'candidate-mock',
+          })),
+        );
+      }
+
+      return Promise.resolve([]);
+    });
+
+    (global as any).prismaMock.employeeWorkload.findMany.mockResolvedValue(
+      bulkCandidates.map((candidate: any) => ({
+        userId: candidate.userId,
+        month: now.getMonth() + 1,
+        year: now.getFullYear(),
+        totalHours: 120,
+        nightShiftCount: 2,
+      })),
+    );
+
+    const actualIntelligentService = jest.requireActual('../intelligentReplacementService');
+    mockCalculateCandidateScore.mockImplementation((userId: string, shift: any) =>
+      actualIntelligentService.calculateCandidateScore(userId, shift),
+    );
 
     const start = performance.now();
     const result = await findReplacementCandidatesForShiftV2('shift-1');

@@ -154,6 +154,12 @@ oder kürzer:
 5. ✅ TODO.md aktualisiert mit kompletter Roadmap
 6. ✅ SESSION_NOTES.md aktualisiert
 
+### Session 6 (2025-10-08) – Rate-Limiter & Dashboard QA ✅
+- 🔁 Login-Limiter: Redis-basierter Store setzt TTL jetzt automatisch (kein manueller Flush nötig); Test prüft Reset-Fenster (200 ms) + README/Troubleshooting Hinweis ergänzt.
+- 📊 Dashboard Critical Endpoint: Integrationstest verifiziert neue Felder (`assignedEmployees`, `absentEmployees`, `coveredAbsences`, `coverageBufferBeforeAbsences`) samt Reason-Liste/Knappe Abdeckung.
+- ⚙️ Replacement-Service: Performance-Test nutzt reale Scoring-Engine (keine Mock-Scores) für 50 Kandidaten <500 ms; Prisma-Mocks liefern deterministische Workload/Teamdaten.
+- 📚 Docs: README enthält Abschnitt „Testdaten zurücksetzen“ (`npm run seed`), TODO/Session Notes aktualisiert.
+
 ### Session 5 (2025-10-04) – Dashboard Refactoring & Intelligent Replacement Phase 2a ✅
 **Arbeitsmodus**: Fortsetzung nach Token-Erschöpfung aus Session 4
 **Ziele**: Dashboard v1.7.1 Refactoring abschließen + Intelligent Replacement Phase 2a (Datenmodell)

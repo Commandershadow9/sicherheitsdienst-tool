@@ -67,6 +67,8 @@ Login‑Demo (Seeds)
 
 - Seed (manuell)
 - `docker compose -f docker-compose.dev.yml exec api sh -lc 'npm run -s seed'`
+- Testdaten zurücksetzen
+  - Gleiches Skript (`npm run seed`) lädt die vollständigen Demo-Daten erneut; bestehende Einträge werden zurückgesetzt und frische Accounts/Schichten/Präferenzdaten angelegt.
 
 ## Release-Checkliste (Tag & Container)
 
@@ -210,7 +212,7 @@ Beispiele
 - Tests decken Sofort-Schreibpfad, Queueing, Fehlerszenarien sowie Retention-Logik ab.
 
 ## Troubleshooting (Kurz)
-- 429 beim Login: Dev‑RateLimiter ist nahezu deaktiviert; das Frontend zeigt Countdown & Hinweis und blockiert Wiederholungen bis `Retry-After`. Bei dauerhaften 429 → API neu starten oder ENV prüfen (`LOGIN_RATE_LIMIT_MAX/_WINDOW_MS`).
+- 429 beim Login: Dev‑RateLimiter ist nahezu deaktiviert; das Frontend zeigt Countdown & Hinweis und blockiert Wiederholungen bis `Retry-After`. Bei dauerhaften 429 → Fenster von `LOGIN_RATE_LIMIT_WINDOW_MS` (Default 15 Min) abwarten oder ENV prüfen (`LOGIN_RATE_LIMIT_MAX/_WINDOW_MS`); der Limiter setzt sich nach Ablauf automatisch zurück.
 - Login- oder Netzwerkausfälle: UI meldet „Server nicht erreichbar“ statt stumm zu hängen. Tokens bleiben trotz Soft-Reload erhalten; harter Reload ist nicht mehr nötig.
 - 401 auf `/api/users`: Frontend MUSS zentralen `api`‑Client nutzen (Token‑Interceptor); keine nackten `fetch/axios`
 - Contract‑Tests: Dredd/Prism Workflow (manuell/cron) – siehe CI
