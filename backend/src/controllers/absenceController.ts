@@ -14,6 +14,7 @@ import {
   calculateLeaveDaysSaldo,
   type LeaveDaysSaldo,
 } from '../services/absenceCapacityService';
+import { generateICS } from '../utils/icsGenerator';
 
 export { calculateLeaveDaysSaldo } from '../services/absenceCapacityService';
 export type { LeaveDaysSaldo } from '../services/absenceCapacityService';
@@ -506,4 +507,91 @@ export const getReplacementCandidates = async (req: Request, res: Response, next
   } catch (error) {
     next(error);
   }
+};
+
+/**
+ * GET /api/absences/export.ics
+ * Exportiert Abwesenheiten als ICS-Datei (iCalendar-Format)
+ *
+ * Query-Parameter:
+ * - userId: Filter nach User (optional, EMPLOYEE sieht nur eigene)
+ * - status: Filter nach Status (optional)
+ * - from/to: Zeitraum-Filter (optional)
+ */
+export const exportAbsencesToICS = async (req: Request, res: Response) => {
+  const actor = req.user!;
+  const q = req.query as Record<string, string | undefined>;
+
+  const where: Prisma.AbsenceWhereInput = {};
+
+  // Permissions: EMPLOYEE sieht nur eigene Abwesenheiten
+  if (actor.role === 'EMPLOYEE') {
+    where.userId = actor.id;
+  } else if (q.userId) {
+    where.userId = q.userId;
+  }
+
+  // Filter nach Status
+  if (q.status && Object.values(AbsenceStatus).includes(q.status as AbsenceStatus)) {
+    where.status = q.status as AbsenceStatus;
+  }
+
+  // Zeitraum-Filter
+  const andConditions: Prisma.AbsenceWhereInput[] = [];
+  if (q.from) {
+    const fromDate = ensureDate(q.from, 'from');
+    andConditions.push({ endsAt: { gte: fromDate } });
+  }
+  if (q.to) {
+    const toDate = ensureDate(q.to, 'to');
+    andConditions.push({ startsAt: { lte: toDate } });
+  }
+  if (andConditions.length > 0) {
+    where.AND = andConditions;
+  }
+
+  // Abwesenheiten abrufen
+  const absences = await prisma.absence.findMany({
+    where,
+    select: {
+      id: true,
+      type: true,
+      status: true,
+      startsAt: true,
+      endsAt: true,
+      reason: true,
+      user: {
+        select: {
+          firstName: true,
+          lastName: true,
+          email: true,
+        },
+      },
+    },
+    orderBy: { startsAt: 'asc' },
+  });
+
+  // Kalender-Name
+  const calendarName =
+    where.userId && actor.role !== 'EMPLOYEE'
+      ? `Abwesenheiten - ${absences[0]?.user.firstName || 'Mitarbeiter'}`
+      : 'Meine Abwesenheiten';
+
+  // ICS generieren
+  const icsContent = generateICS(absences, calendarName);
+
+  // Audit-Log
+  await submitAuditEvent(req, {
+    action: 'ABSENCE_EXPORT_ICS',
+    resourceType: 'ABSENCE',
+    outcome: 'SUCCESS',
+    actorId: actor.id,
+    data: { count: absences.length, filters: q },
+  });
+
+  // Response Headers
+  const filename = `abwesenheiten-${new Date().toISOString().split('T')[0]}.ics`;
+  res.setHeader('Content-Type', 'text/calendar; charset=utf-8');
+  res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+  res.send(icsContent);
 };

@@ -13,6 +13,7 @@ import {
   cancelAbsence,
   previewCapacityWarnings,
   getReplacementCandidates,
+  exportAbsencesToICS,
 } from '../controllers/absenceController';
 import {
   uploadAbsenceDocument,
@@ -27,6 +28,9 @@ router.use(authenticate);
 // List & Create routes
 router.get('/', authorize('ADMIN', 'MANAGER', 'DISPATCHER', 'EMPLOYEE'), validate(listAbsenceQuerySchema), asyncHandler(listAbsences));
 router.post('/', authorize('ADMIN', 'MANAGER', 'DISPATCHER', 'EMPLOYEE'), validate(createAbsenceSchema), asyncHandler(createAbsence));
+
+// Export route (specific before /:id)
+router.get('/export.ics', authorize('ADMIN', 'MANAGER', 'DISPATCHER', 'EMPLOYEE'), asyncHandler(exportAbsencesToICS));
 
 // Specific routes BEFORE generic /:id route (Express routing order matters!)
 router.get('/:id/preview-warnings', authorize('ADMIN', 'MANAGER'), asyncHandler(previewCapacityWarnings));
@@ -61,6 +65,7 @@ router.get('/:id', authorize('ADMIN', 'MANAGER', 'DISPATCHER', 'EMPLOYEE'), asyn
 
 // methodNotAllowed handlers (same order as routes)
 router.all('/', methodNotAllowed(['GET', 'POST']));
+router.all('/export.ics', methodNotAllowed(['GET']));
 router.all('/:id/preview-warnings', methodNotAllowed(['GET']));
 router.all('/:id/replacement-candidates', methodNotAllowed(['GET']));
 router.all('/:id/approve', methodNotAllowed(['POST']));

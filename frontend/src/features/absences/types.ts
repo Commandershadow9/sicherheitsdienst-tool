@@ -47,6 +47,7 @@ export type ReplacementCandidateV2 = {
     currentHours: number
     targetHours: number
     utilizationPercent: number
+    utilizationAfterAssignment: number
     restHours: number
     weeklyHours: number
     consecutiveDays: number

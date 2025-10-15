@@ -11,8 +11,7 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { toast } from 'sonner'
 import { api } from '@/lib/api'
-import type { EmployeePreferences } from './api'
-import { fetchEmployeePreferences, updateEmployeePreferences } from './api'
+import { fetchEmployeePreferences, updateEmployeePreferences, type EmployeePreferences } from './api'
 
 type SiteOption = { id: string; name: string; city?: string | null }
 

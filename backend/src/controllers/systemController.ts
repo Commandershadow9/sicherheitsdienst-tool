@@ -8,6 +8,7 @@ import { getQueueSnapshot, type QueueState } from '../utils/queueStats';
 import { getRuntimeMetrics } from '../utils/runtimeMetrics';
 import { getNotificationStreamStats } from '../utils/notificationEvents';
 import { getAuditLogState } from '../services/auditLogService';
+import { register } from '../utils/metrics';
 
 // Lightweight health endpoint (no deps)
 export const healthz = async (_req: Request, res: Response): Promise<void> => {
@@ -208,6 +209,50 @@ export const getSystemStats = async (req: Request, res: Response, next: NextFunc
 
     const auditState = getAuditLogState();
 
+    // Replacement-Metriken aus Prometheus Registry extrahieren
+    const metrics = await register.getMetricsAsJSON();
+    const replacementMetrics = {
+      candidatesEvaluated:
+        metrics
+          .find((m: any) => m.name === 'replacement_candidates_evaluated_total')
+          ?.values?.reduce((sum: number, v: any) => sum + (v.value || 0), 0) || 0,
+      avgCalculationDurationMs:
+        (metrics.find((m: any) => m.name === 'replacement_calculation_duration_seconds')?.values?.[0]?.value || 0) *
+        1000,
+      scoreDistribution: {
+        optimal:
+          metrics
+            .find(
+              (m: any) => m.name === 'replacement_score_total' && m.labels?.recommendation === 'OPTIMAL',
+            )
+            ?.values?.reduce((sum: number, v: any) => sum + (v.value || 0), 0) || 0,
+        good:
+          metrics
+            .find(
+              (m: any) => m.name === 'replacement_score_total' && m.labels?.recommendation === 'GOOD',
+            )
+            ?.values?.reduce((sum: number, v: any) => sum + (v.value || 0), 0) || 0,
+        acceptable:
+          metrics
+            .find(
+              (m: any) => m.name === 'replacement_score_total' && m.labels?.recommendation === 'ACCEPTABLE',
+            )
+            ?.values?.reduce((sum: number, v: any) => sum + (v.value || 0), 0) || 0,
+        notRecommended:
+          metrics
+            .find(
+              (m: any) => m.name === 'replacement_score_total' && m.labels?.recommendation === 'NOT_RECOMMENDED',
+            )
+            ?.values?.reduce((sum: number, v: any) => sum + (v.value || 0), 0) || 0,
+      },
+      avgScoreComponents: {
+        workload: metrics.find((m: any) => m.name === 'replacement_score_components_avg' && m.labels?.component === 'workload')?.values?.[0]?.value || 0,
+        compliance: metrics.find((m: any) => m.name === 'replacement_score_components_avg' && m.labels?.component === 'compliance')?.values?.[0]?.value || 0,
+        fairness: metrics.find((m: any) => m.name === 'replacement_score_components_avg' && m.labels?.component === 'fairness')?.values?.[0]?.value || 0,
+        preference: metrics.find((m: any) => m.name === 'replacement_score_components_avg' && m.labels?.component === 'preference')?.values?.[0]?.value || 0,
+      },
+    };
+
     res.json({
       success: true,
       message: 'System-Statistiken erfolgreich abgerufen',
@@ -221,6 +266,7 @@ export const getSystemStats = async (req: Request, res: Response, next: NextFunc
           total: totalShifts,
           upcoming: upcomingShifts,
         },
+        replacement: replacementMetrics,
         incidents: {
           open: openIncidents,
         },

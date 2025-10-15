@@ -1,8 +1,35 @@
 # Intelligent Replacement System (v1.8.0+)
 
-**Status**: Geplant (Roadmap definiert)
-**Priorität**: P1 (Nach Dashboard Refactoring)
+**Status**: ✅ Implementiert (Phase 2a/2b abgeschlossen, Verbesserungen geplant)
+**Version**: v1.8.0+
 **Ziel**: KI-gestützte Ersatz-Mitarbeiter-Auswahl mit Fairness, Compliance & Mitarbeiter-Präferenzen
+
+**Nächste Schritte**:
+- 📊 Observability (Metriken für Scoring, Laufzeit-Tracking)
+- 🎨 UX-Verbesserungen (siehe `docs/planning/replacement-scoring-improvements.md`)
+  - Farbkodierung optimieren (niedrige Auslastung = grün)
+  - Tie-Breaker bei gleichem Score (mehr Ruhezeit bevorzugen)
+  - Vorschau: "Auslastung nach Zuweisung"
+  - Ruhezeit exakt anzeigen (nicht nur "24h")
+
+---
+
+## Implementierungsstatus
+
+| Phase | Status | Beschreibung |
+|-------|--------|--------------|
+| **Phase 1** | ✅ Abgeschlossen | Dashboard Refactoring |
+| **Phase 2a** | ✅ Abgeschlossen | Datenmodell (Preferences, Workload, Violations) |
+| **Phase 2b** | ✅ Abgeschlossen | Scoring-Engine (Backend, 4 Algorithmen) |
+| **Phase 2c** | ✅ Abgeschlossen | Frontend-UI (ScoreRing, Badges, Modal) |
+| **Phase 3** | ⏳ Geplant (v2.0+) | KI-Integration, ML-Modell, Auto-Assignment |
+
+**Implementierte Dateien:**
+- Backend: `backend/src/services/replacementScoreUtils.ts` (Scoring-Algorithmen)
+- Backend: `backend/src/services/intelligentReplacementService.ts` (Service)
+- Frontend: `frontend/src/features/users/UserPreferences.tsx` (Präferenzen-Editor)
+- Frontend: `frontend/src/features/absences/components/ReplacementCandidateCard.tsx` (UI)
+- Prisma: `EmployeePreferences`, `EmployeeWorkload`, `ComplianceViolation` Models
 
 ---
 
@@ -72,7 +99,7 @@ Statt "Max ist verfügbar", zeige:
 
 ---
 
-### 📊 Phase 2a: Datenmodell erweitern (v1.8.0)
+### 📊 Phase 2a: Datenmodell erweitern (v1.8.0) ✅ ABGESCHLOSSEN
 
 #### Neue Prisma Models & Felder
 
@@ -201,7 +228,7 @@ SELECT id, false, true, 160 FROM User WHERE role = 'EMPLOYEE';
 
 ---
 
-### 🧮 Phase 2b: Backend - Scoring-Engine (v1.8.0)
+### 🧮 Phase 2b: Backend - Scoring-Engine (v1.8.0) ✅ ABGESCHLOSSEN
 
 #### Service: `backend/src/services/intelligentReplacementService.ts`
 
@@ -451,7 +478,7 @@ function calculateTotalScore(
 
 ---
 
-### 🎨 Phase 2c: Frontend - Intelligente Kandidaten-Anzeige (v1.8.0)
+### 🎨 Phase 2c: Frontend - Intelligente Kandidaten-Anzeige (v1.8.0) ✅ ABGESCHLOSSEN
 
 #### Komponente: `ReplacementCandidatesModal` erweitern
 

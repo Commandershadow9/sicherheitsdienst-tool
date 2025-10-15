@@ -2,8 +2,7 @@
  * WarningBadge - Warnungs-Icon + Text
  * v1.8.0 - Intelligent Replacement System
  */
-import { AlertCircle, AlertTriangle, Info } from 'lucide-react'
-import type { LucideIcon } from 'lucide-react'
+import { AlertCircle, AlertTriangle, Info, type LucideIcon } from 'lucide-react'
 
 type WarningBadgeProps = {
   message: string

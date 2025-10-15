@@ -21,7 +21,9 @@ import {
   calculateFairnessScore,
   calculatePreferenceScore,
   calculateTotalScore,
+  calculateTieBreaker,
 } from './replacementScoreUtils';
+import { recordCandidateScore } from '../utils/replacementMetrics';
 
 export {
   calculateWorkloadScore,
@@ -29,6 +31,7 @@ export {
   calculateFairnessScore,
   calculatePreferenceScore,
   calculateTotalScore,
+  calculateTieBreaker,
 } from './replacementScoreUtils';
 
 const prisma = new PrismaClient();
@@ -61,6 +64,7 @@ export interface CandidateScore {
     currentMonthHours: number;
     targetMonthHours: number;
     utilizationPercent: number;
+    utilizationAfterAssignment: number;
     maxWeeklyHours: number;
 
     lastShiftEnd: Date | null;
@@ -416,6 +420,8 @@ async function calculateLiveWorkload(
  * @returns CandidateScore Objekt mit allen Details
  */
 export async function calculateCandidateScore(userId: string, shift: Shift): Promise<CandidateScore> {
+  const startTime = process.hrtime.bigint();
+
   // User mit Relations laden
   const user = (await prisma.user.findUnique({
     where: { id: userId },
@@ -467,7 +473,13 @@ export async function calculateCandidateScore(userId: string, shift: Shift): Pro
   const preferenceScore = calculatePreferenceScore(shift, preferences, workload.totalHours, shiftDuration);
 
   const totalScore = calculateTotalScore(workloadScore, complianceScore, fairnessScore, preferenceScore);
-  const { recommendation, color } = getRecommendation(totalScore);
+
+  // Tie-Breaker: Bevorzuge MA mit mehr Ruhe bei gleichem Score
+  const restDaysLast14Days = 14 - consecutiveDays; // Vereinfacht: 14 Tage - gearbeitete Tage
+  const tieBreaker = calculateTieBreaker(restHours, restDaysLast14Days);
+  const finalScore = Math.min(100, totalScore + tieBreaker);
+
+  const { recommendation, color } = getRecommendation(finalScore);
 
   // ========== Metriken sammeln ==========
   const isNightShift = shiftStart.getHours() >= 22 || shiftStart.getHours() < 6;
@@ -476,6 +488,7 @@ export async function calculateCandidateScore(userId: string, shift: Shift): Pro
     currentMonthHours: workload.totalHours,
     targetMonthHours: targetHours,
     utilizationPercent: (workload.totalHours / targetHours) * 100,
+    utilizationAfterAssignment: ((workload.totalHours + shiftDuration) / targetHours) * 100,
     maxWeeklyHours: workload.maxWeeklyHours,
 
     lastShiftEnd,
@@ -545,9 +558,21 @@ export async function calculateCandidateScore(userId: string, shift: Shift): Pro
     });
   }
 
+  // ========== Metriken erfassen ==========
+  const endTime = process.hrtime.bigint();
+  const durationSeconds = Number(endTime - startTime) / 1e9; // Nanosekunden → Sekunden
+
+  recordCandidateScore(
+    finalScore,
+    recommendation,
+    durationSeconds,
+    { workload: workloadScore, compliance: complianceScore, fairness: fairnessScore, preference: preferenceScore },
+    shift.id,
+  );
+
   return {
     userId,
-    totalScore,
+    totalScore: finalScore,
     recommendation,
     color,
     workloadScore,

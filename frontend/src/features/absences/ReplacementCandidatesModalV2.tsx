@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { ScoreRing } from '@/components/ui/score-ring'
 import { MetricBadge } from '@/components/ui/metric-badge'
 import { WarningBadge } from '@/components/ui/warning-badge'
-import type { ReplacementCandidateV2 } from './types'
+import type { ReplacementCandidateV2, ReplacementCandidateWarning } from './types'
 import { useState } from 'react'
 import { toast } from 'sonner'
 import { api } from '@/lib/api'
@@ -22,9 +22,8 @@ import {
   Flame,
   CalendarRange,
   Ban,
+  type LucideIcon,
 } from 'lucide-react'
-import type { LucideIcon } from 'lucide-react'
-import type { ReplacementCandidateWarning } from './types'
 
 type ReplacementCandidatesModalV2Props = {
   open: boolean
@@ -100,11 +99,14 @@ export function ReplacementCandidatesModalV2({
   }
 
   // Determine metric badge status based on value
+  // Niedrige Auslastung = GUT für Zuweisung (grün)
+  // Hohe Auslastung = SCHLECHT für Zuweisung (rot)
   const getUtilizationStatus = (percent: number) => {
-    if (percent >= 70 && percent <= 90) return 'success'
-    if (percent >= 50 && percent < 70) return 'warning'
-    if (percent > 90 && percent < 110) return 'warning'
-    return 'error'
+    if (percent < 30) return 'success'        // Wenig ausgelastet → GUT
+    if (percent < 70) return 'success'        // Normal → GUT
+    if (percent < 90) return 'warning'        // Hoch → VORSICHT
+    if (percent < 100) return 'warning'       // Sehr hoch → VORSICHT
+    return 'error'                            // Überlastet → SCHLECHT
   }
 
   const getRestHoursStatus = (hours: number) => {
@@ -171,14 +173,18 @@ export function ReplacementCandidatesModalV2({
                       <MetricBadge
                         icon={BarChart3}
                         label="Auslastung"
-                        value={`${Math.round(candidate.metrics.utilizationPercent)}%`}
-                        status={getUtilizationStatus(candidate.metrics.utilizationPercent)}
+                        value={`${Math.round(candidate.metrics.utilizationPercent)}% → ${Math.round(candidate.metrics.utilizationAfterAssignment)}%`}
+                        status={getUtilizationStatus(candidate.metrics.utilizationAfterAssignment)}
                         size="sm"
                       />
                       <MetricBadge
                         icon={Clock}
                         label="Ruhezeit"
-                        value={`${candidate.metrics.restHours}h`}
+                        value={
+                          candidate.metrics.restHours >= 24
+                            ? `${Math.floor(candidate.metrics.restHours)}h ${Math.round((candidate.metrics.restHours % 1) * 60)}m`
+                            : `${candidate.metrics.restHours.toFixed(1)}h`
+                        }
                         status={getRestHoursStatus(candidate.metrics.restHours)}
                         size="sm"
                       />

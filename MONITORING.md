@@ -85,6 +85,14 @@ docker compose -f docker-compose.monitoring.yml up -d
   - `sum(increase(audit_log_events_total[5m])) by (result)`
   - `sum(increase(audit_log_failures_total[5m])) by (stage)`
   - `sum(increase(audit_log_prune_operations_total{result="error"}[24h]))`
+- Replacement-Service Metriken:
+  - `replacement_candidates_evaluated_total` - Anzahl bewerteter Kandidaten
+  - `histogram_quantile(0.95, sum(rate(replacement_calculation_duration_seconds_bucket[5m])) by (le))` - p95 Berechnungsdauer
+  - `sum(increase(replacement_score_total{recommendation="OPTIMAL"}[1h]))` - OPTIMAL-Scores (letzte Stunde)
+  - `sum(increase(replacement_score_total{recommendation="GOOD"}[1h]))` - GOOD-Scores
+  - `sum(increase(replacement_score_total{recommendation="ACCEPTABLE"}[1h]))` - ACCEPTABLE-Scores
+  - `sum(increase(replacement_score_total{recommendation="NOT_RECOMMENDED"}[1h]))` - NOT_RECOMMENDED-Scores
+  - `avg(replacement_score_components_avg) by (component)` - Durchschnittliche Komponenten-Scores
 
 ## Panels (Empfehlung)
 - Top Routes p95

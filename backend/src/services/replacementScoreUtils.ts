@@ -123,3 +123,27 @@ export function calculateTotalScore(
     preferenceScore * WEIGHTS.preference
   );
 }
+
+/**
+ * Tie-Breaker: Wenn zwei Kandidaten den gleichen totalScore haben,
+ * bevorzuge den mit mehr Ruhezeit und mehr Ruhetagen.
+ *
+ * Gibt einen kleinen Bonus (max +1.0) zurück, der zum totalScore addiert wird.
+ */
+export function calculateTieBreaker(restHours: number, consecutiveRestDays: number): number {
+  let bonus = 0;
+
+  // Bonus für mehr als Minimum-Ruhe (11h = gesetzlich)
+  if (restHours > 11) {
+    // Pro 12h zusätzliche Ruhe: +0.25 Bonus (max +0.5)
+    bonus += Math.min((restHours - 11) / 48, 0.5);
+  }
+
+  // Bonus für mehr Ruhetage in den letzten 14 Tagen
+  if (consecutiveRestDays > 1) {
+    // Pro Ruhetag: +0.1 Bonus (max +0.5)
+    bonus += Math.min((consecutiveRestDays - 1) * 0.1, 0.5);
+  }
+
+  return Math.min(bonus, 1.0); // Max +1.0 Bonus
+}

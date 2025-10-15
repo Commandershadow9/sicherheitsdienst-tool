@@ -1,0 +1,12 @@
+# Kritische System-Dateien schützen
+/etc/fstab
+/etc/passwd
+/etc/shadow
+/etc/sudoers
+/etc/ssh/sshd_config
+/boot/*
+/sys/*
+/proc/*
+
+# Docker System-Dateien
+/var/lib/docker/*

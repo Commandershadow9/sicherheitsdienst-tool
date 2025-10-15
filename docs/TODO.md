@@ -1,10 +1,11 @@
-# TODO / Roadmap (Stand: 2025-10-08)
+# TODO / Roadmap (Stand: 2025-10-15)
 
 > Abgeschlossene Aufgaben liegen jetzt in `docs/TODO_ARCHIVE.md`.
 
 ## Kurzfristig (P1, 1–2 Tage)
-- [ ] Abwesenheiten: ICS-/Kalender-Export (API `GET /api/absences/export.ics`, Doku in `docs/planning/absences.md` einpflegen).
-- [ ] Replacement-Service Observability: Prometheus-Metriken für Score-/Laufzeitwerte und Zusammenfassung in `/api/stats` bereitstellen.
+- [x] **v1.10.0** Abwesenheiten: ICS-/Kalender-Export (API `GET /api/absences/export.ics`, RFC 5545 konform) ✅
+- [x] **v1.10.0** Replacement-Service Observability: Prometheus-Metriken für Score-/Laufzeitwerte und Zusammenfassung in `/api/stats` ✅
+- [x] **v1.10.0** Replacement UX-Verbesserungen: Farbkodierung, Ruhezeit-Anzeige, Auslastungs-Vorschau, Tie-Breaker ✅
 - [ ] Dashboard UX: StatsCard klickbar machen und auf passende gefilterte Ansichten routen (`docs/FEATURE_DASHBOARD.md`).
 
 ## Mittelfristig (P2, 2–4 Wochen)

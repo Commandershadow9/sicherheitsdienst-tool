@@ -2,6 +2,75 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.10.0] - 2025-10-15 – ICS-Export & Replacement Observability
+
+### Added
+- **Abwesenheiten ICS-Kalender-Export**:
+  - Neuer Endpoint: `GET /api/absences/export.ics`
+  - RFC 5545 konforme iCalendar-Generierung
+  - Filter: userId, status, from/to (Zeitraum)
+  - RBAC: Alle Rollen, EMPLOYEE sieht nur eigene Abwesenheiten
+  - ICS-Status-Mapping: REQUESTED → TENTATIVE, APPROVED → CONFIRMED, REJECTED/CANCELLED → CANCELLED
+  - Kategorisierung nach Abwesenheitstyp (Urlaub, Krankheit, Sonderurlaub, Unbezahlt)
+  - Ganztags-Events (VALUE=DATE Format)
+  - Audit-Log Integration (Action: ABSENCE_EXPORT_ICS)
+  - Implementierung: `backend/src/utils/icsGenerator.ts`, `backend/src/controllers/absenceController.ts`
+
+- **Replacement-Service Observability (Prometheus-Metriken)**:
+  - 4 neue Metriken für Intelligent Replacement System:
+    - `replacement_candidates_evaluated_total` (Counter) - Anzahl bewerteter Kandidaten
+    - `replacement_calculation_duration_seconds` (Histogram) - Berechnungsdauer pro Kandidat
+    - `replacement_score_total` (Histogram) - Score-Verteilung mit Labels (OPTIMAL/GOOD/ACCEPTABLE/NOT_RECOMMENDED)
+    - `replacement_score_components_avg` (Gauge) - Durchschnittliche Komponenten-Scores (workload, compliance, fairness, preference)
+  - `/api/stats` erweitert mit Replacement-Metriken-Sektion
+  - Performance-Tracking für Scoring-Algorithmen
+  - Implementierung: `backend/src/utils/replacementMetrics.ts`
+  - Dokumentation: `MONITORING.md` aktualisiert mit PromQL-Beispiel-Queries
+
+- **Scoring-Verbesserungen (Intelligent Replacement)**:
+  - **Tie-Breaker-Logik**: Bei gleichem Score wird MA mit mehr Ruhezeit bevorzugt
+    - Bonus für Ruhezeit > 11h (gesetzliches Minimum): +0.25 pro 12h (max +0.5)
+    - Bonus für mehr Ruhetage in letzten 14 Tagen: +0.1 pro Tag (max +0.5)
+    - Maximaler Tie-Breaker-Bonus: +1.0 Punkt
+  - **Auslastungs-Vorschau**: `utilizationAfterAssignment` wird berechnet und in API zurückgegeben
+    - Backend: Berechnung der zukünftigen Auslastung (aktuell + Schichtdauer)
+    - Frontend: Anzeige "5% → 15%" im UI
+  - Implementierung: `backend/src/services/replacementScoreUtils.ts` (`calculateTieBreaker`)
+
+### Changed
+- **Frontend UX-Verbesserungen (Replacement Modal)**:
+  - **Farbkodierung umgekehrt**: Niedrige Auslastung = GRÜN (gut für Zuweisung), hohe Auslastung = ROT
+    - <30%: GRÜN, 30-70%: GRÜN, 70-90%: GELB, 90-100%: GELB, >100%: ROT
+    - Farbstatus basiert nun auf `utilizationAfterAssignment` statt `utilizationPercent`
+  - **Ruhezeit exakt angezeigt**:
+    - ≥24h: "36h 30m" (Stunden + Minuten)
+    - <24h: "18.5h" (Dezimal)
+  - **Auslastungs-Vorschau**: Badge zeigt "aktuelle% → zukünftige%" (z.B. "5% → 15%")
+  - Datei: `frontend/src/features/absences/ReplacementCandidatesModalV2.tsx`
+
+- **Monitoring-Konfiguration**:
+  - Prometheus: Job-Config für neue Metriken aktualisiert
+  - Docker Compose Monitoring: Service-Konfiguration erweitert
+
+### Fixed
+- **Audit-Event API-Aufruf korrigiert**:
+  - `submitAuditEvent` benötigt `req` als ersten Parameter
+  - `details` → `data` (korrektes Interface-Property)
+  - `resourceType` als required field hinzugefügt
+
+- **Frontend-Lint**: Duplicate-Imports behoben
+  - `lucide-react` imports konsolidiert (type imports inline)
+  - `./types` imports zusammengeführt
+  - Dateien: `ReplacementCandidatesModalV2.tsx`, `warning-badge.tsx`, `UserPreferences.tsx`
+
+### Documentation
+- `MONITORING.md`: Replacement-Metriken mit PromQL-Queries dokumentiert
+- `docs/FEATURE_INTELLIGENT_REPLACEMENT.md`: Status auf "Implementiert" aktualisiert, Verbesserungs-Roadmap hinzugefügt
+- `docs/planning/replacement-scoring-improvements.md`: Detaillierter Verbesserungsplan (zukünftige Iterationen)
+- Seeds erweitert mit realistischeren Test-Daten für Replacement-Szenarien
+
+---
+
 ## [1.8.1] - 2025-10-06 – Discord Notification Fix
 
 ### Fixed

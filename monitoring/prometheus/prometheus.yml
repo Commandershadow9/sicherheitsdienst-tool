@@ -15,12 +15,12 @@ scrape_configs:
     scrape_interval: 15s
     static_configs:
       # Adjust target to reach your API metrics endpoint
-      # - If running all in one compose: use 'api:3001'
-      # - If running only monitoring compose: use 'host.docker.internal:3001'
-      - targets: ['api:3001']
+      # - If running all in one compose: use 'api:3000'
+      # - If running only monitoring compose: use 'host.docker.internal:3000'
+      - targets: ['host.docker.internal:3000']
         labels:
           service: 'sicherheitsdienst-api'
-    metrics_path: /api/metrics
+    metrics_path: /metrics
 
   - job_name: 'blackbox'
     metrics_path: /probe
@@ -28,8 +28,8 @@ scrape_configs:
       module: ['http_2xx']
     static_configs:
       - targets:
-          - http://api:3000/healthz
-          - http://api:3000/readyz
+          - http://host.docker.internal:3000/healthz
+          - http://host.docker.internal:3000/readyz
         labels:
           service: 'sicherheitsdienst-api'
     relabel_configs:
