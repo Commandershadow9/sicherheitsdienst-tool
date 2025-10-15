@@ -1083,7 +1083,82 @@ async function main() {
       },
     });
 
-    console.log('🏖️  Abwesenheiten angelegt');
+    // Zusätzliche Test-Abwesenheiten für ICS-Export (v1.10.0)
+    // Sonderurlaub (SPECIAL_LEAVE)
+    const specialLeaveStart = new Date(today);
+    specialLeaveStart.setDate(specialLeaveStart.getDate() + 14);
+    const specialLeaveEnd = new Date(specialLeaveStart);
+    specialLeaveEnd.setDate(specialLeaveEnd.getDate() + 1);
+    await prisma.absence.create({
+      data: {
+        userId: markus.id,
+        type: AbsenceType.SPECIAL_LEAVE,
+        status: AbsenceStatus.APPROVED,
+        startsAt: specialLeaveStart,
+        endsAt: specialLeaveEnd,
+        reason: 'Hochzeit',
+        createdById: markus.id,
+        decidedById: manager.id,
+        decisionNote: 'Herzlichen Glückwunsch!',
+      },
+    });
+
+    // Unbezahlter Urlaub (UNPAID)
+    const unpaidStart = new Date(today);
+    unpaidStart.setDate(unpaidStart.getDate() + 21);
+    const unpaidEnd = new Date(unpaidStart);
+    unpaidEnd.setDate(unpaidEnd.getDate() + 6);
+    await prisma.absence.create({
+      data: {
+        userId: sabine.id,
+        type: AbsenceType.UNPAID,
+        status: AbsenceStatus.REQUESTED,
+        startsAt: unpaidStart,
+        endsAt: unpaidEnd,
+        reason: 'Weltreise - unbezahlter Zusatzurlaub',
+        createdById: sabine.id,
+      },
+    });
+
+    // Abgelehnte Abwesenheit (REJECTED)
+    const rejectedStart = new Date(today);
+    rejectedStart.setDate(rejectedStart.getDate() + 1);
+    const rejectedEnd = new Date(rejectedStart);
+    rejectedEnd.setDate(rejectedEnd.getDate() + 1);
+    await prisma.absence.create({
+      data: {
+        userId: daniel.id,
+        type: AbsenceType.VACATION,
+        status: AbsenceStatus.REJECTED,
+        startsAt: rejectedStart,
+        endsAt: rejectedEnd,
+        reason: 'Kurzfristiger Urlaubswunsch',
+        createdById: daniel.id,
+        decidedById: manager.id,
+        decisionNote: 'Zu kurzfristig, Personal-Engpass',
+      },
+    });
+
+    // Stornierte Abwesenheit (CANCELLED)
+    const cancelledStart = new Date(today);
+    cancelledStart.setDate(cancelledStart.getDate() + 30);
+    const cancelledEnd = new Date(cancelledStart);
+    cancelledEnd.setDate(cancelledEnd.getDate() + 4);
+    await prisma.absence.create({
+      data: {
+        userId: claudia.id,
+        type: AbsenceType.VACATION,
+        status: AbsenceStatus.CANCELLED,
+        startsAt: cancelledStart,
+        endsAt: cancelledEnd,
+        reason: 'Urlaub storniert wegen Projekt',
+        createdById: claudia.id,
+        decidedById: manager.id,
+        decisionNote: 'Selbst storniert',
+      },
+    });
+
+    console.log('🏖️  Abwesenheiten angelegt (9 total: 4 APPROVED, 3 REQUESTED, 1 REJECTED, 1 CANCELLED)');
 
     // Replacement-Demo
     const replacementShiftStart = new Date(tomorrow);
