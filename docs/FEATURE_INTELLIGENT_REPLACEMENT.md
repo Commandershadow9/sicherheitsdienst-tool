@@ -1,16 +1,19 @@
 # Intelligent Replacement System (v1.8.0+)
 
-**Status**: ✅ Implementiert (Phase 2a/2b abgeschlossen, Verbesserungen geplant)
-**Version**: v1.8.0+
+**Status**: ✅ Implementiert & Optimiert (v1.10.1)
+**Version**: v1.10.1
 **Ziel**: KI-gestützte Ersatz-Mitarbeiter-Auswahl mit Fairness, Compliance & Mitarbeiter-Präferenzen
 
+**Aktuelle Features (v1.10.0 - v1.10.1)**:
+- ✅ **Observability**: Prometheus-Metriken für Scoring & Performance (v1.10.0)
+- ✅ **UX-Verbesserungen**: Inline-Bestätigung, kontextuelle Badges, Auslastungs-Vorschau (v1.10.0/v1.10.1)
+- ✅ **Fairness-Score**: Berücksichtigt Mitarbeiter-Präferenzen für Nachtschichten (v1.10.1)
+- ✅ **Tie-Breaker**: Bevorzugt MA mit mehr Ruhezeit bei gleichem Score (v1.10.0)
+
 **Nächste Schritte**:
-- 📊 Observability (Metriken für Scoring, Laufzeit-Tracking)
-- 🎨 UX-Verbesserungen (siehe `docs/planning/replacement-scoring-improvements.md`)
-  - Farbkodierung optimieren (niedrige Auslastung = grün)
-  - Tie-Breaker bei gleichem Score (mehr Ruhezeit bevorzugen)
-  - Vorschau: "Auslastung nach Zuweisung"
-  - Ruhezeit exakt anzeigen (nicht nur "24h")
+- 🔄 Cron-Jobs produktiv schalten (Workload täglich, Compliance-Hook, Fairness wöchentlich)
+- 📊 Dashboards für Workload/Fairness-Übersicht (Manager-View)
+- 🤖 Phase 3: KI-Integration, ML-Modell, Auto-Assignment (v2.0+)
 
 ---
 
@@ -935,6 +938,62 @@ test('Manager sieht Scoring bei Ersatz-Suche', async ({ page }) => {
 - [ ] Predictive Scheduling aktiv
 - [ ] Auto-Assignment mit Opt-In
 - [ ] Optimierungs-Algorithmus integriert
+
+---
+
+## Version History & Verbesserungen
+
+### v1.10.1 (2025-10-16) - Fairness & UX Improvements
+
+**🎯 Fairness-Score berücksichtigt Präferenzen**:
+- **Problem**: MA, die gerne Nachtschichten machen, wurden bestraft wenn sie viele hatten (Abweichung vom Team-Durchschnitt = Strafe)
+- **Lösung**: `calculateFairnessScore()` erweitert um `preferences` Parameter
+  ```typescript
+  // Neue Logik:
+  if (preferences?.prefersNightShifts && userNightShifts > teamAvgNightShifts) {
+    score += 5;  // BONUS für Bereitschaft!
+  } else if (preferences?.prefersDayShifts && userNightShifts > teamAvgNightShifts) {
+    score -= nightShiftDeviation * 8;  // Höhere Strafe (unfair!)
+  }
+  ```
+- **Ergebnis**: Faire Bewertung - MA mit Nachtschicht-Präferenz werden nicht mehr benachteiligt
+
+**🎨 UX-Verbesserungen (Frontend)**:
+1. **Inline-Bestätigung statt Pop-up**:
+   - Vorher: `window.confirm()` Browser-Pop-up (störend, nicht-customizable)
+   - Nachher: Button transformiert sich → "Abbrechen" + "✓ Bestätigen"
+   - Toast mit Score & Auslastungs-Vorschau nach erfolgreicher Zuweisung
+
+2. **Kontextuelle Badges**:
+   - Badge "Nachtschichten" wird nur bei Nachtschichten (22:00-06:00) angezeigt
+   - Reduziert irrelevante Informationen bei Tagschichten
+   - Übersichtlicheres Modal
+
+**🐛 Bug-Fixes**:
+- `utilizationAfterAssignment` fehlte im Backend-Response (Frontend zeigte "NaN%")
+- Fix: `replacementService.ts` - Feld zum Response-Mapping hinzugefügt
+
+**Geänderte Dateien**:
+- `backend/src/services/replacementScoreUtils.ts`
+- `backend/src/services/intelligentReplacementService.ts`
+- `backend/src/services/replacementService.ts`
+- `backend/src/jobs/intelligentReplacementJobs.ts`
+- `frontend/src/features/absences/ReplacementCandidatesModalV2.tsx`
+
+### v1.10.0 (2025-10-15) - ICS-Export & Observability
+
+- ✅ ICS-Kalender-Export für Abwesenheiten (RFC 5545 konform)
+- ✅ Prometheus-Metriken für Replacement-Service (4 neue Metriken)
+- ✅ Tie-Breaker-Logik bei gleichem Score (mehr Ruhezeit bevorzugt)
+- ✅ Auslastungs-Vorschau: "10% → 15%"
+- ✅ Farbkodierung optimiert (niedrige Auslastung = grün)
+
+### v1.8.0 (2025-10-06) - Initial Intelligent Replacement
+
+- ✅ Scoring-Engine mit 4 Algorithmen (Workload, Compliance, Fairness, Preference)
+- ✅ Frontend-UI mit Score-Ring, Badges, Modal
+- ✅ Mitarbeiter-Präferenzen-Editor
+- ✅ Datenmodelle: `EmployeePreferences`, `EmployeeWorkload`, `ComplianceViolation`
 
 ---
 

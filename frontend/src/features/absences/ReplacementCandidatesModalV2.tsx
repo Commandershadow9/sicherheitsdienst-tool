@@ -30,6 +30,7 @@ type ReplacementCandidatesModalV2Props = {
   onClose: () => void
   shiftId: string
   shiftTitle: string
+  shiftStartTime?: string // Optional: Für Nachtschicht-Erkennung
   candidates: ReplacementCandidateV2[]
   onAssignSuccess?: (info: { shiftId: string; shiftTitle: string; candidateId: string; candidateName: string }) => void
 }
@@ -55,11 +56,20 @@ export function ReplacementCandidatesModalV2({
   onClose,
   shiftId,
   shiftTitle,
+  shiftStartTime,
   candidates,
   onAssignSuccess,
 }: ReplacementCandidatesModalV2Props) {
   const [assigning, setAssigning] = useState(false)
   const [expandedCandidates, setExpandedCandidates] = useState<Set<string>>(new Set())
+  const [confirmingCandidateId, setConfirmingCandidateId] = useState<string | null>(null)
+
+  // Prüfe, ob es eine Nachtschicht ist (22:00 - 06:00)
+  const isNightShift = shiftStartTime ? (() => {
+    const shiftDate = new Date(shiftStartTime)
+    const hour = shiftDate.getHours()
+    return hour >= 22 || hour < 6
+  })() : false
 
   const toggleExpanded = (candidateId: string) => {
     setExpandedCandidates((prev) => {
@@ -73,17 +83,14 @@ export function ReplacementCandidatesModalV2({
     })
   }
 
-  async function handleAssign(candidate: ReplacementCandidateV2) {
-    const confirmed = window.confirm(
-      `Mitarbeiter ${candidate.firstName} ${candidate.lastName} (Score: ${Math.round(candidate.score.total)}) zur Schicht "${shiftTitle}" zuweisen?`
-    )
-
-    if (!confirmed) return
-
+  async function handleConfirmAssign(candidate: ReplacementCandidateV2) {
     setAssigning(true)
     try {
       await api.post(`/shifts/${shiftId}/assign`, { userId: candidate.id })
-      toast.success(`${candidate.firstName} ${candidate.lastName} erfolgreich zugewiesen`)
+      toast.success(`${candidate.firstName} ${candidate.lastName} erfolgreich zugewiesen`, {
+        description: `Score: ${Math.round(candidate.score.total)} - Auslastung wird ${Math.round(candidate.metrics.utilizationAfterAssignment)}%`,
+        duration: 4000,
+      })
       onClose()
       onAssignSuccess?.({
         shiftId,
@@ -95,7 +102,12 @@ export function ReplacementCandidatesModalV2({
       toast.error(error?.response?.data?.message || 'Zuweisung fehlgeschlagen')
     } finally {
       setAssigning(false)
+      setConfirmingCandidateId(null)
     }
+  }
+
+  function handleCancelConfirm() {
+    setConfirmingCandidateId(null)
   }
 
   // Determine metric badge status based on value
@@ -160,11 +172,36 @@ export function ReplacementCandidatesModalV2({
                         </p>
                       </div>
 
-                      {/* Assign Button */}
+                      {/* Assign Button / Confirmation */}
                       <div className="flex-shrink-0">
-                        <Button size="sm" onClick={() => handleAssign(candidate)} disabled={assigning}>
-                          {assigning ? 'Zuweisen...' : 'Zuweisen'}
-                        </Button>
+                        {confirmingCandidateId === candidate.id ? (
+                          <div className="flex gap-2 items-center">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={handleCancelConfirm}
+                              disabled={assigning}
+                            >
+                              Abbrechen
+                            </Button>
+                            <Button
+                              size="sm"
+                              onClick={() => handleConfirmAssign(candidate)}
+                              disabled={assigning}
+                              className="bg-green-600 hover:bg-green-700"
+                            >
+                              {assigning ? 'Zuweisen...' : '✓ Bestätigen'}
+                            </Button>
+                          </div>
+                        ) : (
+                          <Button
+                            size="sm"
+                            onClick={() => setConfirmingCandidateId(candidate.id)}
+                            disabled={assigning || confirmingCandidateId !== null}
+                          >
+                            Zuweisen
+                          </Button>
+                        )}
                       </div>
                     </div>
 
@@ -188,13 +225,16 @@ export function ReplacementCandidatesModalV2({
                         status={getRestHoursStatus(candidate.metrics.restHours)}
                         size="sm"
                       />
-                      <MetricBadge
-                        icon={Moon}
-                        label="Nachtschichten"
-                        value={`${candidate.metrics.nightShiftCount} (Ø ${candidate.metrics.avgNightShiftCount.toFixed(1)})`}
-                        status="neutral"
-                        size="sm"
-                      />
+                      {/* Nachtschicht-Badge nur bei Nachtschichten anzeigen */}
+                      {isNightShift && (
+                        <MetricBadge
+                          icon={Moon}
+                          label="Nachtschichten"
+                          value={`${candidate.metrics.nightShiftCount} (Ø ${candidate.metrics.avgNightShiftCount.toFixed(1)})`}
+                          status="neutral"
+                          size="sm"
+                        />
+                      )}
                       <MetricBadge
                         icon={Users}
                         label="Ersätze"

@@ -216,6 +216,7 @@ async function calculateMonthlyWorkloads(): Promise<void> {
       avgNightShifts,
       entry.replacementCount,
       avgReplacementCount,
+      null, // Cron-Job hat keine Präferenzen verfügbar
     );
 
     const uniqueWhere: Prisma.EmployeeWorkloadWhereUniqueInput = {
@@ -298,6 +299,7 @@ async function recalculateFairnessScores(): Promise<void> {
       avgNightShifts,
       entry.replacementCount,
       avgReplacementCount,
+      null, // Cron-Job hat keine Präferenzen verfügbar
     );
 
     await prisma.employeeWorkload.updateMany({

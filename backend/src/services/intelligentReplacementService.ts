@@ -468,7 +468,8 @@ export async function calculateCandidateScore(userId: string, shift: Shift): Pro
     workload.nightShiftCount,
     teamAverages.avgNightShifts,
     userReplacementCount,
-    teamAverages.avgReplacementCount
+    teamAverages.avgReplacementCount,
+    preferences // Präferenzen übergeben für faire Nachtschicht-Bewertung
   );
   const preferenceScore = calculatePreferenceScore(shift, preferences, workload.totalHours, shiftDuration);
 

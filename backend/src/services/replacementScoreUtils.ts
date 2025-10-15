@@ -53,14 +53,29 @@ export function calculateFairnessScore(
   teamAvgNightShifts: number,
   userReplacementCount: number,
   teamAvgReplacementCount: number,
+  preferences: EmployeePreferences | null,
 ): number {
   let score = 100;
 
+  // Nachtschicht-Fairness: Berücksichtige Präferenzen
   const nightShiftDeviation = Math.abs(userNightShifts - teamAvgNightShifts);
   if (nightShiftDeviation > 2) {
-    score -= nightShiftDeviation * 5;
+    // Wenn MA Nachtschichten bevorzugt und viele hat -> NICHT bestrafen (fair!)
+    // Wenn MA Nachtschichten ablehnt und viele hat -> bestrafen (unfair!)
+    if (preferences?.prefersNightShifts && userNightShifts > teamAvgNightShifts) {
+      // MA will Nacht und hat viele -> OK, keine Strafe
+      // Sogar kleiner Bonus für die Bereitschaft
+      score += 5;
+    } else if (preferences?.prefersDayShifts && userNightShifts > teamAvgNightShifts) {
+      // MA will keine Nacht, hat aber viele -> unfair!
+      score -= nightShiftDeviation * 8; // Höhere Strafe (war 5)
+    } else {
+      // Keine spezielle Präferenz -> normale Fairness-Logik
+      score -= nightShiftDeviation * 5;
+    }
   }
 
+  // Replacement-Fairness: Bleibt unverändert
   const replacementDeviation = Math.abs(userReplacementCount - teamAvgReplacementCount);
   if (replacementDeviation > 1) {
     score -= replacementDeviation * 10;

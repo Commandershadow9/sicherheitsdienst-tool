@@ -28,7 +28,7 @@ services:
       RATE_LIMIT_MAX: 100
       RATE_LIMIT_WINDOW_MS: 60000
       DATABASE_URL: postgresql://admin:admin123@db:5432/sicherheitsdienst_db?schema=public
-      SEED_ON_START: "true"
+      SEED_ON_START: "false"
       LOGIN_RATE_LIMIT_MAX: 100
       LOGIN_RATE_LIMIT_WINDOW_MS: 60000
     volumes:
@@ -38,7 +38,6 @@ services:
       npm install && \
       npx prisma generate && \
       npx prisma migrate deploy && \
-      if [ \"$SEED_ON_START\" = \"true\" ]; then npm run seed; fi && \
       npm run dev"
     depends_on:
       db:

@@ -2,6 +2,40 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.10.1] - 2025-10-16 – Intelligent Replacement UX & Fairness Improvements
+
+### Added
+- **Fairness-Score berücksichtigt Präferenzen für Nachtschichten**:
+  - MA mit `prefersNightShifts: true` + viele Nachtschichten → **+5 Bonus** (fair, da gewünscht)
+  - MA mit `prefersDayShifts: true` + viele Nachtschichten → **höhere Strafe** (unfair)
+  - MA ohne spezielle Präferenz → normale Fairness-Logik
+  - Verhindert unfaire Bestrafung von MA, die gerne Nachtschichten übernehmen
+  - Implementierung: `backend/src/services/replacementScoreUtils.ts` (`calculateFairnessScore` erweitert um `preferences` Parameter)
+  - Angepasst: `intelligentReplacementService.ts`, `intelligentReplacementJobs.ts` (2 Cron-Jobs)
+
+### Changed
+- **Frontend UX-Verbesserungen (Replacement Modal)**:
+  - **Bestätigungs-Dialog ersetzt**: Statt `window.confirm()` Pop-up → Inline-Bestätigung
+    - Klick auf "Zuweisen" → Button transformiert sich zu "Abbrechen" + "✓ Bestätigen"
+    - Dynamischer, cleaner Prozess ohne störendes Browser-Pop-up
+    - Toast-Notification mit Score & Auslastungs-Vorschau nach erfolgreicher Zuweisung
+  - **Nachtschicht-Badge nur kontextuell**: Badge "Nachtschichten" wird nur bei Nachtschichten (22:00-06:00) angezeigt
+    - Reduziert irrelevante Informationen bei Tagschichten
+    - Verbesserte Übersichtlichkeit im Replacement-Modal
+  - `shiftStartTime` Prop hinzugefügt für Nachtschicht-Erkennung
+  - Datei: `frontend/src/features/absences/ReplacementCandidatesModalV2.tsx`
+
+### Fixed
+- **`utilizationAfterAssignment` fehlte im Backend-Response**:
+  - Feld wurde berechnet, aber nicht im API-Response gemappt → Frontend zeigte "NaN%"
+  - Fix: `backend/src/services/replacementService.ts` (Zeile 306 & 342) - Feld zum Response-Mapping hinzugefügt
+  - Auslastungs-Vorschau funktioniert jetzt korrekt: "10% → 15%"
+
+### Documentation
+- Code-Kommentare in `replacementScoreUtils.ts` erweitert (Präferenz-basierte Fairness-Logik)
+
+---
+
 ## [1.10.0] - 2025-10-15 – ICS-Export & Replacement Observability
 
 ### Added
