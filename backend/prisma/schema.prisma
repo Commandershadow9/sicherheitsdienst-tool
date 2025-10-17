@@ -41,6 +41,9 @@ model User {
   documentsUploaded    EmployeeDocument[]    @relation("EmployeeDocumentUploadedBy")
   objectClearances     ObjectClearance[]
   clearancesTrained    ObjectClearance[]     @relation("ClearanceTrainer")
+  clearancesApproved   ObjectClearance[]     @relation("ClearanceApprover")
+  siteImagesUploaded   SiteImage[]           @relation("SiteImageUploader")
+  siteAssignments      SiteAssignment[]      @relation("SiteAssignmentUser")
   deviceTokens         DeviceToken[]
   preferences          EmployeePreferences?
   workload             EmployeeWorkload[]
@@ -55,23 +58,47 @@ model User {
 
 // Einsatzorte/Sites
 model Site {
-  id         String   @id @default(cuid())
+  id         String @id @default(cuid())
   name       String
   address    String
   city       String
   postalCode String
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+
+  // Kunden-Informationen
+  customerName    String?
+  customerCompany String?
+  customerEmail   String?
+  customerPhone   String?
+
+  // Notfallkontakte (JSON-Array: [{ name, phone, role }])
+  emergencyContacts Json?
+
+  // Objekt-Status
+  status SiteStatus @default(ACTIVE)
+
+  // Anforderungen
+  requiredStaff          Int      @default(1)
+  requiredQualifications String[] @default([])
+
+  // Beschreibung & Notizen
+  description String? @db.Text
+  notes       String? @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   // Beziehungen
-  shifts     Shift[]
-  events     Event[]
-  clearances ObjectClearance[]
+  shifts      Shift[]
+  events      Event[]
+  clearances  ObjectClearance[]
+  images      SiteImage[]
+  assignments SiteAssignment[]
 
   @@unique([name, address], name: "sites_name_address_key")
   @@index([name], name: "sites_name_idx")
   @@index([city], name: "sites_city_idx")
   @@index([postalCode], name: "sites_postal_idx")
+  @@index([status], name: "sites_status_idx")
   @@map("sites")
 }
 
@@ -477,12 +504,19 @@ model ObjectClearance {
   validUntil DateTime?       @map("valid_until")
   notes      String?         @db.Text
   status     ClearanceStatus @default(ACTIVE)
-  createdAt  DateTime        @default(now()) @map("created_at")
-  updatedAt  DateTime        @updatedAt @map("updated_at")
 
-  user    User  @relation(fields: [userId], references: [id], onDelete: Cascade)
-  site    Site  @relation(fields: [siteId], references: [id], onDelete: Cascade)
-  trainer User? @relation("ClearanceTrainer", fields: [trainedBy], references: [id])
+  // Einarbeitungs-Details
+  trainingCompletedAt DateTime? @map("training_completed_at")
+  trainingHours       Int?      @default(0) @map("training_hours")
+  approvedBy          String?   @map("approved_by")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user     User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  site     Site  @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  trainer  User? @relation("ClearanceTrainer", fields: [trainedBy], references: [id])
+  approver User? @relation("ClearanceApprover", fields: [approvedBy], references: [id])
 
   @@unique([userId, siteId], name: "object_clearances_user_site_key")
   @@index([userId], name: "object_clearances_user_idx")
@@ -494,8 +528,73 @@ model ObjectClearance {
 
 enum ClearanceStatus {
   ACTIVE
+  TRAINING // In Einarbeitung
   EXPIRED
   REVOKED
+}
+
+enum SiteStatus {
+  INQUIRY // Kundenanfrage
+  IN_REVIEW // In Prüfung
+  CALCULATING // Kalkulation läuft
+  OFFER_SENT // Angebot versendet
+  ACTIVE // Aktiv betreut
+  INACTIVE // Inaktiv (Vertrag beendet)
+  LOST // Verloren
+}
+
+enum ImageCategory {
+  EXTERIOR // Außenansicht
+  INTERIOR // Innenansicht
+  FLOOR_PLAN // Grundriss
+  EQUIPMENT // Ausrüstung
+  EMERGENCY // Notfallplan (visuell)
+  OTHER
+}
+
+enum SiteRole {
+  OBJEKTLEITER // Vollzugriff auf zugewiesenes Objekt
+  SCHICHTLEITER // Schicht-Verwaltung, Wachbuch
+  MITARBEITER // Lesen, Vorfälle melden
+}
+
+// Objekt-Bilder
+model SiteImage {
+  id     String @id @default(cuid())
+  siteId String @map("site_id")
+  site   Site   @relation(fields: [siteId], references: [id], onDelete: Cascade)
+
+  filename    String
+  filePath    String        @map("file_path")
+  category    ImageCategory @default(OTHER)
+  description String?
+  fileSize    Int           @map("file_size")
+  mimeType    String        @map("mime_type")
+
+  uploadedAt DateTime @default(now()) @map("uploaded_at")
+  uploadedBy String   @map("uploaded_by")
+  uploader   User     @relation("SiteImageUploader", fields: [uploadedBy], references: [id])
+
+  @@index([siteId, category])
+  @@map("site_images")
+}
+
+// Objekt-Zuweisungen (Objektleiter/Schichtleiter)
+model SiteAssignment {
+  id     String @id @default(cuid())
+  siteId String @map("site_id")
+  site   Site   @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  userId String @map("user_id")
+  user   User   @relation("SiteAssignmentUser", fields: [userId], references: [id], onDelete: Cascade)
+
+  role       SiteRole
+  assignedAt DateTime @default(now()) @map("assigned_at")
+  assignedBy String   @map("assigned_by")
+
+  @@unique([siteId, userId], name: "site_assignments_site_user_key")
+  @@index([userId])
+  @@index([siteId, role])
+  @@map("site_assignments")
 }
 
 // Einsätze / Events

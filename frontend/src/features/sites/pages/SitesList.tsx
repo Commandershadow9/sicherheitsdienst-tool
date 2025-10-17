@@ -14,8 +14,36 @@ import { toast } from 'sonner'
 import { Link, useNavigate } from 'react-router-dom'
 import RbacForbidden from '@/components/RbacForbidden'
 
-type Site = { id: string; name: string; city?: string; postalCode?: string }
+type Site = {
+  id: string
+  name: string
+  city?: string
+  postalCode?: string
+  status?: 'INQUIRY' | 'IN_REVIEW' | 'CALCULATING' | 'OFFER_SENT' | 'ACTIVE' | 'INACTIVE' | 'LOST'
+  customerName?: string
+  customerCompany?: string
+}
 type ListResp = { data: Site[]; pagination: { page: number; pageSize: number; total: number; totalPages: number } }
+
+const STATUS_LABELS: Record<string, string> = {
+  INQUIRY: 'Anfrage',
+  IN_REVIEW: 'In Prüfung',
+  CALCULATING: 'Kalkulation',
+  OFFER_SENT: 'Angebot versendet',
+  ACTIVE: 'Aktiv',
+  INACTIVE: 'Inaktiv',
+  LOST: 'Verloren',
+}
+
+const STATUS_COLORS: Record<string, string> = {
+  INQUIRY: 'bg-blue-100 text-blue-800',
+  IN_REVIEW: 'bg-yellow-100 text-yellow-800',
+  CALCULATING: 'bg-orange-100 text-orange-800',
+  OFFER_SENT: 'bg-purple-100 text-purple-800',
+  ACTIVE: 'bg-green-100 text-green-800',
+  INACTIVE: 'bg-gray-100 text-gray-800',
+  LOST: 'bg-red-100 text-red-800',
+}
 
 export default function SitesList() {
   const { params, update } = useListParams({ page: 1, pageSize: 25, sortBy: 'name', sortDir: 'asc' })
@@ -58,7 +86,11 @@ export default function SitesList() {
 
   return (
     <div className="space-y-4">
-      <h1 className="text-xl font-semibold">Standorte</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-xl font-semibold">Objekte</h1>
+        <Button onClick={() => nav('/sites/new')}>Neues Objekt</Button>
+      </div>
+
       <div className="flex gap-2 items-end flex-wrap">
         <FormField label="Name">
           <DebouncedInput value={params.filters.name||''} onChange={(v)=>update({filters:{name:v}})} />
@@ -68,6 +100,24 @@ export default function SitesList() {
         </FormField>
         <FormField label="PLZ">
           <DebouncedInput value={params.filters.postalCode||''} onChange={(v)=>update({filters:{postalCode:v}})} />
+        </FormField>
+        <FormField label="Status">
+          <Select
+            value={params.filters.status || ''}
+            onChange={(e) => update({ filters: { status: e.target.value || undefined } })}
+          >
+            <option value="">Alle</option>
+            <option value="INQUIRY">Anfrage</option>
+            <option value="IN_REVIEW">In Prüfung</option>
+            <option value="CALCULATING">Kalkulation</option>
+            <option value="OFFER_SENT">Angebot versendet</option>
+            <option value="ACTIVE">Aktiv</option>
+            <option value="INACTIVE">Inaktiv</option>
+            <option value="LOST">Verloren</option>
+          </Select>
+        </FormField>
+        <FormField label="Kunde">
+          <DebouncedInput value={params.filters.customerName||''} onChange={(v)=>update({filters:{customerName:v}})} />
         </FormField>
       </div>
 
@@ -106,7 +156,41 @@ export default function SitesList() {
           { key: 'name', header: 'Name', sortable: true },
           { key: 'city', header: 'Stadt', sortable: true },
           { key: 'postalCode', header: 'PLZ', sortable: true },
-          { key: 'actions', header: 'Aktionen', render: (r: Site) => <Link className="underline" to={`/sites/${r.id}/shifts`}>Schichten</Link> },
+          {
+            key: 'status',
+            header: 'Status',
+            render: (r: Site) => {
+              if (!r.status) return <span className="text-gray-400">—</span>
+              return (
+                <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${STATUS_COLORS[r.status]}`}>
+                  {STATUS_LABELS[r.status]}
+                </span>
+              )
+            },
+          },
+          {
+            key: 'customer',
+            header: 'Kunde',
+            render: (r: Site) => {
+              if (r.customerCompany) return r.customerCompany
+              if (r.customerName) return r.customerName
+              return <span className="text-gray-400">—</span>
+            },
+          },
+          {
+            key: 'actions',
+            header: 'Aktionen',
+            render: (r: Site) => (
+              <div className="flex gap-2">
+                <Link className="underline text-blue-600 hover:text-blue-800" to={`/sites/${r.id}`}>
+                  Details
+                </Link>
+                <Link className="underline text-blue-600 hover:text-blue-800" to={`/sites/${r.id}/shifts`}>
+                  Schichten
+                </Link>
+              </div>
+            ),
+          },
         ]}
         rows={data?.data ?? []}
         loading={isLoading}

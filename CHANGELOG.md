@@ -2,6 +2,70 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.11.0] - 2025-10-17 – Objekt-Management Phase 1 (Backend-Grundlagen)
+
+### Added - Datenmodell-Erweiterungen
+- **Objekt-Management Datenmodell**:
+  - **Site-Erweiterungen**: Kunden-Informationen (Name, Firma, E-Mail, Telefon), Notfallkontakte (JSON), Status (INQUIRY, IN_REVIEW, CALCULATING, OFFER_SENT, ACTIVE, INACTIVE, LOST), Anforderungen (requiredStaff, requiredQualifications), Beschreibung & Notizen
+  - **SiteImage**: Objekt-Bilder mit Kategorien (EXTERIOR, INTERIOR, FLOOR_PLAN, EQUIPMENT, EMERGENCY, OTHER)
+  - **SiteAssignment**: Objekt-Zuweisungen (OBJEKTLEITER, SCHICHTLEITER, MITARBEITER)
+  - **ObjectClearance-Erweiterungen**: Training-Details (trainingCompletedAt, trainingHours, approvedBy), TRAINING-Status hinzugefügt
+  - Migration: `20251016224831_add_site_management_phase1`
+
+### Added - Backend-API
+- **Site-Controller-Erweiterungen**:
+  - CRUD-Operationen mit allen neuen Feldern
+  - Relation-Loading (Images, Assignments, Clearances) via Query-Parameter
+  - Filter-Unterstützung (Status, Kunden-Name, Kunden-Firma)
+- **Bilder-Management**:
+  - `GET /api/sites/:id/images` - Bilder abrufen (Filter: Kategorie)
+  - `POST /api/sites/:id/images` - Bilder hochladen (RBAC: ADMIN, MANAGER, DISPATCHER)
+  - `DELETE /api/sites/:siteId/images/:imageId` - Bilder löschen (RBAC: ADMIN, MANAGER)
+- **Zuweisungen-Management**:
+  - `GET /api/sites/:id/assignments` - Zuweisungen abrufen (Filter: Rolle)
+  - `POST /api/sites/:id/assignments` - Zuweisungen erstellen (RBAC: ADMIN, MANAGER)
+  - `DELETE /api/sites/:siteId/assignments/:assignmentId` - Zuweisungen löschen (RBAC: ADMIN, MANAGER)
+- **Coverage-Stats**:
+  - `GET /api/sites/:id/coverage-stats` - Coverage-Statistiken (Clearances vs. requiredStaff, Zuweisungen nach Rolle)
+- **Clearances-Controller (NEU)**:
+  - `GET /api/clearances` - Alle Clearances (Filter: userId, siteId, status)
+  - `POST /api/clearances` - Neue Clearance erstellen (RBAC: ADMIN, MANAGER)
+  - `GET /api/clearances/:id` - Einzelne Clearance
+  - `PUT /api/clearances/:id` - Clearance aktualisieren (RBAC: ADMIN, MANAGER)
+  - `DELETE /api/clearances/:id` - Clearance löschen (RBAC: ADMIN, MANAGER)
+  - `POST /api/clearances/:id/complete-training` - Training abschließen (RBAC: ADMIN, MANAGER)
+  - `POST /api/clearances/:id/revoke` - Clearance widerrufen (RBAC: ADMIN, MANAGER)
+
+### Added - Intelligent Replacement Scoring v2.0
+- **Object-Clearance-Score (20% Gewichtung)**:
+  - Neue Scoring-Komponente prüft Objekt-Einarbeitung
+  - ACTIVE: 100 Punkte | TRAINING: 50 Punkte | EXPIRED/REVOKED: 0 Punkte
+  - Bonus: +10 für abgeschlossenes Training, +5 für frische Clearance (< 30 Tage)
+  - Malus: -20 für bald ablaufende Clearance (< 14 Tage)
+  - Funktion: `calculateObjectClearanceScore` in `replacementScoreUtils.ts`
+- **Angepasste Gewichtungen**:
+  - **Alt**: 10% Workload, 40% Compliance, 20% Fairness, 30% Preference
+  - **Neu**: 5% Workload, 35% Compliance, 15% Fairness, 25% Preference, **20% Object-Clearance**
+- **Replacement-Service erweitert**:
+  - `calculateCandidateScore` lädt jetzt automatisch Clearances, wenn Schicht mit Site verknüpft ist
+  - `CandidateScore` Interface um `objectClearanceScore` erweitert
+  - Abwärtskompatibel: Funktioniert auch ohne Site-Verknüpfung (alte Gewichtungen)
+
+### Changed
+- **Validations erweitert**: `siteValidation.ts` unterstützt alle neuen Felder (customerName, customerEmail, status, etc.)
+
+### Documentation
+- Vollständiges Feature-Konzept in `docs/FEATURE_OBJEKT_MANAGEMENT.md` (7 Phasen)
+- Phase 1 Implementierungsplan in `docs/planning/phase1-objekt-grundlagen.md`
+- Scoring-Integration dokumentiert in `docs/planning/scoring-objekt-integration.md`
+- TODO.md aktualisiert mit vollständiger Roadmap (v1.11.0 - v1.17.0)
+
+### Internal
+- TypeScript: Alle Fehler behoben (userId vs. id, Enum-Casting)
+- Prisma Client neu generiert mit neuen Models
+
+---
+
 ## [1.10.1] - 2025-10-16 – Intelligent Replacement UX & Fairness Improvements
 
 ### Added

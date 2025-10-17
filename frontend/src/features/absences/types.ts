@@ -42,6 +42,7 @@ export type ReplacementCandidateV2 = {
     compliance: number
     fairness: number
     preference: number
+    objectClearance?: number // v1.11.0+ Object-Clearance-Score
   }
   metrics: {
     currentHours: number

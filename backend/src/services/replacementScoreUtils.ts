@@ -123,19 +123,35 @@ export function calculateTotalScore(
   complianceScore: number,
   fairnessScore: number,
   preferenceScore: number,
+  objectClearanceScore?: number,
 ): number {
-  const WEIGHTS = {
-    workload: 0.1,
-    compliance: 0.4,
-    fairness: 0.2,
-    preference: 0.3,
-  };
+  // Neue Gewichtungen (v1.11.0+) mit Object-Clearance-Score
+  // Alt: 10% Workload, 40% Compliance, 20% Fairness, 30% Preference
+  // Neu: 5% Workload, 35% Compliance, 15% Fairness, 25% Preference, 20% ObjectClearance
+  const hasObjectScore = objectClearanceScore !== undefined;
+
+  const WEIGHTS = hasObjectScore
+    ? {
+        workload: 0.05,
+        compliance: 0.35,
+        fairness: 0.15,
+        preference: 0.25,
+        objectClearance: 0.2,
+      }
+    : {
+        workload: 0.1,
+        compliance: 0.4,
+        fairness: 0.2,
+        preference: 0.3,
+        objectClearance: 0.0,
+      };
 
   return (
     workloadScore * WEIGHTS.workload +
     complianceScore * WEIGHTS.compliance +
     fairnessScore * WEIGHTS.fairness +
-    preferenceScore * WEIGHTS.preference
+    preferenceScore * WEIGHTS.preference +
+    (objectClearanceScore || 0) * WEIGHTS.objectClearance
   );
 }
 
@@ -161,4 +177,68 @@ export function calculateTieBreaker(restHours: number, consecutiveRestDays: numb
   }
 
   return Math.min(bonus, 1.0); // Max +1.0 Bonus
+}
+
+/**
+ * Object-Clearance-Score (v1.11.0+)
+ *
+ * Bewertet, ob ein MA für ein Objekt eingearbeitet ist.
+ *
+ * @param clearance - ObjectClearance-Objekt (oder null, falls keine Clearance vorhanden)
+ * @returns Score 0-100
+ *
+ * Scoring-Logik:
+ * - Keine Clearance: 0 Punkte (MA nicht eingearbeitet)
+ * - ACTIVE: 100 Punkte (voll einsatzfähig)
+ * - TRAINING: 50 Punkte (in Einarbeitung, bedingt einsetzbar)
+ * - EXPIRED/REVOKED: 0 Punkte (nicht mehr gültig)
+ * - Bonus: +10 für abgeschlossenes Training
+ * - Bonus: +5 für frische Clearance (< 30 Tage alt)
+ * - Malus: -20 für bald ablaufende Clearance (< 14 Tage)
+ */
+export function calculateObjectClearanceScore(clearance: {
+  status: 'ACTIVE' | 'TRAINING' | 'EXPIRED' | 'REVOKED';
+  trainingCompletedAt: Date | null;
+  trainedAt?: Date | null;
+  validUntil?: Date | null;
+} | null): number {
+  // Keine Clearance = 0 Punkte
+  if (!clearance) return 0;
+
+  // Status-basierter Score
+  const statusScores = {
+    ACTIVE: 100,
+    TRAINING: 50, // In Einarbeitung = reduzierter Score
+    EXPIRED: 0,
+    REVOKED: 0,
+  };
+
+  let score = statusScores[clearance.status] || 0;
+
+  // Bonus für abgeschlossene Einarbeitung
+  if (clearance.trainingCompletedAt) {
+    score += 10;
+  }
+
+  // Bonus für frische Clearance (< 30 Tage alt)
+  if (clearance.trainedAt) {
+    const daysSinceTrained = Math.floor(
+      (Date.now() - new Date(clearance.trainedAt).getTime()) / (1000 * 60 * 60 * 24),
+    );
+    if (daysSinceTrained < 30) {
+      score += 5;
+    }
+  }
+
+  // Malus für bald ablaufende Clearance (< 14 Tage)
+  if (clearance.validUntil) {
+    const daysUntilExpiry = Math.floor(
+      (new Date(clearance.validUntil).getTime() - Date.now()) / (1000 * 60 * 60 * 24),
+    );
+    if (daysUntilExpiry < 14 && daysUntilExpiry >= 0) {
+      score -= 20;
+    }
+  }
+
+  return Math.max(0, Math.min(100, score));
 }

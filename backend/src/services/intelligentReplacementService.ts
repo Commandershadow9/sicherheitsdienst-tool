@@ -22,6 +22,7 @@ import {
   calculatePreferenceScore,
   calculateTotalScore,
   calculateTieBreaker,
+  calculateObjectClearanceScore,
 } from './replacementScoreUtils';
 import { recordCandidateScore } from '../utils/replacementMetrics';
 
@@ -32,6 +33,7 @@ export {
   calculatePreferenceScore,
   calculateTotalScore,
   calculateTieBreaker,
+  calculateObjectClearanceScore,
 } from './replacementScoreUtils';
 
 const prisma = new PrismaClient();
@@ -58,6 +60,7 @@ export interface CandidateScore {
   complianceScore: number;
   fairnessScore: number;
   preferenceScore: number;
+  objectClearanceScore?: number; // v1.11.0+: Objekt-Einarbeitungs-Score
 
   // Detail-Metriken für UI
   metrics: {
@@ -434,6 +437,23 @@ export async function calculateCandidateScore(userId: string, shift: Shift): Pro
     throw new Error(`User ${userId} not found`);
   }
 
+  // Object-Clearance laden (v1.11.0+)
+  let objectClearance = null;
+  if (shift.siteId) {
+    objectClearance = await prisma.objectClearance.findFirst({
+      where: {
+        userId,
+        siteId: shift.siteId,
+      },
+      select: {
+        status: true,
+        trainingCompletedAt: true,
+        trainedAt: true,
+        validUntil: true,
+      },
+    });
+  }
+
   // Aktueller Monat/Jahr
   const now = new Date();
   const currentMonth = now.getMonth() + 1;
@@ -473,7 +493,18 @@ export async function calculateCandidateScore(userId: string, shift: Shift): Pro
   );
   const preferenceScore = calculatePreferenceScore(shift, preferences, workload.totalHours, shiftDuration);
 
-  const totalScore = calculateTotalScore(workloadScore, complianceScore, fairnessScore, preferenceScore);
+  // Object-Clearance-Score (v1.11.0+)
+  const objectClearanceScore = shift.siteId
+    ? calculateObjectClearanceScore(objectClearance as any)
+    : undefined;
+
+  const totalScore = calculateTotalScore(
+    workloadScore,
+    complianceScore,
+    fairnessScore,
+    preferenceScore,
+    objectClearanceScore,
+  );
 
   // Tie-Breaker: Bevorzuge MA mit mehr Ruhe bei gleichem Score
   const restDaysLast14Days = 14 - consecutiveDays; // Vereinfacht: 14 Tage - gearbeitete Tage
@@ -580,6 +611,7 @@ export async function calculateCandidateScore(userId: string, shift: Shift): Pro
     complianceScore,
     fairnessScore,
     preferenceScore,
+    objectClearanceScore, // v1.11.0+
     metrics,
     warnings,
   };

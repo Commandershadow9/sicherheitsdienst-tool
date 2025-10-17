@@ -19,6 +19,7 @@ import {
   shiftRoutes,
   authRoutes,
   siteRoutes,
+  clearanceRoutes,
   notificationRoutes,
   eventRoutes,
   pushRoutes,
@@ -116,6 +117,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/shifts', shiftRoutes);
 app.use('/api/sites', siteRoutes);
+app.use('/api/clearances', clearanceRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/events', eventRoutes);
 app.use('/api/push', pushRoutes);
@@ -130,6 +132,7 @@ app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/users', userRoutes);
 app.use('/api/v1/shifts', shiftRoutes);
 app.use('/api/v1/sites', siteRoutes);
+app.use('/api/v1/clearances', clearanceRoutes);
 app.use('/api/v1/notifications', notificationRoutes);
 app.use('/api/v1/events', eventRoutes);
 app.use('/api/v1/push', pushRoutes);

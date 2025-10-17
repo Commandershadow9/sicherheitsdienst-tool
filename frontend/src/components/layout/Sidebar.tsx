@@ -5,7 +5,7 @@ import { useAuth } from '@/features/auth/AuthProvider'
 
 const NAV_ALL = [
   { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['ADMIN','DISPATCHER','EMPLOYEE','MANAGER'] as const },
-  { to: '/sites', label: 'Standorte', icon: CalendarDays, roles: ['ADMIN','DISPATCHER','MANAGER'] as const },
+  { to: '/sites', label: 'Objekte', icon: CalendarDays, roles: ['ADMIN','DISPATCHER','MANAGER'] as const },
   { to: '/shifts', label: 'Schichten', icon: Clock, roles: ['ADMIN','DISPATCHER','EMPLOYEE','MANAGER'] as const },
   { to: '/absences', label: 'Abwesenheiten', icon: CalendarClock, roles: ['ADMIN','DISPATCHER','EMPLOYEE','MANAGER'] as const },
   { to: '/users', label: 'Benutzer', icon: Users, roles: ['ADMIN','DISPATCHER'] as const },

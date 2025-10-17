@@ -22,6 +22,9 @@ import {
   Flame,
   CalendarRange,
   Ban,
+  CheckCircle2,
+  AlertCircle,
+  XCircle,
   type LucideIcon,
 } from 'lucide-react'
 
@@ -127,6 +130,27 @@ export function ReplacementCandidatesModalV2({
     return 'error'
   }
 
+  const getClearanceStatus = (score?: number): 'success' | 'warning' | 'error' | 'neutral' => {
+    if (score === undefined || score === null) return 'error' // Keine Clearance
+    if (score >= 100) return 'success' // ACTIVE + Training abgeschlossen
+    if (score >= 50) return 'warning' // TRAINING
+    return 'error' // EXPIRED/REVOKED
+  }
+
+  const getClearanceIcon = (score?: number): LucideIcon => {
+    if (score === undefined || score === null) return XCircle
+    if (score >= 100) return CheckCircle2
+    if (score >= 50) return AlertCircle
+    return XCircle
+  }
+
+  const getClearanceLabel = (score?: number): string => {
+    if (score === undefined || score === null) return 'Keine Einarbeitung'
+    if (score >= 100) return 'Eingearbeitet ✓'
+    if (score >= 50) return 'In Einarbeitung'
+    return 'Nicht eingearbeitet'
+  }
+
   return (
     <Modal open={open} onClose={onClose} title={`🤖 Intelligente Ersatz-Suche: "${shiftTitle}"`}>
       <div className="max-w-4xl">
@@ -207,6 +231,16 @@ export function ReplacementCandidatesModalV2({
 
                     {/* Metrics Grid */}
                     <div className="grid grid-cols-2 gap-2 mt-4">
+                      {/* Object-Clearance-Score Badge (v1.11.0+) - nur anzeigen wenn Schicht mit Objekt verknüpft */}
+                      {candidate.score.objectClearance !== undefined && (
+                        <MetricBadge
+                          icon={getClearanceIcon(candidate.score.objectClearance)}
+                          label="Objekt-Clearance"
+                          value={getClearanceLabel(candidate.score.objectClearance)}
+                          status={getClearanceStatus(candidate.score.objectClearance)}
+                          size="sm"
+                        />
+                      )}
                       <MetricBadge
                         icon={BarChart3}
                         label="Auslastung"
@@ -244,6 +278,18 @@ export function ReplacementCandidatesModalV2({
                       />
                     </div>
 
+                    {/* Objekt-Clearance Warnung (v1.11.0+) */}
+                    {candidate.score.objectClearance !== undefined && candidate.score.objectClearance === 0 && (
+                      <div className="mt-3">
+                        <WarningBadge
+                          message="⚠️ Keine Objekt-Einarbeitung vorhanden - Training erforderlich!"
+                          severity="error"
+                          size="sm"
+                          icon={AlertCircle}
+                        />
+                      </div>
+                    )}
+
                     {/* Warnings */}
                     {candidate.warnings.length > 0 && (
                       <div className="mt-3 space-y-1">
@@ -270,22 +316,33 @@ export function ReplacementCandidatesModalV2({
 
                     {/* Expanded Detail Scores */}
                     {isExpanded && (
-                      <div className="mt-3 pt-3 border-t border-gray-300 grid grid-cols-4 gap-3">
+                      <div className={`mt-3 pt-3 border-t border-gray-300 grid ${candidate.score.objectClearance !== undefined ? 'grid-cols-5' : 'grid-cols-4'} gap-3`}>
+                        {candidate.score.objectClearance !== undefined && (
+                          <div className="text-center">
+                            <div className="text-xs text-gray-600 mb-1">Clearance</div>
+                            <div className="font-semibold text-sm">{Math.round(candidate.score.objectClearance)}</div>
+                            <div className="text-xs text-gray-500">20%</div>
+                          </div>
+                        )}
                         <div className="text-center">
                           <div className="text-xs text-gray-600 mb-1">Workload</div>
                           <div className="font-semibold text-sm">{Math.round(candidate.score.workload)}</div>
+                          <div className="text-xs text-gray-500">{candidate.score.objectClearance !== undefined ? '5%' : '10%'}</div>
                         </div>
                         <div className="text-center">
                           <div className="text-xs text-gray-600 mb-1">Compliance</div>
                           <div className="font-semibold text-sm">{Math.round(candidate.score.compliance)}</div>
+                          <div className="text-xs text-gray-500">{candidate.score.objectClearance !== undefined ? '35%' : '40%'}</div>
                         </div>
                         <div className="text-center">
                           <div className="text-xs text-gray-600 mb-1">Fairness</div>
                           <div className="font-semibold text-sm">{Math.round(candidate.score.fairness)}</div>
+                          <div className="text-xs text-gray-500">{candidate.score.objectClearance !== undefined ? '15%' : '20%'}</div>
                         </div>
                         <div className="text-center">
                           <div className="text-xs text-gray-600 mb-1">Präferenz</div>
                           <div className="font-semibold text-sm">{Math.round(candidate.score.preference)}</div>
+                          <div className="text-xs text-gray-500">{candidate.score.objectClearance !== undefined ? '25%' : '30%'}</div>
                         </div>
                       </div>
                     )}
