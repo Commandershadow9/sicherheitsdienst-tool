@@ -4,6 +4,7 @@ import { validate } from '../middleware/validate';
 import { createSiteSchema, updateSiteSchema } from '../validations/siteValidation';
 import * as siteController from '../controllers/siteController';
 import * as documentController from '../controllers/documentController';
+import * as siteIncidentController from '../controllers/siteIncidentController';
 import { asyncHandler } from '../middleware/asyncHandler';
 import { siteListQuerySchema } from '../validations/siteValidation';
 import * as shiftController from '../controllers/shiftController';
@@ -146,6 +147,50 @@ router.delete(
   asyncHandler(documentController.deleteDocument),
 );
 
+// ===== Vorfälle/Wachbuch-Management =====
+
+// GET /api/sites/:siteId/incidents
+router.get('/:siteId/incidents', authenticate, asyncHandler(siteIncidentController.getSiteIncidents));
+
+// GET /api/sites/:siteId/incidents/:id
+router.get('/:siteId/incidents/:id', authenticate, asyncHandler(siteIncidentController.getIncidentById));
+
+// POST /api/sites/:siteId/incidents
+router.post(
+  '/:siteId/incidents',
+  authenticate,
+  authorize('ADMIN', 'MANAGER', 'EMPLOYEE'),
+  writeLimiter,
+  asyncHandler(siteIncidentController.createIncident),
+);
+
+// PUT /api/sites/:siteId/incidents/:id
+router.put(
+  '/:siteId/incidents/:id',
+  authenticate,
+  authorize('ADMIN', 'MANAGER'),
+  writeLimiter,
+  asyncHandler(siteIncidentController.updateIncident),
+);
+
+// PUT /api/sites/:siteId/incidents/:id/resolve
+router.put(
+  '/:siteId/incidents/:id/resolve',
+  authenticate,
+  authorize('ADMIN', 'MANAGER'),
+  writeLimiter,
+  asyncHandler(siteIncidentController.resolveIncident),
+);
+
+// DELETE /api/sites/:siteId/incidents/:id
+router.delete(
+  '/:siteId/incidents/:id',
+  authenticate,
+  authorize('ADMIN', 'MANAGER'),
+  writeLimiter,
+  asyncHandler(siteIncidentController.deleteIncident),
+);
+
 // 405
 router.all('/', authenticate, methodNotAllowed(['GET', 'POST']));
 router.all('/:id', authenticate, methodNotAllowed(['GET', 'PUT', 'DELETE']));
@@ -159,4 +204,7 @@ router.all('/:siteId/documents', authenticate, methodNotAllowed(['GET', 'POST'])
 router.all('/:siteId/documents/:documentId', authenticate, methodNotAllowed(['GET', 'PUT', 'DELETE']));
 router.all('/:siteId/documents/:id/versions', authenticate, methodNotAllowed(['GET']));
 router.all('/:siteId/documents/:id/download', authenticate, methodNotAllowed(['GET']));
+router.all('/:siteId/incidents', authenticate, methodNotAllowed(['GET', 'POST']));
+router.all('/:siteId/incidents/:id', authenticate, methodNotAllowed(['GET', 'PUT', 'DELETE']));
+router.all('/:siteId/incidents/:id/resolve', authenticate, methodNotAllowed(['PUT']));
 export default router;

@@ -31,24 +31,25 @@ model User {
   updatedAt DateTime @updatedAt
 
   // Beziehungen
-  shifts               ShiftAssignment[]
-  timeEntries          TimeEntry[]
-  incidents            Incident[]
-  profile              EmployeeProfile?
-  absencesRequested    Absence[]             @relation("AbsenceUser")
-  absencesCreated      Absence[]             @relation("AbsenceCreatedBy")
-  absencesDecided      Absence[]             @relation("AbsenceDecidedBy")
-  documentsUploaded    EmployeeDocument[]    @relation("EmployeeDocumentUploadedBy")
-  objectClearances     ObjectClearance[]
-  clearancesTrained    ObjectClearance[]     @relation("ClearanceTrainer")
-  clearancesApproved   ObjectClearance[]     @relation("ClearanceApprover")
-  siteImagesUploaded   SiteImage[]           @relation("SiteImageUploader")
-  siteAssignments      SiteAssignment[]      @relation("SiteAssignmentUser")
-  siteDocumentsUploaded SiteDocument[]       @relation("SiteDocumentUploader")
-  deviceTokens         DeviceToken[]
-  preferences          EmployeePreferences?
-  workload             EmployeeWorkload[]
-  complianceViolations ComplianceViolation[]
+  shifts                ShiftAssignment[]
+  timeEntries           TimeEntry[]
+  incidents             Incident[]
+  profile               EmployeeProfile?
+  absencesRequested     Absence[]             @relation("AbsenceUser")
+  absencesCreated       Absence[]             @relation("AbsenceCreatedBy")
+  absencesDecided       Absence[]             @relation("AbsenceDecidedBy")
+  documentsUploaded     EmployeeDocument[]    @relation("EmployeeDocumentUploadedBy")
+  objectClearances      ObjectClearance[]
+  clearancesTrained     ObjectClearance[]     @relation("ClearanceTrainer")
+  clearancesApproved    ObjectClearance[]     @relation("ClearanceApprover")
+  siteImagesUploaded    SiteImage[]           @relation("SiteImageUploader")
+  siteAssignments       SiteAssignment[]      @relation("SiteAssignmentUser")
+  siteDocumentsUploaded SiteDocument[]        @relation("SiteDocumentUploader")
+  siteIncidentsReported SiteIncident[]        @relation("SiteIncidentReporter")
+  deviceTokens          DeviceToken[]
+  preferences           EmployeePreferences?
+  workload              EmployeeWorkload[]
+  complianceViolations  ComplianceViolation[]
 
   @@index([lastName, firstName], name: "users_name_idx")
   @@index([createdAt], name: "users_createdAt_idx")
@@ -95,6 +96,7 @@ model Site {
   images      SiteImage[]
   assignments SiteAssignment[]
   documents   SiteDocument[]
+  incidents   SiteIncident[]
 
   @@unique([name, address], name: "sites_name_address_key")
   @@index([name], name: "sites_name_idx")
@@ -607,7 +609,7 @@ model SiteDocument {
 
   // Dokument-Metadaten
   title       String
-  description String?                @db.Text
+  description String?              @db.Text
   category    SiteDocumentCategory
 
   // File-Informationen
@@ -617,10 +619,10 @@ model SiteDocument {
   fileSize Int    @map("file_size")
 
   // Versionierung
-  version           Int           @default(1)
-  isLatest          Boolean       @default(true) @map("is_latest")
-  previousVersionId String?       @map("previous_version_id")
-  previousVersion   SiteDocument? @relation("DocumentVersions", fields: [previousVersionId], references: [id], onDelete: SetNull)
+  version           Int            @default(1)
+  isLatest          Boolean        @default(true) @map("is_latest")
+  previousVersionId String?        @map("previous_version_id")
+  previousVersion   SiteDocument?  @relation("DocumentVersions", fields: [previousVersionId], references: [id], onDelete: SetNull)
   nextVersions      SiteDocument[] @relation("DocumentVersions")
 
   // Metadaten
@@ -635,13 +637,65 @@ model SiteDocument {
 }
 
 enum SiteDocumentCategory {
-  DIENSTANWEISUNG     // Dienstanweisungen
-  NOTFALLPLAN         // Notfallpläne
-  VERTRAG             // Verträge mit Kunde
-  BRANDSCHUTZORDNUNG  // Brandschutzordnung
-  HAUSORDNUNG         // Hausordnung
-  GRUNDRISS           // Gebäudepläne (ergänzend zu Images)
-  SONSTIGES           // Sonstiges
+  DIENSTANWEISUNG // Dienstanweisungen
+  NOTFALLPLAN // Notfallpläne
+  VERTRAG // Verträge mit Kunde
+  BRANDSCHUTZORDNUNG // Brandschutzordnung
+  HAUSORDNUNG // Hausordnung
+  GRUNDRISS // Gebäudepläne (ergänzend zu Images)
+  SONSTIGES // Sonstiges
+}
+
+// Objekt-Vorfälle / Wachbuch-Einträge
+model SiteIncident {
+  id     String @id @default(cuid())
+  siteId String @map("site_id")
+  site   Site   @relation(fields: [siteId], references: [id], onDelete: Cascade)
+
+  // Vorfall-Informationen
+  title       String
+  description String?              @db.Text
+  category    SiteIncidentCategory
+  severity    IncidentSeverity
+
+  // Zeit & Ort
+  occurredAt DateTime // Wann ist es passiert?
+  reportedAt DateTime @default(now()) @map("reported_at") // Wann wurde es gemeldet?
+  location   String? // Genauer Ort im Objekt
+
+  // Personen
+  reportedBy      String  @map("reported_by")
+  reporter        User    @relation("SiteIncidentReporter", fields: [reportedBy], references: [id])
+  involvedPersons String? @db.Text // JSON-Array mit Namen/Details
+
+  // Status & Follow-up
+  status     IncidentStatus @default(OPEN)
+  resolvedAt DateTime?      @map("resolved_at")
+  resolution String?        @db.Text
+
+  // Metadaten
+  notificationsEnabled Boolean  @default(true) @map("notifications_enabled")
+  createdAt            DateTime @default(now()) @map("created_at")
+  updatedAt            DateTime @updatedAt @map("updated_at")
+
+  @@index([siteId, occurredAt])
+  @@index([siteId, status])
+  @@index([siteId, category])
+  @@map("site_incidents")
+}
+
+enum SiteIncidentCategory {
+  FIRE // Brand
+  BREAK_IN // Einbruch
+  THEFT // Diebstahl
+  VANDALISM // Vandalismus
+  ACCIDENT // Unfall
+  MEDICAL_EMERGENCY // Medizinischer Notfall
+  DISTURBANCE // Ruhestörung
+  PROPERTY_DAMAGE // Sachschaden
+  SUSPICIOUS_PERSON // Verdächtige Person
+  TECHNICAL_FAILURE // Technischer Ausfall
+  OTHER // Sonstiges
 }
 
 // Einsätze / Events
