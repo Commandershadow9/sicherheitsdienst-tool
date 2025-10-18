@@ -11,9 +11,16 @@ type ModalProps = {
 export function Modal({ open, onClose, title, children }: ModalProps) {
   if (!open) return null
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="absolute inset-0 bg-black/40" onClick={onClose} />
-      <div className={cn('relative z-10 w-full max-w-3xl rounded-lg border border-border bg-card shadow-lg p-4')}
+    <div className="fixed inset-0 z-50 flex items-center justify-center animate-in fade-in duration-200">
+      <div
+        className="absolute inset-0 bg-black/40 backdrop-blur-sm transition-all"
+        onClick={onClose}
+      />
+      <div
+        className={cn(
+          'relative z-10 w-full max-w-3xl mx-4 rounded-lg border border-border bg-card shadow-xl p-4',
+          'animate-in fade-in zoom-in-95 duration-200'
+        )}
       >
         {title && <div className="text-base font-semibold mb-3 pr-2">{title}</div>}
         <div className="max-h-[calc(90vh-6rem)] overflow-y-auto pr-2">

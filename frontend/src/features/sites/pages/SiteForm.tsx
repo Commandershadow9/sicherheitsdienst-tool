@@ -8,7 +8,8 @@ import { Textarea } from '@/components/ui/textarea'
 import { Select } from '@/components/ui/select'
 import { FormField } from '@/components/ui/form'
 import { toast } from 'sonner'
-import { Plus, Trash2 } from 'lucide-react'
+import { Plus, Trash2, Loader2 } from 'lucide-react'
+import { SkeletonForm } from '@/components/ui/skeleton'
 
 type SiteFormProps = {
   mode: 'create' | 'edit'
@@ -181,7 +182,7 @@ export default function SiteForm({ mode }: SiteFormProps) {
   }
 
   if (mode === 'edit' && isLoading) {
-    return <div className="p-4">Laden...</div>
+    return <SkeletonForm />
   }
 
   const isPending = createMutation.isPending || updateMutation.isPending
@@ -199,9 +200,9 @@ export default function SiteForm({ mode }: SiteFormProps) {
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Basis-Informationen */}
-        <div className="bg-white p-6 rounded-lg border space-y-4">
-          <h2 className="text-lg font-semibold">Basis-Informationen</h2>
-          <div className="grid grid-cols-2 gap-4">
+        <div className="bg-white p-6 rounded-xl border shadow-sm space-y-4">
+          <h2 className="text-lg font-semibold text-gray-900">Basis-Informationen</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <FormField label="Objekt-Name *">
               <Input
                 value={formData.name}
@@ -260,9 +261,9 @@ export default function SiteForm({ mode }: SiteFormProps) {
         </div>
 
         {/* Kunden-Informationen */}
-        <div className="bg-white p-6 rounded-lg border space-y-4">
-          <h2 className="text-lg font-semibold">Kunden-Informationen</h2>
-          <div className="grid grid-cols-2 gap-4">
+        <div className="bg-white p-6 rounded-xl border shadow-sm space-y-4">
+          <h2 className="text-lg font-semibold text-gray-900">Kunden-Informationen</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <FormField label="Ansprechpartner">
               <Input
                 value={formData.customerName}
@@ -297,8 +298,8 @@ export default function SiteForm({ mode }: SiteFormProps) {
         </div>
 
         {/* Anforderungen */}
-        <div className="bg-white p-6 rounded-lg border space-y-4">
-          <h2 className="text-lg font-semibold">Anforderungen</h2>
+        <div className="bg-white p-6 rounded-xl border shadow-sm space-y-4">
+          <h2 className="text-lg font-semibold text-gray-900">Anforderungen</h2>
           <FormField label="Benötigte Mitarbeiter *">
             <Input
               type="number"
@@ -342,9 +343,9 @@ export default function SiteForm({ mode }: SiteFormProps) {
         </div>
 
         {/* Notfallkontakte */}
-        <div className="bg-white p-6 rounded-lg border space-y-4">
+        <div className="bg-white p-6 rounded-xl border shadow-sm space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold">Notfallkontakte</h2>
+            <h2 className="text-lg font-semibold text-gray-900">Notfallkontakte</h2>
             <Button type="button" onClick={addEmergencyContact} size="sm" variant="outline">
               <Plus size={16} /> Kontakt hinzufügen
             </Button>
@@ -390,8 +391,8 @@ export default function SiteForm({ mode }: SiteFormProps) {
         </div>
 
         {/* Notizen */}
-        <div className="bg-white p-6 rounded-lg border space-y-4">
-          <h2 className="text-lg font-semibold">Interne Notizen</h2>
+        <div className="bg-white p-6 rounded-xl border shadow-sm space-y-4">
+          <h2 className="text-lg font-semibold text-gray-900">Interne Notizen</h2>
           <FormField label="Notizen (nur intern sichtbar)">
             <Textarea
               value={formData.notes}
@@ -408,6 +409,7 @@ export default function SiteForm({ mode }: SiteFormProps) {
             Abbrechen
           </Button>
           <Button type="submit" disabled={isPending}>
+            {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             {isPending ? 'Wird gespeichert...' : mode === 'create' ? 'Objekt anlegen' : 'Änderungen speichern'}
           </Button>
         </div>

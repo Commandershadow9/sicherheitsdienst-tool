@@ -4,6 +4,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '@/lib/api'
 import { Button } from '@/components/ui/button'
 import { Select } from '@/components/ui/select'
+import { UserSelect } from '@/components/ui/user-select'
+import { SkeletonDetailPage } from '@/components/ui/skeleton'
 import { cn } from '@/lib/utils'
 import RbacForbidden from '@/components/RbacForbidden'
 import { Modal } from '@/components/ui/modal'
@@ -12,6 +14,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { FormField } from '@/components/ui/form'
 import { toast } from 'sonner'
 import { completeClearanceTraining, revokeClearance, type Clearance } from '../api'
+import { Building2, Phone, Users, Shield, Calendar, Image as ImageIcon, UserCheck } from 'lucide-react'
 
 type Site = {
   id: string
@@ -230,7 +233,7 @@ export default function SiteDetail() {
   })
 
   if (isLoading) {
-    return <div className="p-4">Laden...</div>
+    return <SkeletonDetailPage />
   }
 
   if (isError && (error as any)?.response?.status === 403) {
@@ -251,7 +254,7 @@ export default function SiteDetail() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
             <Button variant="link" onClick={() => nav('/sites')} className="px-0">
@@ -263,7 +266,7 @@ export default function SiteDetail() {
             {site.address}, {site.postalCode} {site.city}
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           {site.status && (
             <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${STATUS_COLORS[site.status]}`}>
               {STATUS_LABELS[site.status]}
@@ -277,8 +280,8 @@ export default function SiteDetail() {
       </div>
 
       {/* Tabs */}
-      <div className="border-b border-gray-200">
-        <nav className="flex gap-4">
+      <div className="border-b border-gray-200 overflow-x-auto">
+        <nav className="flex gap-4 min-w-max sm:min-w-0">
           {tabs.map((tab) => (
             <button
               key={tab.key}
@@ -297,14 +300,17 @@ export default function SiteDetail() {
       </div>
 
       {/* Tab Content */}
-      <div className="bg-white rounded-lg border p-6">
+      <div className="bg-white rounded-xl border shadow-sm p-6">
         {activeTab === 'overview' && (
-          <div className="space-y-6">
+          <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-300">
             {/* Kunden-Informationen */}
             {(site.customerName || site.customerCompany) && (
-              <div>
-                <h3 className="text-lg font-semibold mb-3">Kunden-Informationen</h3>
-                <dl className="grid grid-cols-2 gap-4">
+              <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg p-5 border border-blue-100">
+                <h3 className="text-lg font-semibold mb-4 text-blue-900 flex items-center gap-2">
+                  <Building2 size={20} className="text-blue-600" />
+                  Kunden-Informationen
+                </h3>
+                <dl className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {site.customerCompany && (
                     <>
                       <dt className="text-sm font-medium text-gray-600">Firma</dt>
@@ -343,11 +349,14 @@ export default function SiteDetail() {
 
             {/* Notfallkontakte */}
             {site.emergencyContacts && site.emergencyContacts.length > 0 && (
-              <div>
-                <h3 className="text-lg font-semibold mb-3">Notfallkontakte</h3>
+              <div className="bg-gradient-to-br from-red-50 to-rose-50 rounded-lg p-5 border border-red-100">
+                <h3 className="text-lg font-semibold mb-4 text-red-900 flex items-center gap-2">
+                  <Phone size={20} className="text-red-600" />
+                  Notfallkontakte
+                </h3>
                 <div className="space-y-2">
                   {site.emergencyContacts.map((contact, idx) => (
-                    <div key={idx} className="border rounded p-3">
+                    <div key={idx} className="border rounded p-3 hover:border-blue-200 hover:shadow-sm transition-all duration-200">
                       <div className="font-medium">{contact.name}</div>
                       {contact.role && <div className="text-sm text-gray-600">{contact.role}</div>}
                       <div className="text-sm">
@@ -385,9 +394,12 @@ export default function SiteDetail() {
             </div>
 
             {/* Zuweisungen */}
-            <div>
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="text-lg font-semibold">Zuweisungen ({site.assignments?.length || 0})</h3>
+            <div className="bg-gradient-to-br from-purple-50 to-violet-50 rounded-lg p-5 border border-purple-100">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-purple-900 flex items-center gap-2">
+                  <UserCheck size={20} className="text-purple-600" />
+                  Zuweisungen ({site.assignments?.length || 0})
+                </h3>
                 <Button size="sm" onClick={() => setCreateAssignmentModal({ userId: '', role: 'MITARBEITER' })}>
                   Neue Zuweisung
                 </Button>
@@ -397,7 +409,7 @@ export default function SiteDetail() {
               ) : (
                 <div className="space-y-2">
                   {site.assignments.map((assignment) => (
-                    <div key={assignment.id} className="flex items-center justify-between border rounded p-3">
+                    <div key={assignment.id} className="flex items-center justify-between border rounded p-3 hover:border-blue-300 hover:shadow-sm transition-all duration-200">
                       <div>
                         <div className="font-medium">
                           {assignment.user.firstName} {assignment.user.lastName}
@@ -442,9 +454,12 @@ export default function SiteDetail() {
         )}
 
         {activeTab === 'clearances' && (
-          <div>
+          <div className="animate-in fade-in slide-in-from-bottom-4 duration-300">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold">Clearances ({site.clearances?.length || 0})</h3>
+              <h3 className="text-lg font-semibold flex items-center gap-2">
+                <Shield size={20} className="text-green-600" />
+                Clearances ({site.clearances?.length || 0})
+              </h3>
               <Button size="sm" onClick={() => setCreateClearanceModal({ userId: '', notes: '' })}>
                 Neue Clearance
               </Button>
@@ -454,7 +469,7 @@ export default function SiteDetail() {
             ) : (
               <div className="space-y-2">
                 {site.clearances.map((clearance) => (
-                  <div key={clearance.id} className="border rounded p-4">
+                  <div key={clearance.id} className="border rounded p-4 hover:border-blue-300 hover:shadow-md transition-all duration-200">
                     <div className="flex items-center justify-between">
                       <div>
                         <div className="font-medium">
@@ -510,9 +525,12 @@ export default function SiteDetail() {
         )}
 
         {activeTab === 'shifts' && (
-          <div>
+          <div className="animate-in fade-in slide-in-from-bottom-4 duration-300">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold">Schichten</h3>
+              <h3 className="text-lg font-semibold flex items-center gap-2">
+                <Calendar size={20} className="text-blue-600" />
+                Schichten
+              </h3>
               <Button onClick={() => nav(`/sites/${id}/shifts`)}>Alle Schichten anzeigen →</Button>
             </div>
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
@@ -540,9 +558,12 @@ export default function SiteDetail() {
         )}
 
         {activeTab === 'images' && (
-          <div>
+          <div className="animate-in fade-in slide-in-from-bottom-4 duration-300">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold">Bilder ({site.images?.length || 0})</h3>
+              <h3 className="text-lg font-semibold flex items-center gap-2">
+                <ImageIcon size={20} className="text-purple-600" />
+                Bilder ({site.images?.length || 0})
+              </h3>
               <Button size="sm" onClick={() => setUploadModal({ file: null, category: 'ALLGEMEIN' })}>
                 Bild hochladen
               </Button>
@@ -550,9 +571,9 @@ export default function SiteDetail() {
             {!site.images || site.images.length === 0 ? (
               <p className="text-gray-500">Keine Bilder vorhanden</p>
             ) : (
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {site.images.map((image) => (
-                  <div key={image.id} className="border rounded p-2 relative group">
+                  <div key={image.id} className="border rounded p-2 relative group hover:shadow-lg transition-all duration-200">
                     <div className="aspect-video bg-gray-100 rounded mb-2 flex items-center justify-center">
                       <span className="text-gray-400 text-4xl">📷</span>
                     </div>
@@ -723,17 +744,12 @@ export default function SiteDetail() {
         <Modal title="Neue Clearance anlegen" open={!!createClearanceModal} onClose={() => setCreateClearanceModal(null)}>
           <div className="space-y-4">
             <FormField label="Mitarbeiter auswählen *">
-              <Select
+              <UserSelect
+                users={usersData?.data || []}
                 value={createClearanceModal.userId}
-                onChange={(e: any) => setCreateClearanceModal({ ...createClearanceModal, userId: e.target.value })}
-              >
-                <option value="">-- Mitarbeiter wählen --</option>
-                {usersData?.data?.map((user: any) => (
-                  <option key={user.id} value={user.id}>
-                    {user.firstName} {user.lastName} ({user.email})
-                  </option>
-                ))}
-              </Select>
+                onChange={(userId) => setCreateClearanceModal({ ...createClearanceModal, userId })}
+                placeholder="Suche nach Name oder Email..."
+              />
             </FormField>
             <FormField label="Notizen (optional)">
               <Textarea
@@ -787,17 +803,12 @@ export default function SiteDetail() {
         <Modal title="Neue Zuweisung erstellen" open={!!createAssignmentModal} onClose={() => setCreateAssignmentModal(null)}>
           <div className="space-y-4">
             <FormField label="Mitarbeiter auswählen *">
-              <Select
+              <UserSelect
+                users={usersData?.data || []}
                 value={createAssignmentModal.userId}
-                onChange={(e: any) => setCreateAssignmentModal({ ...createAssignmentModal, userId: e.target.value })}
-              >
-                <option value="">-- Mitarbeiter wählen --</option>
-                {usersData?.data?.map((user: any) => (
-                  <option key={user.id} value={user.id}>
-                    {user.firstName} {user.lastName} ({user.email})
-                  </option>
-                ))}
-              </Select>
+                onChange={(userId) => setCreateAssignmentModal({ ...createAssignmentModal, userId })}
+                placeholder="Suche nach Name oder Email..."
+              />
             </FormField>
             <FormField label="Rolle *">
               <Select
