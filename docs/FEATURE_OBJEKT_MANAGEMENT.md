@@ -1,10 +1,11 @@
 # Objekt-Management Suite – Vollständiges Konzept
 
-**Status**: In Planung
+**Status**: Phase 1-2 ✅ Abgeschlossen, Phase 3 ⚡ 70% fertig
 **Priorität**: HOCH (blockiert mehrere Features)
 **Geschätzter Gesamtaufwand**: 15-25 Tage (aufgeteilt in 7 Phasen)
-**Version**: v1.11.0 – v1.17.0
+**Version**: v1.11.0 – v1.17.0 (aktuell: v1.13.1)
 **Erstellt**: 2025-10-17
+**Zuletzt aktualisiert**: 2025-10-18
 
 ---
 
@@ -86,9 +87,10 @@ Ein **vollständiges Objekt-Management-System**, das den gesamten Lebenszyklus e
 
 ## 📦 Phasen-Übersicht (MVP-first Ansatz)
 
-### Phase 1: Objekt-Grundlagen (v1.11.0) ⭐ **MVP - START HIER**
+### Phase 1: Objekt-Grundlagen (v1.11.0 - v1.11.1) ✅ **ABGESCHLOSSEN**
 **Ziel:** Objekte anlegen, Stammdaten verwalten, MA-Clearances
 **Aufwand:** 3-5 Tage
+**Status:** 100% fertig (Backend ✅ Frontend ✅ UX ✅)
 **Features:**
 - Objekt CRUD (Create, Read, Update, Delete)
 - Stammdaten (Adresse, Kontakte, Notfallkontakte)
@@ -197,16 +199,19 @@ GET    /api/sites/:id/coverage-stats     # Abdeckungsstatistik
 
 ---
 
-### Phase 2: Dokument-Management (v1.11.1)
+### Phase 2: Dokument-Management (v1.12.0 - v1.12.2) ✅ **ABGESCHLOSSEN**
 **Ziel:** Strukturierte Ablage aller objektbezogenen Dokumente
 **Aufwand:** 2-3 Tage
+**Status:** 100% fertig (Backend ✅ Frontend ✅ Viewer ✅)
 **Features:**
-- Dokumenten-Upload (kategorisiert)
-- Versionierung (History)
-- Dienstanweisungen (Allgemein + Objektspezifisch)
-- Notfallpläne
-- Gebäudepläne
-- Zugriffskontrolle (wer darf was sehen/bearbeiten)
+- ✅ Dokumenten-Upload (kategorisiert: 7 Kategorien)
+- ✅ Versionierung (History mit previousVersion)
+- ✅ Dienstanweisungen (DIENSTANWEISUNG)
+- ✅ Notfallpläne (NOTFALLPLAN)
+- ✅ Gebäudepläne (GRUNDRISS)
+- ✅ Document Viewer (PDF, Markdown, Text)
+- ✅ Multer File-Upload Integration
+- ✅ Zugriffskontrolle (ADMIN, MANAGER können hochladen)
 
 **Datenmodell (Prisma):**
 ```prisma
@@ -258,15 +263,17 @@ GET    /api/sites/:id/documents/:docId/history # Versions-History
 
 ---
 
-### Phase 3: Wachbuch & Vorfälle (v1.12.0)
+### Phase 3: Wachbuch & Vorfälle (v1.13.0 - v1.13.1) ⚡ **70% ABGESCHLOSSEN**
 **Ziel:** Digitales Wachbuch für Ereignisse & Vorfälle
 **Aufwand:** 3-4 Tage
+**Status:** Backend ✅ Frontend MVP ✅ | Offen: CRUD-Dialog, Mutations, Email-Notifications
 **Features:**
-- Ereignis-Log (Timeline-View)
-- Vorfälle eintragen (MA, Schichtleiter, Einsatzleiter)
-- Kategorisierung (Info, Warnung, Kritisch)
-- Filter & Export (PDF-Report für Kunde)
-- Benachrichtigungen (kritische Vorfälle → Einsatzleiter)
+- ✅ Ereignis-Log (Timeline-View mit Severity/Status-Badges)
+- ✅ Vorfälle anzeigen (11 Kategorien, 4 Severity-Levels)
+- ✅ Backend CRUD-Endpoints (6 Endpoints)
+- ⏳ Vorfälle eintragen (Dialog in v1.13.2)
+- ⏳ Filter & Export (PDF-Report für Kunde)
+- ⏳ Benachrichtigungen (kritische Vorfälle → Einsatzleiter)
 
 **Datenmodell (Prisma):**
 ```prisma

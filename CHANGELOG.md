@@ -2,6 +2,175 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.13.1] - 2025-10-18 – Wachbuch & Vorfälle Frontend MVP
+
+### Added - Frontend
+- **Wachbuch-Tab in SiteDetail**:
+  - Timeline-View mit chronologischer Sortierung
+  - Severity-Badges (CRITICAL: rot, HIGH: orange, MEDIUM: gelb, LOW: grau)
+  - Status-Badges (OPEN: blau, IN_PROGRESS: blau, RESOLVED: grün, CLOSED: grau)
+  - Kategorie & Ort-Anzeige
+  - Vorfallzeit & Reporter-Info
+  - Resolution-Anzeige (grüne Box bei gelösten Vorfällen)
+  - "Vorfall melden" Button (Placeholder für v1.13.2)
+
+### Changed - UI/UX
+- Border-Left Farbcodierung (orange) für Vorfälle
+- Hover-Effects (shadow transition)
+- Responsive Layout für Mobile & Desktop
+- Icons (AlertTriangle von Lucide)
+
+### Technical
+- Site Type um `incidents[]` erweitert
+- activeTab Type um 'incidents' erweitert
+- Tab-Array um Vorfälle-Tab erweitert
+
+## [1.13.0] - 2025-10-18 – Wachbuch & Vorfälle Backend
+
+### Added - Datenmodell
+- **SiteIncident Model**:
+  - 11 Kategorien: FIRE, BREAK_IN, THEFT, VANDALISM, ACCIDENT, MEDICAL_EMERGENCY, DISTURBANCE, PROPERTY_DAMAGE, SUSPICIOUS_PERSON, TECHNICAL_FAILURE, OTHER
+  - 4 Severity-Levels: CRITICAL, HIGH, MEDIUM, LOW (nutzt bestehende IncidentSeverity Enum)
+  - Status-Workflow: OPEN → IN_PROGRESS → RESOLVED → CLOSED (nutzt IncidentStatus Enum)
+  - Zeiterfassung: occurredAt (Vorfallzeit), reportedAt (Meldezeit), resolvedAt (Lösungszeit)
+  - Beteiligte Personen: involvedPersons (JSON-Array)
+  - Auflösungs-Notizen: resolution field
+  - Migration: `20251018030000_add_site_incidents`
+
+### Added - Backend-API
+- **SiteIncident-Controller** (`/api/sites/:siteId/incidents`):
+  - `GET /incidents` - Liste mit Filter (category, status, severity)
+  - `GET /incidents/:id` - Einzelner Incident
+  - `POST /incidents` - Incident erstellen (RBAC: EMPLOYEE+)
+  - `PUT /incidents/:id` - Incident aktualisieren (RBAC: ADMIN, MANAGER)
+  - `PUT /incidents/:id/resolve` - Incident auflösen (RBAC: ADMIN, MANAGER)
+  - `DELETE /incidents/:id` - Incident löschen (RBAC: ADMIN, MANAGER)
+
+### RBAC
+- EMPLOYEE kann Vorfälle melden
+- ADMIN & MANAGER können verwalten, aktualisieren, auflösen, löschen
+
+## [1.12.2] - 2025-10-18 – Dokument-Viewer
+
+### Added - Frontend
+- **DocumentViewerModal Component**:
+  - PDF-Viewer: Browser-native via iframe
+  - Markdown-Viewer: react-markdown mit prose styling
+  - Text-Viewer: Pre-formatted mit monospace
+  - Word/Excel: "Download only" Hinweis
+  - Fullscreen-Toggle (Maximize/Minimize)
+  - Download-Button im Viewer
+  - Loading & Error States
+
+### Changed - UI Components
+- **Modal Component erweitert**:
+  - Size-Support: sm, md, lg, xl, fullscreen
+  - ReactNode-Support für komplexe Titles
+  - Fullscreen-Modus ohne Margins/Rounded Corners
+
+### Technical
+- Package: react-markdown installiert (78 packages)
+- View-Button (Eye Icon) in Dokumente-Liste
+- Modal mit xl & fullscreen Sizes
+
+## [1.12.1] - 2025-10-18 – Multer File-Upload Integration
+
+### Added - Backend
+- **Multer-Middleware** (`uploadDocument.ts`):
+  - Disk Storage: uploads/documents
+  - Unique Filename: basename-timestamp-random.ext
+  - File Filter: PDF, DOC, DOCX, TXT, MD, XLS, XLSX
+  - Size Limit: 10 MB
+
+### Changed - Backend
+- **documentController** angepasst:
+  - uploadDocument nutzt req.file (Multer)
+  - Extrahiert filename, filePath, fileSize, mimeType aus Multer
+  - downloadDocument Endpoint hinzugefügt (res.download)
+
+### Technical
+- Package: multer + @types/multer installiert (v1.4.7)
+- POST /documents: uploadDocument.single('document') Middleware
+- GET /documents/:id/download: Download-Endpoint
+- 405 Handlers aktualisiert
+
+## [1.12.0] - 2025-10-18 – Dokument-Management
+
+### Added - Datenmodell
+- **SiteDocument Model**:
+  - 7 Kategorien: DIENSTANWEISUNG, NOTFALLPLAN, VERTRAG, BRANDSCHUTZORDNUNG, HAUSORDNUNG, GRUNDRISS, SONSTIGES
+  - Versionierung: version field, isLatest flag, previousVersionId (Self-Relation)
+  - File-Informationen: filename, filePath, fileSize, mimeType
+  - Metadaten: uploadedAt, uploadedBy, updatedAt
+  - Migration: `20251018025212_add_site_documents`
+
+### Added - Backend-API
+- **Document-Controller** (`/api/sites/:siteId/documents`):
+  - `GET /documents` - Liste mit Filter (category, latestOnly)
+  - `GET /documents/:id` - Einzelnes Dokument
+  - `GET /documents/:id/versions` - Alle Versionen
+  - `GET /documents/:id/download` - Dokument herunterladen
+  - `POST /documents` - Upload (mit Versionierung)
+  - `PUT /documents/:id` - Metadaten aktualisieren
+  - `DELETE /documents/:id` - Löschen (auto-rollback auf previousVersion)
+
+### Added - Frontend
+- **Dokumente-Tab in SiteDetail**:
+  - Dokumenten-Liste mit Version-Badges (v2, v3, "Aktuell")
+  - Metadata-Display (Kategorie, Größe, Datum, Uploader)
+  - Upload-Dialog (Titel, Beschreibung, Kategorie, File)
+  - View/Download/Delete-Buttons
+  - Mutations mit Cache-Invalidierung
+
+### RBAC
+- ADMIN & MANAGER können Dokumente hochladen, aktualisieren, löschen
+- Alle Authenticated User können Dokumente ansehen/downloaden
+
+## [1.11.1] - 2025-10-17 – UX Enhancement (Phase 1.5)
+
+### Added - UI Components
+- **React-Select Integration**:
+  - UserSelect Component mit Avatar-Icons und Suche
+  - Clearance & Assignment Modals verwenden UserSelect
+  - Suche nach Name und Email möglich
+
+### Added - Loading States
+- **Skeleton Screens**:
+  - SkeletonDetailPage für Detail-Views
+  - SkeletonForm für Form-Loading
+  - SkeletonCard, SkeletonList, SkeletonText Komponenten
+  - Spinner im Submit-Button (SiteForm) mit Loader2 Icon
+  - Alle "Laden..." durch animierte Skeletons ersetzt
+
+### Changed - UI/UX
+- **Animationen & Transitions**:
+  - Modal fade-in & zoom-in Animation (200ms)
+  - Backdrop blur-effect
+  - Tab-Content slide-in Animation (300ms)
+  - Hover-Effects auf Cards (border-color, shadow)
+  - Smooth transitions (duration-200)
+
+### Changed - Design
+- **Moderneres Design**:
+  - Cards: rounded-lg → rounded-xl
+  - Bessere Shadows (shadow-sm, shadow-md, shadow-lg)
+  - Gradient-Backgrounds für Sections (blue-50 → indigo-50, red-50 → rose-50, purple-50 → violet-50)
+  - Farbige Section-Headings (blue-900, red-900, purple-900)
+  - Modernere Spacing (mb-3 → mb-4)
+
+### Changed - Responsive
+- **Mobile-First Design**:
+  - Grid: grid-cols-2 → grid-cols-1 md:grid-cols-2
+  - Bilder-Grid: grid-cols-1 sm:grid-cols-2 lg:grid-cols-3
+  - Header: flex → flex-col sm:flex-row
+  - Buttons: flex-wrap für besseres Wrapping
+  - Tab-Navigation: overflow-x-auto für Mobile
+  - Modal: mx-4 für Seitenabstand auf Mobile
+
+### Technical
+- Package: react-select installiert (v5.10.2)
+- Icons: Lucide-React (Building2, Phone, UserCheck, Shield, Calendar, ImageIcon, FileText, Upload, Download, Trash2, Eye, AlertTriangle, Plus, Check, X)
+
 ## [1.11.0] - 2025-10-17 – Objekt-Management Phase 1 (Backend-Grundlagen)
 
 ### Added - Datenmodell-Erweiterungen

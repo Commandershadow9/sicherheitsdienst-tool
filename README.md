@@ -16,6 +16,17 @@ Kurzer Überblick, klare Quickstarts und schnelles Troubleshooting für Devs/Ops
 - ✅ DSGVO-Compliance Dokumentation
 - ⚠️ HTTPS wartet auf Domain (Anleitung: `docs/ops/setup-https-letsencrypt.md`)
 
+**🏢 Objekt-Management Suite (v1.11.0 - v1.13.1):**
+- ✅ **Phase 1 (v1.11.0-1):** Objekt-Stammdaten, Bilder, Clearances, Assignments (100% ✅)
+- ✅ **Phase 2 (v1.12.0-2):** Dokument-Management mit Versionierung & Viewer (100% ✅)
+  - 7 Kategorien, PDF/Markdown/Text-Viewer, Multer File-Upload
+- ⚡ **Phase 3 (v1.13.0-1):** Wachbuch & Vorfälle (70% ✅ MVP ready)
+  - Backend: 11 Kategorien, 4 Severity-Levels, CRUD-Endpoints
+  - Frontend: Timeline-View mit Badges
+  - Offen: CRUD-Dialog, Mutations, Email-Notifications
+
+Siehe: `docs/FEATURE_OBJEKT_MANAGEMENT.md` für vollständiges Konzept (7 Phasen)
+
 - Komponenten
   - Backend (Node.js/Express, Prisma, PostgreSQL)
   - Frontend (Vite/React)
