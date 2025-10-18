@@ -14,7 +14,8 @@ import { Textarea } from '@/components/ui/textarea'
 import { FormField } from '@/components/ui/form'
 import { toast } from 'sonner'
 import { completeClearanceTraining, revokeClearance, type Clearance } from '../api'
-import { Building2, Phone, Users, Shield, Calendar, Image as ImageIcon, UserCheck, FileText, Upload, Download, Trash2 } from 'lucide-react'
+import { Building2, Phone, Users, Shield, Calendar, Image as ImageIcon, UserCheck, FileText, Upload, Download, Trash2, Eye } from 'lucide-react'
+import DocumentViewerModal from '../components/DocumentViewerModal'
 
 type Site = {
   id: string
@@ -111,6 +112,13 @@ export default function SiteDetail() {
     file: File | null
   } | null>(null)
   const [deleteDocumentId, setDeleteDocumentId] = useState<string | null>(null)
+  const [viewDocument, setViewDocument] = useState<{
+    id: string
+    title: string
+    filename: string
+    mimeType: string
+    fileSize: number
+  } | null>(null)
 
   const { data: site, isLoading, isError, error } = useQuery<Site>({
     queryKey: ['site', id],
@@ -716,6 +724,21 @@ export default function SiteDetail() {
                         </div>
                       </div>
                       <div className="flex gap-2 ml-4">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() =>
+                            setViewDocument({
+                              id: document.id,
+                              title: document.title,
+                              filename: document.filename,
+                              mimeType: document.mimeType,
+                              fileSize: document.fileSize,
+                            })
+                          }
+                        >
+                          <Eye size={16} />
+                        </Button>
                         <Button size="sm" variant="outline" onClick={() => window.open(`/api/sites/${id}/documents/${document.id}/download`, '_blank')}>
                           <Download size={16} />
                         </Button>
@@ -1172,6 +1195,11 @@ export default function SiteDetail() {
             </div>
           </div>
         </Modal>
+      )}
+
+      {/* Dokument-Viewer */}
+      {viewDocument && id && (
+        <DocumentViewerModal siteId={id} document={viewDocument} onClose={() => setViewDocument(null)} />
       )}
     </div>
   )
