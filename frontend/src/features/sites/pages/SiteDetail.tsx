@@ -14,7 +14,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { FormField } from '@/components/ui/form'
 import { toast } from 'sonner'
 import { completeClearanceTraining, revokeClearance, type Clearance } from '../api'
-import { Building2, Phone, Users, Shield, Calendar, Image as ImageIcon, UserCheck, FileText, Upload, Download, Trash2, Eye } from 'lucide-react'
+import { Building2, Phone, Users, Shield, Calendar, Image as ImageIcon, UserCheck, FileText, Upload, Download, Trash2, Eye, AlertTriangle, Plus, Check, X } from 'lucide-react'
 import DocumentViewerModal from '../components/DocumentViewerModal'
 
 type Site = {
@@ -64,6 +64,21 @@ type Site = {
     uploadedAt: string
     uploader: { id: string; firstName: string; lastName: string }
   }>
+  incidents?: Array<{
+    id: string
+    title: string
+    description?: string
+    category: string
+    severity: string
+    status: string
+    occurredAt: string
+    reportedAt: string
+    location?: string
+    involvedPersons?: string
+    resolvedAt?: string
+    resolution?: string
+    reporter: { id: string; firstName: string; lastName: string }
+  }>
 }
 
 const STATUS_LABELS: Record<string, string> = {
@@ -96,7 +111,7 @@ export default function SiteDetail() {
   const { id } = useParams<{ id: string }>()
   const nav = useNavigate()
   const queryClient = useQueryClient()
-  const [activeTab, setActiveTab] = useState<'overview' | 'clearances' | 'shifts' | 'images' | 'documents'>('overview')
+  const [activeTab, setActiveTab] = useState<'overview' | 'clearances' | 'shifts' | 'images' | 'documents' | 'incidents'>('overview')
   const [trainingModal, setTrainingModal] = useState<{ clearance: Clearance; hours: number } | null>(null)
   const [revokeModal, setRevokeModal] = useState<{ clearance: Clearance; notes: string } | null>(null)
   const [uploadModal, setUploadModal] = useState<{ file: File | null; category: string } | null>(null)
@@ -314,6 +329,7 @@ export default function SiteDetail() {
     { key: 'shifts', label: 'Schichten' },
     { key: 'images', label: `Bilder (${site.images?.length || 0})` },
     { key: 'documents', label: `Dokumente (${site.documents?.length || 0})` },
+    { key: 'incidents', label: `Vorfälle (${site.incidents?.length || 0})` },
   ] as const
 
   return (
@@ -1195,6 +1211,73 @@ export default function SiteDetail() {
             </div>
           </div>
         </Modal>
+      )}
+
+      {/* Vorfälle/Wachbuch Tab */}
+      {activeTab === 'incidents' && (
+        <div className="animate-in fade-in slide-in-from-bottom-4 duration-300">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold flex items-center gap-2">
+              <AlertTriangle size={20} className="text-orange-600" />
+              Vorfälle ({site.incidents?.length || 0})
+            </h3>
+            <Button size="sm" onClick={() => alert('Vorfall melden - Dialog kommt im nächsten Commit!')}>
+              <Plus size={16} className="mr-2" />
+              Vorfall melden
+            </Button>
+          </div>
+          {!site.incidents || site.incidents.length === 0 ? (
+            <p className="text-gray-500">Keine Vorfälle gemeldet</p>
+          ) : (
+            <div className="space-y-4">
+              {site.incidents.map((incident) => (
+                <div
+                  key={incident.id}
+                  className="border-l-4 border-l-orange-500 rounded-lg p-4 bg-white shadow-sm hover:shadow-md transition-all duration-200"
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <AlertTriangle size={18} className="text-orange-600" />
+                        <h4 className="font-semibold">{incident.title}</h4>
+                        <span className={`text-xs px-2 py-0.5 rounded ${incident.severity === 'CRITICAL' ? 'bg-red-100 text-red-700' : incident.severity === 'HIGH' ? 'bg-orange-100 text-orange-700' : incident.severity === 'MEDIUM' ? 'bg-yellow-100 text-yellow-700' : 'bg-gray-100 text-gray-700'}`}>
+                          {incident.severity}
+                        </span>
+                        <span className={`text-xs px-2 py-0.5 rounded ${incident.status === 'RESOLVED' ? 'bg-green-100 text-green-700' : incident.status === 'CLOSED' ? 'bg-gray-100 text-gray-700' : 'bg-blue-100 text-blue-700'}`}>
+                          {incident.status}
+                        </span>
+                      </div>
+                      {incident.description && <p className="text-sm text-gray-600 mb-2">{incident.description}</p>}
+                      <div className="flex flex-wrap gap-3 text-xs text-gray-500">
+                        <span className="inline-flex items-center gap-1">
+                          <span className="font-medium">Kategorie:</span> {incident.category}
+                        </span>
+                        {incident.location && (
+                          <span className="inline-flex items-center gap-1">
+                            <span className="font-medium">Ort:</span> {incident.location}
+                          </span>
+                        )}
+                        <span className="inline-flex items-center gap-1">
+                          <span className="font-medium">Vorfallzeit:</span>{' '}
+                          {new Date(incident.occurredAt).toLocaleString('de-DE')}
+                        </span>
+                        <span className="inline-flex items-center gap-1">
+                          <span className="font-medium">Gemeldet von:</span> {incident.reporter.firstName}{' '}
+                          {incident.reporter.lastName}
+                        </span>
+                      </div>
+                      {incident.resolution && (
+                        <div className="mt-2 p-2 bg-green-50 rounded text-sm">
+                          <span className="font-medium text-green-800">Lösung:</span> {incident.resolution}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       )}
 
       {/* Dokument-Viewer */}
