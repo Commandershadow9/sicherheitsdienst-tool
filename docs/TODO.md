@@ -19,8 +19,8 @@
 
 ---
 
-#### Phase 1: Objekt-Grundlagen (v1.11.0) ⭐ **Aktueller Fokus**
-**Aufwand**: 3-5 Tage | **Status**: Backend umgesetzt, Frontend & QA offen
+#### Phase 1: Objekt-Grundlagen (v1.11.0 - v1.11.1) ⭐ **90% ABGESCHLOSSEN**
+**Aufwand**: 3-5 Tage | **Status**: Backend ✅ Frontend ✅ UX Enhancement ✅ | Offen: RBAC, Tests, Docs
 
 - [x] Konzept entwickeln (Anforderungen, Datenmodell, User-Stories) ✅
 - [x] Datenmodell-Migration erstellen (Prisma Schema) ✅
@@ -29,26 +29,35 @@
   - [x] SiteAssignment (Objektleiter/Schichtleiter-Zuweisungen)
 - [x] Backend-Implementation ✅
   - [x] Site Controller erweitern (CRUD mit neuen Feldern)
-  - [x] Image-Upload-Endpoint (FormData-Handling folgt in Phase 1 Frontend)
-  - [x] Clearances-Endpoints
+  - [x] Image-Upload-Endpoint mit FormData-Handling
+  - [x] Clearances-Endpoints (Create, Complete Training, Revoke)
   - [x] Coverage-Stats-Endpoint
-  - [x] **Scoring-System erweitern** (Object-Clearance-Score) ⭐
+  - [x] **Scoring-System erweitern** (Object-Clearance-Score mit 5 Komponenten) ⭐
   - [x] Replacement-Endpoint erweitert (Clearance berücksichtigt)
+- [x] Frontend-Implementation ✅ (v1.11.0)
+  - [x] Objekt-Liste (Filter: Status, Kunde)
+  - [x] Objekt-Detail-Seite (4 Tabs: Übersicht, Clearances, Schichten, Bilder)
+  - [x] Objekt-Formular (Create & Edit mit allen Feldern)
+  - [x] Bild-Upload-Dialog (mit Kategorien)
+  - [x] Clearances-Verwaltung (Create, Training abschließen, Widerrufen)
+  - [x] Assignments-Verwaltung (Objektleiter, Schichtleiter, Mitarbeiter)
+  - [x] **Replacement-Modal erweitern** (Clearance-Badge mit Status-Anzeige) ⭐
+- [x] **UX Enhancement** (v1.11.1) ✅
+  - [x] React-Select Dropdowns mit Suche
+  - [x] Skeleton Loading States
+  - [x] Animationen & Transitions
+  - [x] Moderneres Design (Gradients, Shadows, Icons)
+  - [x] Responsive Design (Mobile-optimiert)
 - [ ] RBAC-Logik erweitern (Site-Zuweisungen feingranular prüfen, Ownership-Checks)
 - [ ] Tests (Unit + Integration)
-- [ ] Frontend-Implementation
-  - Objekt-Liste (Filter: Status, Stadt, Kunde)
-  - Objekt-Detail-Seite (Tabs: Übersicht, Clearances, Schichten, Bilder)
-  - Objekt-Formular (Anlegen/Bearbeiten)
-  - Bild-Upload-Dialog
-  - Clearances-Verwaltung
-  - **Replacement-Modal erweitern** (Clearance-Badge, "Einarbeitung starten") ⭐
-- [ ] Dokumentation finalisieren (API + README, sobald Frontend/RBAC & Tests abgeschlossen)
+- [ ] Dokumentation finalisieren (API + README)
 
-**Nächste Schritte (Phase 1):**
+**Nächste Schritte (Phase 1 - Optional):**
 - RBAC-Checks für Objektleiter/Schichtleiter auf Controller-Ebene ergänzen.
 - Jest-Szenarien für neue Endpoints & Scoring-Gewichtungen anlegen.
-- Frontend-UI an erweitertes Backend anbinden (FormData-Upload, Coverage-Anzeige).
+- Dokumentation finalisieren.
+
+**Empfehlung**: Phase 1 ist funktional komplett. RBAC/Tests können am Ende von Phase 2-3 gebündelt werden.
 
 **Abhängigkeiten**: Keine - kann sofort starten
 **Blockt**: Alle weiteren Phasen
@@ -56,7 +65,7 @@
 
 ---
 
-#### Phase 2: Dokument-Management (v1.11.1)
+#### Phase 2: Dokument-Management (v1.12.0)
 **Aufwand**: 2-3 Tage | **Status**: Geplant
 
 - [ ] Datenmodell: SiteDocument (kategorisiert, versioniert)
@@ -70,7 +79,7 @@
 
 ---
 
-#### Phase 3: Wachbuch & Vorfälle (v1.12.0)
+#### Phase 3: Wachbuch & Vorfälle (v1.13.0)
 **Aufwand**: 3-4 Tage | **Status**: Geplant
 
 - [ ] Datenmodell: SiteIncident (kategorisiert, Schweregrad)
@@ -84,7 +93,7 @@
 
 ---
 
-#### Phase 4: Kontrollgänge & NFC-Rundenwesen (v1.13.0)
+#### Phase 4: Kontrollgänge & NFC-Rundenwesen (v1.14.0)
 **Aufwand**: 4-5 Tage | **Status**: Geplant
 
 - [ ] Datenmodell: ControlPoint, ControlRound, ControlPointScan
@@ -101,7 +110,7 @@
 
 ---
 
-#### Phase 5: Übergabe-Protokolle (v1.14.0)
+#### Phase 5: Übergabe-Protokolle (v1.15.0)
 **Aufwand**: 2-3 Tage | **Status**: Geplant
 
 - [ ] Datenmodell: Equipment, EquipmentHandover
@@ -115,7 +124,7 @@
 
 ---
 
-#### Phase 6: Kalkulation & Akquise (v1.15.0)
+#### Phase 6: Kalkulation & Akquise (v1.16.0)
 **Aufwand**: 3-4 Tage | **Status**: Geplant
 
 - [ ] Datenmodell: SiteInquiry, SiteCalculation, SiteOffer
@@ -131,7 +140,7 @@
 
 ---
 
-#### Phase 7: Abrechnungssystem (v1.16.0)
+#### Phase 7: Abrechnungssystem (v1.17.0)
 **Aufwand**: 3-4 Tage | **Status**: Geplant
 
 - [ ] Datenmodell: SiteBilling, BillingItem

@@ -44,6 +44,7 @@ model User {
   clearancesApproved   ObjectClearance[]     @relation("ClearanceApprover")
   siteImagesUploaded   SiteImage[]           @relation("SiteImageUploader")
   siteAssignments      SiteAssignment[]      @relation("SiteAssignmentUser")
+  siteDocumentsUploaded SiteDocument[]       @relation("SiteDocumentUploader")
   deviceTokens         DeviceToken[]
   preferences          EmployeePreferences?
   workload             EmployeeWorkload[]
@@ -93,6 +94,7 @@ model Site {
   clearances  ObjectClearance[]
   images      SiteImage[]
   assignments SiteAssignment[]
+  documents   SiteDocument[]
 
   @@unique([name, address], name: "sites_name_address_key")
   @@index([name], name: "sites_name_idx")
@@ -595,6 +597,51 @@ model SiteAssignment {
   @@index([userId])
   @@index([siteId, role])
   @@map("site_assignments")
+}
+
+// Objekt-Dokumente (Dienstanweisungen, Notfallpläne, etc.)
+model SiteDocument {
+  id     String @id @default(cuid())
+  siteId String @map("site_id")
+  site   Site   @relation(fields: [siteId], references: [id], onDelete: Cascade)
+
+  // Dokument-Metadaten
+  title       String
+  description String?                @db.Text
+  category    SiteDocumentCategory
+
+  // File-Informationen
+  filename String
+  filePath String @map("file_path")
+  mimeType String @map("mime_type")
+  fileSize Int    @map("file_size")
+
+  // Versionierung
+  version           Int           @default(1)
+  isLatest          Boolean       @default(true) @map("is_latest")
+  previousVersionId String?       @map("previous_version_id")
+  previousVersion   SiteDocument? @relation("DocumentVersions", fields: [previousVersionId], references: [id], onDelete: SetNull)
+  nextVersions      SiteDocument[] @relation("DocumentVersions")
+
+  // Metadaten
+  uploadedAt DateTime @default(now()) @map("uploaded_at")
+  uploadedBy String   @map("uploaded_by")
+  uploader   User     @relation("SiteDocumentUploader", fields: [uploadedBy], references: [id])
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  @@index([siteId, category])
+  @@index([siteId, isLatest])
+  @@map("site_documents")
+}
+
+enum SiteDocumentCategory {
+  DIENSTANWEISUNG     // Dienstanweisungen
+  NOTFALLPLAN         // Notfallpläne
+  VERTRAG             // Verträge mit Kunde
+  BRANDSCHUTZORDNUNG  // Brandschutzordnung
+  HAUSORDNUNG         // Hausordnung
+  GRUNDRISS           // Gebäudepläne (ergänzend zu Images)
+  SONSTIGES           // Sonstiges
 }
 
 // Einsätze / Events

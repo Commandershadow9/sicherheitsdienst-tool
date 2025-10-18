@@ -3,13 +3,14 @@ import { authenticate, authorize } from '../middleware/auth';
 import { validate } from '../middleware/validate';
 import { createSiteSchema, updateSiteSchema } from '../validations/siteValidation';
 import * as siteController from '../controllers/siteController';
+import * as documentController from '../controllers/documentController';
 import { asyncHandler } from '../middleware/asyncHandler';
 import { siteListQuerySchema } from '../validations/siteValidation';
 import * as shiftController from '../controllers/shiftController';
 import { createWriteRateLimit } from '../middleware/rateLimit';
+import methodNotAllowed from '../middleware/methodNotAllowed';
 
 const writeLimiter = createWriteRateLimit();
-import methodNotAllowed from '../middleware/methodNotAllowed';
 
 const router = Router();
 
@@ -102,6 +103,44 @@ router.delete(
 // GET /api/sites/:id/coverage-stats
 router.get('/:id/coverage-stats', authenticate, asyncHandler(siteController.getSiteCoverageStats));
 
+// ===== Dokumente-Management =====
+
+// GET /api/sites/:siteId/documents
+router.get('/:siteId/documents', authenticate, asyncHandler(documentController.getSiteDocuments));
+
+// GET /api/sites/:siteId/documents/:id/versions
+router.get('/:siteId/documents/:id/versions', authenticate, asyncHandler(documentController.getDocumentVersions));
+
+// GET /api/sites/:siteId/documents/:id
+router.get('/:siteId/documents/:documentId', authenticate, asyncHandler(documentController.getDocumentById));
+
+// POST /api/sites/:siteId/documents
+router.post(
+  '/:siteId/documents',
+  authenticate,
+  authorize('ADMIN', 'MANAGER'),
+  writeLimiter,
+  asyncHandler(documentController.uploadDocument),
+);
+
+// PUT /api/sites/:siteId/documents/:id
+router.put(
+  '/:siteId/documents/:documentId',
+  authenticate,
+  authorize('ADMIN', 'MANAGER'),
+  writeLimiter,
+  asyncHandler(documentController.updateDocument),
+);
+
+// DELETE /api/sites/:siteId/documents/:id
+router.delete(
+  '/:siteId/documents/:documentId',
+  authenticate,
+  authorize('ADMIN', 'MANAGER'),
+  writeLimiter,
+  asyncHandler(documentController.deleteDocument),
+);
+
 // 405
 router.all('/', authenticate, methodNotAllowed(['GET', 'POST']));
 router.all('/:id', authenticate, methodNotAllowed(['GET', 'PUT', 'DELETE']));
@@ -111,4 +150,7 @@ router.all('/:siteId/images/:imageId', authenticate, methodNotAllowed(['DELETE']
 router.all('/:id/assignments', authenticate, methodNotAllowed(['GET', 'POST']));
 router.all('/:siteId/assignments/:assignmentId', authenticate, methodNotAllowed(['DELETE']));
 router.all('/:id/coverage-stats', authenticate, methodNotAllowed(['GET']));
+router.all('/:siteId/documents', authenticate, methodNotAllowed(['GET', 'POST']));
+router.all('/:siteId/documents/:documentId', authenticate, methodNotAllowed(['GET', 'PUT', 'DELETE']));
+router.all('/:siteId/documents/:id/versions', authenticate, methodNotAllowed(['GET']));
 export default router;
