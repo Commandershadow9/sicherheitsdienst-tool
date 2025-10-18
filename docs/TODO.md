@@ -85,17 +85,23 @@
 
 ---
 
-#### Phase 3: Wachbuch & Vorfälle (v1.13.0)
-**Aufwand**: 3-4 Tage | **Status**: Geplant
+#### Phase 3: Wachbuch & Vorfälle (v1.13.0 - v1.13.1) ⭐ **70% ABGESCHLOSSEN**
+**Aufwand**: 3-4 Tage | **Status**: MVP fertig, CRUD offen
 
-- [ ] Datenmodell: SiteIncident (kategorisiert, Schweregrad)
-- [ ] Backend: CRUD, Benachrichtigungen (Email)
-- [ ] Frontend: Wachbuch (Timeline-View)
-- [ ] Vorfall-Melde-Dialog (Mobile-optimiert)
+- [x] Datenmodell: SiteIncident (11 Kategorien, Schweregrad, Status) ✅
+- [x] Backend: CRUD-Endpoints (6 Endpoints) ✅
+- [x] Frontend: Wachbuch-Tab mit Timeline-View ✅
+- [ ] Vorfall-Melde-Dialog (CreateIncidentModal)
+- [ ] Mutations (Create, Update, Resolve, Delete)
+- [ ] Benachrichtigungen (Email bei kritischen Vorfällen)
 - [ ] Filter & PDF-Export
 
+**Commits**:
+- v1.13.0: Backend (SiteIncident Model, Controller, Routes)
+- v1.13.1: Frontend MVP (Timeline-View, Severity/Status-Badges)
+
 **Abhängigkeiten**: Phase 2
-**Liefert**: Digitales Wachbuch
+**Liefert**: Digitales Wachbuch (70% fertig, MVP ready)
 
 ---
 
