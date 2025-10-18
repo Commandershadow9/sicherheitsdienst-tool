@@ -9,6 +9,7 @@ import { siteListQuerySchema } from '../validations/siteValidation';
 import * as shiftController from '../controllers/shiftController';
 import { createWriteRateLimit } from '../middleware/rateLimit';
 import methodNotAllowed from '../middleware/methodNotAllowed';
+import { uploadDocument } from '../middleware/uploadDocument';
 
 const writeLimiter = createWriteRateLimit();
 
@@ -111,6 +112,9 @@ router.get('/:siteId/documents', authenticate, asyncHandler(documentController.g
 // GET /api/sites/:siteId/documents/:id/versions
 router.get('/:siteId/documents/:id/versions', authenticate, asyncHandler(documentController.getDocumentVersions));
 
+// GET /api/sites/:siteId/documents/:id/download
+router.get('/:siteId/documents/:id/download', authenticate, asyncHandler(documentController.downloadDocument));
+
 // GET /api/sites/:siteId/documents/:id
 router.get('/:siteId/documents/:documentId', authenticate, asyncHandler(documentController.getDocumentById));
 
@@ -120,6 +124,7 @@ router.post(
   authenticate,
   authorize('ADMIN', 'MANAGER'),
   writeLimiter,
+  uploadDocument.single('document'), // Multer-Middleware: erwartet 'document' als Feldname
   asyncHandler(documentController.uploadDocument),
 );
 
@@ -153,4 +158,5 @@ router.all('/:id/coverage-stats', authenticate, methodNotAllowed(['GET']));
 router.all('/:siteId/documents', authenticate, methodNotAllowed(['GET', 'POST']));
 router.all('/:siteId/documents/:documentId', authenticate, methodNotAllowed(['GET', 'PUT', 'DELETE']));
 router.all('/:siteId/documents/:id/versions', authenticate, methodNotAllowed(['GET']));
+router.all('/:siteId/documents/:id/download', authenticate, methodNotAllowed(['GET']));
 export default router;

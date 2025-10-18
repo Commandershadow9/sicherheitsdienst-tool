@@ -91,8 +91,7 @@ export const getDocumentVersions = async (req: Request, res: Response, next: Nex
 export const uploadDocument = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { siteId } = req.params;
-    const { title, description, category, filename, filePath, fileSize, mimeType, isNewVersion, previousDocumentId } =
-      req.body;
+    const { title, description, category, isNewVersion, previousDocumentId } = req.body;
     const uploadedBy = req.user?.id;
 
     if (!uploadedBy) {
@@ -100,11 +99,23 @@ export const uploadDocument = async (req: Request, res: Response, next: NextFunc
       return;
     }
 
-    // Validierung
-    if (!title || !category || !filename || !filePath) {
-      res.status(400).json({ success: false, message: 'Pflichtfelder fehlen: title, category, filename, filePath' });
+    // Prüfe ob Datei hochgeladen wurde
+    if (!req.file) {
+      res.status(400).json({ success: false, message: 'Keine Datei hochgeladen' });
       return;
     }
+
+    // Validierung
+    if (!title || !category) {
+      res.status(400).json({ success: false, message: 'Pflichtfelder fehlen: title, category' });
+      return;
+    }
+
+    // Extrahiere Datei-Informationen aus Multer
+    const filename = req.file.originalname;
+    const filePath = req.file.path;
+    const fileSize = req.file.size;
+    const mimeType = req.file.mimetype;
 
     let version = 1;
     let previousVersionId: string | null = null;
@@ -181,6 +192,28 @@ export const updateDocument = async (req: Request, res: Response, next: NextFunc
     });
 
     res.json({ success: true, message: 'Dokument erfolgreich aktualisiert', data: updated });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// GET /api/sites/:siteId/documents/:id/download - Dokument herunterladen
+export const downloadDocument = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { id } = req.params;
+
+    const document = await prisma.siteDocument.findUnique({ where: { id } });
+    if (!document) {
+      res.status(404).json({ success: false, message: 'Dokument nicht gefunden' });
+      return;
+    }
+
+    // Sende Datei zum Download
+    res.download(document.filePath, document.filename, (err) => {
+      if (err) {
+        next(err);
+      }
+    });
   } catch (error) {
     next(error);
   }
