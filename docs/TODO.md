@@ -65,17 +65,23 @@
 
 ---
 
-#### Phase 2: Dokument-Management (v1.12.0)
-**Aufwand**: 2-3 Tage | **Status**: Geplant
+#### Phase 2: Dokument-Management (v1.12.0 - v1.12.2) ⭐ **100% ABGESCHLOSSEN**
+**Aufwand**: 2-3 Tage | **Status**: Produktionsbereit ✅
 
-- [ ] Datenmodell: SiteDocument (kategorisiert, versioniert)
-- [ ] Backend: Upload/Download/Versionierung
-- [ ] Frontend: Dokumenten-Übersicht (kategorisiert)
-- [ ] Dienstanweisungen-Viewer (PDF/Markdown)
-- [ ] Notfallpläne-Verwaltung
+- [x] Datenmodell: SiteDocument (kategorisiert, versioniert) ✅
+- [x] Backend: Upload/Download/Versionierung (Multer) ✅
+- [x] Frontend: Dokumenten-Übersicht (kategorisiert) ✅
+- [x] Dienstanweisungen-Viewer (PDF/Markdown/Text) ✅
+- [x] **Dokument-Viewer**: PDF (iframe), Markdown (react-markdown), Text (pre) ⭐
+- [x] **UI Features**: View/Download/Delete-Buttons, Fullscreen-Toggle ✅
+
+**Commits**:
+- v1.12.0: Backend (Prisma, Controller, Routes)
+- v1.12.1: Multer Integration (File Upload)
+- v1.12.2: Document Viewer (Frontend)
 
 **Abhängigkeiten**: Phase 1
-**Liefert**: Strukturierte Dokumentenablage
+**Liefert**: Vollständige Dokumentenablage mit Viewer
 
 ---
 
