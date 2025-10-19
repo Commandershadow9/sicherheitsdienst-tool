@@ -98,12 +98,50 @@ export const createIncident = async (req: Request, res: Response, next: NextFunc
 // PUT /api/sites/:siteId/incidents/:id - Incident aktualisieren
 export const updateIncident = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { id } = req.params;
+    const { id, siteId } = req.params;
     const { title, description, category, severity, occurredAt, location, involvedPersons, status } = req.body;
+    const userId = req.user?.id;
+    const userRole = req.user?.role;
 
-    const incident = await prisma.siteIncident.findUnique({ where: { id } });
+    if (!userId) {
+      res.status(401).json({ success: false, message: 'Nicht authentifiziert' });
+      return;
+    }
+
+    const incident = await prisma.siteIncident.findUnique({
+      where: { id },
+      include: { site: { include: { assignments: true } } }
+    });
+
     if (!incident) {
       res.status(404).json({ success: false, message: 'Vorfall nicht gefunden' });
+      return;
+    }
+
+    // Ownership/RBAC Check
+    const isAdmin = userRole === 'ADMIN';
+    const isManager = userRole === 'MANAGER';
+    const isReporter = incident.reportedBy === userId;
+    const createdAt = new Date(incident.createdAt);
+    const now = new Date();
+    const hoursSinceCreation = (now.getTime() - createdAt.getTime()) / (1000 * 60 * 60);
+    const within24Hours = hoursSinceCreation < 24;
+
+    // Prüfe ob User Objektleiter oder Schichtleiter ist
+    const isObjectLeader = incident.site.assignments?.some(
+      (a: any) => a.userId === userId && (a.role === 'OBJECT_LEADER' || a.role === 'SHIFT_LEADER')
+    );
+
+    // Erlaubnis prüfen
+    const canEdit = isAdmin || isManager || isObjectLeader || (isReporter && within24Hours);
+
+    if (!canEdit) {
+      res.status(403).json({
+        success: false,
+        message: isReporter
+          ? 'Sie können diesen Vorfall nur innerhalb von 24 Stunden nach Erstellung bearbeiten'
+          : 'Sie haben keine Berechtigung, diesen Vorfall zu bearbeiten'
+      });
       return;
     }
 
@@ -136,8 +174,19 @@ export const resolveIncident = async (req: Request, res: Response, next: NextFun
   try {
     const { id } = req.params;
     const { resolution } = req.body;
+    const userId = req.user?.id;
+    const userRole = req.user?.role;
 
-    const incident = await prisma.siteIncident.findUnique({ where: { id } });
+    if (!userId) {
+      res.status(401).json({ success: false, message: 'Nicht authentifiziert' });
+      return;
+    }
+
+    const incident = await prisma.siteIncident.findUnique({
+      where: { id },
+      include: { site: { include: { assignments: true } } }
+    });
+
     if (!incident) {
       res.status(404).json({ success: false, message: 'Vorfall nicht gefunden' });
       return;
@@ -145,6 +194,21 @@ export const resolveIncident = async (req: Request, res: Response, next: NextFun
 
     if (incident.status === 'RESOLVED' || incident.status === 'CLOSED') {
       res.status(400).json({ success: false, message: 'Vorfall ist bereits aufgelöst' });
+      return;
+    }
+
+    // RBAC Check: Nur ADMIN, MANAGER oder Objektleiter/Schichtleiter
+    const isAdmin = userRole === 'ADMIN';
+    const isManager = userRole === 'MANAGER';
+    const isObjectLeader = incident.site.assignments?.some(
+      (a: any) => a.userId === userId && (a.role === 'OBJECT_LEADER' || a.role === 'SHIFT_LEADER')
+    );
+
+    if (!isAdmin && !isManager && !isObjectLeader) {
+      res.status(403).json({
+        success: false,
+        message: 'Nur Administratoren, Manager und Objektleiter können Vorfälle auflösen'
+      });
       return;
     }
 
@@ -171,10 +235,29 @@ export const resolveIncident = async (req: Request, res: Response, next: NextFun
 export const deleteIncident = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
+    const userId = req.user?.id;
+    const userRole = req.user?.role;
+
+    if (!userId) {
+      res.status(401).json({ success: false, message: 'Nicht authentifiziert' });
+      return;
+    }
 
     const incident = await prisma.siteIncident.findUnique({ where: { id } });
     if (!incident) {
       res.status(404).json({ success: false, message: 'Vorfall nicht gefunden' });
+      return;
+    }
+
+    // RBAC Check: Nur ADMIN oder MANAGER
+    const isAdmin = userRole === 'ADMIN';
+    const isManager = userRole === 'MANAGER';
+
+    if (!isAdmin && !isManager) {
+      res.status(403).json({
+        success: false,
+        message: 'Nur Administratoren und Manager können Vorfälle löschen'
+      });
       return;
     }
 

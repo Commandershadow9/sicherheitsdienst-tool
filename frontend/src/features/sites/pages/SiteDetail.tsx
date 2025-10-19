@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useAuth } from '@/features/auth/AuthProvider'
 import { api } from '@/lib/api'
 import { Button } from '@/components/ui/button'
 import { Select } from '@/components/ui/select'
@@ -14,7 +15,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { FormField } from '@/components/ui/form'
 import { toast } from 'sonner'
 import { completeClearanceTraining, revokeClearance, type Clearance } from '../api'
-import { Building2, Phone, Users, Shield, Calendar, Image as ImageIcon, UserCheck, FileText, Upload, Download, Trash2, Eye, AlertTriangle, Plus, Check, X } from 'lucide-react'
+import { Building2, Phone, Users, Shield, Calendar, Image as ImageIcon, UserCheck, FileText, Upload, Download, Trash2, Eye, AlertTriangle, Plus, Check, X, Pencil, CheckCircle } from 'lucide-react'
 import DocumentViewerModal from '../components/DocumentViewerModal'
 
 type Site = {
@@ -111,6 +112,7 @@ export default function SiteDetail() {
   const { id } = useParams<{ id: string }>()
   const nav = useNavigate()
   const queryClient = useQueryClient()
+  const { user } = useAuth()
   const [activeTab, setActiveTab] = useState<'overview' | 'clearances' | 'shifts' | 'images' | 'documents' | 'incidents'>('overview')
   const [trainingModal, setTrainingModal] = useState<{ clearance: Clearance; hours: number } | null>(null)
   const [revokeModal, setRevokeModal] = useState<{ clearance: Clearance; notes: string } | null>(null)
@@ -144,6 +146,17 @@ export default function SiteDetail() {
     involvedPersons: string
   } | null>(null)
   const [deleteIncidentId, setDeleteIncidentId] = useState<string | null>(null)
+  const [editIncident, setEditIncident] = useState<any>(null)
+  const [resolveIncident, setResolveIncident] = useState<{ id: string; title: string; resolution?: string } | null>(null)
+  const [incidentFilters, setIncidentFilters] = useState<{
+    status: string
+    severity: string
+    category: string
+  }>({
+    status: 'ALL',
+    severity: 'ALL',
+    category: 'ALL',
+  })
 
   const { data: site, isLoading, isError, error } = useQuery<Site>({
     queryKey: ['site', id],
@@ -359,7 +372,7 @@ export default function SiteDetail() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['site', id] })
       toast.success('Vorfall erfolgreich aktualisiert')
-      setCreateIncidentModal(null)
+      setEditIncident(null)
     },
     onError: (error: any) => {
       toast.error(error?.response?.data?.message || 'Fehler beim Aktualisieren des Vorfalls')
@@ -374,6 +387,7 @@ export default function SiteDetail() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['site', id] })
       toast.success('Vorfall als gelöst markiert')
+      setResolveIncident(null)
     },
     onError: (error: any) => {
       toast.error(error?.response?.data?.message || 'Fehler beim Auflösen des Vorfalls')
@@ -1302,7 +1316,12 @@ export default function SiteDetail() {
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold flex items-center gap-2">
               <AlertTriangle size={20} className="text-orange-600" />
-              Vorfälle ({site.incidents?.length || 0})
+              Vorfälle ({site.incidents?.filter((inc: any) => {
+                if (incidentFilters.status !== 'ALL' && inc.status !== incidentFilters.status) return false
+                if (incidentFilters.severity !== 'ALL' && inc.severity !== incidentFilters.severity) return false
+                if (incidentFilters.category !== 'ALL' && inc.category !== incidentFilters.category) return false
+                return true
+              }).length || 0} / {site.incidents?.length || 0})
             </h3>
             <Button
               size="sm"
@@ -1322,11 +1341,72 @@ export default function SiteDetail() {
               Vorfall melden
             </Button>
           </div>
+
+          {/* Filter */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4 p-4 bg-gray-50 rounded-lg">
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1">Status</label>
+              <select
+                className="w-full px-3 py-2 text-sm border rounded-lg"
+                value={incidentFilters.status}
+                onChange={(e) => setIncidentFilters({ ...incidentFilters, status: e.target.value })}
+              >
+                <option value="ALL">Alle Status</option>
+                <option value="OPEN">Offen</option>
+                <option value="IN_PROGRESS">In Bearbeitung</option>
+                <option value="RESOLVED">Gelöst</option>
+                <option value="CLOSED">Geschlossen</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1">Schweregrad</label>
+              <select
+                className="w-full px-3 py-2 text-sm border rounded-lg"
+                value={incidentFilters.severity}
+                onChange={(e) => setIncidentFilters({ ...incidentFilters, severity: e.target.value })}
+              >
+                <option value="ALL">Alle</option>
+                <option value="CRITICAL">Kritisch</option>
+                <option value="HIGH">Hoch</option>
+                <option value="MEDIUM">Mittel</option>
+                <option value="LOW">Niedrig</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1">Kategorie</label>
+              <select
+                className="w-full px-3 py-2 text-sm border rounded-lg"
+                value={incidentFilters.category}
+                onChange={(e) => setIncidentFilters({ ...incidentFilters, category: e.target.value })}
+              >
+                <option value="ALL">Alle</option>
+                <option value="FIRE">Brand</option>
+                <option value="BREAK_IN">Einbruch</option>
+                <option value="THEFT">Diebstahl</option>
+                <option value="VANDALISM">Vandalismus</option>
+                <option value="ACCIDENT">Unfall</option>
+                <option value="MEDICAL_EMERGENCY">Medizinischer Notfall</option>
+                <option value="DISTURBANCE">Ruhestörung</option>
+                <option value="PROPERTY_DAMAGE">Sachbeschädigung</option>
+                <option value="SUSPICIOUS_PERSON">Verdächtige Person</option>
+                <option value="TECHNICAL_FAILURE">Technischer Ausfall</option>
+                <option value="OTHER">Sonstiges</option>
+              </select>
+            </div>
+          </div>
+
           {!site.incidents || site.incidents.length === 0 ? (
             <p className="text-gray-500">Keine Vorfälle gemeldet</p>
           ) : (
             <div className="space-y-4">
-              {site.incidents.map((incident) => (
+              {site.incidents
+                .filter((inc: any) => {
+                  if (incidentFilters.status !== 'ALL' && inc.status !== incidentFilters.status) return false
+                  if (incidentFilters.severity !== 'ALL' && inc.severity !== incidentFilters.severity) return false
+                  if (incidentFilters.category !== 'ALL' && inc.category !== incidentFilters.category) return false
+                  return true
+                })
+                .map((incident) => (
                 <div
                   key={incident.id}
                   className="border-l-4 border-l-orange-500 rounded-lg p-4 bg-white shadow-sm hover:shadow-md transition-all duration-200"
@@ -1368,6 +1448,62 @@ export default function SiteDetail() {
                         </div>
                       )}
                     </div>
+                    {(() => {
+                      // Berechtigungsprüfungen
+                      const isReporter = user?.id === incident.reporter.id
+                      const reportedAt = new Date(incident.reportedAt)
+                      const now = new Date()
+                      const hoursSinceReport = (now.getTime() - reportedAt.getTime()) / (1000 * 60 * 60)
+                      const within24Hours = hoursSinceReport < 24
+                      const isAdmin = user?.role === 'ADMIN'
+                      const isManager = user?.role === 'MANAGER'
+                      const isObjectLeader = site.assignments?.some(
+                        (a) => a.user.id === user?.id && (a.role === 'OBJECT_LEADER' || a.role === 'SHIFT_LEADER')
+                      )
+
+                      const canEdit = isAdmin || isManager || isObjectLeader || (isReporter && within24Hours)
+                      const canResolve = (isAdmin || isManager || isObjectLeader) && (incident.status === 'OPEN' || incident.status === 'IN_PROGRESS')
+                      const canDelete = isAdmin || isManager
+
+                      if (!canEdit && !canResolve && !canDelete) return null
+
+                      return (
+                        <div className="flex gap-2 mt-3 pt-3 border-t">
+                          {canEdit && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => setEditIncident(incident)}
+                            >
+                              <Pencil size={14} className="mr-1" />
+                              Bearbeiten
+                            </Button>
+                          )}
+                          {canResolve && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="text-green-600 hover:text-green-700 hover:bg-green-50"
+                              onClick={() => setResolveIncident({ id: incident.id, title: incident.title })}
+                            >
+                              <CheckCircle size={14} className="mr-1" />
+                              Auflösen
+                            </Button>
+                          )}
+                          {canDelete && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                              onClick={() => setDeleteIncidentId(incident.id)}
+                            >
+                              <Trash2 size={14} className="mr-1" />
+                              Löschen
+                            </Button>
+                          )}
+                        </div>
+                      )
+                    })()}
                   </div>
                 </div>
               ))}
@@ -1537,6 +1673,187 @@ export default function SiteDetail() {
                 disabled={deleteIncidentMutation.isPending}
               >
                 {deleteIncidentMutation.isPending ? 'Wird gelöscht...' : 'Löschen'}
+              </Button>
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {/* Vorfall bearbeiten Modal */}
+      {editIncident && (
+        <Modal open={true} onClose={() => setEditIncident(null)}>
+          <div className="space-y-4">
+            <h2 className="text-xl font-semibold">Vorfall bearbeiten</h2>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Titel *</label>
+              <input
+                type="text"
+                className="w-full px-3 py-2 border rounded-lg"
+                value={editIncident.title}
+                onChange={(e) => setEditIncident({ ...editIncident, title: e.target.value })}
+                placeholder="Kurze Beschreibung des Vorfalls"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Beschreibung *</label>
+              <textarea
+                className="w-full px-3 py-2 border rounded-lg"
+                rows={4}
+                value={editIncident.description}
+                onChange={(e) => setEditIncident({ ...editIncident, description: e.target.value })}
+                placeholder="Detaillierte Beschreibung des Vorfalls"
+              />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Kategorie *</label>
+                <select
+                  className="w-full px-3 py-2 border rounded-lg"
+                  value={editIncident.category}
+                  onChange={(e) => setEditIncident({ ...editIncident, category: e.target.value })}
+                >
+                  <option value="FIRE">Brand</option>
+                  <option value="BREAK_IN">Einbruch</option>
+                  <option value="THEFT">Diebstahl</option>
+                  <option value="VANDALISM">Vandalismus</option>
+                  <option value="ACCIDENT">Unfall</option>
+                  <option value="MEDICAL_EMERGENCY">Medizinischer Notfall</option>
+                  <option value="DISTURBANCE">Ruhestörung</option>
+                  <option value="PROPERTY_DAMAGE">Sachbeschädigung</option>
+                  <option value="SUSPICIOUS_PERSON">Verdächtige Person</option>
+                  <option value="TECHNICAL_FAILURE">Technischer Ausfall</option>
+                  <option value="OTHER">Sonstiges</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Schweregrad *</label>
+                <select
+                  className="w-full px-3 py-2 border rounded-lg"
+                  value={editIncident.severity}
+                  onChange={(e) => setEditIncident({ ...editIncident, severity: e.target.value })}
+                >
+                  <option value="CRITICAL">Kritisch</option>
+                  <option value="HIGH">Hoch</option>
+                  <option value="MEDIUM">Mittel</option>
+                  <option value="LOW">Niedrig</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Vorfallzeit *</label>
+                <input
+                  type="datetime-local"
+                  className="w-full px-3 py-2 border rounded-lg"
+                  value={new Date(editIncident.occurredAt).toISOString().slice(0, 16)}
+                  onChange={(e) => setEditIncident({ ...editIncident, occurredAt: e.target.value })}
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Ort</label>
+                <input
+                  type="text"
+                  className="w-full px-3 py-2 border rounded-lg"
+                  value={editIncident.location || ''}
+                  onChange={(e) => setEditIncident({ ...editIncident, location: e.target.value })}
+                  placeholder="z.B. Gebäude A, Eingang Süd"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Beteiligte Personen</label>
+              <input
+                type="text"
+                className="w-full px-3 py-2 border rounded-lg"
+                value={editIncident.involvedPersons || ''}
+                onChange={(e) => setEditIncident({ ...editIncident, involvedPersons: e.target.value })}
+                placeholder="Namen, Beschreibungen, etc."
+              />
+            </div>
+
+            <div className="flex justify-end gap-2 pt-4">
+              <Button variant="outline" onClick={() => setEditIncident(null)}>
+                Abbrechen
+              </Button>
+              <Button
+                className="bg-blue-600 hover:bg-blue-700 text-white"
+                onClick={() => {
+                  if (!editIncident.title || !editIncident.description) {
+                    toast.error('Titel und Beschreibung sind erforderlich')
+                    return
+                  }
+                  updateIncidentMutation.mutate({
+                    incidentId: editIncident.id,
+                    data: {
+                      title: editIncident.title,
+                      description: editIncident.description,
+                      category: editIncident.category,
+                      severity: editIncident.severity,
+                      location: editIncident.location || undefined,
+                      involvedPersons: editIncident.involvedPersons || undefined,
+                    },
+                  })
+                }}
+                disabled={updateIncidentMutation.isPending}
+              >
+                {updateIncidentMutation.isPending ? 'Wird aktualisiert...' : 'Aktualisieren'}
+              </Button>
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {/* Vorfall auflösen Modal */}
+      {resolveIncident && (
+        <Modal open={true} onClose={() => setResolveIncident(null)}>
+          <div className="space-y-4">
+            <h2 className="text-xl font-semibold">Vorfall auflösen</h2>
+            <p className="text-gray-600">
+              <strong>{resolveIncident.title}</strong>
+            </p>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Auflösungs-Beschreibung *
+              </label>
+              <textarea
+                className="w-full px-3 py-2 border rounded-lg"
+                rows={4}
+                placeholder="Beschreiben Sie, wie der Vorfall aufgelöst wurde..."
+                value={resolveIncident.resolution || ''}
+                onChange={(e) =>
+                  setResolveIncident({ ...resolveIncident, resolution: e.target.value })
+                }
+              />
+            </div>
+
+            <div className="flex justify-end gap-2 pt-4">
+              <Button variant="outline" onClick={() => setResolveIncident(null)}>
+                Abbrechen
+              </Button>
+              <Button
+                className="bg-green-600 hover:bg-green-700 text-white"
+                onClick={() => {
+                  const resolution = resolveIncident.resolution
+                  if (!resolution || resolution.trim() === '') {
+                    toast.error('Bitte geben Sie eine Auflösungs-Beschreibung ein')
+                    return
+                  }
+                  resolveIncidentMutation.mutate({
+                    incidentId: resolveIncident.id,
+                    resolution,
+                  })
+                }}
+                disabled={resolveIncidentMutation.isPending}
+              >
+                {resolveIncidentMutation.isPending ? 'Wird aufgelöst...' : 'Vorfall auflösen'}
               </Button>
             </div>
           </div>
