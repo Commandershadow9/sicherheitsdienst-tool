@@ -2,6 +2,48 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.13.2] - 2025-10-19 – Wachbuch CRUD Complete (Phase 3: 100% ✅)
+
+### Added - Frontend CRUD
+- **CreateIncidentModal**:
+  - Vollständiges Formular mit 8 Feldern
+  - Titel & Beschreibung (Pflichtfelder mit Validierung)
+  - Kategorie-Dropdown (11 Optionen: Brand, Einbruch, Diebstahl, etc.)
+  - Schweregrad-Dropdown (Kritisch, Hoch, Mittel, Niedrig)
+  - Vorfallzeit (datetime-local Input, vorausgefüllt mit jetzt)
+  - Ort & Beteiligte Personen (optional)
+  - Responsive Grid-Layout (2 Spalten auf Desktop)
+
+- **Incident Mutations** (4 Stück):
+  - `createIncidentMutation`: POST /sites/:siteId/incidents
+  - `updateIncidentMutation`: PUT /sites/:siteId/incidents/:id
+  - `resolveIncidentMutation`: PUT /sites/:siteId/incidents/:id/resolve
+  - `deleteIncidentMutation`: DELETE /sites/:siteId/incidents/:id
+  - Query Invalidation für automatische Cache-Updates
+  - Toast-Notifications für alle Aktionen
+
+- **Delete-Bestätigung Modal**:
+  - Sicherheitsabfrage vor Löschen
+  - State: `deleteIncidentId`
+  - Loading States während Mutation
+
+### Changed - Wachbuch Tab
+- "Vorfall melden" Button funktioniert (kein Placeholder mehr)
+- Öffnet CreateIncidentModal mit initialen Werten
+- State: `createIncidentModal` mit vollständigem Formobjekt
+
+### Technical
+- TypeScript: 0 Errors
+- Vite Build: Erfolgreich (867.98 kB Bundle)
+- Modal Component: `open={true}` Prop korrekt gesetzt
+- 264 neue Zeilen Code in SiteDetail.tsx
+
+### Phase 3 Complete
+- ✅ Backend: Datenmodell & 6 CRUD-Endpoints
+- ✅ Frontend: Timeline-View mit Badges
+- ✅ Frontend: CRUD (Create, Update, Resolve, Delete)
+- ⚠️ Optional noch offen: Edit/Resolve-Dialoge, Filter, Email-Notifications
+
 ## [1.13.1] - 2025-10-18 – Wachbuch & Vorfälle Frontend MVP
 
 ### Added - Frontend

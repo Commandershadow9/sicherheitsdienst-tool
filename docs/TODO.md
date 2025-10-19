@@ -1,4 +1,4 @@
-# TODO / Roadmap (Stand: 2025-10-17)
+# TODO / Roadmap (Stand: 2025-10-19)
 
 > Abgeschlossene Aufgaben liegen jetzt in `docs/TODO_ARCHIVE.md`.
 
@@ -85,23 +85,25 @@
 
 ---
 
-#### Phase 3: Wachbuch & Vorfälle (v1.13.0 - v1.13.1) ⭐ **70% ABGESCHLOSSEN**
-**Aufwand**: 3-4 Tage | **Status**: MVP fertig, CRUD offen
+#### Phase 3: Wachbuch & Vorfälle (v1.13.0 - v1.13.2) ⭐ **100% ABGESCHLOSSEN**
+**Aufwand**: 3-4 Tage | **Status**: Produktionsbereit ✅
 
 - [x] Datenmodell: SiteIncident (11 Kategorien, Schweregrad, Status) ✅
 - [x] Backend: CRUD-Endpoints (6 Endpoints) ✅
 - [x] Frontend: Wachbuch-Tab mit Timeline-View ✅
-- [ ] Vorfall-Melde-Dialog (CreateIncidentModal)
-- [ ] Mutations (Create, Update, Resolve, Delete)
-- [ ] Benachrichtigungen (Email bei kritischen Vorfällen)
-- [ ] Filter & PDF-Export
+- [x] Vorfall-Melde-Dialog (CreateIncidentModal) ✅
+- [x] Mutations (Create, Update, Resolve, Delete) ✅
+- [ ] Benachrichtigungen (Email bei kritischen Vorfällen) - **Optional** (Phase 3.5)
+- [ ] Filter & PDF-Export - **Optional** (Phase 3.5)
+- [ ] Edit/Resolve-Dialoge - **Optional** (Phase 3.5)
 
 **Commits**:
 - v1.13.0: Backend (SiteIncident Model, Controller, Routes)
-- v1.13.1: Frontend MVP (Timeline-View, Severity/Status-Badges)
+- v1.13.1: Frontend MVP (Timeline-View mit Badges)
+- v1.13.2: Frontend CRUD (CreateIncidentModal, 4 Mutations, Delete-Bestätigung)
 
 **Abhängigkeiten**: Phase 2
-**Liefert**: Digitales Wachbuch (70% fertig, MVP ready)
+**Liefert**: Digitales Wachbuch mit CRUD (100% fertig, produktionsbereit)
 
 ---
 

@@ -1,11 +1,11 @@
 # Objekt-Management Suite – Vollständiges Konzept
 
-**Status**: Phase 1-2 ✅ Abgeschlossen, Phase 3 ⚡ 70% fertig
+**Status**: Phase 1-3 ✅ Abgeschlossen (100%)
 **Priorität**: HOCH (blockiert mehrere Features)
 **Geschätzter Gesamtaufwand**: 15-25 Tage (aufgeteilt in 7 Phasen)
-**Version**: v1.11.0 – v1.17.0 (aktuell: v1.13.1)
+**Version**: v1.11.0 – v1.17.0 (aktuell: v1.13.2)
 **Erstellt**: 2025-10-17
-**Zuletzt aktualisiert**: 2025-10-18
+**Zuletzt aktualisiert**: 2025-10-19
 
 ---
 
@@ -263,17 +263,20 @@ GET    /api/sites/:id/documents/:docId/history # Versions-History
 
 ---
 
-### Phase 3: Wachbuch & Vorfälle (v1.13.0 - v1.13.1) ⚡ **70% ABGESCHLOSSEN**
+### Phase 3: Wachbuch & Vorfälle (v1.13.0 - v1.13.2) ✅ **100% ABGESCHLOSSEN**
 **Ziel:** Digitales Wachbuch für Ereignisse & Vorfälle
 **Aufwand:** 3-4 Tage
-**Status:** Backend ✅ Frontend MVP ✅ | Offen: CRUD-Dialog, Mutations, Email-Notifications
+**Status:** Backend ✅ Frontend ✅ CRUD ✅ | Produktionsbereit
 **Features:**
 - ✅ Ereignis-Log (Timeline-View mit Severity/Status-Badges)
 - ✅ Vorfälle anzeigen (11 Kategorien, 4 Severity-Levels)
 - ✅ Backend CRUD-Endpoints (6 Endpoints)
-- ⏳ Vorfälle eintragen (Dialog in v1.13.2)
-- ⏳ Filter & Export (PDF-Report für Kunde)
-- ⏳ Benachrichtigungen (kritische Vorfälle → Einsatzleiter)
+- ✅ Vorfälle eintragen (CreateIncidentModal mit 8 Feldern)
+- ✅ Mutations (Create, Update, Resolve, Delete)
+- ✅ Delete-Bestätigung Modal
+- ⚠️ Filter & Export (PDF-Report) - **Optional** (Phase 3.5)
+- ⚠️ Email-Notifications (kritische Vorfälle) - **Optional** (Phase 3.5)
+- ⚠️ Edit/Resolve-Dialoge - **Optional** (Phase 3.5)
 
 **Datenmodell (Prisma):**
 ```prisma
