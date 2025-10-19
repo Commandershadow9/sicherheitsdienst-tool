@@ -134,6 +134,16 @@ export default function SiteDetail() {
     mimeType: string
     fileSize: number
   } | null>(null)
+  const [createIncidentModal, setCreateIncidentModal] = useState<{
+    title: string
+    description: string
+    category: string
+    severity: string
+    occurredAt: string
+    location: string
+    involvedPersons: string
+  } | null>(null)
+  const [deleteIncidentId, setDeleteIncidentId] = useState<string | null>(null)
 
   const { data: site, isLoading, isError, error } = useQuery<Site>({
     queryKey: ['site', id],
@@ -308,6 +318,79 @@ export default function SiteDetail() {
     },
     onError: (error: any) => {
       toast.error(error?.response?.data?.message || 'Fehler beim Löschen des Objekts')
+    },
+  })
+
+  const createIncidentMutation = useMutation({
+    mutationFn: async (data: {
+      title: string
+      description: string
+      category: string
+      severity: string
+      occurredAt: string
+      location?: string
+      involvedPersons?: string
+    }) => {
+      const res = await api.post(`/sites/${id}/incidents`, data)
+      return res.data
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['site', id] })
+      toast.success('Vorfall erfolgreich gemeldet')
+      setCreateIncidentModal(null)
+    },
+    onError: (error: any) => {
+      toast.error(error?.response?.data?.message || 'Fehler beim Melden des Vorfalls')
+    },
+  })
+
+  const updateIncidentMutation = useMutation({
+    mutationFn: async ({ incidentId, data }: { incidentId: string; data: Partial<{
+      title: string
+      description: string
+      category: string
+      severity: string
+      location?: string
+      involvedPersons?: string
+    }> }) => {
+      const res = await api.put(`/sites/${id}/incidents/${incidentId}`, data)
+      return res.data
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['site', id] })
+      toast.success('Vorfall erfolgreich aktualisiert')
+      setCreateIncidentModal(null)
+    },
+    onError: (error: any) => {
+      toast.error(error?.response?.data?.message || 'Fehler beim Aktualisieren des Vorfalls')
+    },
+  })
+
+  const resolveIncidentMutation = useMutation({
+    mutationFn: async ({ incidentId, resolution }: { incidentId: string; resolution: string }) => {
+      const res = await api.put(`/sites/${id}/incidents/${incidentId}/resolve`, { resolution })
+      return res.data
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['site', id] })
+      toast.success('Vorfall als gelöst markiert')
+    },
+    onError: (error: any) => {
+      toast.error(error?.response?.data?.message || 'Fehler beim Auflösen des Vorfalls')
+    },
+  })
+
+  const deleteIncidentMutation = useMutation({
+    mutationFn: async (incidentId: string) => {
+      await api.delete(`/sites/${id}/incidents/${incidentId}`)
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['site', id] })
+      toast.success('Vorfall erfolgreich gelöscht')
+      setDeleteIncidentId(null)
+    },
+    onError: (error: any) => {
+      toast.error(error?.response?.data?.message || 'Fehler beim Löschen des Vorfalls')
     },
   })
 
@@ -1221,7 +1304,20 @@ export default function SiteDetail() {
               <AlertTriangle size={20} className="text-orange-600" />
               Vorfälle ({site.incidents?.length || 0})
             </h3>
-            <Button size="sm" onClick={() => alert('Vorfall melden - Dialog kommt im nächsten Commit!')}>
+            <Button
+              size="sm"
+              onClick={() =>
+                setCreateIncidentModal({
+                  title: '',
+                  description: '',
+                  category: 'OTHER',
+                  severity: 'MEDIUM',
+                  occurredAt: new Date().toISOString().slice(0, 16),
+                  location: '',
+                  involvedPersons: '',
+                })
+              }
+            >
               <Plus size={16} className="mr-2" />
               Vorfall melden
             </Button>
@@ -1278,6 +1374,173 @@ export default function SiteDetail() {
             </div>
           )}
         </div>
+      )}
+
+      {/* Vorfall melden/bearbeiten Modal */}
+      {createIncidentModal && (
+        <Modal open={true} onClose={() => setCreateIncidentModal(null)}>
+          <div className="space-y-4">
+            <h2 className="text-xl font-semibold">Vorfall melden</h2>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Titel *</label>
+              <input
+                type="text"
+                className="w-full px-3 py-2 border rounded-lg"
+                value={createIncidentModal.title}
+                onChange={(e) =>
+                  setCreateIncidentModal({ ...createIncidentModal, title: e.target.value })
+                }
+                placeholder="Kurze Beschreibung des Vorfalls"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Beschreibung *</label>
+              <textarea
+                className="w-full px-3 py-2 border rounded-lg"
+                rows={4}
+                value={createIncidentModal.description}
+                onChange={(e) =>
+                  setCreateIncidentModal({ ...createIncidentModal, description: e.target.value })
+                }
+                placeholder="Detaillierte Beschreibung des Vorfalls"
+              />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Kategorie *</label>
+                <select
+                  className="w-full px-3 py-2 border rounded-lg"
+                  value={createIncidentModal.category}
+                  onChange={(e) =>
+                    setCreateIncidentModal({ ...createIncidentModal, category: e.target.value })
+                  }
+                >
+                  <option value="FIRE">Brand</option>
+                  <option value="BREAK_IN">Einbruch</option>
+                  <option value="THEFT">Diebstahl</option>
+                  <option value="VANDALISM">Vandalismus</option>
+                  <option value="ACCIDENT">Unfall</option>
+                  <option value="MEDICAL_EMERGENCY">Medizinischer Notfall</option>
+                  <option value="DISTURBANCE">Ruhestörung</option>
+                  <option value="PROPERTY_DAMAGE">Sachbeschädigung</option>
+                  <option value="SUSPICIOUS_PERSON">Verdächtige Person</option>
+                  <option value="TECHNICAL_FAILURE">Technischer Ausfall</option>
+                  <option value="OTHER">Sonstiges</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Schweregrad *</label>
+                <select
+                  className="w-full px-3 py-2 border rounded-lg"
+                  value={createIncidentModal.severity}
+                  onChange={(e) =>
+                    setCreateIncidentModal({ ...createIncidentModal, severity: e.target.value })
+                  }
+                >
+                  <option value="CRITICAL">Kritisch</option>
+                  <option value="HIGH">Hoch</option>
+                  <option value="MEDIUM">Mittel</option>
+                  <option value="LOW">Niedrig</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Vorfallzeit *</label>
+                <input
+                  type="datetime-local"
+                  className="w-full px-3 py-2 border rounded-lg"
+                  value={createIncidentModal.occurredAt}
+                  onChange={(e) =>
+                    setCreateIncidentModal({ ...createIncidentModal, occurredAt: e.target.value })
+                  }
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Ort</label>
+                <input
+                  type="text"
+                  className="w-full px-3 py-2 border rounded-lg"
+                  value={createIncidentModal.location}
+                  onChange={(e) =>
+                    setCreateIncidentModal({ ...createIncidentModal, location: e.target.value })
+                  }
+                  placeholder="z.B. Gebäude A, Eingang Süd"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Beteiligte Personen</label>
+              <input
+                type="text"
+                className="w-full px-3 py-2 border rounded-lg"
+                value={createIncidentModal.involvedPersons}
+                onChange={(e) =>
+                  setCreateIncidentModal({ ...createIncidentModal, involvedPersons: e.target.value })
+                }
+                placeholder="Namen, Beschreibungen, etc."
+              />
+            </div>
+
+            <div className="flex justify-end gap-2 pt-4">
+              <Button variant="outline" onClick={() => setCreateIncidentModal(null)}>
+                Abbrechen
+              </Button>
+              <Button
+                className="bg-orange-600 hover:bg-orange-700 text-white"
+                onClick={() => {
+                  if (!createIncidentModal.title || !createIncidentModal.description) {
+                    toast.error('Titel und Beschreibung sind erforderlich')
+                    return
+                  }
+                  createIncidentMutation.mutate({
+                    title: createIncidentModal.title,
+                    description: createIncidentModal.description,
+                    category: createIncidentModal.category,
+                    severity: createIncidentModal.severity,
+                    occurredAt: createIncidentModal.occurredAt,
+                    location: createIncidentModal.location || undefined,
+                    involvedPersons: createIncidentModal.involvedPersons || undefined,
+                  })
+                }}
+                disabled={createIncidentMutation.isPending}
+              >
+                {createIncidentMutation.isPending ? 'Wird gemeldet...' : 'Vorfall melden'}
+              </Button>
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {/* Vorfall löschen Bestätigung */}
+      {deleteIncidentId && (
+        <Modal open={true} onClose={() => setDeleteIncidentId(null)}>
+          <div className="space-y-4">
+            <h2 className="text-xl font-semibold">Vorfall löschen?</h2>
+            <p className="text-gray-600">
+              Möchten Sie diesen Vorfall wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.
+            </p>
+            <div className="flex justify-end gap-2 pt-4">
+              <Button variant="outline" onClick={() => setDeleteIncidentId(null)}>
+                Abbrechen
+              </Button>
+              <Button
+                className="bg-red-600 hover:bg-red-700 text-white"
+                onClick={() => deleteIncidentMutation.mutate(deleteIncidentId)}
+                disabled={deleteIncidentMutation.isPending}
+              >
+                {deleteIncidentMutation.isPending ? 'Wird gelöscht...' : 'Löschen'}
+              </Button>
+            </div>
+          </div>
+        </Modal>
       )}
 
       {/* Dokument-Viewer */}
