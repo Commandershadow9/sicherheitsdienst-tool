@@ -15,7 +15,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { FormField } from '@/components/ui/form'
 import { toast } from 'sonner'
 import { completeClearanceTraining, revokeClearance, type Clearance } from '../api'
-import { Building2, Phone, Users, Shield, Calendar, Image as ImageIcon, UserCheck, FileText, Upload, Download, Trash2, Eye, AlertTriangle, Plus, Check, X, Pencil, CheckCircle } from 'lucide-react'
+import { Building2, Phone, Shield, Calendar, Image as ImageIcon, UserCheck, FileText, Upload, Download, Trash2, Eye, AlertTriangle, Plus, X, Pencil, CheckCircle } from 'lucide-react'
 import DocumentViewerModal from '../components/DocumentViewerModal'
 
 type Site = {
@@ -143,7 +143,7 @@ export default function SiteDetail() {
     severity: string
     occurredAt: string
     location: string
-    involvedPersons: string
+    involvedPersons: Array<{ name: string; role?: string; isWitness?: boolean }>
   } | null>(null)
   const [deleteIncidentId, setDeleteIncidentId] = useState<string | null>(null)
   const [editIncident, setEditIncident] = useState<any>(null)
@@ -1333,7 +1333,7 @@ export default function SiteDetail() {
                   severity: 'MEDIUM',
                   occurredAt: new Date().toISOString().slice(0, 16),
                   location: '',
-                  involvedPersons: '',
+                  involvedPersons: [],
                 })
               }
             >
@@ -1447,6 +1447,38 @@ export default function SiteDetail() {
                           <span className="font-medium text-green-800">Lösung:</span> {incident.resolution}
                         </div>
                       )}
+                      {incident.involvedPersons && (() => {
+                        try {
+                          const persons = JSON.parse(incident.involvedPersons)
+                          if (persons.length > 0) {
+                            return (
+                              <div className="mt-2 p-2 bg-gray-50 rounded text-sm">
+                                <span className="font-medium text-gray-800">Beteiligte Personen:</span>
+                                <div className="mt-1 flex flex-wrap gap-1">
+                                  {persons.map((person: any, idx: number) => (
+                                    <span
+                                      key={idx}
+                                      className="inline-block px-2 py-0.5 bg-white border border-gray-300 rounded text-xs"
+                                    >
+                                      {person.name}
+                                      {person.role && <span className="text-gray-500"> ({person.role})</span>}
+                                      {person.isWitness && <span className="ml-1 text-blue-600">👁</span>}
+                                    </span>
+                                  ))}
+                                </div>
+                              </div>
+                            )
+                          }
+                        } catch {
+                          // Fallback für alte String-Einträge
+                          return (
+                            <div className="mt-2 p-2 bg-gray-50 rounded text-sm">
+                              <span className="font-medium text-gray-800">Beteiligte Personen:</span> {incident.involvedPersons}
+                            </div>
+                          )
+                        }
+                        return null
+                      })()}
                       {(incident as any).shift && (
                         <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded text-sm">
                           <div className="flex items-center gap-2 mb-2">
@@ -1507,7 +1539,18 @@ export default function SiteDetail() {
                             <Button
                               size="sm"
                               variant="outline"
-                              onClick={() => setEditIncident(incident)}
+                              onClick={() => {
+                                let parsedPersons: Array<{ name: string; role?: string; isWitness?: boolean }> = []
+                                try {
+                                  if (incident.involvedPersons) {
+                                    parsedPersons = JSON.parse(incident.involvedPersons)
+                                  }
+                                } catch {
+                                  // Falls es noch ein alter String ist, ignorieren wir es
+                                  parsedPersons = []
+                                }
+                                setEditIncident({ ...incident, involvedPersons: parsedPersons })
+                              }}
                             >
                               <Pencil size={14} className="mr-1" />
                               Bearbeiten
@@ -1647,16 +1690,81 @@ export default function SiteDetail() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Beteiligte Personen</label>
-              <input
-                type="text"
-                className="w-full px-3 py-2 border rounded-lg"
-                value={createIncidentModal.involvedPersons}
-                onChange={(e) =>
-                  setCreateIncidentModal({ ...createIncidentModal, involvedPersons: e.target.value })
-                }
-                placeholder="Namen, Beschreibungen, etc."
-              />
+              <div className="flex items-center justify-between mb-2">
+                <label className="block text-sm font-medium text-gray-700">Beteiligte Personen</label>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    setCreateIncidentModal({
+                      ...createIncidentModal,
+                      involvedPersons: [...createIncidentModal.involvedPersons, { name: '', role: '', isWitness: false }],
+                    })
+                  }}
+                >
+                  <Plus size={14} className="mr-1" />
+                  Person hinzufügen
+                </Button>
+              </div>
+              {createIncidentModal.involvedPersons.length === 0 ? (
+                <p className="text-sm text-gray-500 italic">Keine beteiligten Personen hinzugefügt</p>
+              ) : (
+                <div className="space-y-2">
+                  {createIncidentModal.involvedPersons.map((person, index) => (
+                    <div key={index} className="flex gap-2 items-start p-2 bg-gray-50 rounded border">
+                      <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        <input
+                          type="text"
+                          className="w-full px-2 py-1 text-sm border rounded"
+                          placeholder="Name *"
+                          value={person.name}
+                          onChange={(e) => {
+                            const updated = [...createIncidentModal.involvedPersons]
+                            updated[index] = { ...updated[index], name: e.target.value }
+                            setCreateIncidentModal({ ...createIncidentModal, involvedPersons: updated })
+                          }}
+                        />
+                        <input
+                          type="text"
+                          className="w-full px-2 py-1 text-sm border rounded"
+                          placeholder="Rolle (z.B. Zeuge, Betroffener)"
+                          value={person.role || ''}
+                          onChange={(e) => {
+                            const updated = [...createIncidentModal.involvedPersons]
+                            updated[index] = { ...updated[index], role: e.target.value }
+                            setCreateIncidentModal({ ...createIncidentModal, involvedPersons: updated })
+                          }}
+                        />
+                      </div>
+                      <label className="flex items-center gap-1 text-xs text-gray-700 whitespace-nowrap">
+                        <input
+                          type="checkbox"
+                          checked={person.isWitness || false}
+                          onChange={(e) => {
+                            const updated = [...createIncidentModal.involvedPersons]
+                            updated[index] = { ...updated[index], isWitness: e.target.checked }
+                            setCreateIncidentModal({ ...createIncidentModal, involvedPersons: updated })
+                          }}
+                        />
+                        Zeuge
+                      </label>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        className="text-red-600 hover:bg-red-50"
+                        onClick={() => {
+                          const updated = createIncidentModal.involvedPersons.filter((_, i) => i !== index)
+                          setCreateIncidentModal({ ...createIncidentModal, involvedPersons: updated })
+                        }}
+                      >
+                        <X size={14} />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             <div className="flex justify-end gap-2 pt-4">
@@ -1677,7 +1785,10 @@ export default function SiteDetail() {
                     severity: createIncidentModal.severity,
                     occurredAt: createIncidentModal.occurredAt,
                     location: createIncidentModal.location || undefined,
-                    involvedPersons: createIncidentModal.involvedPersons || undefined,
+                    involvedPersons:
+                      createIncidentModal.involvedPersons.length > 0
+                        ? JSON.stringify(createIncidentModal.involvedPersons)
+                        : undefined,
                   })
                 }}
                 disabled={createIncidentMutation.isPending}
@@ -1802,14 +1913,81 @@ export default function SiteDetail() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Beteiligte Personen</label>
-              <input
-                type="text"
-                className="w-full px-3 py-2 border rounded-lg"
-                value={editIncident.involvedPersons || ''}
-                onChange={(e) => setEditIncident({ ...editIncident, involvedPersons: e.target.value })}
-                placeholder="Namen, Beschreibungen, etc."
-              />
+              <div className="flex items-center justify-between mb-2">
+                <label className="block text-sm font-medium text-gray-700">Beteiligte Personen</label>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    setEditIncident({
+                      ...editIncident,
+                      involvedPersons: [...(editIncident.involvedPersons || []), { name: '', role: '', isWitness: false }],
+                    })
+                  }}
+                >
+                  <Plus size={14} className="mr-1" />
+                  Person hinzufügen
+                </Button>
+              </div>
+              {(!editIncident.involvedPersons || editIncident.involvedPersons.length === 0) ? (
+                <p className="text-sm text-gray-500 italic">Keine beteiligten Personen hinzugefügt</p>
+              ) : (
+                <div className="space-y-2">
+                  {editIncident.involvedPersons.map((person: any, index: number) => (
+                    <div key={index} className="flex gap-2 items-start p-2 bg-gray-50 rounded border">
+                      <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        <input
+                          type="text"
+                          className="w-full px-2 py-1 text-sm border rounded"
+                          placeholder="Name *"
+                          value={person.name}
+                          onChange={(e) => {
+                            const updated = [...editIncident.involvedPersons]
+                            updated[index] = { ...updated[index], name: e.target.value }
+                            setEditIncident({ ...editIncident, involvedPersons: updated })
+                          }}
+                        />
+                        <input
+                          type="text"
+                          className="w-full px-2 py-1 text-sm border rounded"
+                          placeholder="Rolle (z.B. Zeuge, Betroffener)"
+                          value={person.role || ''}
+                          onChange={(e) => {
+                            const updated = [...editIncident.involvedPersons]
+                            updated[index] = { ...updated[index], role: e.target.value }
+                            setEditIncident({ ...editIncident, involvedPersons: updated })
+                          }}
+                        />
+                      </div>
+                      <label className="flex items-center gap-1 text-xs text-gray-700 whitespace-nowrap">
+                        <input
+                          type="checkbox"
+                          checked={person.isWitness || false}
+                          onChange={(e) => {
+                            const updated = [...editIncident.involvedPersons]
+                            updated[index] = { ...updated[index], isWitness: e.target.checked }
+                            setEditIncident({ ...editIncident, involvedPersons: updated })
+                          }}
+                        />
+                        Zeuge
+                      </label>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        className="text-red-600 hover:bg-red-50"
+                        onClick={() => {
+                          const updated = editIncident.involvedPersons.filter((_: any, i: number) => i !== index)
+                          setEditIncident({ ...editIncident, involvedPersons: updated })
+                        }}
+                      >
+                        <X size={14} />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             <div className="flex justify-end gap-2 pt-4">
@@ -1831,7 +2009,10 @@ export default function SiteDetail() {
                       category: editIncident.category,
                       severity: editIncident.severity,
                       location: editIncident.location || undefined,
-                      involvedPersons: editIncident.involvedPersons || undefined,
+                      involvedPersons:
+                        editIncident.involvedPersons && editIncident.involvedPersons.length > 0
+                          ? JSON.stringify(editIncident.involvedPersons)
+                          : undefined,
                     },
                   })
                 }}

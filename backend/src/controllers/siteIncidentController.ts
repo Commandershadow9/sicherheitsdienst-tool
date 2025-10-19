@@ -115,6 +115,27 @@ export const createIncident = async (req: Request, res: Response, next: NextFunc
       return;
     }
 
+    // Validierung von involvedPersons (wenn bereitgestellt)
+    if (involvedPersons) {
+      try {
+        const parsed = JSON.parse(involvedPersons);
+        if (!Array.isArray(parsed)) {
+          res.status(400).json({ success: false, message: 'involvedPersons muss ein JSON-Array sein' });
+          return;
+        }
+        // Prüfe ob jedes Element mindestens ein name-Feld hat
+        for (const person of parsed) {
+          if (!person.name || typeof person.name !== 'string' || person.name.trim() === '') {
+            res.status(400).json({ success: false, message: 'Jede beteiligte Person muss ein name-Feld haben' });
+            return;
+          }
+        }
+      } catch (error) {
+        res.status(400).json({ success: false, message: 'involvedPersons muss ein gültiger JSON-String sein' });
+        return;
+      }
+    }
+
     const incident = await prisma.siteIncident.create({
       data: {
         siteId,
@@ -187,6 +208,27 @@ export const updateIncident = async (req: Request, res: Response, next: NextFunc
           : 'Sie haben keine Berechtigung, diesen Vorfall zu bearbeiten'
       });
       return;
+    }
+
+    // Validierung von involvedPersons (wenn bereitgestellt)
+    if (involvedPersons !== undefined && involvedPersons !== null) {
+      try {
+        const parsed = JSON.parse(involvedPersons);
+        if (!Array.isArray(parsed)) {
+          res.status(400).json({ success: false, message: 'involvedPersons muss ein JSON-Array sein' });
+          return;
+        }
+        // Prüfe ob jedes Element mindestens ein name-Feld hat
+        for (const person of parsed) {
+          if (!person.name || typeof person.name !== 'string' || person.name.trim() === '') {
+            res.status(400).json({ success: false, message: 'Jede beteiligte Person muss ein name-Feld haben' });
+            return;
+          }
+        }
+      } catch (error) {
+        res.status(400).json({ success: false, message: 'involvedPersons muss ein gültiger JSON-String sein' });
+        return;
+      }
     }
 
     const updated = await prisma.siteIncident.update({
