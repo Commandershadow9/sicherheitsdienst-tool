@@ -46,6 +46,7 @@ model User {
   siteAssignments       SiteAssignment[]      @relation("SiteAssignmentUser")
   siteDocumentsUploaded SiteDocument[]        @relation("SiteDocumentUploader")
   siteIncidentsReported SiteIncident[]        @relation("SiteIncidentReporter")
+  incidentHistoryEntries IncidentHistory[]    @relation("IncidentHistoryUser")
   deviceTokens          DeviceToken[]
   preferences           EmployeePreferences?
   workload              EmployeeWorkload[]
@@ -683,10 +684,39 @@ model SiteIncident {
   createdAt            DateTime @default(now()) @map("created_at")
   updatedAt            DateTime @updatedAt @map("updated_at")
 
+  history IncidentHistory[]
+
   @@index([siteId, occurredAt])
   @@index([siteId, status])
   @@index([siteId, category])
   @@map("site_incidents")
+}
+
+// Änderungs-Historie für Site Incidents (Audit Trail)
+model IncidentHistory {
+  id         String   @id @default(cuid())
+  incidentId String   @map("incident_id")
+  incident   SiteIncident @relation(fields: [incidentId], references: [id], onDelete: Cascade)
+
+  // Wer hat die Änderung gemacht?
+  userId String @map("user_id")
+  user   User   @relation("IncidentHistoryUser", fields: [userId], references: [id])
+
+  // Was wurde gemacht?
+  action IncidentHistoryAction
+
+  // Detaillierte Änderungen (JSON)
+  // Format: {"field": {"old": "...", "new": "..."}}
+  // Beispiel: {"status": {"old": "OPEN", "new": "IN_PROGRESS"}, "title": {"old": "...", "new": "..."}}
+  changes String? @db.Text
+
+  // Zusätzliche Notiz (optional)
+  note String? @db.Text
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([incidentId, createdAt])
+  @@map("incident_history")
 }
 
 enum SiteIncidentCategory {
@@ -701,6 +731,14 @@ enum SiteIncidentCategory {
   SUSPICIOUS_PERSON // Verdächtige Person
   TECHNICAL_FAILURE // Technischer Ausfall
   OTHER // Sonstiges
+}
+
+enum IncidentHistoryAction {
+  CREATED // Vorfall wurde erstellt
+  UPDATED // Vorfall wurde bearbeitet
+  RESOLVED // Vorfall wurde aufgelöst
+  STATUS_CHANGED // Status wurde geändert
+  DELETED // Vorfall wurde gelöscht (wird nicht mehr verwendet bei Cascade)
 }
 
 // Einsätze / Events

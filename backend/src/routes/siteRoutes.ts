@@ -191,6 +191,9 @@ router.delete(
   asyncHandler(siteIncidentController.deleteIncident),
 );
 
+// GET /api/sites/:siteId/incidents/:id/history
+router.get('/:siteId/incidents/:id/history', authenticate, asyncHandler(siteIncidentController.getIncidentHistory));
+
 // 405
 router.all('/', authenticate, methodNotAllowed(['GET', 'POST']));
 router.all('/:id', authenticate, methodNotAllowed(['GET', 'PUT', 'DELETE']));
@@ -207,4 +210,6 @@ router.all('/:siteId/documents/:id/download', authenticate, methodNotAllowed(['G
 router.all('/:siteId/incidents', authenticate, methodNotAllowed(['GET', 'POST']));
 router.all('/:siteId/incidents/:id', authenticate, methodNotAllowed(['GET', 'PUT', 'DELETE']));
 router.all('/:siteId/incidents/:id/resolve', authenticate, methodNotAllowed(['PUT']));
+router.all('/:siteId/incidents/:id/history', authenticate, methodNotAllowed(['GET']));
+
 export default router;

@@ -1,6 +1,25 @@
 import { Request, Response, NextFunction } from 'express';
 import prisma from '../utils/prisma';
 
+// Helper: Erstelle History-Eintrag
+async function createHistoryEntry(
+  incidentId: string,
+  userId: string,
+  action: 'CREATED' | 'UPDATED' | 'RESOLVED' | 'STATUS_CHANGED',
+  changes?: Record<string, { old: any; new: any }>,
+  note?: string
+) {
+  await prisma.incidentHistory.create({
+    data: {
+      incidentId,
+      userId,
+      action,
+      changes: changes ? JSON.stringify(changes) : undefined,
+      note,
+    },
+  });
+}
+
 // GET /api/sites/:siteId/incidents - Alle Incidents eines Objekts
 export const getSiteIncidents = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -154,6 +173,9 @@ export const createIncident = async (req: Request, res: Response, next: NextFunc
       },
     });
 
+    // History-Eintrag erstellen
+    await createHistoryEntry(incident.id, reportedBy, 'CREATED');
+
     res.status(201).json({ success: true, message: 'Vorfall erfolgreich gemeldet', data: incident });
   } catch (error) {
     next(error);
@@ -231,6 +253,33 @@ export const updateIncident = async (req: Request, res: Response, next: NextFunc
       }
     }
 
+    // Tracke Änderungen für History
+    const changes: Record<string, { old: any; new: any }> = {};
+    if (title && title !== incident.title) {
+      changes.title = { old: incident.title, new: title };
+    }
+    if (description !== undefined && description !== incident.description) {
+      changes.description = { old: incident.description || '', new: description };
+    }
+    if (category && category !== incident.category) {
+      changes.category = { old: incident.category, new: category };
+    }
+    if (severity && severity !== incident.severity) {
+      changes.severity = { old: incident.severity, new: severity };
+    }
+    if (occurredAt && new Date(occurredAt).toISOString() !== incident.occurredAt.toISOString()) {
+      changes.occurredAt = { old: incident.occurredAt, new: new Date(occurredAt) };
+    }
+    if (location !== undefined && location !== incident.location) {
+      changes.location = { old: incident.location || '', new: location };
+    }
+    if (involvedPersons !== undefined && involvedPersons !== incident.involvedPersons) {
+      changes.involvedPersons = { old: incident.involvedPersons || '', new: involvedPersons };
+    }
+    if (status && status !== incident.status) {
+      changes.status = { old: incident.status, new: status };
+    }
+
     const updated = await prisma.siteIncident.update({
       where: { id },
       data: {
@@ -248,6 +297,16 @@ export const updateIncident = async (req: Request, res: Response, next: NextFunc
         site: { select: { id: true, name: true } },
       },
     });
+
+    // History-Eintrag erstellen (nur wenn es Änderungen gab)
+    if (Object.keys(changes).length > 0) {
+      await createHistoryEntry(
+        incident.id,
+        userId,
+        status && status !== incident.status ? 'STATUS_CHANGED' : 'UPDATED',
+        changes
+      );
+    }
 
     res.json({ success: true, message: 'Vorfall erfolgreich aktualisiert', data: updated });
   } catch (error) {
@@ -311,6 +370,18 @@ export const resolveIncident = async (req: Request, res: Response, next: NextFun
       },
     });
 
+    // History-Eintrag erstellen
+    await createHistoryEntry(
+      incident.id,
+      userId,
+      'RESOLVED',
+      {
+        status: { old: incident.status, new: 'RESOLVED' },
+        resolution: { old: null, new: resolution },
+      },
+      resolution
+    );
+
     res.json({ success: true, message: 'Vorfall erfolgreich aufgelöst', data: updated });
   } catch (error) {
     next(error);
@@ -350,6 +421,25 @@ export const deleteIncident = async (req: Request, res: Response, next: NextFunc
     await prisma.siteIncident.delete({ where: { id } });
 
     res.json({ success: true, message: 'Vorfall erfolgreich gelöscht' });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// GET /api/sites/:siteId/incidents/:id/history - Historie eines Incidents
+export const getIncidentHistory = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { id } = req.params;
+
+    const history = await prisma.incidentHistory.findMany({
+      where: { incidentId: id },
+      include: {
+        user: { select: { id: true, firstName: true, lastName: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    res.json({ success: true, data: history });
   } catch (error) {
     next(error);
   }
