@@ -1,11 +1,11 @@
 # Objekt-Management Suite – Vollständiges Konzept
 
-**Status**: Phase 1-3 ✅ Abgeschlossen (100%)
+**Status**: Phase 1-3 ✅ Abgeschlossen, Phase 3.5 ⚡ 50% in Arbeit
 **Priorität**: HOCH (blockiert mehrere Features)
 **Geschätzter Gesamtaufwand**: 15-25 Tage (aufgeteilt in 7 Phasen)
-**Version**: v1.11.0 – v1.17.0 (aktuell: v1.13.2)
+**Version**: v1.11.0 – v1.17.0 (aktuell: v1.13.4)
 **Erstellt**: 2025-10-17
-**Zuletzt aktualisiert**: 2025-10-19
+**Zuletzt aktualisiert**: 2025-10-20
 
 ---
 
@@ -341,7 +341,77 @@ GET    /api/sites/:id/incidents/export       # PDF-Report
 
 ---
 
-### Phase 4: Kontrollgänge & Rundenwesen (v1.13.0)
+### Phase 3.5: Erweiterte Wachbuch-Features (v1.13.3 - v1.13.x) ⚡ **50% IN ARBEIT**
+**Ziel:** Professionelle Wachbuch-Features mit RBAC, Kontext & Historie
+**Aufwand:** 1-2 Wochen
+**Status:** Phase 3.5a ✅ Complete, Phase 3.5b ⚡ In Arbeit, Phase 3.5c 🔜 Geplant
+
+#### Phase 3.5a: Edit, Resolve, Filter + RBAC (v1.13.3) ✅ **ABGESCHLOSSEN**
+**Features:**
+- ✅ **Backend RBAC/Ownership**:
+  - updateIncident: 24h-Regel für Reporter
+  - MA kann nur eigene Incidents bearbeiten (< 24h)
+  - Nach 24h: Nur Objektleiter/Schichtleiter/ADMIN/MANAGER
+  - resolveIncident: Nur ADMIN/MANAGER/Objektleiter
+  - deleteIncident: Nur ADMIN/MANAGER
+
+- ✅ **Frontend Filter**:
+  - Status-Filter (Alle, Offen, In Bearbeitung, Gelöst, Geschlossen)
+  - Schweregrad-Filter (Alle, Kritisch, Hoch, Mittel, Niedrig)
+  - Kategorie-Filter (11 Optionen)
+  - Echtzeitfilterung, Counter "X / Y"
+
+- ✅ **Frontend Dialoge**:
+  - Edit-Dialog mit Pre-Fill
+  - Resolve-Dialog mit Resolution-Textarea
+  - Action-Buttons mit Berechtigungsprüfung
+  - Icons: Pencil (Edit), CheckCircle (Resolve), Trash2 (Delete)
+
+**Berechtigungs-Matrix:**
+| Aktion      | MA (Reporter, <24h) | MA (Reporter, >24h) | Objektleiter | ADMIN/MANAGER |
+|-------------|---------------------|---------------------|--------------|---------------|
+| Melden      | ✅                  | ✅                  | ✅           | ✅            |
+| Bearbeiten  | ✅                  | ❌                  | ✅           | ✅            |
+| Auflösen    | ❌                  | ❌                  | ✅           | ✅            |
+| Löschen     | ❌                  | ❌                  | ❌           | ✅            |
+
+#### Phase 3.5b: Schicht-Kontext & Historie (v1.13.4+) ⚡ **IN ARBEIT**
+**Features:**
+- ✅ **Schicht-Kontext**:
+  - shiftId zu SiteIncident Model (Migration ausstehend)
+  - Shift populated in Controller (mit Assignments)
+  - Schicht-Kontext Box im Frontend
+  - Zeigt: Schicht-Titel, Start-/Endzeit, MA im Dienst
+  - Reporter wird markiert "(Melder)"
+
+- ⏳ **Beteiligte Personen** (geplant):
+  - involvedPersons: String → Array<{name, role?, isWitness?}>
+  - Dynamisch Personen hinzufügen/entfernen
+  - "Als Zeuge markieren" Checkbox
+
+- ⏳ **Bearbeitungs-Historie** (geplant):
+  - IncidentHistory Model
+  - Timeline: Wer hat wann was geändert
+  - Diff-View optional
+
+#### Phase 3.5c: Dashboard & Notifications (v1.13.x) 🔜 **GEPLANT**
+**Features:**
+- Dashboard-Widget "Kritische Vorfälle"
+- Einsatzleiter sieht alle Objekte
+- Objektleiter sieht nur ihre Objekte
+- Email-Notifications (CRITICAL/HIGH)
+- Push-Notifications
+- @mentions System (optional)
+
+**Migration ausstehend:**
+```bash
+cd backend
+npx prisma migrate dev --name add_shift_context_to_incidents
+```
+
+---
+
+### Phase 4: Kontrollgänge & Rundenwesen (v1.14.0)
 **Ziel:** Digitale Kontrollgänge mit QR-Code-Scanning
 **Aufwand:** 4-5 Tage
 **Features:**

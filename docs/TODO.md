@@ -1,4 +1,4 @@
-# TODO / Roadmap (Stand: 2025-10-19)
+# TODO / Roadmap (Stand: 2025-10-20)
 
 > Abgeschlossene Aufgaben liegen jetzt in `docs/TODO_ARCHIVE.md`.
 
@@ -93,9 +93,6 @@
 - [x] Frontend: Wachbuch-Tab mit Timeline-View ✅
 - [x] Vorfall-Melde-Dialog (CreateIncidentModal) ✅
 - [x] Mutations (Create, Update, Resolve, Delete) ✅
-- [ ] Benachrichtigungen (Email bei kritischen Vorfällen) - **Optional** (Phase 3.5)
-- [ ] Filter & PDF-Export - **Optional** (Phase 3.5)
-- [ ] Edit/Resolve-Dialoge - **Optional** (Phase 3.5)
 
 **Commits**:
 - v1.13.0: Backend (SiteIncident Model, Controller, Routes)
@@ -104,6 +101,41 @@
 
 **Abhängigkeiten**: Phase 2
 **Liefert**: Digitales Wachbuch mit CRUD (100% fertig, produktionsbereit)
+
+---
+
+#### Phase 3.5: Erweiterte Wachbuch-Features (v1.13.3 - v1.13.x) ⚡ **50% IN ARBEIT**
+**Aufwand**: 1-2 Wochen | **Status**: Teilweise implementiert
+
+**Phase 3.5a: Edit, Resolve, Filter + RBAC (v1.13.3) ✅ ABGESCHLOSSEN**
+- [x] Backend: Ownership/RBAC-Checks (24h-Regel, Objektleiter, etc.) ✅
+- [x] Frontend: Filter (Status, Severity, Category) ✅
+- [x] Frontend: Edit-Dialog mit Pre-Fill ✅
+- [x] Frontend: Resolve-Dialog ✅
+- [x] Frontend: Action-Buttons mit Berechtigungsprüfung ✅
+
+**Phase 3.5b: Schicht-Kontext & Historie (v1.13.4+) ⚡ IN ARBEIT**
+- [x] Backend: shiftId zu SiteIncident Model (Migration ausstehend) ✅
+- [x] Backend: shift populated in Controller ✅
+- [x] Frontend: Schicht-Kontext Box (MA im Dienst) ✅
+- [ ] Beteiligte Personen strukturiert (Array statt String)
+- [ ] Bearbeitungs-Historie (IncidentHistory Model)
+- [ ] Timeline: Wer hat wann was geändert
+
+**Phase 3.5c: Dashboard & Notifications (noch offen)**
+- [ ] Dashboard-Widget "Kritische Vorfälle"
+- [ ] Email-Notifications (CRITICAL/HIGH)
+- [ ] Push-Notifications
+- [ ] @mentions System
+
+**Commits**:
+- v1.13.3: Edit, Resolve, Filter + RBAC (Phase 3.5a Complete)
+- v1.13.4: Schicht-Kontext (Phase 3.5b Teil 1)
+
+**Abhängigkeiten**: Phase 3
+**Liefert**: Erweiterte Wachbuch-Funktionen mit professionellen Features
+
+⚠️ **Migration ausstehend**: `npx prisma migrate dev --name add_shift_context_to_incidents`
 
 ---
 

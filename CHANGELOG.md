@@ -2,6 +2,125 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.13.4] - 2025-10-20 – Schicht-Kontext (Phase 3.5b Teil 1)
+
+### Added - Backend
+- **Prisma Schema**:
+  - `shiftId` Field zu SiteIncident Model (optional, nullable)
+  - Relation zu Shift Model (@relation("SiteIncidentShift"))
+  - onDelete: SetNull (Shift löschen → shiftId wird null)
+  - Shift.incidents Relation hinzugefügt
+
+- **siteIncidentController.ts**:
+  - `getSiteIncidents`: shift populated mit allen Details
+  - `getIncidentById`: shift populated mit allen Details
+  - Include: shift.title, shift.startTime, shift.endTime
+  - Include: shift.assignments (alle MA im Dienst)
+  - Include: shift.assignments.user (Name, Email)
+
+### Added - Frontend
+- **Schicht-Kontext Box** in SiteDetail.tsx:
+  - Blauer Hintergrund (bg-blue-50, border-blue-200)
+  - Calendar Icon von lucide-react
+  - Zeigt Schicht-Titel und Start-/Endzeit
+  - Liste aller MA im Dienst als Badges
+  - Reporter wird mit "(Melder)" markiert
+  - Responsive Flex-Wrap für MA-Liste
+
+### Use Cases
+- **Vorfall während Schicht**: Zeigt alle möglichen Zeugen
+- **Schicht-Analyse**: Welche Vorfälle passierten während Schicht X
+- **Verantwortung**: Wer war Schichtleiter während Vorfall
+
+### Technical
+- TypeScript: 0 Errors ✅
+- Prisma Schema: Validated ✅
+- MA-Count dynamisch: "Mitarbeiter im Dienst (X)"
+
+### Migration Required
+⚠️ Prisma Migration muss noch erstellt werden:
+```bash
+cd backend
+npx prisma migrate dev --name add_shift_context_to_incidents
+```
+
+## [1.13.3] - 2025-10-20 – Edit, Resolve, Filter + RBAC (Phase 3.5a Complete)
+
+### Added - Backend RBAC
+- **updateIncident**: Ownership-Prüfung
+  - MA kann nur eigene Incidents bearbeiten (innerhalb 24h)
+  - Nach 24h: Nur Objektleiter/Schichtleiter/ADMIN/MANAGER
+  - Fehlermeldung: "Nur innerhalb von 24 Stunden nach Erstellung"
+  - Prüft: isReporter, within24Hours, isObjectLeader
+
+- **resolveIncident**: RBAC-Prüfung
+  - Nur ADMIN, MANAGER, Objektleiter, Schichtleiter
+  - Prüft ob Status OPEN oder IN_PROGRESS
+  - Fehlermeldung bei fehlender Berechtigung
+
+- **deleteIncident**: RBAC-Prüfung
+  - Nur ADMIN oder MANAGER
+  - Fehlermeldung: "Nur Administratoren und Manager können löschen"
+
+### Added - Frontend Filter
+- **Filter-UI** (3 Dropdowns):
+  - Status: Alle, Offen, In Bearbeitung, Gelöst, Geschlossen
+  - Schweregrad: Alle, Kritisch, Hoch, Mittel, Niedrig
+  - Kategorie: Alle, Brand, Einbruch, Diebstahl, etc. (11 Optionen)
+  - Responsive Grid (grid-cols-1 sm:grid-cols-3)
+  - Gray-50 Background für bessere Sichtbarkeit
+
+- **Gefilterte Liste**:
+  - Counter zeigt "X / Y" (gefiltert / gesamt)
+  - Echtzeitfilterung ohne Backend-Request
+  - Filter-Logic in .filter() Methode
+
+### Added - Frontend Dialoge
+- **Edit-Dialog**:
+  - Pre-Fill mit existierenden Werten
+  - Identisches Layout wie Create-Dialog
+  - datetime-local Input mit ISO-String Konvertierung
+  - Blauer Submit-Button (bg-blue-600)
+  - Mutation: updateIncidentMutation
+
+- **Resolve-Dialog**:
+  - Titel des Vorfalls angezeigt
+  - Textarea für Resolution-Beschreibung (Pflichtfeld)
+  - Grüner Submit-Button (bg-green-600)
+  - Setzt Status auf RESOLVED + resolvedAt Timestamp
+
+### Added - Frontend Action Buttons
+- **Bearbeiten-Button** (Pencil Icon):
+  - Sichtbar wenn: user == reporter UND < 24h, ODER ADMIN/MANAGER/Objektleiter
+  - Öffnet Edit-Dialog mit Pre-Fill
+
+- **Auflösen-Button** (CheckCircle Icon):
+  - Sichtbar wenn: ADMIN/MANAGER/Objektleiter UND Status != RESOLVED/CLOSED
+  - Grüne Farbe (text-green-600 hover:bg-green-50)
+
+- **Löschen-Button** (Trash2 Icon):
+  - Sichtbar wenn: ADMIN/MANAGER
+  - Rote Farbe (text-red-600 hover:bg-red-50)
+
+### Changed - Frontend
+- **useAuth Hook** importiert für User-Kontext
+- Icons erweitert: Pencil, CheckCircle (lucide-react)
+- Berechtigungs-Logic in IIFE in Incident-Card
+
+### Technical
+- TypeScript: 0 Errors ✅
+- Build: Erfolgreich (877.52 kB)
+- Backend: +147 Zeilen (RBAC-Logic)
+- Frontend: +350 Zeilen (Filter, Buttons, Dialoge)
+
+### Berechtigungs-Matrix
+| Aktion      | MA (Reporter, <24h) | MA (Reporter, >24h) | Objektleiter | ADMIN/MANAGER |
+|-------------|---------------------|---------------------|--------------|---------------|
+| Melden      | ✅                  | ✅                  | ✅           | ✅            |
+| Bearbeiten  | ✅                  | ❌                  | ✅           | ✅            |
+| Auflösen    | ❌                  | ❌                  | ✅           | ✅            |
+| Löschen     | ❌                  | ❌                  | ❌           | ✅            |
+
 ## [1.13.2] - 2025-10-19 – Wachbuch CRUD Complete (Phase 3: 100% ✅)
 
 ### Added - Frontend CRUD
