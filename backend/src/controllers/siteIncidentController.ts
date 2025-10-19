@@ -19,6 +19,28 @@ export const getSiteIncidents = async (req: Request, res: Response, next: NextFu
       include: {
         reporter: { select: { id: true, firstName: true, lastName: true } },
         site: { select: { id: true, name: true } },
+        shift: {
+          select: {
+            id: true,
+            title: true,
+            startTime: true,
+            endTime: true,
+            assignments: {
+              select: {
+                id: true,
+                status: true,
+                user: {
+                  select: {
+                    id: true,
+                    firstName: true,
+                    lastName: true,
+                    email: true,
+                  },
+                },
+              },
+            },
+          },
+        },
       },
       orderBy: { occurredAt: 'desc' },
     });
@@ -39,6 +61,28 @@ export const getIncidentById = async (req: Request, res: Response, next: NextFun
       include: {
         reporter: { select: { id: true, firstName: true, lastName: true, email: true } },
         site: { select: { id: true, name: true, address: true } },
+        shift: {
+          select: {
+            id: true,
+            title: true,
+            startTime: true,
+            endTime: true,
+            assignments: {
+              select: {
+                id: true,
+                status: true,
+                user: {
+                  select: {
+                    id: true,
+                    firstName: true,
+                    lastName: true,
+                    email: true,
+                  },
+                },
+              },
+            },
+          },
+        },
       },
     });
 

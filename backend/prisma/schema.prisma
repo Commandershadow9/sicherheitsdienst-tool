@@ -140,6 +140,7 @@ model Shift {
   assignments          ShiftAssignment[]
   timeEntries          TimeEntry[]
   complianceViolations ComplianceViolation[]
+  incidents            SiteIncident[]        @relation("SiteIncidentShift")
 
   @@index([startTime], name: "shifts_startTime_idx")
   @@index([status], name: "shifts_status_idx")
@@ -651,6 +652,10 @@ model SiteIncident {
   id     String @id @default(cuid())
   siteId String @map("site_id")
   site   Site   @relation(fields: [siteId], references: [id], onDelete: Cascade)
+
+  // Schicht-Kontext (optional - wenn Vorfall während einer Schicht passierte)
+  shiftId String? @map("shift_id")
+  shift   Shift?  @relation("SiteIncidentShift", fields: [shiftId], references: [id], onDelete: SetNull)
 
   // Vorfall-Informationen
   title       String

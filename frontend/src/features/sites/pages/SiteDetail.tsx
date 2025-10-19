@@ -1447,6 +1447,40 @@ export default function SiteDetail() {
                           <span className="font-medium text-green-800">Lösung:</span> {incident.resolution}
                         </div>
                       )}
+                      {(incident as any).shift && (
+                        <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded text-sm">
+                          <div className="flex items-center gap-2 mb-2">
+                            <Calendar size={16} className="text-blue-600" />
+                            <span className="font-medium text-blue-900">Schicht-Kontext</span>
+                          </div>
+                          <div className="space-y-1 text-gray-700">
+                            <div>
+                              <span className="font-medium">Schicht:</span> {(incident as any).shift.title}
+                            </div>
+                            <div>
+                              <span className="font-medium">Zeit:</span>{' '}
+                              {new Date((incident as any).shift.startTime).toLocaleString('de-DE')} -{' '}
+                              {new Date((incident as any).shift.endTime).toLocaleString('de-DE')}
+                            </div>
+                            {(incident as any).shift.assignments && (incident as any).shift.assignments.length > 0 && (
+                              <div>
+                                <span className="font-medium">Mitarbeiter im Dienst ({(incident as any).shift.assignments.length}):</span>
+                                <div className="mt-1 flex flex-wrap gap-1">
+                                  {(incident as any).shift.assignments.map((assignment: any) => (
+                                    <span
+                                      key={assignment.id}
+                                      className="inline-block px-2 py-0.5 bg-white border border-blue-300 rounded text-xs"
+                                    >
+                                      {assignment.user.firstName} {assignment.user.lastName}
+                                      {assignment.user.id === incident.reporter.id && ' (Melder)'}
+                                    </span>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
                     </div>
                     {(() => {
                       // Berechtigungsprüfungen
