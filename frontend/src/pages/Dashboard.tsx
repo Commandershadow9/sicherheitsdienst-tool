@@ -5,6 +5,7 @@ import { CriticalShiftsCard } from '@/features/dashboard/CriticalShiftsCard'
 import { PendingApprovalsCard } from '@/features/dashboard/PendingApprovalsCard'
 import { WarningsCard } from '@/features/dashboard/WarningsCard'
 import { StatsCard } from '@/features/dashboard/StatsCard'
+import { CriticalIncidentsCard } from '@/features/dashboard/CriticalIncidentsCard'
 import { QuickApprovalModal } from '@/features/dashboard/QuickApprovalModal'
 import { AbsenceDetailModal } from '@/features/absences/AbsenceDetailModal'
 import { ReplacementCandidatesModalV2 } from '@/features/absences/ReplacementCandidatesModalV2'
@@ -74,6 +75,7 @@ export default function Dashboard() {
   const handleApprovalsRetry = useCallback(() => queries.approvals.refetch(), [queries.approvals])
   const handleStatsRetry = useCallback(() => queries.stats.refetch(), [queries.stats])
   const handleWarningsRetry = useCallback(() => queries.warnings.refetch(), [queries.warnings])
+  const handleCriticalIncidentsRetry = useCallback(() => queries.criticalIncidents.refetch(), [queries.criticalIncidents])
 
   const handleApprove = useCallback(
     (approval: PendingApproval) => approvalModal.openModal(approval, 'approve'),
@@ -196,6 +198,14 @@ export default function Dashboard() {
               loadingShiftId={loadingShiftId}
             />
           </div>
+
+          <CriticalIncidentsCard
+            incidents={queries.criticalIncidents.data?.incidents}
+            summary={queries.criticalIncidents.data?.summary}
+            isLoading={queries.criticalIncidents.isLoading}
+            isError={queries.criticalIncidents.isError}
+            onRetry={handleCriticalIncidentsRetry}
+          />
         </div>
       </div>
 

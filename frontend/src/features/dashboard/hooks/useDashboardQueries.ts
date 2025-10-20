@@ -4,6 +4,7 @@ import {
   fetchPendingApprovals,
   fetchWarnings,
   fetchDashboardStats,
+  fetchCriticalIncidents,
 } from '../api'
 
 const REFRESH_INTERVAL_MS = 60_000
@@ -41,10 +42,18 @@ export function useDashboardQueries() {
     refetchIntervalInBackground: true,
   })
 
+  const criticalIncidentsQuery = useQuery({
+    queryKey: ['dashboard', 'critical-incidents', { days: 7, limit: 10 }],
+    queryFn: () => fetchCriticalIncidents(7, 10),
+    refetchInterval: REFRESH_INTERVAL_MS,
+    refetchIntervalInBackground: true,
+  })
+
   return {
     critical: criticalQuery,
     approvals: approvalsQuery,
     warnings: warningsQuery,
     stats: statsQuery,
+    criticalIncidents: criticalIncidentsQuery,
   }
 }

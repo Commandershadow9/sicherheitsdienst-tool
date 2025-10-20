@@ -31,6 +31,11 @@ export async function fetchDashboardStats() {
   return res.data.data
 }
 
+export async function fetchCriticalIncidents(days = 7, limit = 10) {
+  const res = await api.get('/stats/critical-incidents', { params: { days, limit } })
+  return res.data.data
+}
+
 export async function fetchShiftReplacementCandidates(shiftId: string, absentUserId?: string) {
   const params = absentUserId ? { absentUserId } : undefined
   const res = await api.get<{ data: ReplacementCandidate[] }>(`/shifts/${shiftId}/replacement-candidates`, {
