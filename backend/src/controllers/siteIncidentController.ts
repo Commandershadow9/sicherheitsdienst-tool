@@ -1,5 +1,8 @@
 import { Request, Response, NextFunction } from 'express';
 import prisma from '../utils/prisma';
+import { sendCriticalIncidentEmail } from '../services/emailService';
+import { sendPushToUsers } from '../services/pushService';
+import logger from '../utils/logger';
 
 // Helper: Erstelle History-Eintrag
 async function createHistoryEntry(
@@ -175,6 +178,78 @@ export const createIncident = async (req: Request, res: Response, next: NextFunc
 
     // History-Eintrag erstellen
     await createHistoryEntry(incident.id, reportedBy, 'CREATED');
+
+    // Benachrichtigungen für CRITICAL/HIGH Vorfälle (fire and forget)
+    if (severity === 'CRITICAL' || severity === 'HIGH') {
+      (async () => {
+        try {
+          // Hole alle ADMIN und MANAGER mit emailOptIn
+          const recipients = await prisma.user.findMany({
+            where: {
+              role: { in: ['ADMIN', 'MANAGER'] },
+              emailOptIn: true,
+              isActive: true,
+            },
+            select: {
+              email: true,
+              firstName: true,
+              lastName: true,
+            },
+          });
+
+          // Sende Emails an alle Empfänger
+          const reporterName = `${incident.reporter.firstName} ${incident.reporter.lastName}`;
+          for (const recipient of recipients) {
+            try {
+              await sendCriticalIncidentEmail(
+                recipient.email,
+                title,
+                incident.site.name,
+                severity as 'CRITICAL' | 'HIGH',
+                reporterName,
+                new Date(occurredAt),
+                siteId
+              );
+              logger.info('Critical incident email sent to %s', recipient.email);
+            } catch (emailErr) {
+              logger.error('Failed to send critical incident email to %s: %o', recipient.email, emailErr);
+            }
+          }
+
+          // Sende Push-Notifications
+          if (recipients.length > 0) {
+            try {
+              // Hole User-IDs für Push
+              const userIds = await prisma.user.findMany({
+                where: {
+                  role: { in: ['ADMIN', 'MANAGER'] },
+                  pushOptIn: true,
+                  isActive: true,
+                },
+                select: { id: true },
+              });
+
+              const severityLabel = severity === 'CRITICAL' ? 'KRITISCH' : 'HOCH';
+              await sendPushToUsers(
+                userIds.map((u) => u.id),
+                `🚨 ${severityLabel}: ${title}`,
+                `${incident.site.name} • ${reporterName}`,
+                {
+                  template: 'critical-incident',
+                  context: { incidentTitle: title, siteName: incident.site.name, severity: severityLabel },
+                  reason: 'critical-incident',
+                }
+              );
+              logger.info('Critical incident push notifications sent to %d users', userIds.length);
+            } catch (pushErr) {
+              logger.error('Failed to send critical incident push notifications: %o', pushErr);
+            }
+          }
+        } catch (notifyErr) {
+          logger.error('Failed to send critical incident notifications: %o', notifyErr);
+        }
+      })();
+    }
 
     res.status(201).json({ success: true, message: 'Vorfall erfolgreich gemeldet', data: incident });
   } catch (error) {

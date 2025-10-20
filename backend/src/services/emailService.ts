@@ -148,3 +148,105 @@ export async function sendShiftChangedEmail(to: string, shiftTitle: string, chan
     reason: 'shift-change',
   });
 }
+
+export async function sendCriticalIncidentEmail(
+  to: string,
+  incidentTitle: string,
+  siteName: string,
+  severity: 'CRITICAL' | 'HIGH',
+  reporterName: string,
+  occurredAt: Date,
+  siteId: string,
+) {
+  const severityLabel = severity === 'CRITICAL' ? 'KRITISCH' : 'HOCH';
+  const context = { incidentTitle, siteName, severity: severityLabel, reporterName, occurredAt: occurredAt.toLocaleString('de-DE'), siteId };
+
+  const tpl = renderEmailTemplate('critical-incident', context);
+  if (tpl?.subject || tpl?.text || tpl?.html) {
+    return sendEmail(
+      to,
+      tpl.subject || `🚨 ${severityLabel}: ${incidentTitle} - ${siteName}`,
+      tpl.text,
+      tpl.html,
+      { template: 'critical-incident', context, reason: 'critical-incident' },
+    );
+  }
+
+  // Fallback ohne Template
+  const subject = `🚨 ${severityLabel}: ${incidentTitle} - ${siteName}`;
+  const text = `KRITISCHER VORFALL
+
+Schweregrad: ${severityLabel}
+Objekt: ${siteName}
+Vorfall: ${incidentTitle}
+
+Gemeldet von: ${reporterName}
+Zeitpunkt: ${occurredAt.toLocaleString('de-DE')}
+
+Bitte umgehend überprüfen und geeignete Maßnahmen einleiten.
+
+Zum Objekt: ${process.env.FRONTEND_URL || 'https://app.sicherheitsdienst.de'}/sites/${siteId}?tab=incidents
+
+Mit freundlichen Grüßen
+Ihr Sicherheitsdienst-System`;
+
+  const html = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <style>
+    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+    .header { background: ${severity === 'CRITICAL' ? '#dc2626' : '#ea580c'}; color: white; padding: 20px; text-align: center; }
+    .content { padding: 20px; }
+    .severity-badge { display: inline-block; padding: 8px 16px; background: ${severity === 'CRITICAL' ? '#dc2626' : '#ea580c'}; color: white; border-radius: 4px; font-weight: bold; margin: 10px 0; }
+    .info-table { width: 100%; margin: 20px 0; }
+    .info-table td { padding: 8px; border-bottom: 1px solid #ddd; }
+    .info-table td:first-child { font-weight: bold; width: 150px; }
+    .cta-button { display: inline-block; padding: 12px 24px; background: #2563eb; color: white; text-decoration: none; border-radius: 4px; margin: 20px 0; }
+    .footer { padding: 20px; text-align: center; font-size: 12px; color: #666; border-top: 1px solid #ddd; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>🚨 KRITISCHER VORFALL</h1>
+  </div>
+  <div class="content">
+    <p><span class="severity-badge">SCHWEREGRAD: ${severityLabel}</span></p>
+
+    <table class="info-table">
+      <tr>
+        <td>Objekt:</td>
+        <td><strong>${siteName}</strong></td>
+      </tr>
+      <tr>
+        <td>Vorfall:</td>
+        <td><strong>${incidentTitle}</strong></td>
+      </tr>
+      <tr>
+        <td>Gemeldet von:</td>
+        <td>${reporterName}</td>
+      </tr>
+      <tr>
+        <td>Zeitpunkt:</td>
+        <td>${occurredAt.toLocaleString('de-DE')}</td>
+      </tr>
+    </table>
+
+    <p><strong>Bitte umgehend überprüfen und geeignete Maßnahmen einleiten.</strong></p>
+
+    <a href="${process.env.FRONTEND_URL || 'https://app.sicherheitsdienst.de'}/sites/${siteId}?tab=incidents" class="cta-button">
+      Zum Wachbuch
+    </a>
+  </div>
+  <div class="footer">
+    <p>Diese E-Mail wurde automatisch vom Sicherheitsdienst-System generiert.</p>
+  </div>
+</body>
+</html>`;
+
+  return sendEmail(to, subject, text, html, {
+    template: 'critical-incident',
+    context,
+    reason: 'critical-incident',
+  });
+}
