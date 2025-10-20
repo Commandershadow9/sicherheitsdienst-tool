@@ -29,6 +29,7 @@ import {
 } from './routes';
 import systemRootRoutes from './routes/system';
 import dashboardRoutes from './routes/dashboardRoutes';
+import statsRoutes from './routes/statsRoutes';
 
 const app = express();
 // Port-Konstante wird hier nicht benötigt (Server-Start in server.ts)
@@ -125,6 +126,7 @@ app.use('/api/incidents', incidentRoutes);
 app.use('/api/audit-logs', auditLogRoutes);
 app.use('/api/absences', absenceRoutes);
 app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/stats', statsRoutes);
 
 // API v1 Alias (OpenAPI servers: /api/v1)
 app.use('/api/v1', systemRoutes);
@@ -140,6 +142,7 @@ app.use('/api/v1/incidents', incidentRoutes);
 app.use('/api/v1/audit-logs', auditLogRoutes);
 app.use('/api/v1/absences', absenceRoutes);
 app.use('/api/v1/dashboard', dashboardRoutes);
+app.use('/api/v1/stats', statsRoutes);
 
 // 404 handler for unmatched routes
 app.use((req: Request, res: Response) => {
