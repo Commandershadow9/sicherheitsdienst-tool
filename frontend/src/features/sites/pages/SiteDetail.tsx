@@ -15,7 +15,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { FormField } from '@/components/ui/form'
 import { toast } from 'sonner'
 import { completeClearanceTraining, revokeClearance, type Clearance } from '../api'
-import { Building2, Phone, Shield, Calendar, Image as ImageIcon, UserCheck, FileText, Upload, Download, Trash2, Eye, AlertTriangle, Plus, X, Pencil, CheckCircle } from 'lucide-react'
+import { Building2, Phone, Shield, Calendar, Image as ImageIcon, UserCheck, FileText, Upload, Download, Trash2, Eye, AlertTriangle, Plus, X, Pencil, CheckCircle, Clock } from 'lucide-react'
 import DocumentViewerModal from '../components/DocumentViewerModal'
 
 type Site = {
@@ -148,6 +148,7 @@ export default function SiteDetail() {
   const [deleteIncidentId, setDeleteIncidentId] = useState<string | null>(null)
   const [editIncident, setEditIncident] = useState<any>(null)
   const [resolveIncident, setResolveIncident] = useState<{ id: string; title: string; resolution?: string } | null>(null)
+  const [viewHistory, setViewHistory] = useState<{ incidentId: string; incidentTitle: string } | null>(null)
   const [incidentFilters, setIncidentFilters] = useState<{
     status: string
     severity: string
@@ -165,6 +166,16 @@ export default function SiteDetail() {
       return res.data.data
     },
     enabled: !!id,
+  })
+
+  // History Query
+  const { data: incidentHistory } = useQuery({
+    queryKey: ['incidentHistory', viewHistory?.incidentId],
+    queryFn: async () => {
+      const res = await api.get(`/sites/${id}/incidents/${viewHistory?.incidentId}/history`)
+      return res.data.data
+    },
+    enabled: !!viewHistory?.incidentId,
   })
 
   const completeTrainingMutation = useMutation({
@@ -1531,8 +1542,7 @@ export default function SiteDetail() {
                       const canResolve = (isAdmin || isManager || isObjectLeader) && (incident.status === 'OPEN' || incident.status === 'IN_PROGRESS')
                       const canDelete = isAdmin || isManager
 
-                      if (!canEdit && !canResolve && !canDelete) return null
-
+                      // Mindestens Historie sollte für alle sichtbar sein
                       return (
                         <div className="flex gap-2 mt-3 pt-3 border-t">
                           {canEdit && (
@@ -1578,6 +1588,15 @@ export default function SiteDetail() {
                               Löschen
                             </Button>
                           )}
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="text-gray-600 hover:text-gray-700 hover:bg-gray-50"
+                            onClick={() => setViewHistory({ incidentId: incident.id, incidentTitle: incident.title })}
+                          >
+                            <Clock size={14} className="mr-1" />
+                            Historie
+                          </Button>
                         </div>
                       )
                     })()}
@@ -2078,6 +2097,83 @@ export default function SiteDetail() {
       {/* Dokument-Viewer */}
       {viewDocument && id && (
         <DocumentViewerModal siteId={id} document={viewDocument} onClose={() => setViewDocument(null)} />
+      )}
+
+      {/* Historie-Modal */}
+      {viewHistory && (
+        <Modal open={true} onClose={() => setViewHistory(null)}>
+          <div className="space-y-4">
+            <h2 className="text-xl font-semibold flex items-center gap-2">
+              <Clock size={20} />
+              Änderungs-Historie: {viewHistory.incidentTitle}
+            </h2>
+
+            {!incidentHistory || incidentHistory.length === 0 ? (
+              <p className="text-gray-500 italic">Keine Historie vorhanden</p>
+            ) : (
+              <div className="space-y-3 max-h-[600px] overflow-y-auto">
+                {incidentHistory.map((entry: any) => {
+                  const actionLabel = ({
+                    CREATED: 'Erstellt',
+                    UPDATED: 'Bearbeitet',
+                    RESOLVED: 'Aufgelöst',
+                    STATUS_CHANGED: 'Status geändert',
+                    DELETED: 'Gelöscht',
+                  } as any)[entry.action] || entry.action
+
+                  const actionColor = ({
+                    CREATED: 'text-green-700 bg-green-50 border-green-200',
+                    UPDATED: 'text-blue-700 bg-blue-50 border-blue-200',
+                    RESOLVED: 'text-purple-700 bg-purple-50 border-purple-200',
+                    STATUS_CHANGED: 'text-orange-700 bg-orange-50 border-orange-200',
+                    DELETED: 'text-red-700 bg-red-50 border-red-200',
+                  } as any)[entry.action] || 'text-gray-700 bg-gray-50 border-gray-200'
+
+                  let changes = null
+                  try {
+                    changes = entry.changes ? JSON.parse(entry.changes) : null
+                  } catch {}
+
+                  return (
+                    <div key={entry.id} className={`p-3 rounded border ${actionColor}`}>
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="font-medium">{actionLabel}</span>
+                        <span className="text-xs text-gray-600">{new Date(entry.createdAt).toLocaleString('de-DE')}</span>
+                      </div>
+                      <div className="text-sm">
+                        <span className="text-gray-600">von</span>{' '}
+                        <span className="font-medium">
+                          {entry.user.firstName} {entry.user.lastName}
+                        </span>
+                      </div>
+                      {changes && Object.keys(changes).length > 0 && (
+                        <div className="mt-2 text-xs space-y-1">
+                          {Object.entries(changes).map(([field, value]: [string, any]) => (
+                            <div key={field} className="flex gap-2">
+                              <span className="font-medium">{field}:</span>
+                              <span className="text-gray-600">
+                                {String(value.old || '-')} → {String(value.new || '-')}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      {entry.note && (
+                        <div className="mt-2 text-xs italic text-gray-600">"{entry.note}"</div>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+
+            <div className="flex justify-end pt-4">
+              <Button variant="outline" onClick={() => setViewHistory(null)}>
+                Schließen
+              </Button>
+            </div>
+          </div>
+        </Modal>
       )}
     </div>
   )
