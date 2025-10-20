@@ -17,6 +17,7 @@ import SitesList from '@/features/sites/pages/SitesList'
 import SiteDetail from '@/features/sites/pages/SiteDetail'
 import SiteShifts from '@/features/sites/pages/SiteShifts'
 import SiteForm from '@/features/sites/pages/SiteForm'
+import ControlPointForm from '@/features/sites/pages/ControlPointForm'
 import UsersList from '@/features/users/UsersList'
 import ShiftList from '@/features/shifts/ShiftList'
 import IncidentsList from '@/features/incidents/IncidentsList'
@@ -71,6 +72,11 @@ export const router = createBrowserRouter([
           { path: 'sites/:id/shifts', element: (
             <RequireRole roles={['ADMIN','DISPATCHER','MANAGER']}>
               <SiteShifts />
+            </RequireRole>
+          ) },
+          { path: 'sites/:siteId/control-points/:pointId', element: (
+            <RequireRole roles={['ADMIN','MANAGER']}>
+              <ControlPointForm />
             </RequireRole>
           ) },
           { path: 'users', element: (

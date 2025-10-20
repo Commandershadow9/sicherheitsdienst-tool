@@ -15,7 +15,8 @@ import { Textarea } from '@/components/ui/textarea'
 import { FormField } from '@/components/ui/form'
 import { toast } from 'sonner'
 import { completeClearanceTraining, revokeClearance, type Clearance } from '../api'
-import { Building2, Phone, Shield, Calendar, Image as ImageIcon, UserCheck, FileText, Upload, Download, Trash2, Eye, AlertTriangle, Plus, X, Pencil, CheckCircle, Clock } from 'lucide-react'
+import { fetchControlPoints, fetchControlRounds, type ControlPoint, type ControlRound } from '../controlApi'
+import { Building2, Phone, Shield, Calendar, Image as ImageIcon, UserCheck, FileText, Upload, Download, Trash2, Eye, AlertTriangle, Plus, X, Pencil, CheckCircle, Clock, MapPin, QrCode, Smartphone } from 'lucide-react'
 import DocumentViewerModal from '../components/DocumentViewerModal'
 
 type Site = {
@@ -113,7 +114,7 @@ export default function SiteDetail() {
   const nav = useNavigate()
   const queryClient = useQueryClient()
   const { user } = useAuth()
-  const [activeTab, setActiveTab] = useState<'overview' | 'clearances' | 'shifts' | 'images' | 'documents' | 'incidents'>('overview')
+  const [activeTab, setActiveTab] = useState<'overview' | 'clearances' | 'shifts' | 'images' | 'documents' | 'incidents' | 'control-points' | 'control-rounds'>('overview')
   const [trainingModal, setTrainingModal] = useState<{ clearance: Clearance; hours: number } | null>(null)
   const [revokeModal, setRevokeModal] = useState<{ clearance: Clearance; notes: string } | null>(null)
   const [uploadModal, setUploadModal] = useState<{ file: File | null; category: string } | null>(null)
@@ -167,6 +168,22 @@ export default function SiteDetail() {
     },
     enabled: !!id,
   })
+
+  // Control Points Query
+  const { data: controlPoints = [] } = useQuery({
+    queryKey: ['controlPoints', id],
+    queryFn: () => fetchControlPoints(id!),
+    enabled: !!id && activeTab === 'control-points',
+  })
+
+  // Control Rounds Query
+  const { data: controlRoundsData } = useQuery({
+    queryKey: ['controlRounds', id],
+    queryFn: () => fetchControlRounds(id!),
+    enabled: !!id && activeTab === 'control-rounds',
+  })
+
+  const controlRounds = controlRoundsData?.data || []
 
   // History Query
   const { data: incidentHistory } = useQuery({
@@ -435,6 +452,8 @@ export default function SiteDetail() {
     { key: 'overview', label: 'Übersicht' },
     { key: 'clearances', label: `Clearances (${site.clearances?.length || 0})` },
     { key: 'shifts', label: 'Schichten' },
+    { key: 'control-points', label: `Kontrollpunkte (${controlPoints.length})` },
+    { key: 'control-rounds', label: `Kontrollgänge (${controlRounds.length})` },
     { key: 'images', label: `Bilder (${site.images?.length || 0})` },
     { key: 'documents', label: `Dokumente (${site.documents?.length || 0})` },
     { key: 'incidents', label: `Vorfälle (${site.incidents?.length || 0})` },
@@ -2174,6 +2193,202 @@ export default function SiteDetail() {
             </div>
           </div>
         </Modal>
+      )}
+
+      {/* Kontrollpunkt-Tab */}
+      {activeTab === 'control-points' && (
+        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-300">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <MapPin size={20} className="text-blue-600" />
+              <h2 className="text-lg font-semibold">Kontrollpunkte</h2>
+              <span className="text-sm text-gray-500">({controlPoints.length})</span>
+            </div>
+            <Button
+              className="bg-blue-600 hover:bg-blue-700 text-white"
+              onClick={() => nav(`/sites/${id}/control-points/new`)}
+            >
+              <Plus size={16} className="mr-1" />
+              Kontrollpunkt anlegen
+            </Button>
+          </div>
+
+          {controlPoints.length === 0 ? (
+            <div className="text-center py-12 bg-gray-50 rounded-lg border-2 border-dashed">
+              <MapPin size={48} className="mx-auto text-gray-400 mb-4" />
+              <h3 className="text-lg font-medium text-gray-900 mb-2">Keine Kontrollpunkte</h3>
+              <p className="text-gray-600 mb-4">
+                Legen Sie Kontrollpunkte an, um NFC/QR-basierte Rundgänge zu ermöglichen.
+              </p>
+              <Button onClick={() => nav(`/sites/${id}/control-points/new`)}>
+                Ersten Kontrollpunkt anlegen
+              </Button>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {controlPoints
+                .sort((a, b) => a.order - b.order)
+                .map((point) => (
+                  <div
+                    key={point.id}
+                    className="bg-white border rounded-lg p-4 hover:shadow-md transition-shadow"
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-blue-100 text-blue-600 font-semibold text-sm">
+                            {point.order}
+                          </span>
+                          <h3 className="font-semibold text-lg">{point.name}</h3>
+                          {!point.isActive && (
+                            <span className="px-2 py-1 rounded-full text-xs bg-gray-100 text-gray-600">
+                              Inaktiv
+                            </span>
+                          )}
+                        </div>
+                        <div className="ml-10 space-y-1">
+                          <div className="flex items-center gap-2 text-sm text-gray-600">
+                            <MapPin size={14} />
+                            <span>{point.location}</span>
+                          </div>
+                          {point.instructions && (
+                            <div className="text-sm text-gray-600 mt-2">
+                              <strong>Anweisungen:</strong> {point.instructions}
+                            </div>
+                          )}
+                          <div className="flex items-center gap-4 mt-3">
+                            {point.nfcTagId && (
+                              <div className="flex items-center gap-1 text-xs bg-green-50 text-green-700 px-2 py-1 rounded">
+                                <Smartphone size={12} />
+                                <span>NFC: {point.nfcTagId}</span>
+                              </div>
+                            )}
+                            {point.qrCode && (
+                              <div className="flex items-center gap-1 text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded">
+                                <QrCode size={12} />
+                                <span>QR: {point.qrCode.substring(0, 20)}...</span>
+                              </div>
+                            )}
+                            {point._count && (
+                              <div className="text-xs text-gray-500">
+                                {point._count.scans} Scans
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => nav(`/sites/${id}/control-points/${point.id}/edit`)}
+                        >
+                          <Pencil size={14} />
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Kontrollgang-Tab */}
+      {activeTab === 'control-rounds' && (
+        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-300">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Calendar size={20} className="text-green-600" />
+              <h2 className="text-lg font-semibold">Kontrollgänge</h2>
+              <span className="text-sm text-gray-500">({controlRounds.length})</span>
+            </div>
+          </div>
+
+          {controlRounds.length === 0 ? (
+            <div className="text-center py-12 bg-gray-50 rounded-lg border-2 border-dashed">
+              <Calendar size={48} className="mx-auto text-gray-400 mb-4" />
+              <h3 className="text-lg font-medium text-gray-900 mb-2">Keine Kontrollgänge</h3>
+              <p className="text-gray-600">
+                Kontrollgänge werden über die Mobile-App gestartet und durchgeführt.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {controlRounds
+                .sort((a, b) => new Date(b.startedAt).getTime() - new Date(a.startedAt).getTime())
+                .map((round) => {
+                  const statusColors = {
+                    IN_PROGRESS: 'bg-blue-100 text-blue-800',
+                    COMPLETED: 'bg-green-100 text-green-800',
+                    INCOMPLETE: 'bg-yellow-100 text-yellow-800',
+                    CANCELLED: 'bg-gray-100 text-gray-800',
+                  }
+                  const statusLabels = {
+                    IN_PROGRESS: 'In Bearbeitung',
+                    COMPLETED: 'Abgeschlossen',
+                    INCOMPLETE: 'Unvollständig',
+                    CANCELLED: 'Abgebrochen',
+                  }
+
+                  return (
+                    <div
+                      key={round.id}
+                      className="bg-white border rounded-lg p-4 hover:shadow-md transition-shadow"
+                    >
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-2">
+                            <span
+                              className={`px-2 py-1 rounded-full text-xs font-medium ${statusColors[round.status]}`}
+                            >
+                              {statusLabels[round.status]}
+                            </span>
+                            <span className="text-sm text-gray-600">
+                              {new Date(round.startedAt).toLocaleString('de-DE')}
+                            </span>
+                          </div>
+                          <div className="space-y-1">
+                            <div className="text-sm text-gray-600">
+                              <strong>Durchgeführt von:</strong>{' '}
+                              {round.performer
+                                ? `${round.performer.firstName} ${round.performer.lastName}`
+                                : 'Unbekannt'}
+                            </div>
+                            <div className="flex items-center gap-4 text-sm">
+                              <span className="text-gray-600">
+                                <strong>Gescannt:</strong> {round.scannedPoints}/{round.totalPoints}
+                              </span>
+                              {round.missedPoints > 0 && (
+                                <span className="text-orange-600">
+                                  <AlertTriangle size={14} className="inline mr-1" />
+                                  {round.missedPoints} verpasst
+                                </span>
+                              )}
+                            </div>
+                            {round.notes && (
+                              <div className="text-sm text-gray-600 mt-2">
+                                <strong>Notizen:</strong> {round.notes}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => nav(`/control-rounds/${round.id}`)}
+                          >
+                            <Eye size={14} />
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  )
+                })}
+            </div>
+          )}
+        </div>
       )}
     </div>
   )
