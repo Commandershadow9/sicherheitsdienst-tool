@@ -48,6 +48,8 @@ model User {
   siteIncidentsReported SiteIncident[]        @relation("SiteIncidentReporter")
   incidentHistoryEntries IncidentHistory[]    @relation("IncidentHistoryUser")
   deviceTokens          DeviceToken[]
+  controlRounds         ControlRound[]        @relation("ControlRoundPerformer")
+  controlScans          ControlScan[]         @relation("ControlScanScanner")
   preferences           EmployeePreferences?
   workload              EmployeeWorkload[]
   complianceViolations  ComplianceViolation[]
@@ -91,13 +93,15 @@ model Site {
   updatedAt DateTime @updatedAt
 
   // Beziehungen
-  shifts      Shift[]
-  events      Event[]
-  clearances  ObjectClearance[]
-  images      SiteImage[]
-  assignments SiteAssignment[]
-  documents   SiteDocument[]
-  incidents   SiteIncident[]
+  shifts        Shift[]
+  events        Event[]
+  clearances    ObjectClearance[]
+  images        SiteImage[]
+  assignments   SiteAssignment[]
+  documents     SiteDocument[]
+  incidents     SiteIncident[]
+  controlPoints ControlPoint[]
+  controlRounds ControlRound[]
 
   @@unique([name, address], name: "sites_name_address_key")
   @@index([name], name: "sites_name_idx")
@@ -142,6 +146,7 @@ model Shift {
   timeEntries          TimeEntry[]
   complianceViolations ComplianceViolation[]
   incidents            SiteIncident[]        @relation("SiteIncidentShift")
+  controlRounds        ControlRound[]
 
   @@index([startTime], name: "shifts_startTime_idx")
   @@index([status], name: "shifts_status_idx")
@@ -809,4 +814,122 @@ model AuditLog {
   @@index([resourceType, resourceId], name: "audit_logs_resource_idx")
   @@index([actorId, occurredAt], name: "audit_logs_actor_idx")
   @@map("audit_logs")
+}
+
+// ===== PHASE 4: KONTROLLGÄNGE & NFC-RUNDENWESEN =====
+
+// Kontrollpunkt (physischer Punkt am Objekt mit NFC-Tag oder QR-Code)
+model ControlPoint {
+  id           String  @id @default(cuid())
+  siteId       String
+  site         Site    @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  name         String // z.B. "Haupteingang Nord"
+  location     String // Beschreibung, z.B. "Erdgeschoss, linker Eingang"
+  instructions String? @db.Text // Was ist zu prüfen? (optional)
+
+  // NFC oder QR
+  nfcTagId String? @unique // NFC-Tag-UID (z.B. "04:5E:3A:2B:1C:80")
+  qrCode   String? @unique // QR-Code-Inhalt (z.B. "CP-site123-point456-secret")
+
+  // Position & Reihenfolge
+  order     Int    @default(0) // Reihenfolge im Kontrollgang
+  latitude  Float? // GPS-Koordinaten (optional, für Verifikation)
+  longitude Float?
+
+  // Status
+  isActive Boolean @default(true)
+
+  // Relationen
+  scans ControlScan[] // Alle Scans dieses Punktes
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([siteId, order], name: "control_points_site_order_idx")
+  @@index([siteId, isActive], name: "control_points_site_active_idx")
+  @@map("control_points")
+}
+
+// Kontrollgang (eine Runde, die ein MA durchführt)
+model ControlRound {
+  id          String  @id @default(cuid())
+  siteId      String
+  site        Site    @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  shiftId     String?
+  shift       Shift?  @relation(fields: [shiftId], references: [id], onDelete: SetNull)
+  performedBy String // User-ID des MA
+  performer   User    @relation("ControlRoundPerformer", fields: [performedBy], references: [id])
+
+  // Zeitstempel
+  startedAt   DateTime  @default(now())
+  completedAt DateTime?
+
+  // Status
+  status ControlRoundStatus @default(IN_PROGRESS)
+
+  // Statistiken
+  totalPoints   Int @default(0) // Anzahl zu scannender Punkte
+  scannedPoints Int @default(0) // Anzahl gescannter Punkte
+  missedPoints  Int @default(0) // Anzahl übersprungener Punkte
+
+  // Notizen
+  notes String? @db.Text // Besondere Vorkommnisse
+
+  // Relationen
+  scans ControlScan[] // Alle Scans in dieser Runde
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([siteId, startedAt], name: "control_rounds_site_start_idx")
+  @@index([performedBy, status], name: "control_rounds_performer_status_idx")
+  @@index([shiftId], name: "control_rounds_shift_idx")
+  @@map("control_rounds")
+}
+
+enum ControlRoundStatus {
+  IN_PROGRESS // Läuft gerade
+  COMPLETED // Abgeschlossen
+  INCOMPLETE // Abgebrochen (nicht alle Punkte)
+  CANCELLED // Storniert
+}
+
+// Scan-Event (ein einzelner Scan eines Kontrollpunktes)
+model ControlScan {
+  id        String       @id @default(cuid())
+  roundId   String
+  round     ControlRound @relation(fields: [roundId], references: [id], onDelete: Cascade)
+  pointId   String
+  point     ControlPoint @relation(fields: [pointId], references: [id])
+  scannedBy String // User-ID
+  scanner   User         @relation("ControlScanScanner", fields: [scannedBy], references: [id])
+  scannedAt DateTime     @default(now())
+
+  // Scan-Details
+  scanMethod    ScanMethod // NFC oder QR
+  tagIdentifier String // Die gescannte Tag-ID oder QR-Code
+
+  // GPS-Position (optional, für Verifikation)
+  latitude  Float?
+  longitude Float?
+  accuracy  Float? // GPS-Genauigkeit in Metern
+
+  // Notizen
+  notes    String? @db.Text // z.B. "Fenster stand offen"
+  hasIssue Boolean @default(false) // Auffälligkeit?
+
+  // Verifikation
+  isValid         Boolean @default(true) // Scan gültig?
+  validationError String? // Fehlermeldung bei ungültigem Scan
+
+  @@index([roundId, scannedAt], name: "control_scans_round_time_idx")
+  @@index([pointId, scannedAt], name: "control_scans_point_time_idx")
+  @@index([scannedBy], name: "control_scans_scanner_idx")
+  @@map("control_scans")
+}
+
+enum ScanMethod {
+  NFC // NFC-Tag gescannt
+  QR_CODE // QR-Code gescannt
+  MANUAL // Manuell eingetragen (Notfall)
 }
