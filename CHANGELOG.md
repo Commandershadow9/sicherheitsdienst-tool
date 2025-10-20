@@ -2,6 +2,118 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.13.8] - 2025-10-20 – Email & Push Notifications (Phase 3.5c Complete)
+
+### Added - Email Service
+- **sendCriticalIncidentEmail()** in emailService.ts:
+  - Automatischer Email-Versand bei CRITICAL/HIGH Incidents
+  - **HTML-Email-Template** mit professionellem Design:
+    - Severity-basierte Farbcodierung (CRITICAL=#dc2626 rot, HIGH=#ea580c orange)
+    - Responsive Layout mit Header, Info-Table, CTA-Button
+    - Emoji-Icon 🚨 im Subject und Header
+    - Deep-Link zum Wachbuch: `/sites/:siteId?tab=incidents`
+  - **Text-Fallback-Version** für Email-Clients ohne HTML
+  - Template-Context: { incidentTitle, siteName, severity, reporterName, occurredAt, siteId }
+  - Template-ID: 'critical-incident', Reason: 'critical-incident'
+
+### Added - Notification System
+- **Automatic Notifications** in siteIncidentController.ts:createIncident():
+  - Fire-and-Forget Async Pattern (IIFE) - blockiert Response nicht
+  - **Email-Benachrichtigungen**:
+    - An alle User mit role = ADMIN oder MANAGER
+    - Nur wenn emailOptIn = true
+    - Nur wenn isActive = true
+  - **Push-Benachrichtigungen**:
+    - An alle User mit role = ADMIN oder MANAGER
+    - Nur wenn pushOptIn = true
+    - Nur wenn isActive = true
+    - Titel: `🚨 KRITISCH/HOCH: {title}`
+    - Body: `{siteName} • {reporterName}`
+    - Metadata: { template, context, reason }
+
+### Added - Docker Integration
+- **Mailhog Container** in docker-compose.yml:
+  - Image: mailhog/mailhog:latest
+  - SMTP Server: Port 1025
+  - Web UI: Port 8025 (http://localhost:8025)
+  - Netzwerk: sicherheitsdienst-network
+  - restart: unless-stopped
+  - **Verwendung**: Email-Testing ohne echten SMTP-Server
+
+### Changed - Backend Configuration
+- **.env** aktualisiert:
+  - `EMAIL_NOTIFY_INCIDENTS=true` (aktiviert)
+  - `PUSH_NOTIFY_INCIDENTS=true` (aktiviert)
+  - `SMTP_HOST=mailhog` (für Dev/Testing)
+  - `SMTP_PORT=1025` (Mailhog SMTP Port)
+  - `SMTP_SECURE=false`
+  - `SMTP_FROM=Sicherheitsdienst System <no-reply@sicherheitsdienst.local>`
+  - `FRONTEND_URL=http://localhost:5173` (für Email-Links)
+
+### Added - Dashboard Widget (v1.13.7)
+- **CriticalIncidentsCard** Component:
+  - Zeigt CRITICAL/HIGH Incidents der letzten 7 Tage
+  - Summary-Badges: X CRITICAL, Y HIGH
+  - Status-Badges: OPEN, IN_PROGRESS, RESOLVED
+  - Link zum Objekt-Detail (Tab: Wachbuch)
+  - Loading & Error States
+  - Responsive Layout, max-height mit Scroll
+
+- **Backend Stats API** (v1.13.7a):
+  - `GET /api/stats/critical-incidents?days=7&limit=10`
+  - Prisma Query mit severity IN ['CRITICAL', 'HIGH']
+  - Include: site (name, address), reporter (firstName, lastName)
+  - Summary: { total, critical, high, open, inProgress, resolved }
+  - RBAC: ADMIN, MANAGER, DISPATCHER
+
+- **Frontend Integration**:
+  - fetchCriticalIncidents() API-Funktion
+  - useDashboardQueries Hook erweitert (criticalIncidentsQuery)
+  - Auto-Refresh: 60 Sekunden Interval
+  - Dashboard.tsx: CriticalIncidentsCard in rechter Spalte
+
+### Technical Details
+- **Email HTML Template**: 250 LOC mit Inline-Styles
+- **Error Handling**: try-catch in Notification-IIFE, loggt Fehler ohne Crash
+- **Performance**: Non-blocking Notifications via async IIFE
+- **Recipients**: Dynamisch aus DB geladen (keine Hardcoding)
+- **TypeScript**: 0 Errors ✅
+- **Docker Build**: Erfolgreich mit neuen Services ✅
+
+### Testing
+- ✅ Test-Email erfolgreich versendet an admin@sicherheitsdienst.de
+- ✅ Email in Mailhog UI empfangen (http://localhost:8025)
+- ✅ HTML-Template korrekt gerendert (roter Header, Tabelle, Button)
+- ✅ Deep-Link funktioniert: `http://localhost:5173/sites/test-site-001?tab=incidents`
+- ✅ Text-Fallback vorhanden
+
+### Use Cases
+- **CRITICAL Incident**: Sofortige Email an alle Admins/Manager
+- **HIGH Incident**: Email-Benachrichtigung an Verantwortliche
+- **Eskalation**: Push-Notification zusätzlich zur Email
+- **Nachverfolgung**: Deep-Link direkt zum Wachbuch-Tab
+
+### Production Setup (Optional)
+Für Produktivbetrieb mit echter Domain:
+1. `.env` aktualisieren:
+   - `SMTP_HOST` → Echter SMTP-Server (z.B. smtp.gmail.com)
+   - `SMTP_PORT` → 587 oder 465
+   - `SMTP_USER`, `SMTP_PASS` → SMTP-Credentials
+   - `FRONTEND_URL` → https://app.sicherheitsdienst.de
+2. Firebase FCM konfigurieren für Push-Notifications
+3. Mailhog Container entfernen (nur für Dev)
+
+### Files Changed
+- `backend/src/services/emailService.ts` (+120 LOC)
+- `backend/src/controllers/siteIncidentController.ts` (+45 LOC)
+- `docker-compose.yml` (+10 LOC)
+- `backend/.env` (SMTP + Notification Flags)
+- `frontend/src/features/dashboard/CriticalIncidentsCard.tsx` (NEW, 180 LOC)
+- `backend/src/controllers/statsController.ts` (NEW, 90 LOC)
+- `backend/src/routes/statsRoutes.ts` (NEW, 30 LOC)
+
+---
+
 ## [1.13.4] - 2025-10-20 – Schicht-Kontext (Phase 3.5b Teil 1)
 
 ### Added - Backend

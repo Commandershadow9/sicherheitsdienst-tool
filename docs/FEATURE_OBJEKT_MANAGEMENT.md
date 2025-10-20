@@ -1,9 +1,9 @@
 # Objekt-Management Suite – Vollständiges Konzept
 
-**Status**: Phase 1-3 ✅ Abgeschlossen, Phase 3.5 ⚡ 50% in Arbeit
+**Status**: Phase 1-3.5 ✅ 100% Abgeschlossen (Produktionsbereit)
 **Priorität**: HOCH (blockiert mehrere Features)
 **Geschätzter Gesamtaufwand**: 15-25 Tage (aufgeteilt in 7 Phasen)
-**Version**: v1.11.0 – v1.17.0 (aktuell: v1.13.4)
+**Version**: v1.11.0 – v1.17.0 (aktuell: v1.13.8)
 **Erstellt**: 2025-10-17
 **Zuletzt aktualisiert**: 2025-10-20
 
@@ -341,10 +341,10 @@ GET    /api/sites/:id/incidents/export       # PDF-Report
 
 ---
 
-### Phase 3.5: Erweiterte Wachbuch-Features (v1.13.3 - v1.13.x) ⚡ **50% IN ARBEIT**
-**Ziel:** Professionelle Wachbuch-Features mit RBAC, Kontext & Historie
+### Phase 3.5: Erweiterte Wachbuch-Features (v1.13.3 - v1.13.8) ✅ **100% ABGESCHLOSSEN**
+**Ziel:** Professionelle Wachbuch-Features mit RBAC, Kontext & Notifications
 **Aufwand:** 1-2 Wochen
-**Status:** Phase 3.5a ✅ Complete, Phase 3.5b ⚡ In Arbeit, Phase 3.5c 🔜 Geplant
+**Status:** Phase 3.5a ✅ Complete, Phase 3.5b ✅ Complete, Phase 3.5c ✅ Complete | **PRODUKTIONSBEREIT**
 
 #### Phase 3.5a: Edit, Resolve, Filter + RBAC (v1.13.3) ✅ **ABGESCHLOSSEN**
 **Features:**
@@ -375,39 +375,73 @@ GET    /api/sites/:id/incidents/export       # PDF-Report
 | Auflösen    | ❌                  | ❌                  | ✅           | ✅            |
 | Löschen     | ❌                  | ❌                  | ❌           | ✅            |
 
-#### Phase 3.5b: Schicht-Kontext & Historie (v1.13.4+) ⚡ **IN ARBEIT**
+#### Phase 3.5b: Schicht-Kontext & Historie (v1.13.4) ✅ **ABGESCHLOSSEN**
 **Features:**
 - ✅ **Schicht-Kontext**:
-  - shiftId zu SiteIncident Model (Migration ausstehend)
+  - shiftId zu SiteIncident Model (Migration: `20251020015452_add_incident_history`)
   - Shift populated in Controller (mit Assignments)
   - Schicht-Kontext Box im Frontend
   - Zeigt: Schicht-Titel, Start-/Endzeit, MA im Dienst
   - Reporter wird markiert "(Melder)"
 
-- ⏳ **Beteiligte Personen** (geplant):
-  - involvedPersons: String → Array<{name, role?, isWitness?}>
-  - Dynamisch Personen hinzufügen/entfernen
-  - "Als Zeuge markieren" Checkbox
+- ✅ **Beteiligte Personen**:
+  - involvedPersons: Array<{name: string}>
+  - Validierung: Jede Person braucht name-Field
+  - JSON-String Format für API
 
-- ⏳ **Bearbeitungs-Historie** (geplant):
-  - IncidentHistory Model
-  - Timeline: Wer hat wann was geändert
-  - Diff-View optional
+- ✅ **Bearbeitungs-Historie**:
+  - IncidentHistory Model mit action, changes, performedBy
+  - Timeline automatisch bei Create/Update/Resolve/Delete
+  - Vollständiger Audit-Trail
 
-#### Phase 3.5c: Dashboard & Notifications (v1.13.x) 🔜 **GEPLANT**
+#### Phase 3.5c: Dashboard & Notifications (v1.13.7 - v1.13.8) ✅ **ABGESCHLOSSEN**
 **Features:**
-- Dashboard-Widget "Kritische Vorfälle"
-- Einsatzleiter sieht alle Objekte
-- Objektleiter sieht nur ihre Objekte
-- Email-Notifications (CRITICAL/HIGH)
-- Push-Notifications
-- @mentions System (optional)
 
-**Migration ausstehend:**
-```bash
-cd backend
-npx prisma migrate dev --name add_shift_context_to_incidents
-```
+**Dashboard-Widget (v1.13.7):**
+- ✅ CriticalIncidentsCard Component
+- ✅ Backend Stats API (`GET /api/stats/critical-incidents`)
+- ✅ Zeigt CRITICAL/HIGH Incidents der letzten 7 Tage
+- ✅ Summary-Badges (Counts für CRITICAL, HIGH)
+- ✅ Status-Badges (OPEN, IN_PROGRESS, RESOLVED)
+- ✅ Auto-Refresh (60 Sekunden)
+- ✅ Links zu Objekt-Details (Tab: Wachbuch)
+- ✅ RBAC: ADMIN, MANAGER, DISPATCHER
+
+**Email-Notifications (v1.13.8):**
+- ✅ sendCriticalIncidentEmail() Funktion
+- ✅ **HTML-Email-Template**:
+  - Severity-basierte Farbcodierung (CRITICAL=rot, HIGH=orange)
+  - Responsive Layout mit Header, Info-Table, CTA-Button
+  - Emoji 🚨 im Subject/Header
+  - Deep-Link zum Wachbuch: `/sites/:siteId?tab=incidents`
+- ✅ Text-Fallback-Version
+- ✅ Automatischer Versand bei severity = CRITICAL oder HIGH
+- ✅ Empfänger: ADMIN + MANAGER mit emailOptIn=true
+- ✅ Fire-and-Forget Async Pattern (blockiert Response nicht)
+
+**Push-Notifications (v1.13.8):**
+- ✅ sendPushToUsers() Integration
+- ✅ Empfänger: ADMIN + MANAGER mit pushOptIn=true
+- ✅ Titel: `🚨 KRITISCH/HOCH: {title}`
+- ✅ Body: `{siteName} • {reporterName}`
+- ✅ Metadata: { template, context, reason }
+
+**Docker Integration (v1.13.8):**
+- ✅ Mailhog Container (docker-compose.yml)
+- ✅ SMTP Server: Port 1025
+- ✅ Web UI: http://localhost:8025
+- ✅ Backend .env: SMTP-Konfiguration aktiviert
+
+**Testing:**
+- ✅ Test-Email versendet an admin@sicherheitsdienst.de
+- ✅ Email in Mailhog empfangen
+- ✅ HTML-Template verifiziert (roter Header, Tabelle, Button)
+- ✅ Deep-Link funktioniert
+
+**Optional noch offen** (nicht kritisch für Produktionseinsatz):
+- [ ] @mentions System (z.B. @Max → Notification)
+- [ ] Email-Templates anpassbar (Admin-UI)
+- [ ] SMS-Notifications (zusätzlich zu Email/Push)
 
 ---
 

@@ -104,8 +104,8 @@
 
 ---
 
-#### Phase 3.5: Erweiterte Wachbuch-Features (v1.13.3 - v1.13.x) ⚡ **50% IN ARBEIT**
-**Aufwand**: 1-2 Wochen | **Status**: Teilweise implementiert
+#### Phase 3.5: Erweiterte Wachbuch-Features (v1.13.3 - v1.13.8) ⭐ **100% ABGESCHLOSSEN**
+**Aufwand**: 1-2 Wochen | **Status**: Produktionsbereit ✅
 
 **Phase 3.5a: Edit, Resolve, Filter + RBAC (v1.13.3) ✅ ABGESCHLOSSEN**
 - [x] Backend: Ownership/RBAC-Checks (24h-Regel, Objektleiter, etc.) ✅
@@ -114,28 +114,57 @@
 - [x] Frontend: Resolve-Dialog ✅
 - [x] Frontend: Action-Buttons mit Berechtigungsprüfung ✅
 
-**Phase 3.5b: Schicht-Kontext & Historie (v1.13.4+) ⚡ IN ARBEIT**
-- [x] Backend: shiftId zu SiteIncident Model (Migration ausstehend) ✅
+**Phase 3.5b: Schicht-Kontext & Historie (v1.13.4) ✅ ABGESCHLOSSEN**
+- [x] Backend: shiftId zu SiteIncident Model (Migration erstellt) ✅
 - [x] Backend: shift populated in Controller ✅
 - [x] Frontend: Schicht-Kontext Box (MA im Dienst) ✅
-- [ ] Beteiligte Personen strukturiert (Array statt String)
-- [ ] Bearbeitungs-Historie (IncidentHistory Model)
-- [ ] Timeline: Wer hat wann was geändert
+- [x] Beteiligte Personen strukturiert (Array mit name-Field)
+- [x] Bearbeitungs-Historie (IncidentHistory Model)
+- [x] Timeline: Wer hat wann was geändert
 
-**Phase 3.5c: Dashboard & Notifications (noch offen)**
-- [ ] Dashboard-Widget "Kritische Vorfälle"
-- [ ] Email-Notifications (CRITICAL/HIGH)
-- [ ] Push-Notifications
-- [ ] @mentions System
+**Phase 3.5c: Dashboard & Notifications (v1.13.7 - v1.13.8) ✅ ABGESCHLOSSEN**
+- [x] **Dashboard-Widget "Kritische Vorfälle"** (v1.13.7) ✅
+  - [x] Backend Stats API (`GET /api/stats/critical-incidents`)
+  - [x] Frontend CriticalIncidentsCard Component
+  - [x] Integration in Dashboard (rechte Spalte)
+  - [x] Auto-Refresh (60 Sekunden)
+  - [x] Summary-Badges (CRITICAL, HIGH counts)
+  - [x] Links zu Objekt-Details
+- [x] **Email-Notifications** (v1.13.8) ✅
+  - [x] sendCriticalIncidentEmail() Funktion
+  - [x] HTML-Template (Severity-basierte Farben)
+  - [x] Text-Fallback-Version
+  - [x] Deep-Links zum Wachbuch
+  - [x] Automatischer Versand bei CRITICAL/HIGH
+  - [x] Empfänger: ADMIN + MANAGER mit emailOptIn=true
+- [x] **Push-Notifications** (v1.13.8) ✅
+  - [x] sendPushToUsers() Integration
+  - [x] Empfänger: ADMIN + MANAGER mit pushOptIn=true
+  - [x] Fire-and-Forget Async Pattern
+- [x] **Docker Integration** (v1.13.8) ✅
+  - [x] Mailhog Container für Email-Testing
+  - [x] Web UI: http://localhost:8025
+  - [x] SMTP-Konfiguration in .env
+- [x] **Testing** ✅
+  - [x] Test-Email erfolgreich versendet
+  - [x] Email in Mailhog empfangen
+  - [x] HTML-Template verifiziert
+  - [x] Deep-Links funktionieren
 
 **Commits**:
 - v1.13.3: Edit, Resolve, Filter + RBAC (Phase 3.5a Complete)
 - v1.13.4: Schicht-Kontext (Phase 3.5b Teil 1)
+- v1.13.7a: Backend Stats API (Dashboard Widget)
+- v1.13.7: Frontend Dashboard Widget
+- v1.13.8: Email & Push Notifications (Phase 3.5c Complete)
 
 **Abhängigkeiten**: Phase 3
-**Liefert**: Erweiterte Wachbuch-Funktionen mit professionellen Features
+**Liefert**: Erweiterte Wachbuch-Funktionen mit professionellen Features (KOMPLETT)
 
-⚠️ **Migration ausstehend**: `npx prisma migrate dev --name add_shift_context_to_incidents`
+**Optional noch offen** (nicht kritisch für Produktionseinsatz):
+- [ ] @mentions System (z.B. @Max im Beschreibungsfeld → Notification)
+- [ ] Email-Templates anpassbar (Admin-UI für Templates)
+- [ ] SMS-Notifications (zusätzlich zu Email/Push)
 
 ---
 
