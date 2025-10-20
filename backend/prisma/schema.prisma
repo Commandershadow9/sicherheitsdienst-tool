@@ -50,6 +50,7 @@ model User {
   deviceTokens          DeviceToken[]
   controlRounds         ControlRound[]        @relation("ControlRoundPerformer")
   controlScans          ControlScan[]         @relation("ControlScanScanner")
+  calculationsCalculated SiteCalculation[]    @relation("CalculationCalculator")
   preferences           EmployeePreferences?
   workload              EmployeeWorkload[]
   complianceViolations  ComplianceViolation[]
@@ -102,6 +103,7 @@ model Site {
   incidents     SiteIncident[]
   controlPoints ControlPoint[]
   controlRounds ControlRound[]
+  calculations  SiteCalculation[]
 
   @@unique([name, address], name: "sites_name_address_key")
   @@index([name], name: "sites_name_idx")
@@ -932,4 +934,128 @@ enum ScanMethod {
   NFC // NFC-Tag gescannt
   QR_CODE // QR-Code gescannt
   MANUAL // Manuell eingetragen (Notfall)
+}
+
+// ========== PHASE 5: KALKULATION & ANGEBOTSERSTELLUNG ==========
+
+// Preismodell-Template (wiederverwendbar für verschiedene Objekttypen)
+model PriceModel {
+  id          String  @id @default(cuid())
+  name        String // z.B. "Standard Objektschutz 2025"
+  description String? @db.Text
+  isActive    Boolean @default(true)
+
+  // Basis-Stundensätze (brutto pro Stunde)
+  hourlyRateEmployee     Float @default(13.50) // Mitarbeiter
+  hourlyRateShiftLeader  Float @default(16.00) // Schichtleiter
+  hourlyRateSiteManager  Float @default(18.50) // Objektleiter
+
+  // Zeitzuschläge (Prozent)
+  nightSurcharge    Float @default(25) // Nachtarbeit 22-6 Uhr
+  saturdaySurcharge Float @default(25) // Samstag
+  sundaySurcharge   Float @default(50) // Sonntag
+  holidaySurcharge  Float @default(100) // Feiertag
+
+  // Qualifikationszuschläge (€/h)
+  nslCertificateSurcharge Float @default(1.50) // 34a-Schein
+  dogHandlerSurcharge     Float @default(2.50) // Hundführer
+  weaponLicenseSurcharge  Float @default(2.00) // Waffensachkunde
+
+  // Gemeinkosten & Marge (Prozent)
+  overheadPercentage    Float @default(12) // Gemeinkosten
+  profitMarginPercentage Float @default(15) // Gewinnmarge
+
+  // Beziehungen
+  calculations SiteCalculation[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("price_models")
+}
+
+// Objekt-Kalkulation (konkrete Berechnung für ein Objekt)
+model SiteCalculation {
+  id           String            @id @default(cuid())
+  siteId       String
+  priceModelId String? // Optional: basiert auf Template
+  version      Int               @default(1) // Versionsnummer
+  status       CalculationStatus @default(DRAFT)
+
+  // Objekt-Anforderungen
+  requiredStaff           Int   @default(1) // Anzahl MA
+  hoursPerWeek            Float @default(40) // Std. pro Woche
+  contractDurationMonths  Int   @default(12) // Vertragslaufzeit
+
+  // Zeitverteilung (Std. pro Woche)
+  hoursDay      Float @default(40) // Tagschicht
+  hoursNight    Float @default(0) // Nachtschicht
+  hoursSaturday Float @default(0)
+  hoursSunday   Float @default(0)
+  hoursHoliday  Float @default(0) // Feiertage (geschätzt)
+
+  // Personalstruktur
+  employeeCount     Int @default(1) // Anzahl Mitarbeiter
+  shiftLeaderCount  Int @default(0) // Anzahl Schichtleiter
+  siteManagerCount  Int @default(0) // Anzahl Objektleiter
+
+  // Custom Stundensätze (überschreiben PriceModel)
+  customHourlyRateEmployee    Float? // Falls abweichend
+  customHourlyRateShiftLeader Float?
+  customHourlyRateSiteManager Float?
+
+  // Custom Zeitzuschläge (überschreiben PriceModel)
+  customNightSurcharge    Float?
+  customSaturdaySurcharge Float?
+  customSundaySurcharge   Float?
+  customHolidaySurcharge  Float?
+
+  // Zuschläge & Sonderkonditionen
+  riskSurchargePercentage Float @default(0) // Risikozuschlag %
+  distanceSurcharge       Float @default(0) // €/h (Entfernung)
+
+  // Custom Gemeinkosten & Marge (überschreiben PriceModel)
+  customOverheadPercentage     Float? // Gemeinkosten %
+  customProfitMarginPercentage Float? // Gewinnmarge %
+
+  // Berechnete Kosten (automatisch)
+  totalPersonnelCostMonthly Float @default(0) // Personal
+  totalOverheadMonthly      Float @default(0) // Gemeinkosten
+  totalProfitMonthly        Float @default(0) // Gewinn
+  totalPriceMonthly         Float @default(0) // Gesamt (netto)
+
+  // Einmalige Kosten
+  setupCostUniform   Float @default(0)
+  setupCostEquipment Float @default(0)
+  setupCostOther     Float @default(0)
+
+  // Notizen & Anmerkungen
+  notes String? @db.Text
+
+  // Meta
+  calculatedBy String // User-ID
+  calculatedAt DateTime @default(now())
+  sentAt       DateTime? // Status → SENT
+  acceptedAt   DateTime? // Status → ACCEPTED
+  rejectedAt   DateTime? // Status → REJECTED
+
+  // Beziehungen
+  site       Site       @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  priceModel PriceModel? @relation(fields: [priceModelId], references: [id], onDelete: SetNull)
+  calculator User       @relation("CalculationCalculator", fields: [calculatedBy], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([siteId, version], name: "site_calculation_version_idx")
+  @@index([status], name: "site_calculation_status_idx")
+  @@map("site_calculations")
+}
+
+enum CalculationStatus {
+  DRAFT // Entwurf
+  SENT // Angebot versendet
+  ACCEPTED // Angebot angenommen
+  REJECTED // Angebot abgelehnt
+  ARCHIVED // Archiviert
 }
