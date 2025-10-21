@@ -16,7 +16,8 @@ import { FormField } from '@/components/ui/form'
 import { toast } from 'sonner'
 import { completeClearanceTraining, revokeClearance, type Clearance } from '../api'
 import { fetchControlPoints, fetchControlRounds, type ControlPoint, type ControlRound } from '../controlApi'
-import { Building2, Phone, Shield, Calendar, Image as ImageIcon, UserCheck, FileText, Upload, Download, Trash2, Eye, AlertTriangle, Plus, X, Pencil, CheckCircle, Clock, MapPin, QrCode, Smartphone } from 'lucide-react'
+import { fetchSiteCalculations, type SiteCalculation } from '../calculationApi'
+import { Building2, Phone, Shield, Calendar, Image as ImageIcon, UserCheck, FileText, Upload, Download, Trash2, Eye, AlertTriangle, Plus, X, Pencil, CheckCircle, Clock, MapPin, QrCode, Smartphone, Calculator, DollarSign } from 'lucide-react'
 import DocumentViewerModal from '../components/DocumentViewerModal'
 
 type Site = {
@@ -114,7 +115,7 @@ export default function SiteDetail() {
   const nav = useNavigate()
   const queryClient = useQueryClient()
   const { user } = useAuth()
-  const [activeTab, setActiveTab] = useState<'overview' | 'clearances' | 'shifts' | 'images' | 'documents' | 'incidents' | 'control-points' | 'control-rounds'>('overview')
+  const [activeTab, setActiveTab] = useState<'overview' | 'clearances' | 'shifts' | 'images' | 'documents' | 'incidents' | 'control-points' | 'control-rounds' | 'calculations'>('overview')
   const [trainingModal, setTrainingModal] = useState<{ clearance: Clearance; hours: number } | null>(null)
   const [revokeModal, setRevokeModal] = useState<{ clearance: Clearance; notes: string } | null>(null)
   const [uploadModal, setUploadModal] = useState<{ file: File | null; category: string } | null>(null)
@@ -184,6 +185,13 @@ export default function SiteDetail() {
   })
 
   const controlRounds = controlRoundsData?.data || []
+
+  // Calculations Query
+  const { data: calculations = [] } = useQuery({
+    queryKey: ['calculations', id],
+    queryFn: () => fetchSiteCalculations(id!),
+    enabled: !!id && activeTab === 'calculations',
+  })
 
   // History Query
   const { data: incidentHistory } = useQuery({
@@ -454,6 +462,7 @@ export default function SiteDetail() {
     { key: 'shifts', label: 'Schichten' },
     { key: 'control-points', label: `Kontrollpunkte (${controlPoints.length})` },
     { key: 'control-rounds', label: `Kontrollgänge (${controlRounds.length})` },
+    { key: 'calculations', label: `Kalkulationen (${calculations.length})` },
     { key: 'images', label: `Bilder (${site.images?.length || 0})` },
     { key: 'documents', label: `Dokumente (${site.documents?.length || 0})` },
     { key: 'incidents', label: `Vorfälle (${site.incidents?.length || 0})` },
@@ -2378,6 +2387,154 @@ export default function SiteDetail() {
                             variant="outline"
                             size="sm"
                             onClick={() => nav(`/control-rounds/${round.id}`)}
+                          >
+                            <Eye size={14} />
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  )
+                })}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Kalkulationen-Tab */}
+      {activeTab === 'calculations' && (
+        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-300">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Calculator size={20} className="text-blue-600" />
+              <h2 className="text-lg font-semibold">Kalkulationen</h2>
+              <span className="text-sm text-gray-500">({calculations.length})</span>
+            </div>
+            <Button onClick={() => nav(`/sites/${id}/calculations/new`)}>
+              <Calculator size={16} className="mr-2" />
+              Neue Kalkulation
+            </Button>
+          </div>
+
+          {calculations.length === 0 ? (
+            <div className="text-center py-12 bg-gray-50 rounded-lg border-2 border-dashed">
+              <Calculator size={48} className="mx-auto text-gray-400 mb-4" />
+              <h3 className="text-lg font-medium text-gray-900 mb-2">Keine Kalkulationen</h3>
+              <p className="text-gray-600 mb-4">
+                Erstellen Sie eine neue Kalkulation für dieses Objekt, um Angebote zu erstellen.
+              </p>
+              <Button onClick={() => nav(`/sites/${id}/calculations/new`)}>
+                Erste Kalkulation erstellen
+              </Button>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {calculations
+                .sort((a, b) => b.version - a.version)
+                .map((calc) => {
+                  const statusColors = {
+                    DRAFT: 'bg-gray-100 text-gray-800',
+                    SENT: 'bg-blue-100 text-blue-800',
+                    ACCEPTED: 'bg-green-100 text-green-800',
+                    REJECTED: 'bg-red-100 text-red-800',
+                    ARCHIVED: 'bg-gray-100 text-gray-600',
+                  }
+                  const statusLabels = {
+                    DRAFT: 'Entwurf',
+                    SENT: 'Versendet',
+                    ACCEPTED: 'Angenommen',
+                    REJECTED: 'Abgelehnt',
+                    ARCHIVED: 'Archiviert',
+                  }
+
+                  return (
+                    <div
+                      key={calc.id}
+                      className="bg-white border rounded-lg p-4 hover:shadow-md transition-shadow"
+                    >
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-2">
+                            <span
+                              className={`px-2 py-1 rounded-full text-xs font-medium ${statusColors[calc.status]}`}
+                            >
+                              {statusLabels[calc.status]}
+                            </span>
+                            <span className="text-sm font-medium text-gray-900">
+                              Version {calc.version}
+                            </span>
+                            <span className="text-sm text-gray-500">
+                              {new Date(calc.createdAt).toLocaleDateString('de-DE')}
+                            </span>
+                          </div>
+
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-3">
+                            <div className="space-y-2">
+                              <div className="text-sm">
+                                <span className="text-gray-600">Personalkosten:</span>{' '}
+                                <span className="font-semibold">
+                                  {calc.totalPersonnelCostMonthly.toLocaleString('de-DE', {
+                                    style: 'currency',
+                                    currency: 'EUR',
+                                  })}{' '}
+                                  /Monat
+                                </span>
+                              </div>
+                              <div className="text-sm">
+                                <span className="text-gray-600">Gemeinkosten:</span>{' '}
+                                <span className="font-semibold">
+                                  {calc.totalOverheadMonthly.toLocaleString('de-DE', {
+                                    style: 'currency',
+                                    currency: 'EUR',
+                                  })}
+                                </span>
+                              </div>
+                              <div className="text-sm">
+                                <span className="text-gray-600">Gewinn:</span>{' '}
+                                <span className="font-semibold">
+                                  {calc.totalProfitMonthly.toLocaleString('de-DE', {
+                                    style: 'currency',
+                                    currency: 'EUR',
+                                  })}
+                                </span>
+                              </div>
+                            </div>
+
+                            <div className="flex flex-col justify-center">
+                              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-4 border border-blue-200">
+                                <div className="flex items-center gap-2 mb-1">
+                                  <DollarSign size={18} className="text-blue-600" />
+                                  <span className="text-sm font-medium text-blue-900">
+                                    Gesamtpreis (monatlich)
+                                  </span>
+                                </div>
+                                <div className="text-2xl font-bold text-blue-900">
+                                  {calc.totalPriceMonthly.toLocaleString('de-DE', {
+                                    style: 'currency',
+                                    currency: 'EUR',
+                                  })}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="mt-3 text-sm text-gray-600">
+                            <strong>Stunden/Woche:</strong> Tag: {calc.hoursDay}, Nacht:{' '}
+                            {calc.hoursNight}, Sa: {calc.hoursSaturday}, So: {calc.hoursSunday}
+                            {calc.hoursHoliday > 0 && `, Feiertag: ${calc.hoursHoliday}`}
+                          </div>
+
+                          {calc.calculator && (
+                            <div className="mt-2 text-sm text-gray-500">
+                              Erstellt von: {calc.calculator.firstName} {calc.calculator.lastName}
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="flex gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => nav(`/sites/${id}/calculations/${calc.id}`)}
                           >
                             <Eye size={14} />
                           </Button>

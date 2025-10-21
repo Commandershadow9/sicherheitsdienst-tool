@@ -19,6 +19,7 @@ import SiteShifts from '@/features/sites/pages/SiteShifts'
 import SiteForm from '@/features/sites/pages/SiteForm'
 import ControlPointForm from '@/features/sites/pages/ControlPointForm'
 import ControlRoundDetail from '@/features/sites/pages/ControlRoundDetail'
+import CalculationForm from '@/features/sites/pages/CalculationForm'
 import UsersList from '@/features/users/UsersList'
 import ShiftList from '@/features/shifts/ShiftList'
 import IncidentsList from '@/features/incidents/IncidentsList'
@@ -83,6 +84,11 @@ export const router = createBrowserRouter([
           { path: 'control-rounds/:roundId', element: (
             <RequireRole roles={['ADMIN','MANAGER','DISPATCHER']}>
               <ControlRoundDetail />
+            </RequireRole>
+          ) },
+          { path: 'sites/:siteId/calculations/:calculationId', element: (
+            <RequireRole roles={['ADMIN','MANAGER']}>
+              <CalculationForm />
             </RequireRole>
           ) },
           { path: 'users', element: (
