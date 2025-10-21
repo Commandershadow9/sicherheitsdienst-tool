@@ -229,3 +229,17 @@ export async function rejectSiteCalculation(siteId: string, calculationId: strin
   )
   return res.data.data
 }
+
+export async function archiveSiteCalculation(siteId: string, calculationId: string) {
+  const res = await api.post<{ data: SiteCalculation }>(
+    `/sites/${siteId}/calculations/${calculationId}/archive`
+  )
+  return res.data.data
+}
+
+export async function duplicateSiteCalculation(siteId: string, calculationId: string) {
+  const res = await api.post<{ data: SiteCalculation }>(
+    `/sites/${siteId}/calculations/${calculationId}/duplicate`
+  )
+  return res.data.data
+}

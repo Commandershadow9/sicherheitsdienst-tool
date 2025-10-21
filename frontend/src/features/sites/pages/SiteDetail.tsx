@@ -16,8 +16,16 @@ import { FormField } from '@/components/ui/form'
 import { toast } from 'sonner'
 import { completeClearanceTraining, revokeClearance, type Clearance } from '../api'
 import { fetchControlPoints, fetchControlRounds, type ControlPoint, type ControlRound } from '../controlApi'
-import { fetchSiteCalculations, type SiteCalculation } from '../calculationApi'
-import { Building2, Phone, Shield, Calendar, Image as ImageIcon, UserCheck, FileText, Upload, Download, Trash2, Eye, AlertTriangle, Plus, X, Pencil, CheckCircle, Clock, MapPin, QrCode, Smartphone, Calculator, DollarSign } from 'lucide-react'
+import {
+  fetchSiteCalculations,
+  sendSiteCalculation,
+  acceptSiteCalculation,
+  rejectSiteCalculation,
+  archiveSiteCalculation,
+  duplicateSiteCalculation,
+  type SiteCalculation
+} from '../calculationApi'
+import { Building2, Phone, Shield, Calendar, Image as ImageIcon, UserCheck, FileText, Upload, Download, Trash2, Eye, AlertTriangle, Plus, X, Pencil, CheckCircle, Clock, MapPin, QrCode, Smartphone, Calculator, DollarSign, Send, Check, Copy, Archive } from 'lucide-react'
 import DocumentViewerModal from '../components/DocumentViewerModal'
 
 type Site = {
@@ -441,6 +449,62 @@ export default function SiteDetail() {
     },
     onError: (error: any) => {
       toast.error(error?.response?.data?.message || 'Fehler beim Löschen des Vorfalls')
+    },
+  })
+
+  // Calculation Mutations
+  const sendCalculationMutation = useMutation({
+    mutationFn: (calculationId: string) => sendSiteCalculation(id!, calculationId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['calculations', id] })
+      toast.success('Kalkulation erfolgreich versendet')
+    },
+    onError: (error: any) => {
+      toast.error(error?.response?.data?.message || 'Fehler beim Versenden der Kalkulation')
+    },
+  })
+
+  const acceptCalculationMutation = useMutation({
+    mutationFn: (calculationId: string) => acceptSiteCalculation(id!, calculationId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['calculations', id] })
+      toast.success('Kalkulation erfolgreich angenommen')
+    },
+    onError: (error: any) => {
+      toast.error(error?.response?.data?.message || 'Fehler beim Annehmen der Kalkulation')
+    },
+  })
+
+  const rejectCalculationMutation = useMutation({
+    mutationFn: (calculationId: string) => rejectSiteCalculation(id!, calculationId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['calculations', id] })
+      toast.success('Kalkulation erfolgreich abgelehnt')
+    },
+    onError: (error: any) => {
+      toast.error(error?.response?.data?.message || 'Fehler beim Ablehnen der Kalkulation')
+    },
+  })
+
+  const archiveCalculationMutation = useMutation({
+    mutationFn: (calculationId: string) => archiveSiteCalculation(id!, calculationId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['calculations', id] })
+      toast.success('Kalkulation erfolgreich archiviert')
+    },
+    onError: (error: any) => {
+      toast.error(error?.response?.data?.message || 'Fehler beim Archivieren der Kalkulation')
+    },
+  })
+
+  const duplicateCalculationMutation = useMutation({
+    mutationFn: (calculationId: string) => duplicateSiteCalculation(id!, calculationId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['calculations', id] })
+      toast.success('Kalkulation erfolgreich dupliziert')
+    },
+    onError: (error: any) => {
+      toast.error(error?.response?.data?.message || 'Fehler beim Duplizieren der Kalkulation')
     },
   })
 
@@ -2530,14 +2594,81 @@ export default function SiteDetail() {
                           )}
                         </div>
 
-                        <div className="flex gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => nav(`/sites/${id}/calculations/${calc.id}`)}
-                          >
-                            <Eye size={14} />
-                          </Button>
+                        <div className="flex flex-col gap-2">
+                          {/* Status-spezifische Actions */}
+                          <div className="flex gap-2">
+                            {calc.status === 'DRAFT' && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => sendCalculationMutation.mutate(calc.id)}
+                                disabled={sendCalculationMutation.isPending}
+                                className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                              >
+                                <Send size={14} className="mr-1" />
+                                Versenden
+                              </Button>
+                            )}
+                            {calc.status === 'SENT' && (
+                              <>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => acceptCalculationMutation.mutate(calc.id)}
+                                  disabled={acceptCalculationMutation.isPending}
+                                  className="text-green-600 hover:text-green-700 hover:bg-green-50"
+                                >
+                                  <Check size={14} className="mr-1" />
+                                  Annehmen
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => rejectCalculationMutation.mutate(calc.id)}
+                                  disabled={rejectCalculationMutation.isPending}
+                                  className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                >
+                                  <X size={14} className="mr-1" />
+                                  Ablehnen
+                                </Button>
+                              </>
+                            )}
+                          </div>
+
+                          {/* Allgemeine Actions */}
+                          <div className="flex gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => nav(`/sites/${id}/calculations/${calc.id}`)}
+                              className="hover:bg-gray-50"
+                            >
+                              <Eye size={14} className="mr-1" />
+                              Ansehen
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => duplicateCalculationMutation.mutate(calc.id)}
+                              disabled={duplicateCalculationMutation.isPending}
+                              className="hover:bg-gray-50"
+                            >
+                              <Copy size={14} className="mr-1" />
+                              Duplizieren
+                            </Button>
+                            {calc.status !== 'ARCHIVED' && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => archiveCalculationMutation.mutate(calc.id)}
+                                disabled={archiveCalculationMutation.isPending}
+                                className="text-gray-600 hover:text-gray-700 hover:bg-gray-50"
+                              >
+                                <Archive size={14} className="mr-1" />
+                                Archivieren
+                              </Button>
+                            )}
+                          </div>
                         </div>
                       </div>
                     </div>
