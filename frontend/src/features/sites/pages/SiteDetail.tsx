@@ -159,6 +159,7 @@ export default function SiteDetail() {
   const [editIncident, setEditIncident] = useState<any>(null)
   const [resolveIncident, setResolveIncident] = useState<{ id: string; title: string; resolution?: string } | null>(null)
   const [viewHistory, setViewHistory] = useState<{ incidentId: string; incidentTitle: string } | null>(null)
+  const [rejectCalculationModal, setRejectCalculationModal] = useState<{ calculationId: string; notes: string } | null>(null)
   const [incidentFilters, setIncidentFilters] = useState<{
     status: string
     severity: string
@@ -476,10 +477,12 @@ export default function SiteDetail() {
   })
 
   const rejectCalculationMutation = useMutation({
-    mutationFn: (calculationId: string) => rejectSiteCalculation(id!, calculationId),
+    mutationFn: ({ calculationId, notes }: { calculationId: string; notes?: string }) =>
+      rejectSiteCalculation(id!, calculationId, notes),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['calculations', id] })
       toast.success('Kalkulation erfolgreich abgelehnt')
+      setRejectCalculationModal(null)
     },
     onError: (error: any) => {
       toast.error(error?.response?.data?.message || 'Fehler beim Ablehnen der Kalkulation')
@@ -2191,6 +2194,54 @@ export default function SiteDetail() {
         <DocumentViewerModal siteId={id} document={viewDocument} onClose={() => setViewDocument(null)} />
       )}
 
+      {/* Kalkulation ablehnen Modal */}
+      {rejectCalculationModal && (
+        <Modal open={true} onClose={() => setRejectCalculationModal(null)}>
+          <div className="space-y-4">
+            <h2 className="text-xl font-semibold flex items-center gap-2 text-red-600">
+              <X size={20} />
+              Kalkulation ablehnen
+            </h2>
+            <p className="text-gray-600">
+              Möchten Sie diese Kalkulation wirklich ablehnen? Sie können optional einen Grund angeben.
+            </p>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Ablehnungsgrund (Optional)
+              </label>
+              <textarea
+                className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
+                rows={4}
+                placeholder="z.B. Preis zu hoch, Anforderungen nicht erfüllt..."
+                value={rejectCalculationModal.notes || ''}
+                onChange={(e) =>
+                  setRejectCalculationModal({ ...rejectCalculationModal, notes: e.target.value })
+                }
+              />
+            </div>
+
+            <div className="flex justify-end gap-2 pt-4">
+              <Button variant="outline" onClick={() => setRejectCalculationModal(null)}>
+                Abbrechen
+              </Button>
+              <Button
+                className="bg-red-600 hover:bg-red-700 text-white"
+                onClick={() => {
+                  rejectCalculationMutation.mutate({
+                    calculationId: rejectCalculationModal.calculationId,
+                    notes: rejectCalculationModal.notes || undefined,
+                  })
+                }}
+                disabled={rejectCalculationMutation.isPending}
+              >
+                {rejectCalculationMutation.isPending ? 'Wird abgelehnt...' : 'Kalkulation ablehnen'}
+              </Button>
+            </div>
+          </div>
+        </Modal>
+      )}
+
       {/* Historie-Modal */}
       {viewHistory && (
         <Modal open={true} onClose={() => setViewHistory(null)}>
@@ -2624,8 +2675,7 @@ export default function SiteDetail() {
                                 <Button
                                   variant="outline"
                                   size="sm"
-                                  onClick={() => rejectCalculationMutation.mutate(calc.id)}
-                                  disabled={rejectCalculationMutation.isPending}
+                                  onClick={() => setRejectCalculationModal({ calculationId: calc.id, notes: '' })}
                                   className="text-red-600 hover:text-red-700 hover:bg-red-50"
                                 >
                                   <X size={14} className="mr-1" />
@@ -2645,6 +2695,20 @@ export default function SiteDetail() {
                             >
                               <Eye size={14} className="mr-1" />
                               Ansehen
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                window.open(
+                                  `/api/sites/${id}/calculations/${calc.id}/pdf`,
+                                  '_blank'
+                                )
+                              }}
+                              className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                            >
+                              <Download size={14} className="mr-1" />
+                              PDF
                             </Button>
                             <Button
                               variant="outline"

@@ -117,4 +117,28 @@ router.post(
   asyncHandler(calculationController.rejectSiteCalculation),
 );
 
+// POST /api/sites/:siteId/calculations/:id/archive - Archivieren
+router.post(
+  '/sites/:siteId/calculations/:id/archive',
+  authenticate,
+  requireRole(['ADMIN', 'MANAGER']),
+  asyncHandler(calculationController.archiveSiteCalculation),
+);
+
+// POST /api/sites/:siteId/calculations/:id/duplicate - Duplizieren
+router.post(
+  '/sites/:siteId/calculations/:id/duplicate',
+  authenticate,
+  requireRole(['ADMIN', 'MANAGER']),
+  asyncHandler(calculationController.duplicateSiteCalculation),
+);
+
+// GET /api/sites/:siteId/calculations/:id/pdf - PDF-Export
+router.get(
+  '/sites/:siteId/calculations/:id/pdf',
+  authenticate,
+  requireRole(['ADMIN', 'MANAGER', 'DISPATCHER']),
+  asyncHandler(calculationController.generateCalculationPDF),
+);
+
 export default router;
