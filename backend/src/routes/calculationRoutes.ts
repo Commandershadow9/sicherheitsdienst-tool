@@ -101,6 +101,14 @@ router.post(
   asyncHandler(calculationController.sendSiteCalculation),
 );
 
+// POST /api/sites/:siteId/calculations/:id/send-email - E-Mail versenden
+router.post(
+  '/sites/:siteId/calculations/:id/send-email',
+  authenticate,
+  requireRole(['ADMIN', 'MANAGER']),
+  asyncHandler(calculationController.sendCalculationEmailEndpoint),
+);
+
 // POST /api/sites/:siteId/calculations/:id/accept - Annehmen
 router.post(
   '/sites/:siteId/calculations/:id/accept',

@@ -250,3 +250,121 @@ Ihr Sicherheitsdienst-System`;
     reason: 'critical-incident',
   });
 }
+
+export async function sendCalculationEmail(
+  to: string,
+  siteName: string,
+  version: number,
+  totalPriceMonthly: number,
+  calculatorName: string,
+  siteId: string,
+  calculationId: string,
+) {
+  const context = {
+    siteName,
+    version,
+    totalPriceMonthly: totalPriceMonthly.toLocaleString('de-DE', { style: 'currency', currency: 'EUR' }),
+    calculatorName,
+    siteId,
+    calculationId,
+  };
+
+  const tpl = renderEmailTemplate('calculation-offer', context);
+  if (tpl?.subject || tpl?.text || tpl?.html) {
+    return sendEmail(
+      to,
+      tpl.subject || `Angebot für ${siteName} - Version ${version}`,
+      tpl.text,
+      tpl.html,
+      { template: 'calculation-offer', context, reason: 'calculation-offer' },
+    );
+  }
+
+  // Fallback ohne Template
+  const subject = `Angebot für ${siteName} - Version ${version}`;
+  const text = `Sehr geehrte Damen und Herren,
+
+anbei erhalten Sie unser Angebot für das Objekt "${siteName}".
+
+Version: ${version}
+Monatlicher Preis: ${totalPriceMonthly.toLocaleString('de-DE', { style: 'currency', currency: 'EUR' })}
+
+Erstellt von: ${calculatorName}
+
+Sie können das detaillierte Angebot im System einsehen:
+${process.env.FRONTEND_URL || 'https://app.sicherheitsdienst.de'}/sites/${siteId}?tab=calculations
+
+Für Rückfragen stehen wir Ihnen gerne zur Verfügung.
+
+Mit freundlichen Grüßen
+Ihr Sicherheitsdienst-Team`;
+
+  const html = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <style>
+    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+    .header { background: #2563eb; color: white; padding: 20px; text-align: center; }
+    .content { padding: 20px; }
+    .price-box { background: linear-gradient(to right, #dbeafe, #c7d2fe); border: 2px solid #2563eb; border-radius: 8px; padding: 20px; margin: 20px 0; text-align: center; }
+    .price-label { font-size: 14px; color: #1e40af; font-weight: 600; margin-bottom: 8px; }
+    .price-value { font-size: 28px; color: #1e3a8a; font-weight: bold; }
+    .info-table { width: 100%; margin: 20px 0; }
+    .info-table td { padding: 8px; border-bottom: 1px solid #ddd; }
+    .info-table td:first-child { font-weight: bold; width: 150px; }
+    .cta-button { display: inline-block; padding: 12px 24px; background: #2563eb; color: white; text-decoration: none; border-radius: 4px; margin: 20px 0; }
+    .footer { padding: 20px; text-align: center; font-size: 12px; color: #666; border-top: 1px solid #ddd; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>📊 Ihr Angebot</h1>
+  </div>
+  <div class="content">
+    <p>Sehr geehrte Damen und Herren,</p>
+    <p>anbei erhalten Sie unser Angebot für das Objekt <strong>"${siteName}"</strong>.</p>
+
+    <table class="info-table">
+      <tr>
+        <td>Objekt:</td>
+        <td><strong>${siteName}</strong></td>
+      </tr>
+      <tr>
+        <td>Angebots-Version:</td>
+        <td>Version ${version}</td>
+      </tr>
+      <tr>
+        <td>Erstellt von:</td>
+        <td>${calculatorName}</td>
+      </tr>
+    </table>
+
+    <div class="price-box">
+      <div class="price-label">MONATLICHER PREIS (netto)</div>
+      <div class="price-value">${totalPriceMonthly.toLocaleString('de-DE', { style: 'currency', currency: 'EUR' })}</div>
+      <div style="font-size: 12px; color: #6b7280; margin-top: 8px;">zzgl. gesetzlicher MwSt.</div>
+    </div>
+
+    <p>Das detaillierte Angebot können Sie im System einsehen und als PDF herunterladen:</p>
+
+    <a href="${process.env.FRONTEND_URL || 'https://app.sicherheitsdienst.de'}/sites/${siteId}?tab=calculations" class="cta-button">
+      Zum Angebot
+    </a>
+
+    <p>Für Rückfragen stehen wir Ihnen gerne zur Verfügung.</p>
+
+    <p>Mit freundlichen Grüßen<br>Ihr Sicherheitsdienst-Team</p>
+  </div>
+  <div class="footer">
+    <p>Diese E-Mail wurde automatisch vom Sicherheitsdienst-System generiert.</p>
+  </div>
+</body>
+</html>`;
+
+  return sendEmail(to, subject, text, html, {
+    template: 'calculation-offer',
+    context,
+    reason: 'calculation-offer',
+  });
+}

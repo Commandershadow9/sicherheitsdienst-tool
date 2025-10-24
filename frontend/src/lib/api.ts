@@ -14,7 +14,7 @@ function deriveBaseUrl() {
   if (typeof window !== 'undefined') {
     const { protocol, hostname, port } = window.location
     if (port === '5173' || port === '4173') {
-      return `${protocol}//${hostname}:3001`
+      return `${protocol}//${hostname}:3000`
     }
     return `${protocol}//${hostname}${port ? `:${port}` : ''}`
   }

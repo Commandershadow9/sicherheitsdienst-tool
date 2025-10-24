@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import prisma from '../utils/prisma';
 import logger from '../utils/logger';
+import { sendCalculationEmail } from '../services/emailService';
 
 /**
  * GET /api/sites/:siteId/calculations
@@ -814,6 +815,73 @@ export const generateCalculationPDF = async (req: Request, res: Response, next: 
     doc.end();
 
     logger.info(`Generated PDF for calculation ${id} of site ${siteId}`);
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * POST /api/sites/:siteId/calculations/:id/send-email
+ * E-Mail-Versand für Kalkulation
+ */
+export const sendCalculationEmailEndpoint = async (req: Request, res: Response, next: NextFunction): Promise<any> => {
+  try {
+    const { siteId, id } = req.params;
+    const { recipientEmail } = req.body;
+
+    if (!recipientEmail) {
+      return res.status(400).json({
+        success: false,
+        message: 'Empfänger-E-Mail ist erforderlich',
+      });
+    }
+
+    // Kalkulation mit allen Relations laden
+    const calculation = await prisma.siteCalculation.findUnique({
+      where: { id },
+      include: {
+        site: true,
+        calculator: {
+          select: { id: true, firstName: true, lastName: true, email: true },
+        },
+      },
+    });
+
+    if (!calculation) {
+      return res.status(404).json({
+        success: false,
+        message: 'Kalkulation nicht gefunden',
+      });
+    }
+
+    if (calculation.siteId !== siteId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Kalkulation gehört nicht zu diesem Objekt',
+      });
+    }
+
+    const calculatorName = `${calculation.calculator.firstName} ${calculation.calculator.lastName}`;
+
+    // E-Mail asynchron versenden (fire-and-forget)
+    sendCalculationEmail(
+      recipientEmail,
+      calculation.site.name,
+      calculation.version,
+      calculation.totalPriceMonthly,
+      calculatorName,
+      siteId,
+      id,
+    ).catch((error) => {
+      logger.error('E-Mail-Versand fehlgeschlagen:', error);
+    });
+
+    logger.info(`Email for calculation ${id} queued for sending to ${recipientEmail}`);
+
+    res.json({
+      success: true,
+      message: 'E-Mail wird versendet',
+    });
   } catch (error) {
     next(error);
   }
