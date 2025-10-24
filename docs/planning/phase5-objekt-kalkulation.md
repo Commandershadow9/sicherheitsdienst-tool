@@ -1,6 +1,6 @@
 # Phase 5: Objekt-Kalkulation & Angebotserstellung
 
-**Status:** 🚧 In Entwicklung
+**Status:** ✅ **100% ABGESCHLOSSEN** (v1.15.0a - v1.15.0d)
 **Ziel:** Vollständiges Kalkulations-System für Sicherheitsdienst-Objekte
 
 ---
@@ -491,29 +491,46 @@ GET    /api/sites/:siteId/calculations/:id/pdf         # PDF generieren
 
 ## 📋 Phase 5 Roadmap
 
-### Phase 5a: Backend (Woche 1)
+### Phase 5a: Backend (Woche 1) ✅ **ABGESCHLOSSEN**
 - ✅ Prisma Schema (PriceModel, SiteCalculation)
-- ✅ Migration
+- ✅ Migration (20251020_add_price_models_site_calculations)
 - ✅ Controller (priceModelController, calculationController)
-- ✅ Routes & RBAC
-- ✅ Berechnungs-Logik
+- ✅ Routes & RBAC (ADMIN für Templates, MANAGER für Kalkulationen)
+- ✅ Berechnungs-Logik (automatische Berechnung bei Create/Update)
 
-### Phase 5b: Desktop-Frontend (Woche 2)
-- Kalkulations-Tab in SiteDetail
-- Kalkulations-Formular (4 Schritte)
-- Ergebnis-Ansicht
-- Kalkulations-Liste
+**Commit**: v1.15.0a - Phase 5a Backend (Objekt-Kalkulation & Angebotserstellung)
 
-### Phase 5c: PDF-Generator (Woche 3)
-- PDF-Template (z.B. mit `pdfkit` oder `puppeteer`)
-- Email-Versand (mit SendGrid/SMTP)
-- Angebots-Historie
+### Phase 5b: Desktop-Frontend (Woche 2) ✅ **ABGESCHLOSSEN**
+- ✅ Kalkulationen-Tab in SiteDetail
+- ✅ Kalkulations-Liste mit Status-Badges
+- ✅ Version-Management (Duplicate-Funktion)
+- ✅ Status-Workflow UI (DRAFT → SENT → ACCEPTED/REJECTED)
+- ✅ Reject-Modal mit Notizen
 
-### Phase 5d: Erweiterte Features (Optional)
-- Vergleich Angebot vs. Ist-Kosten
-- Rentabilitäts-Dashboard
-- Automatische Preisanpassung (Inflation)
-- Multi-Site-Rabatte
+**Commit**: v1.15.0b - Phase 5b Desktop-Frontend (Kalkulationen-Tab)
+
+### Phase 5c: PDF-Generator & Email (Woche 3) ✅ **ABGESCHLOSSEN**
+- ✅ PDF-Template mit PDFKit (150 LOC, professionelles Layout)
+- ✅ Email-Versand mit SMTP/Nodemailer
+- ✅ HTML-Email-Template mit Preis-Box & CTA-Button
+- ✅ Angebots-Historie (via Duplicate & Version-Tracking)
+- ✅ GET /api/sites/:siteId/calculations/:id/pdf
+- ✅ POST /api/sites/:siteId/calculations/:id/send-email
+
+**Commit**: v1.15.0c - Phase 5c PDF-Generator & Email-Versand
+
+### Phase 5d: Erweiterte Features ✅ **TEILWEISE ABGESCHLOSSEN**
+- ✅ Archive-Funktion (Status → ARCHIVED)
+- ✅ Email-Modal mit Empfänger-Auswahl
+- ✅ PDF-Download-Button (Frontend)
+- ✅ Email-Button (Frontend)
+- ✅ Archive & Duplicate Buttons (Frontend)
+- [ ] Vergleich Angebot vs. Ist-Kosten (Optional, für v1.15.1+)
+- [ ] Rentabilitäts-Dashboard (Optional, für v1.15.1+)
+- [ ] Automatische Preisanpassung/Inflation (Optional, für v1.15.1+)
+- [ ] Multi-Site-Rabatte (Optional, für v1.15.1+)
+
+**Commit**: v1.15.0d - Phase 5d Erweiterte Features (Archive, Email-Modal)
 
 ---
 

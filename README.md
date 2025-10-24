@@ -16,16 +16,33 @@ Kurzer Überblick, klare Quickstarts und schnelles Troubleshooting für Devs/Ops
 - ✅ DSGVO-Compliance Dokumentation
 - ⚠️ HTTPS wartet auf Domain (Anleitung: `docs/ops/setup-https-letsencrypt.md`)
 
-**🏢 Objekt-Management Suite (v1.11.0 - v1.13.1):**
+**🏢 Objekt-Management Suite (v1.11.0 - v1.16.1) - PRODUKTIONSBEREIT:**
 - ✅ **Phase 1 (v1.11.0-1):** Objekt-Stammdaten, Bilder, Clearances, Assignments (100% ✅)
 - ✅ **Phase 2 (v1.12.0-2):** Dokument-Management mit Versionierung & Viewer (100% ✅)
   - 7 Kategorien, PDF/Markdown/Text-Viewer, Multer File-Upload
-- ⚡ **Phase 3 (v1.13.0-1):** Wachbuch & Vorfälle (70% ✅ MVP ready)
+- ✅ **Phase 3 (v1.13.0-8):** Wachbuch & Vorfälle (100% ✅)
   - Backend: 11 Kategorien, 4 Severity-Levels, CRUD-Endpoints
-  - Frontend: Timeline-View mit Badges
-  - Offen: CRUD-Dialog, Mutations, Email-Notifications
+  - Frontend: Timeline-View, CRUD-Dialog, Edit/Resolve/Delete
+  - Email & Push Notifications bei CRITICAL/HIGH
+  - Dashboard-Widget, Filter, Schicht-Kontext
+- ✅ **Phase 4 (v1.14.0a-c):** Kontrollgänge & NFC-Rundenwesen (100% ✅)
+  - ControlPoint-CRUD, NFC-Tag-Management, QR-Code-Fallback
+  - Desktop-Frontend, Mobile-App-Konzept dokumentiert
+- ✅ **Phase 5 (v1.15.0a-d):** Objekt-Kalkulation & Angebotserstellung (100% ✅)
+  - PriceModel & SiteCalculation (20+ Felder)
+  - Status-Workflow (DRAFT → SENT → ACCEPTED/REJECTED)
+  - PDF-Generator mit PDFKit, Email-Versand
+  - Archive, Reject-Modal, Duplicate-Funktion
+- ✅ **Phase 6 (v1.16.0a-d, v1.16.1):** Intelligenter Objekt-Anlage-Wizard (100% ✅)
+  - 8-Schritt-Wizard mit LocalStorage Auto-Save
+  - Customer & SiteTemplate Management
+  - Template-Anpassung (Templates laden in manuellen Modus)
+  - Vollständige Validierung & API-Integration
+  - 50+ Tests (Frontend + Backend)
+  - v1.16.1: Bugfixes, CustomerDetail-Route, 6 Templates geseedet
 
-Siehe: `docs/FEATURE_OBJEKT_MANAGEMENT.md` für vollständiges Konzept (7 Phasen)
+📖 **Vollständiges Konzept:** `docs/FEATURE_OBJEKT_MANAGEMENT.md` (8 Phasen)
+📚 **Session-Logs:** `docs/sessions/` für detaillierte Entwicklungs-Historie
 
 - Komponenten
   - Backend (Node.js/Express, Prisma, PostgreSQL)

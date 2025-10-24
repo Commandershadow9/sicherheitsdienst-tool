@@ -1,0 +1,465 @@
+# Claude Code Projektregeln - Sicherheitsdienst-Tool
+
+## 📚 Projekt-Kontext
+
+Dies ist ein **Sicherheitsdienst-Management-System** mit folgenden Hauptfunktionen:
+- Schicht-Planung & -Verwaltung
+- Objekt-Management (Standorte/Sites)
+- Mitarbeiter-Verwaltung
+- Intelligentes Replacement-System (Vertretungs-Vorschläge)
+- Abwesenheits-Management
+- Wachbuch & Vorfälle
+- NFC-Kontrollgänge
+- Kalkulation & Angebotserstellung
+- 8-Schritt-Wizard für Objekt-Anlage
+
+**Aktuelle Version:** v1.16.1
+**Tech-Stack:** Node.js/Express, React/Vite, PostgreSQL, Prisma, TypeScript
+
+---
+
+## 🎯 Wichtige Dokumentation
+
+**Vor Code-Änderungen IMMER lesen:**
+1. `docs/PROJECT_STRUCTURE.md` - Wo findet man was?
+2. `docs/FEATURE_OBJEKT_MANAGEMENT.md` - Phase 1-8 Konzept
+3. `docs/CHANGELOG.md` - Was wurde wann gemacht?
+4. `docs/TODO.md` - Was ist noch offen?
+
+**Für spezifische Features:**
+- Wizard: `docs/planning/workflow-wizard-objekt-anlegen.md`
+- Kontrollgänge: `docs/planning/phase4-kontrollgaenge-nfc.md`
+- Kalkulation: `docs/planning/phase5-objekt-kalkulation.md`
+- Replacement-System: `docs/planning/scoring-objekt-integration.md`
+
+**Session-Logs für Kontext:**
+- `docs/sessions/` - Detaillierte Entwicklungs-Historie
+
+---
+
+## 🏗️ Architektur-Patterns
+
+### Backend (Node.js/Express)
+```
+src/
+├── controllers/     # Request-Handler (Business-Logik)
+├── routes/          # Express-Routen (RBAC hier!)
+├── middleware/      # Auth, RBAC, Error-Handling
+├── services/        # Wiederverwendbare Business-Logik
+├── utils/           # Hilfsfunktionen
+└── __tests__/       # Integration-Tests (Jest)
+```
+
+**Konventionen:**
+- Controller-Funktionen: `async (req, res, next) => {}`
+- Immer `try/catch` + `next(error)` für Fehler
+- RBAC in Routes: `authenticate, authorize('ADMIN', 'MANAGER')`
+- Prisma für DB-Zugriff, NIE raw SQL
+
+### Frontend (React/Vite)
+```
+src/
+├── features/        # Feature-Module (Domain-Driven)
+│   └── <feature>/
+│       ├── api.ts          # React Query Hooks
+│       ├── types.ts        # TypeScript-Interfaces
+│       ├── pages/          # Feature-Pages
+│       └── __tests__/      # Tests (Vitest)
+├── components/      # Wiederverwendbare UI-Komponenten
+├── pages/           # Top-Level-Pages
+└── lib/             # Hilfsfunktionen
+```
+
+**Konventionen:**
+- Feature-Module = Domain-Driven (z.B. `features/sites/`)
+- React Query für API-Calls (keine direkten axios-Calls)
+- TypeScript strict mode, keine `any`
+- Tailwind CSS für Styling (keine inline-styles)
+
+---
+
+## 🔐 RBAC (Rollen & Berechtigungen)
+
+### Rollen-Hierarchie
+```
+ADMIN      → Vollzugriff (Chef)
+MANAGER    → Objekt-Management, Schichten, Personal (Einsatzleiter)
+DISPATCHER → Schicht-Zuweisung, Abwesenheiten (Leitstelle)
+EMPLOYEE   → Eigene Schichten, Abwesenheiten (Mitarbeiter)
+```
+
+### Backend-Implementation
+```typescript
+// In routes/*.ts
+router.get('/',
+  authenticate,                              // JWT prüfen
+  authorize('ADMIN', 'MANAGER', 'DISPATCHER'),  // Rolle prüfen
+  getController
+);
+```
+
+### Frontend-Implementation
+```tsx
+<RequireRole roles={['ADMIN', 'MANAGER']}>
+  <YourComponent />
+</RequireRole>
+```
+
+**WICHTIG:** Neue Endpoints immer mit RBAC absichern!
+
+---
+
+## 🗂️ Datenbank (Prisma)
+
+### Prisma-Workflow
+```bash
+# 1. Schema ändern
+vim backend/prisma/schema.prisma
+
+# 2. Migration erstellen
+npx prisma migrate dev --name descriptive_name
+
+# 3. Types generieren
+npx prisma generate
+```
+
+### Wichtige Models
+```
+User              → Mitarbeiter/Benutzer
+Shift             → Dienste/Schichten
+ShiftAssignment   → MA-Zuweisung zu Schichten
+Site              → Objekte/Standorte
+SiteImage         → Objektfotos
+SiteDocument      → Dokumente (Phase 2)
+SiteIncident      → Wachbuch/Vorfälle (Phase 3)
+ControlPoint      → NFC-Kontrollpunkte (Phase 4)
+ControlRound      → Kontrollgänge (Phase 4)
+SiteCalculation   → Kalkulationen (Phase 5)
+Customer          → Kunden (Phase 6)
+SiteTemplate      → Sicherheitskonzept-Vorlagen (Phase 6)
+ObjectClearance   → Objekt-Einarbeitungen (Phase 1)
+Absence           → Urlaub/Krankheit
+```
+
+### Naming Conventions
+- Models: PascalCase, Singular (`User`, nicht `Users`)
+- Fields: camelCase (`firstName`, `createdAt`)
+- Relations: camelCase (`user`, `shifts`)
+- Enums: SCREAMING_SNAKE_CASE (`USER_ROLE`, `SHIFT_STATUS`)
+
+---
+
+## 🧪 Testing
+
+### Backend-Tests (Jest)
+```typescript
+// src/__tests__/feature.test.ts
+describe('GET /api/endpoint', () => {
+  it('should return data', async () => {
+    const response = await request(app)
+      .get('/api/endpoint')
+      .set('Authorization', `Bearer ${token}`)
+      .expect(200);
+
+    expect(response.body).toHaveProperty('data');
+  });
+});
+```
+
+**Run:** `cd backend && npm test`
+
+### Frontend-Tests (Vitest)
+```typescript
+// src/features/**/__tests__/Component.test.tsx
+import { render, screen } from '@testing-library/react';
+import { describe, it, expect } from 'vitest';
+
+describe('Component', () => {
+  it('should render', () => {
+    render(<Component />);
+    expect(screen.getByText('Text')).toBeInTheDocument();
+  });
+});
+```
+
+**Run:** `cd frontend && npm test`
+
+**REGEL:** Neue Features benötigen Tests (mindestens 80% Coverage)!
+
+---
+
+## 📝 Commit-Konventionen
+
+### Conventional Commits Format
+```
+<type>(<scope>): <subject>
+
+<body>
+
+<footer>
+```
+
+### Types
+- `feat:` - Neues Feature
+- `fix:` - Bugfix
+- `docs:` - Dokumentation
+- `refactor:` - Code-Refactoring
+- `test:` - Tests
+- `chore:` - Build, Dependencies
+
+### Beispiele
+```bash
+feat(wizard): add customer quick-create form
+
+Implemented inline customer creation in wizard step 1.
+Users can now create customers without leaving the wizard.
+
+Closes #123
+
+---
+
+fix(api): correct port configuration in frontend
+
+Changed API baseURL from 3001 to 3000 to match backend port.
+
+Fixes #456
+
+---
+
+docs: update CHANGELOG for v1.16.1
+
+Added session documentation and bugfixes to changelog.
+```
+
+---
+
+## 🚀 Code-Qualität
+
+### TypeScript
+- **Strikte Typisierung:** Keine `any`, immer Interfaces/Types
+- **Type-Safety:** `npx tsc --noEmit` vor Commit
+- **Import-Order:** Externe → Interne → Types
+
+### ESLint/Prettier
+```bash
+# Vor Commit ausführen
+npm run lint        # ESLint prüfen
+npm run lint:fix    # Auto-Fix
+```
+
+### Code-Style
+- **Funktionen:** Arrow Functions bevorzugen
+- **Komponenten:** Functional Components (keine Class-Components)
+- **Naming:** Beschreibende Namen, keine Abkürzungen
+- **Comments:** Nur für komplexe Logik, Code soll selbsterklärend sein
+
+---
+
+## 🔧 Environment-Variablen
+
+### Backend (.env)
+```bash
+# Pflicht
+PORT=3000
+DATABASE_URL=postgresql://...
+JWT_SECRET=...
+REFRESH_SECRET=...
+
+# Optional
+SMTP_HOST=localhost
+SMTP_PORT=1025
+FRONTEND_URL=http://localhost:5173
+```
+
+### Frontend (.env)
+```bash
+# Optional (meistens nicht nötig)
+VITE_API_URL=http://localhost:3000
+```
+
+**REGEL:** Nie Secrets in Code committen! Immer `.env` nutzen.
+
+---
+
+## 🐛 Debugging
+
+### Backend
+```typescript
+// Logger nutzen (nicht console.log)
+import logger from './utils/logger';
+
+logger.info('Message');
+logger.error('Error', error);
+logger.debug('Debug info');
+```
+
+### Frontend
+```typescript
+// React Query Devtools nutzen
+import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
+
+<ReactQueryDevtools initialIsOpen={false} />
+```
+
+### Prisma
+```bash
+# Prisma Studio (DB-GUI)
+npx prisma studio
+
+# Query-Logs aktivieren
+DATABASE_LOG=true npm start
+```
+
+---
+
+## 📦 Dependencies
+
+### Backend
+- **Express** - Web-Framework
+- **Prisma** - ORM
+- **JWT** - Authentifizierung
+- **Nodemailer** - Email-Versand
+- **PDFKit** - PDF-Generierung
+- **Jest** - Testing
+
+### Frontend
+- **React** - UI-Library
+- **Vite** - Build-Tool
+- **React Query** - Server-State-Management
+- **React Router** - Routing
+- **Tailwind CSS** - Styling
+- **Lucide React** - Icons
+- **Vitest** - Testing
+
+**REGEL:** Neue Dependencies nur nach Rücksprache hinzufügen!
+
+---
+
+## 🎯 Best Practices
+
+### 1. API-Design
+- **RESTful:** `GET /api/resources`, `POST /api/resources`, etc.
+- **Consistent Responses:**
+  ```json
+  {
+    "success": true,
+    "data": { ... },
+    "message": "Optional message"
+  }
+  ```
+- **Error Handling:**
+  ```json
+  {
+    "success": false,
+    "code": "ERROR_CODE",
+    "message": "User-friendly message",
+    "details": "Technical details"
+  }
+  ```
+
+### 2. Component-Design
+- **Single Responsibility:** Eine Komponente, eine Aufgabe
+- **Props:** TypeScript-Interface definieren
+- **State:** Lokaler State nur wenn nötig, sonst Context/Query
+- **Performance:** Memoization bei teuren Berechnungen
+
+### 3. Database-Design
+- **Indexes:** Auf häufig gesuchten Feldern
+- **Relations:** Immer mit `@relation` definieren
+- **Migrations:** Nie manuell die DB ändern, immer Migrations!
+- **Seeding:** Test-Daten in `prisma/seed.ts`
+
+---
+
+## 🚨 Häufige Fehler vermeiden
+
+### Backend
+❌ **Falsch:**
+```typescript
+app.get('/api/users', (req, res) => {
+  const users = prisma.user.findMany();  // Fehlt await!
+  res.json(users);
+});
+```
+
+✅ **Richtig:**
+```typescript
+app.get('/api/users', authenticate, async (req, res, next) => {
+  try {
+    const users = await prisma.user.findMany();
+    res.json({ success: true, data: users });
+  } catch (error) {
+    next(error);
+  }
+});
+```
+
+### Frontend
+❌ **Falsch:**
+```typescript
+// Direkter API-Call
+const response = await axios.get('/api/users');
+```
+
+✅ **Richtig:**
+```typescript
+// React Query Hook
+const { data, isLoading } = useUsers();
+```
+
+### Prisma
+❌ **Falsch:**
+```typescript
+// Relation ohne include
+const site = await prisma.site.findUnique({ where: { id } });
+console.log(site.images);  // undefined!
+```
+
+✅ **Richtig:**
+```typescript
+const site = await prisma.site.findUnique({
+  where: { id },
+  include: { images: true }
+});
+console.log(site.images);  // Array von Images
+```
+
+---
+
+## 📖 Weiterführende Links
+
+**Technologie-Dokumentation:**
+- Express: https://expressjs.com/
+- Prisma: https://www.prisma.io/docs/
+- React: https://react.dev/
+- React Query: https://tanstack.com/query/
+- Tailwind CSS: https://tailwindcss.com/
+
+**Projekt-Spezifisch:**
+- Architektur: `docs/ARCHITECTURE.md`
+- API-Referenz: `docs/openapi.yaml`
+- RBAC-System: `docs/RBAC.md`
+
+---
+
+## 🤝 Zusammenarbeit
+
+### Code-Reviews
+- **Vor PR:** Tests laufen, Lint clean, TypeScript kompiliert
+- **PR-Beschreibung:** Was, Warum, Wie?
+- **Review-Zeit:** Innerhalb 24h Response
+- **Approval:** Mindestens 1 Approval vor Merge
+
+### Kommunikation
+- **Bugs:** GitHub Issues erstellen
+- **Features:** Erst Konzept in `docs/planning/` schreiben
+- **Fragen:** Slack #dev-channel
+- **Dokumentation:** Bei jedem Feature aktualisieren!
+
+---
+
+**Letzte Aktualisierung:** 2025-10-23, 21:45 Uhr
+**Version:** v1.16.1
+**Maintainer:** @Commandershadow9
+
+**Bei Fragen oder Unklarheiten:** Immer zuerst die Doku checken! 📚

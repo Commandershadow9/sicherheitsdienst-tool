@@ -1,11 +1,11 @@
 # Objekt-Management Suite – Vollständiges Konzept
 
-**Status**: Phase 1-3.5 ✅ 100% Abgeschlossen (Produktionsbereit)
+**Status**: Phase 1-6 ✅ **100% ABGESCHLOSSEN** (Produktionsbereit)
 **Priorität**: HOCH (blockiert mehrere Features)
-**Geschätzter Gesamtaufwand**: 15-25 Tage (aufgeteilt in 7 Phasen)
-**Version**: v1.11.0 – v1.17.0 (aktuell: v1.13.8)
+**Geschätzter Gesamtaufwand**: 20-30 Tage (aufgeteilt in 8 Phasen)
+**Version**: v1.11.0 – v1.18.0 (aktuell: v1.16.1 - Wizard Complete + Bugfixes!)
 **Erstellt**: 2025-10-17
-**Zuletzt aktualisiert**: 2025-10-20
+**Zuletzt aktualisiert**: 2025-10-23 (Session 21:15)
 
 ---
 
@@ -445,15 +445,19 @@ GET    /api/sites/:id/incidents/export       # PDF-Report
 
 ---
 
-### Phase 4: Kontrollgänge & Rundenwesen (v1.14.0)
-**Ziel:** Digitale Kontrollgänge mit QR-Code-Scanning
+### Phase 4: Kontrollgänge & Rundenwesen (v1.14.0a - v1.14.0c) ✅ **ABGESCHLOSSEN**
+**Ziel:** Digitale Kontrollgänge mit NFC/QR-Code-Scanning
 **Aufwand:** 4-5 Tage
-**Features:**
-- Kontrollpunkte definieren (mit QR-Code-Generierung)
-- Geplante & ungeplante Kontrollgänge
-- Mobile Scanning-Interface (Handy-optimiert)
-- Kontrollgang-Protokolle
-- Auswertung (wer hat wann welche Punkte gescannt)
+**Status:** Produktionsbereit ✅
+
+**Implementierte Features:**
+- ✅ Kontrollpunkte definieren (mit NFC-Tag-ID & QR-Code-Generierung)
+- ✅ Kontrollgänge-CRUD (Backend 6 Endpoints, Frontend Tab)
+- ✅ Kontrollpunkt-Verwaltung (Desktop-Frontend)
+- ✅ NFC + QR-Code Unterstützung
+- ✅ Mobile-App Konzept dokumentiert
+- ✅ Kontrollgang-Timeline-View
+- ✅ RBAC (ADMIN, MANAGER, DISPATCHER)
 
 **Datenmodell (Prisma):**
 ```prisma
@@ -542,9 +546,155 @@ PUT    /api/sites/:id/control-rounds/:roundId/complete    # Kontrollgang abschli
 
 ---
 
-### Phase 5: Übergabe-Protokolle (v1.14.0)
+### Phase 5: Objekt-Kalkulation & Angebotserstellung (v1.15.0a - v1.15.0d) ✅ **ABGESCHLOSSEN**
+**Ziel:** Vollständiges Kalkulations-System für Sicherheitsdienst-Objekte
+**Aufwand:** 4-5 Tage
+**Status:** Produktionsbereit ✅
+
+**Implementierte Features:**
+- ✅ PriceModel-Templates (Basis-Stundensätze, Zuschläge, Gemeinkosten)
+- ✅ SiteCalculation (Objekt-spezifische Kalkulationen mit Versionierung)
+- ✅ Automatische Berechnung (Personal, Gemeinkosten, Gewinnmarge)
+- ✅ Kalkulationen-Tab in SiteDetail
+- ✅ Status-Workflow (DRAFT → SENT → ACCEPTED/REJECTED → ARCHIVED)
+- ✅ PDF-Generator (PDFKit, professionelles Layout)
+- ✅ Email-Versand (HTML-Template mit Preis-Box & CTA)
+- ✅ Archive & Duplicate Funktionen
+- ✅ Reject-Modal mit Notizen
+- ✅ Email-Modal mit Empfänger-Auswahl
+- ✅ RBAC (ADMIN für Templates, MANAGER für Kalkulationen)
+
+**Detailliertes Konzept:** `docs/planning/phase5-objekt-kalkulation.md`
+
+---
+
+### Phase 6: Intelligenter Objekt-Anlage-Wizard (v1.16.0) ✅ **ABGESCHLOSSEN**
+**Ziel:** Interaktiver 8-Schritt-Wizard für komplette Objekt-Anlage
+**Aufwand:** 5-6 Tage
+**Status:** 100% fertig (Backend ✅ Frontend ✅ Tests ✅)
+**Features:**
+- **8-Schritt-Wizard** mit Progress-Bar & Validation
+- **Kunde**: Suche + Inline-Neuanlage (Customer Model + CRUD)
+- **Objekt-Grunddaten**: Name, Adresse, Gebäudetyp, Größe
+- **Sicherheitskonzept**: Template-Auswahl + Anpassung (SiteTemplate Model + CRUD)
+  - Template-Daten werden in manuellen Modus geladen (User-Request!)
+  - Aufgaben-Management, Schichtmodell, Stunden/Woche
+- **Personal**: MA-Auswahl (optional)
+- **Kontrollgänge**: NFC-Punkte (optional)
+- **Kalkulation**: Stundensatz & Preisberechnung
+- **Dokumente**: Notfallkontakte
+- **Zusammenfassung**: Review & Erstellen
+- **API-Integration**: useCreateSite() Hook (React Query)
+- **Validierung**: Step-by-Step + Final Validation
+- **LocalStorage Auto-Save**: Wizard-Fortschritt wird automatisch gespeichert
+- **Navigation**: Nach Erfolg → `/sites/{siteId}`
+- **Tests**: 50+ Tests (Frontend + Backend)
+
+**Datenmodell (Prisma):**
+```prisma
+model Customer {
+  id              String   @id @default(cuid())
+  companyName     String   @unique
+  industry        String?
+  taxId           String?  @unique
+  primaryContact  Json     // { name, email, phone, position }
+  contacts        Json[]
+  address         String
+  city            String
+  postalCode      String
+  country         String   @default("Deutschland")
+  billingAddress  Json?
+  paymentTerms    String   @default("30 Tage netto")
+  discount        Decimal? @db.Decimal(5,2)
+  notes           String?  @db.Text
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  sites           Site[]
+  @@index([companyName])
+}
+
+model SiteTemplate {
+  id                    String   @id @default(cuid())
+  name                  String   @unique
+  description           String?
+  buildingType          String?
+  hoursPerWeek          Int
+  shiftModel            String
+  requiredStaff         Int
+  requiredQualifications String[]
+  tasks                 String[]
+  isActive              Boolean  @default(true)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+}
+```
+
+**Backend-Endpoints (v1.16.0a):**
+```
+# Customer API
+GET    /api/customers                    # Liste aller Kunden
+POST   /api/customers                    # Neuen Kunden anlegen
+GET    /api/customers/:id                # Einzelnen Kunden abrufen
+PUT    /api/customers/:id                # Kunden bearbeiten
+DELETE /api/customers/:id                # Kunden löschen
+
+# Template API
+GET    /api/templates                    # Liste aller Templates
+POST   /api/templates                    # Neues Template anlegen
+GET    /api/templates/:id                # Einzelnes Template abrufen
+PUT    /api/templates/:id                # Template bearbeiten
+DELETE /api/templates/:id                # Template löschen
+
+# Site API (erweitert)
+POST   /api/sites                        # Neues Objekt aus Wizard erstellen
+```
+
+**Frontend (v1.16.0b-c):**
+- `src/features/wizard/components/SiteWizard.tsx` - Wizard-Container (250 LOC)
+- `src/features/wizard/components/steps/` - 8 Step-Komponenten (~3000 LOC)
+  - CustomerStep.tsx (240 LOC)
+  - CustomerQuickForm.tsx (265 LOC)
+  - ObjectStep.tsx (332 LOC)
+  - SecurityConceptStep.tsx (582 LOC) - Template-Anpassung!
+  - StaffStep.tsx (340 LOC)
+  - ControlPointsStep.tsx (430 LOC)
+  - CalculationStep.tsx (330 LOC)
+  - DocumentsStep.tsx (290 LOC)
+  - SummaryStep.tsx (400 LOC)
+- `src/features/wizard/hooks/useWizardValidation.ts` (123 LOC)
+- `src/features/sites/api.ts` (207 LOC mit Clearance API)
+- `src/types/wizard.ts` - WizardData Interface
+
+**Tests (v1.16.0d):**
+- Frontend Unit Tests (Vitest): 40 Tests
+  - `useWizardValidation.test.ts`: 25 Tests (350 LOC)
+  - `api.test.ts`: 15 Tests (240 LOC)
+- Backend Integration Tests (Jest): 10 Tests
+  - Wizard Integration Suite in `sites.routes.test.ts`
+
+**Key Features:**
+- ✅ Template-Anpassung: Templates laden Daten in manuellen Modus (User-Request!)
+- ✅ Auto-Save: LocalStorage Persistierung mit Visual Feedback
+- ✅ Validierung: Real-time + Final Validation mit Error Display
+- ✅ Navigation: Blockierung bei fehlenden Pflichtfeldern
+- ✅ API Integration: Vollständige Transformation aller 8 Schritte
+- ✅ TypeScript Strict: Alle Typen korrekt definiert
+- ✅ Testing: 50+ Tests (Frontend + Backend)
+
+**Commits:**
+- v1.16.0a: Backend (Customer, Template Models + APIs)
+- v1.16.0b: Frontend (8-Schritt-Wizard, alle Steps)
+- v1.16.0c: Integration (API, Validation, LocalStorage, Navigation)
+- v1.16.0d: Testing & Dokumentation
+
+**Vollständiges Konzept:** `docs/planning/workflow-wizard-objekt-anlegen.md` ⭐ **IMPLEMENTIERT**
+
+---
+
+### Phase 7: Übergabe-Protokolle (v1.17.0)
 **Ziel:** PSA & Ausrüstungs-Tracking
 **Aufwand:** 2-3 Tage
+**Status:** Geplant
 **Features:**
 - PSA-Übergabe dokumentieren (Wer hat was erhalten?)
 - Ausrüstungs-Tracking (Schlüssel, Funkgeräte, Taschenlampen)
@@ -621,119 +771,7 @@ GET    /api/sites/:id/equipment/:eqId/history      # Übergabe-History
 
 ---
 
-### Phase 6: Kalkulation & Akquise (v1.15.0)
-**Ziel:** Von der Kundenanfrage zum Angebot
-**Aufwand:** 3-4 Tage
-**Features:**
-- Kundenanfragen erfassen (Anforderungen, Wünsche)
-- Kalkulation (Kosten, Stunden, Personalstärke)
-- Angebots-Generierung (PDF)
-- Status-Tracking (Anfrage → Angebot → Auftrag → Verloren)
-
-**Datenmodell (Prisma):**
-```prisma
-model SiteInquiry {
-  id                String   @id @default(cuid())
-  siteId            String?
-  site              Site?    @relation(fields: [siteId], references: [id])
-
-  customerName      String
-  customerContact   Json     // { name, email, phone, company }
-  status            InquiryStatus @default(RECEIVED)
-
-  requirements      Json     // { staffCount, qualifications, hours, services }
-  notes             String?  @db.Text
-
-  calculation       SiteCalculation?
-  offer             SiteOffer?
-
-  receivedAt        DateTime @default(now())
-  createdBy         String
-  creator           User     @relation(fields: [createdBy], references: [id])
-
-  @@index([status, receivedAt])
-}
-
-enum InquiryStatus {
-  RECEIVED          // Anfrage erhalten
-  IN_REVIEW         // In Prüfung
-  CALCULATING       // Kalkulation läuft
-  OFFER_SENT        // Angebot versendet
-  ACCEPTED          // Auftrag erhalten
-  DECLINED          // Abgelehnt vom Kunden
-  LOST              // Verloren
-}
-
-model SiteCalculation {
-  id              String   @id @default(cuid())
-  inquiryId       String   @unique
-  inquiry         SiteInquiry @relation(fields: [inquiryId], references: [id])
-
-  staffCount      Int
-  hourlyRate      Decimal  @db.Decimal(10, 2)
-  hoursPerWeek    Decimal  @db.Decimal(10, 2)
-  monthlyHours    Decimal  @db.Decimal(10, 2)
-  monthlyCost     Decimal  @db.Decimal(10, 2)
-
-  overheadPercent Decimal  @db.Decimal(5, 2) @default(20.0)
-  profitMargin    Decimal  @db.Decimal(5, 2) @default(15.0)
-
-  totalMonthly    Decimal  @db.Decimal(10, 2)
-  totalYearly     Decimal  @db.Decimal(10, 2)
-
-  notes           String?  @db.Text
-  createdAt       DateTime @default(now())
-  createdBy       String
-
-  @@index([inquiryId])
-}
-
-model SiteOffer {
-  id            String   @id @default(cuid())
-  inquiryId     String   @unique
-  inquiry       SiteInquiry @relation(fields: [inquiryId], references: [id])
-
-  offerNumber   String   @unique
-  offerDate     DateTime @default(now())
-  validUntil    DateTime
-
-  totalPrice    Decimal  @db.Decimal(10, 2)
-  paymentTerms  String   @default("30 Tage netto")
-
-  pdfPath       String?  // Generiertes PDF
-  sentAt        DateTime?
-  sentBy        String?
-
-  acceptedAt    DateTime?
-  declinedAt    DateTime?
-
-  @@index([inquiryId])
-}
-```
-
-**Backend-Endpoints (v1.15.0):**
-```
-POST   /api/inquiries                       # Anfrage erfassen
-GET    /api/inquiries                       # Liste (filter: status)
-GET    /api/inquiries/:id                   # Details
-PUT    /api/inquiries/:id                   # Anfrage aktualisieren
-POST   /api/inquiries/:id/calculation       # Kalkulation erstellen
-PUT    /api/inquiries/:id/calculation       # Kalkulation aktualisieren
-POST   /api/inquiries/:id/offer             # Angebot generieren
-GET    /api/inquiries/:id/offer/pdf         # PDF herunterladen
-POST   /api/inquiries/:id/accept            # Angebot angenommen → Objekt anlegen
-POST   /api/inquiries/:id/decline           # Angebot abgelehnt
-```
-
-**Frontend (v1.15.0):**
-- `/inquiries` - Anfragen-Übersicht (Kanban-Board: Received → Calculating → Offer Sent → Accepted/Lost)
-- `/inquiries/new` - Anfrage erfassen
-- `/inquiries/:id` - Anfrage-Details (mit Kalkulations-Tool)
-- `/inquiries/:id/offer` - Angebots-Vorschau & PDF-Generierung
-
----
-
-### Phase 7: Abrechnungssystem (v1.16.0)
+### Phase 7: Abrechnungssystem (v1.17.0)
 **Ziel:** Stundenerfassung & Rechnungs-Generierung
 **Aufwand:** 3-4 Tage
 **Features:**

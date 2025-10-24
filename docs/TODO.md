@@ -1,8 +1,16 @@
-# TODO / Roadmap (Stand: 2025-10-20)
+# TODO / Roadmap (Stand: 2025-10-23)
 
 > Abgeschlossene Aufgaben liegen jetzt in `docs/TODO_ARCHIVE.md`.
 
 ## Kurzfristig (P1, 1–2 Tage)
+
+### ✅ Aktuell abgeschlossen (v1.16.1 - 2025-10-23)
+- [x] **v1.16.1** Template-System aktiviert: 6 Sicherheitskonzept-Templates erstellt ✅
+- [x] **v1.16.1** CustomerDetail-Route implementiert (fehlte im Router) ✅
+- [x] **v1.16.1** Dashboard Test-Schichten: Kritische Schichten für HEUTE ✅
+- [x] **v1.16.1** Bugfixes: Frontend API Port (3000), Admin-Password-Reset ✅
+
+### ✅ Vorherige Versionen
 - [x] **v1.10.0** Abwesenheiten: ICS-/Kalender-Export (API `GET /api/absences/export.ics`, RFC 5545 konform) ✅
 - [x] **v1.10.0** Replacement-Service Observability: Prometheus-Metriken für Score-/Laufzeitwerte und Zusammenfassung in `/api/stats` ✅
 - [x] **v1.10.0** Replacement UX-Verbesserungen: Farbkodierung, Ruhezeit-Anzeige, Auslastungs-Vorschau, Tie-Breaker ✅
@@ -168,24 +176,176 @@
 
 ---
 
-#### Phase 4: Kontrollgänge & NFC-Rundenwesen (v1.14.0)
-**Aufwand**: 4-5 Tage | **Status**: Geplant
+#### Phase 4: Kontrollgänge & NFC-Rundenwesen (v1.14.0a - v1.14.0c) ⭐ **100% ABGESCHLOSSEN**
+**Aufwand**: 4-5 Tage | **Status**: Produktionsbereit ✅
 
-- [ ] Datenmodell: ControlPoint, ControlRound, ControlPointScan
-- [ ] Backend: Kontrollpunkte-CRUD, NFC-Tag-Verwaltung
-- [ ] NFC-Service: Web NFC API Integration
-- [ ] Frontend: Kontrollpunkte-Verwaltung (Desktop)
-- [ ] Mobile: NFC-Scanner-Interface (PWA)
-- [ ] QR-Code-Fallback (für Geräte ohne NFC)
-- [ ] Auswertungen & Reports
+**Phase 4a: Backend (v1.14.0a) ✅**
+- [x] Datenmodell: ControlPoint, ControlRound, ControlPointScan ✅
+- [x] Backend: Kontrollpunkte-CRUD (7 Endpoints) ✅
+- [x] Backend: Kontrollgänge-CRUD (6 Endpoints) ✅
+- [x] NFC-Tag-ID Verwaltung (UUID-basiert) ✅
+- [x] QR-Code-Fallback (für Geräte ohne NFC) ✅
+- [x] RBAC: ADMIN, MANAGER, DISPATCHER ✅
+
+**Phase 4b: Desktop-Frontend (v1.14.0b) ✅**
+- [x] Frontend: Kontrollpunkte-Tab in SiteDetail ✅
+- [x] Kontrollpunkt-CRUD (Create, Edit, Delete) ✅
+- [x] NFC-Tag-Generierung (UUID v4) ✅
+- [x] QR-Code-Anzeige pro Kontrollpunkt ✅
+- [x] Kontrollgänge-Übersicht (Timeline-View) ✅
+
+**Phase 4c: Mobile-Konzept (v1.14.0c) ✅**
+- [x] Mobile-App Konzept dokumentiert ✅
+- [x] NFC-Scanner-Workflow definiert ✅
+- [x] Offline-First Strategie ✅
+- [x] PWA-Bereitschaft geprüft ✅
+
+**Commits**:
+- v1.14.0a: Backend (Prisma Migration, Controller, Routes)
+- v1.14.0b: Desktop-Frontend (Kontrollpunkt-Verwaltung)
+- v1.14.0c: Mobile-Konzept & Dokumentation
 
 **Abhängigkeiten**: Phase 3
-**Liefert**: NFC-basierte Kontrollgänge
-**Wichtig**: NFC-Tags müssen beschafft werden
+**Liefert**: Vollständiges Kontrollgang-System (NFC + QR) - produktionsbereit
 
 ---
 
-#### Phase 5: Übergabe-Protokolle (v1.15.0)
+#### Phase 5: Objekt-Kalkulation & Angebotserstellung (v1.15.0a - v1.15.0d) ⭐ **100% ABGESCHLOSSEN**
+**Aufwand**: 4-5 Tage | **Status**: Produktionsbereit ✅
+
+**Phase 5a: Backend (v1.15.0a) ✅**
+- [x] Datenmodell: PriceModel, SiteCalculation ✅
+- [x] Prisma Migration: 20+ Felder für Kalkulation ✅
+- [x] Backend: PriceModel-CRUD (5 Endpoints) ✅
+- [x] Backend: SiteCalculation-CRUD (5 Endpoints) ✅
+- [x] Berechnungs-Logik (Personal, Gemeinkosten, Gewinn) ✅
+- [x] RBAC: ADMIN (Templates), MANAGER (Kalkulationen) ✅
+
+**Phase 5b: Desktop-Frontend (v1.15.0b) ✅**
+- [x] Kalkulationen-Tab in SiteDetail ✅
+- [x] Kalkulations-Liste mit Status-Badges ✅
+- [x] Version-Management (Duplicate-Funktion) ✅
+- [x] Status-Workflow UI (DRAFT → SENT → ACCEPTED/REJECTED) ✅
+
+**Phase 5c: PDF-Generator & Email (v1.15.0c) ✅**
+- [x] PDF-Generator mit PDFKit (150 LOC) ✅
+- [x] Professional PDF-Template (Header, Tables, Formatting) ✅
+- [x] Email-Versand-Funktion (HTML + Text) ✅
+- [x] Email-Template mit Preis-Box & CTA ✅
+- [x] GET /pdf Endpoint ✅
+- [x] POST /send-email Endpoint ✅
+
+**Phase 5d: Erweiterte Features (v1.15.0d) ✅**
+- [x] Archive-Funktion (Status → ARCHIVED) ✅
+- [x] Reject-Modal mit Notizen ✅
+- [x] Email-Modal mit Empfänger-Auswahl ✅
+- [x] Frontend: PDF-Download-Button ✅
+- [x] Frontend: Email-Button ✅
+- [x] Frontend: Archive & Duplicate Buttons ✅
+
+**Commits**:
+- v1.15.0a: Backend (Prisma, PriceModel, SiteCalculation)
+- v1.15.0b: Desktop-Frontend (Kalkulationen-Tab)
+- v1.15.0c: PDF-Generator & Email-Versand
+- v1.15.0d: Erweiterte Features (Archive, Reject-Modal, Email-Modal)
+
+**Abhängigkeiten**: Phase 4
+**Liefert**: Vollständiges Kalkulations-System von Angebot bis PDF/Email
+
+---
+
+#### Phase 6: Intelligenter Objekt-Anlage-Wizard (v1.16.0) ⭐ **100% ABGESCHLOSSEN**
+**Aufwand**: 5-6 Tage | **Status**: Produktionsbereit ✅
+
+**Phase 6a: Backend - Kunden & Templates (v1.16.0a) ✅**
+- [x] Datenmodell: Customer (Kunden-Verwaltung) ✅
+- [x] Datenmodell: SiteTemplate (Sicherheitskonzept-Vorlagen) ✅
+- [x] Prisma Migration: 20251022145323 (Customer + Template Models) ✅
+- [x] Backend: Customer-CRUD (5 Endpoints) ✅
+- [x] Backend: Template-CRUD (5 Endpoints) ✅
+- [x] RBAC: ADMIN (Templates), MANAGER (Customers, Sites) ✅
+
+**Phase 6b: Frontend - 8-Schritt-Wizard (v1.16.0b) ✅**
+- [x] Wizard-Container mit Progress-Bar (8 Schritte) ✅
+- [x] **Schritt 1: Kunde** - Suche + Inline-Neuanlage (CustomerStep, CustomerQuickForm) ✅
+- [x] **Schritt 2: Objekt-Grunddaten** - Name, Adresse, Gebäudetyp, Größe ✅
+- [x] **Schritt 3: Sicherheitskonzept** - Template-Auswahl + Anpassung (582 LOC) ✅
+  - Template-basierter & Manueller Modus
+  - Template-Daten in manuellen Modus laden (Anpassungen möglich) ⭐
+  - Aufgaben-Management (Add/Remove Tasks)
+  - Schichtmodell, Stunden/Woche, Mitarbeiter-Bedarf
+- [x] **Schritt 4: Personal & Zuweisungen** - MA-Auswahl (Optional) ✅
+- [x] **Schritt 5: Kontrollgänge** - NFC-Punkte (Optional) ✅
+- [x] **Schritt 6: Kalkulation** - Stundensatz & Preisberechnung ✅
+- [x] **Schritt 7: Dokumente & Notfallkontakte** - Emergency Contacts ✅
+- [x] **Schritt 8: Zusammenfassung** - Review & Erstellen (400 LOC) ✅
+
+**Phase 6c: Integration & Features (v1.16.0c) ✅**
+- [x] **API-Integration**: `useCreateSite()` Hook (React Query) ✅
+- [x] **Payload-Transformation**: Alle 8 Schritte → Backend-Payload (207 LOC) ✅
+- [x] **Validierung**: Step-by-Step + Final Validation ✅
+  - Schritt 1: Kunde erforderlich
+  - Schritt 2: Name, Adresse, Stadt, PLZ, Gebäudetyp
+  - Schritt 3: Sicherheitskonzept (Tasks, Schichtmodell, Stunden, Staff)
+  - Schritt 6: Stundensatz > 0
+  - Schritt 8: Vollständigkeits-Check aller Pflichtfelder
+- [x] **LocalStorage Auto-Save**: Wizard-Fortschritt wird automatisch gespeichert ✅
+  - Auto-Restore bei Reload
+  - Auto-Clear bei Abbruch/Erfolg
+  - Visual Indicator im Header
+- [x] **Navigation**: Nach Erfolg → `/sites/{siteId}` ✅
+- [x] **Error Handling**: Toast-Notifications + Validation Warnings ✅
+
+**Phase 6d: Testing & Dokumentation (v1.16.0d) ✅**
+- [x] **Frontend Unit Tests** (Vitest): 40 Tests ✅
+  - `useWizardValidation.test.ts`: 25 Tests (350 LOC)
+  - `api.test.ts`: 15 Tests (240 LOC)
+- [x] **Backend Integration Tests** (Jest): 10 Tests ✅
+  - Wizard Integration Suite in `sites.routes.test.ts`
+  - Complete Payload, Minimal Payload, Validation
+  - Customer & Template API Tests
+- [x] **Clearance API wiederhergestellt** in `api.ts` ✅
+- [x] **TypeScript**: 0 Errors, Build erfolgreich ✅
+- [x] **Dokumentation**: Vollständig aktualisiert ✅
+
+**Commits**:
+- v1.16.0a: Backend (Customer, Template Models + APIs)
+- v1.16.0b: Frontend (8-Schritt-Wizard, alle Steps implementiert)
+- v1.16.0c: Integration (API, Validation, LocalStorage, Navigation)
+- v1.16.0d: Testing & Dokumentation
+
+**Neue Dateien (Frontend)**:
+- `src/types/wizard.ts` - WizardData Interface (alle 8 Schritte)
+- `src/features/wizard/components/SiteWizard.tsx` (250 LOC)
+- `src/features/wizard/components/steps/` (8 Step-Komponenten, ~3000 LOC)
+- `src/features/wizard/hooks/useWizardValidation.ts` (123 LOC)
+- `src/features/sites/api.ts` (207 LOC mit Clearance API)
+- `src/features/customers/` - Customer-Management
+- `src/features/templates/` - Template-Management
+
+**Neue Dateien (Backend)**:
+- `backend/src/controllers/customerController.ts`
+- `backend/src/controllers/templateController.ts`
+- `backend/src/routes/customerRoutes.ts`
+- `backend/src/routes/templateRoutes.ts`
+- `backend/prisma/migrations/20251022145323_add_wizard_models_and_customer/`
+
+**Key Features**:
+- ✅ **Template-Anpassung**: Templates laden Daten in manuellen Modus (User-Request!)
+- ✅ **Auto-Save**: LocalStorage Persistierung mit Visual Feedback
+- ✅ **Validierung**: Real-time + Final Validation mit Error Display
+- ✅ **Navigation**: Blockierung bei fehlenden Pflichtfeldern
+- ✅ **API Integration**: Vollständige Transformation aller 8 Schritte
+- ✅ **TypeScript Strict**: Alle Typen korrekt definiert
+- ✅ **Testing**: 50+ Tests (Frontend + Backend)
+
+**Abhängigkeiten**: Phase 5
+**Liefert**: Vollständiger Objekt-Anlage-Wizard (8 Schritte) - Produktionsbereit!
+**Vollständiges Konzept**: `docs/planning/workflow-wizard-objekt-anlegen.md` ⭐ **IMPLEMENTIERT**
+
+---
+
+#### Phase 7: Übergabe-Protokolle (v1.17.0)
 **Aufwand**: 2-3 Tage | **Status**: Geplant
 
 - [ ] Datenmodell: Equipment, EquipmentHandover
@@ -194,28 +354,12 @@
 - [ ] Schichtwechsel-Workflow
 - [ ] History & Reports
 
-**Abhängigkeiten**: Phase 4
+**Abhängigkeiten**: Phase 6
 **Liefert**: PSA & Ausrüstungs-Tracking
 
 ---
 
-#### Phase 6: Kalkulation & Akquise (v1.16.0)
-**Aufwand**: 3-4 Tage | **Status**: Geplant
-
-- [ ] Datenmodell: SiteInquiry, SiteCalculation, SiteOffer
-- [ ] Backend: Kalkulations-Engine (automatisch mit Override)
-- [ ] PDF-Generator: Angebots-Erstellung
-- [ ] Frontend: Anfragen-Verwaltung (Kanban-Board)
-- [ ] Kalkulationstool (Hybrid: Auto + Manual)
-- [ ] Status-Workflow (Anfrage → Angebot → Auftrag)
-
-**Abhängigkeiten**: Phase 5
-**Liefert**: Von Kundenanfrage zum Angebot
-**Langfristig**: KI-gestützte Kalkulation (v1.17.0+)
-
----
-
-#### Phase 7: Abrechnungssystem (v1.17.0)
+#### Phase 8: Abrechnungssystem (v1.18.0)
 **Aufwand**: 3-4 Tage | **Status**: Geplant
 
 - [ ] Datenmodell: SiteBilling, BillingItem
@@ -224,7 +368,7 @@
 - [ ] Frontend: Abrechnungs-Übersicht (pro Monat/Objekt)
 - [ ] Export-Funktion (CSV für Buchhaltung)
 
-**Abhängigkeiten**: Phase 6
+**Abhängigkeiten**: Phase 7
 **Liefert**: Vollständige Abrechnungslösung
 
 ---
