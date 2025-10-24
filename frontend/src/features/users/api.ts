@@ -1,4 +1,5 @@
 import { api } from '@/lib/api'
+import { useQuery } from '@tanstack/react-query'
 
 export type EmploymentType = 'FULL_TIME' | 'PART_TIME' | 'MINI_JOB' | 'TEMPORARY' | 'CONTRACTOR'
 export type DocumentCategory =
@@ -151,4 +152,47 @@ export async function fetchEmployeePreferences(userId: string) {
 export async function updateEmployeePreferences(userId: string, payload: Partial<EmployeePreferences>) {
   const res = await api.put<{ success: boolean; data: EmployeePreferences }>(`/users/${userId}/preferences`, payload)
   return res.data.data
+}
+
+// Simple User type for lists
+export type User = {
+  id: string
+  email: string
+  firstName: string
+  lastName: string
+  role: 'ADMIN' | 'DISPATCHER' | 'EMPLOYEE' | 'MANAGER'
+  isActive: boolean
+}
+
+export type UsersResponse = {
+  data: User[]
+  pagination?: {
+    page: number
+    pageSize: number
+    total: number
+    totalPages: number
+  }
+}
+
+/**
+ * GET /api/users
+ * React Query hook to fetch users list
+ */
+export const useUsers = (params?: {
+  role?: string
+  search?: string
+  isActive?: boolean
+}) => {
+  return useQuery<UsersResponse>({
+    queryKey: ['users', params],
+    queryFn: async () => {
+      const queryParams = new URLSearchParams()
+      if (params?.role) queryParams.append('role', params.role)
+      if (params?.search) queryParams.append('query', params.search)
+      if (params?.isActive !== undefined) queryParams.append('isActive', String(params.isActive))
+
+      const response = await api.get(`/users?${queryParams.toString()}`)
+      return response.data
+    },
+  })
 }

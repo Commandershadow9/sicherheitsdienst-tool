@@ -23,9 +23,10 @@ import {
   rejectSiteCalculation,
   archiveSiteCalculation,
   duplicateSiteCalculation,
+  sendCalculationEmailAPI,
   type SiteCalculation
 } from '../calculationApi'
-import { Building2, Phone, Shield, Calendar, Image as ImageIcon, UserCheck, FileText, Upload, Download, Trash2, Eye, AlertTriangle, Plus, X, Pencil, CheckCircle, Clock, MapPin, QrCode, Smartphone, Calculator, DollarSign, Send, Check, Copy, Archive } from 'lucide-react'
+import { Building2, Phone, Shield, Calendar, Image as ImageIcon, UserCheck, FileText, Upload, Download, Trash2, Eye, AlertTriangle, Plus, X, Pencil, CheckCircle, Clock, MapPin, QrCode, Smartphone, Calculator, DollarSign, Send, Check, Copy, Archive, Mail } from 'lucide-react'
 import DocumentViewerModal from '../components/DocumentViewerModal'
 
 type Site = {
@@ -160,6 +161,7 @@ export default function SiteDetail() {
   const [resolveIncident, setResolveIncident] = useState<{ id: string; title: string; resolution?: string } | null>(null)
   const [viewHistory, setViewHistory] = useState<{ incidentId: string; incidentTitle: string } | null>(null)
   const [rejectCalculationModal, setRejectCalculationModal] = useState<{ calculationId: string; notes: string } | null>(null)
+  const [emailCalculationModal, setEmailCalculationModal] = useState<{ calculationId: string; email: string } | null>(null)
   const [incidentFilters, setIncidentFilters] = useState<{
     status: string
     severity: string
@@ -508,6 +510,18 @@ export default function SiteDetail() {
     },
     onError: (error: any) => {
       toast.error(error?.response?.data?.message || 'Fehler beim Duplizieren der Kalkulation')
+    },
+  })
+
+  const sendEmailCalculationMutation = useMutation({
+    mutationFn: ({ calculationId, email }: { calculationId: string; email: string }) =>
+      sendCalculationEmailAPI(id!, calculationId, email),
+    onSuccess: () => {
+      toast.success('E-Mail wird versendet')
+      setEmailCalculationModal(null)
+    },
+    onError: (error: any) => {
+      toast.error(error?.response?.data?.message || 'Fehler beim Versenden der E-Mail')
     },
   })
 
@@ -2242,6 +2256,59 @@ export default function SiteDetail() {
         </Modal>
       )}
 
+      {/* E-Mail versenden Modal */}
+      {emailCalculationModal && (
+        <Modal open={true} onClose={() => setEmailCalculationModal(null)}>
+          <div className="space-y-4">
+            <h2 className="text-xl font-semibold flex items-center gap-2 text-green-600">
+              <Mail size={20} />
+              Angebot per E-Mail versenden
+            </h2>
+            <p className="text-gray-600">
+              Senden Sie das Angebot an den Kunden. Die E-Mail enthält einen Link zum Angebot im System.
+            </p>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Empfänger-E-Mail *
+              </label>
+              <Input
+                type="email"
+                placeholder="kunde@example.com"
+                value={emailCalculationModal.email}
+                onChange={(e) =>
+                  setEmailCalculationModal({ ...emailCalculationModal, email: e.target.value })
+                }
+                className="focus:ring-2 focus:ring-green-500"
+                required
+              />
+            </div>
+
+            <div className="flex justify-end gap-2 pt-4">
+              <Button variant="outline" onClick={() => setEmailCalculationModal(null)}>
+                Abbrechen
+              </Button>
+              <Button
+                className="bg-green-600 hover:bg-green-700 text-white"
+                onClick={() => {
+                  if (!emailCalculationModal.email) {
+                    toast.error('Bitte geben Sie eine E-Mail-Adresse ein')
+                    return
+                  }
+                  sendEmailCalculationMutation.mutate({
+                    calculationId: emailCalculationModal.calculationId,
+                    email: emailCalculationModal.email,
+                  })
+                }}
+                disabled={sendEmailCalculationMutation.isPending || !emailCalculationModal.email}
+              >
+                {sendEmailCalculationMutation.isPending ? 'Wird versendet...' : 'E-Mail senden'}
+              </Button>
+            </div>
+          </div>
+        </Modal>
+      )}
+
       {/* Historie-Modal */}
       {viewHistory && (
         <Modal open={true} onClose={() => setViewHistory(null)}>
@@ -2709,6 +2776,20 @@ export default function SiteDetail() {
                             >
                               <Download size={14} className="mr-1" />
                               PDF
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() =>
+                                setEmailCalculationModal({
+                                  calculationId: calc.id,
+                                  email: site.customerEmail || '',
+                                })
+                              }
+                              className="text-green-600 hover:text-green-700 hover:bg-green-50"
+                            >
+                              <Mail size={14} className="mr-1" />
+                              E-Mail
                             </Button>
                             <Button
                               variant="outline"

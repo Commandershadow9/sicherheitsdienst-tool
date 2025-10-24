@@ -243,3 +243,11 @@ export async function duplicateSiteCalculation(siteId: string, calculationId: st
   )
   return res.data.data
 }
+
+export async function sendCalculationEmailAPI(siteId: string, calculationId: string, recipientEmail: string) {
+  const res = await api.post<{ message: string }>(
+    `/sites/${siteId}/calculations/${calculationId}/send-email`,
+    { recipientEmail }
+  )
+  return res.data
+}
