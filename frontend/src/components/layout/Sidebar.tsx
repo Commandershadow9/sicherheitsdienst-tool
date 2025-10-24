@@ -1,11 +1,12 @@
 import { NavLink } from 'react-router-dom'
-import { LayoutDashboard, Users, CalendarDays, AlertTriangle, Clock, Settings, CalendarClock, UserCircle2 } from 'lucide-react'
+import { LayoutDashboard, Users, CalendarDays, AlertTriangle, Clock, Settings, CalendarClock, UserCircle2, Building2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/features/auth/AuthProvider'
 
 const NAV_ALL = [
   { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['ADMIN','DISPATCHER','EMPLOYEE','MANAGER'] as const },
   { to: '/sites', label: 'Objekte', icon: CalendarDays, roles: ['ADMIN','DISPATCHER','MANAGER'] as const },
+  { to: '/customers', label: 'Kunden', icon: Building2, roles: ['ADMIN','MANAGER','DISPATCHER'] as const },
   { to: '/shifts', label: 'Schichten', icon: Clock, roles: ['ADMIN','DISPATCHER','EMPLOYEE','MANAGER'] as const },
   { to: '/absences', label: 'Abwesenheiten', icon: CalendarClock, roles: ['ADMIN','DISPATCHER','EMPLOYEE','MANAGER'] as const },
   { to: '/users', label: 'Benutzer', icon: Users, roles: ['ADMIN','DISPATCHER'] as const },

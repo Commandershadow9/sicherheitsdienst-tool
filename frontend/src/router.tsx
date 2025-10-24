@@ -29,6 +29,10 @@ import SystemPage from '@/pages/System'
 import AbsencesList from '@/features/absences/AbsencesList'
 import UserProfile from '@/features/users/UserProfile'
 import UserPreferences from '@/features/users/UserPreferences'
+import CustomerList from '@/features/customers/pages/CustomerList'
+import CustomerDetail from '@/features/customers/pages/CustomerDetail'
+import CustomerForm from '@/features/customers/pages/CustomerForm'
+import SiteWizard from '@/features/wizard/components/SiteWizard'
 
 export const router = createBrowserRouter([
   {
@@ -54,6 +58,11 @@ export const router = createBrowserRouter([
           { path: 'sites', element: (
             <RequireRole roles={['ADMIN','DISPATCHER','MANAGER']}>
               <SitesList />
+            </RequireRole>
+          ) },
+          { path: 'sites/wizard/new', element: (
+            <RequireRole roles={['ADMIN','MANAGER']}>
+              <SiteWizard />
             </RequireRole>
           ) },
           { path: 'sites/new', element: (
@@ -89,6 +98,26 @@ export const router = createBrowserRouter([
           { path: 'sites/:siteId/calculations/:calculationId', element: (
             <RequireRole roles={['ADMIN','MANAGER']}>
               <CalculationForm />
+            </RequireRole>
+          ) },
+          { path: 'customers', element: (
+            <RequireRole roles={['ADMIN','MANAGER','DISPATCHER']}>
+              <CustomerList />
+            </RequireRole>
+          ) },
+          { path: 'customers/new', element: (
+            <RequireRole roles={['ADMIN','MANAGER']}>
+              <CustomerForm />
+            </RequireRole>
+          ) },
+          { path: 'customers/:id/edit', element: (
+            <RequireRole roles={['ADMIN','MANAGER']}>
+              <CustomerForm />
+            </RequireRole>
+          ) },
+          { path: 'customers/:id', element: (
+            <RequireRole roles={['ADMIN','MANAGER','DISPATCHER']}>
+              <CustomerDetail />
             </RequireRole>
           ) },
           { path: 'users', element: (
