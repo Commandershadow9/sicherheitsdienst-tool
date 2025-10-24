@@ -63,6 +63,48 @@ model User {
 }
 
 // Einsatzorte/Sites
+// Kunden-Verwaltung
+model Customer {
+  id          String @id @default(cuid())
+  companyName String @unique
+
+  // Branche & Stammdaten
+  industry String? // z.B. "Einzelhandel", "Industrie", "Bürogebäude"
+  taxId    String? @unique
+
+  // Haupt-Ansprechpartner (JSON: { name, email, phone, position })
+  primaryContact Json
+
+  // Weitere Ansprechpartner (JSON-Array)
+  contacts Json[] @default([])
+
+  // Firmensitz-Adresse
+  address    String
+  city       String
+  postalCode String
+  country    String @default("Deutschland")
+
+  // Rechnungsadresse (falls abweichend, JSON: { address, city, postalCode, country })
+  billingAddress Json?
+
+  // Vertragsdaten
+  paymentTerms String  @default("30 Tage netto")
+  discount     Decimal? @db.Decimal(5, 2) // z.B. 5% Stammkunden-Rabatt
+
+  // Notizen & Besonderheiten
+  notes String? @db.Text
+
+  // Zeitstempel
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Beziehungen
+  sites Site[]
+
+  @@index([companyName])
+  @@map("customers")
+}
+
 model Site {
   id         String @id @default(cuid())
   name       String
@@ -70,11 +112,24 @@ model Site {
   city       String
   postalCode String
 
-  // Kunden-Informationen
+  // Kunden-Relation (NEU)
+  customerId String?
+  customer   Customer? @relation(fields: [customerId], references: [id])
+
+  // Legacy Kunden-Felder (für Abwärtskompatibilität)
   customerName    String?
   customerCompany String?
   customerEmail   String?
   customerPhone   String?
+
+  // Gebäude-Informationen (NEU für Wizard)
+  buildingType BuildingType? // OFFICE, INDUSTRIAL, RETAIL, EVENT, CONSTRUCTION, OTHER
+  floorCount   Int?
+  squareMeters Int?
+
+  // Geo-Koordinaten (NEU für Google Maps)
+  geoLat Decimal? @db.Decimal(10, 8)
+  geoLng Decimal? @db.Decimal(11, 8)
 
   // Notfallkontakte (JSON-Array: [{ name, phone, role }])
   emergencyContacts Json?
@@ -85,6 +140,14 @@ model Site {
   // Anforderungen
   requiredStaff          Int      @default(1)
   requiredQualifications String[] @default([])
+
+  // Sicherheitskonzept (NEU für Wizard)
+  // JSON: { tasks: [], intervals: [], shiftModel: "", hoursPerWeek: 168 }
+  securityConcept Json?
+
+  // Wizard-Status (NEU)
+  wizardCompleted Boolean @default(false)
+  wizardStep      Int     @default(0)
 
   // Beschreibung & Notizen
   description String? @db.Text
@@ -110,7 +173,43 @@ model Site {
   @@index([city], name: "sites_city_idx")
   @@index([postalCode], name: "sites_postal_idx")
   @@index([status], name: "sites_status_idx")
+  @@index([customerId], name: "sites_customer_idx")
   @@map("sites")
+}
+
+// Gebäude-Typen
+enum BuildingType {
+  OFFICE       // Bürogebäude
+  INDUSTRIAL   // Industrie/Produktion
+  RETAIL       // Einzelhandel
+  EVENT        // Event-Location
+  CONSTRUCTION // Baustelle
+  OTHER        // Sonstiges
+}
+
+// Objekt-Vorlagen für schnelle Anlage
+model SiteTemplate {
+  id          String @id @default(cuid())
+  name        String // z.B. "24/7 Objektschutz Standard"
+  description String? @db.Text
+
+  buildingType BuildingType
+
+  // Template-Daten
+  hoursPerWeek          Int
+  shiftModel            String // "2-SHIFT", "3-SHIFT", "ROTATING"
+  requiredStaff         Int
+  requiredQualifications String[] @default([])
+  tasks                 String[] @default([]) // ["ACCESS_CONTROL", "PATROLS", "RECEPTION"]
+
+  // Kalkulations-Basis
+  basePrice Decimal @db.Decimal(10, 2)
+
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("site_templates")
 }
 
 // Benutzerrollen

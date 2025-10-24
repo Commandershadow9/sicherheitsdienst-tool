@@ -26,6 +26,8 @@ import {
   incidentRoutes,
   auditLogRoutes,
   absenceRoutes,
+  customerRoutes,
+  templateRoutes,
 } from './routes';
 import systemRootRoutes from './routes/system';
 import dashboardRoutes from './routes/dashboardRoutes';
@@ -127,6 +129,8 @@ app.use('/api/push', pushRoutes);
 app.use('/api/incidents', incidentRoutes);
 app.use('/api/audit-logs', auditLogRoutes);
 app.use('/api/absences', absenceRoutes);
+app.use('/api/customers', customerRoutes); // Customer Management (Wizard Phase 1)
+app.use('/api/templates', templateRoutes); // Site Templates (Wizard Phase 1)
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/stats', statsRoutes);
 app.use('/api', controlRoutes); // Control Points & Rounds (Phase 4)
@@ -145,6 +149,8 @@ app.use('/api/v1/push', pushRoutes);
 app.use('/api/v1/incidents', incidentRoutes);
 app.use('/api/v1/audit-logs', auditLogRoutes);
 app.use('/api/v1/absences', absenceRoutes);
+app.use('/api/v1/customers', customerRoutes); // Customer Management (Wizard Phase 1)
+app.use('/api/v1/templates', templateRoutes); // Site Templates (Wizard Phase 1)
 app.use('/api/v1/dashboard', dashboardRoutes);
 app.use('/api/v1/stats', statsRoutes);
 app.use('/api/v1', controlRoutes); // Control Points & Rounds (Phase 4)
