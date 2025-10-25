@@ -171,3 +171,12 @@ export async function removeShiftAssignment(assignmentId: string) {
   const res = await api.delete(`/shifts/assignments/${assignmentId}`);
   return res.data;
 }
+
+/**
+ * POST /api/shifts/bulk-assign
+ * Assign a user to multiple shifts at once (Bulk Assignment)
+ */
+export async function bulkAssignUserToShifts(userId: string, shiftIds: string[]) {
+  const res = await api.post('/shifts/bulk-assign', { userId, shiftIds });
+  return res.data;
+}
