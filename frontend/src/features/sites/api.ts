@@ -204,3 +204,93 @@ export async function fetchClearances(filters?: { userId?: string; siteId?: stri
   const res = await api.get<{ data: Clearance[] }>(`/clearances?${params.toString()}`);
   return res.data.data;
 }
+
+// ============================================================================
+// Coverage & Qualification API Functions
+// ============================================================================
+
+export interface CoverageStats {
+  siteId: string;
+  siteName: string;
+  requiredStaff: number;
+  assignedStaff: number;
+  coveragePercentage: number;
+  status: 'OK' | 'WARNING' | 'CRITICAL';
+  breakdown: {
+    role: string;
+    required: number;
+    assigned: number;
+    percentage: number;
+  }[];
+  activeClearances: number;
+}
+
+export interface QualificationCheck {
+  siteId: string;
+  siteName: string;
+  userId: string;
+  userName: string;
+  required: string[];
+  has: string[];
+  missing: string[];
+  status: 'FULL' | 'PARTIAL' | 'NONE';
+  allowOverride: boolean;
+}
+
+export interface AssignmentCandidate {
+  userId: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  role: string;
+  qualifications: {
+    required: string[];
+    has: string[];
+    missing: string[];
+    status: 'FULL' | 'PARTIAL' | 'NONE';
+  };
+  clearance: {
+    status: string;
+    score: number;
+  };
+  score: number;
+}
+
+/**
+ * GET /api/sites/:id/coverage-stats
+ * Fetch coverage statistics for a site
+ */
+export async function fetchCoverageStats(siteId: string) {
+  const res = await api.get<{ success: boolean; data: CoverageStats }>(`/sites/${siteId}/coverage-stats`);
+  return res.data.data;
+}
+
+/**
+ * POST /api/sites/:id/check-qualification
+ * Check if a user has required qualifications for a site
+ */
+export async function checkUserQualification(siteId: string, userId: string) {
+  const res = await api.post<{ success: boolean; data: QualificationCheck }>(
+    `/sites/${siteId}/check-qualification`,
+    { userId }
+  );
+  return res.data.data;
+}
+
+/**
+ * GET /api/sites/:id/assignment-candidates
+ * Get smart MA suggestions for site assignment
+ */
+export async function fetchAssignmentCandidates(siteId: string, role?: string) {
+  const params = role ? `?role=${role}` : '';
+  const res = await api.get<{
+    success: boolean;
+    data: {
+      siteId: string;
+      siteName: string;
+      requiredQualifications: string[];
+      candidates: AssignmentCandidate[];
+    };
+  }>(`/sites/${siteId}/assignment-candidates${params}`);
+  return res.data.data;
+}

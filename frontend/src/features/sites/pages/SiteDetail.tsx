@@ -28,6 +28,7 @@ import {
 } from '../calculationApi'
 import { Building2, Phone, Shield, Calendar, Image as ImageIcon, UserCheck, FileText, Upload, Download, Trash2, Eye, AlertTriangle, Plus, X, Pencil, CheckCircle, Clock, MapPin, QrCode, Smartphone, Calculator, DollarSign, Send, Check, Copy, Archive, Mail } from 'lucide-react'
 import DocumentViewerModal from '../components/DocumentViewerModal'
+import CoverageStats from '../components/CoverageStats'
 
 type Site = {
   id: string
@@ -690,6 +691,9 @@ export default function SiteDetail() {
                 )}
               </dl>
             </div>
+
+            {/* Coverage Stats */}
+            <CoverageStats siteId={site.id} />
 
             {/* Zuweisungen */}
             <div className="bg-gradient-to-br from-purple-50 to-violet-50 rounded-lg p-5 border border-purple-100">
