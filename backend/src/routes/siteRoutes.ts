@@ -142,6 +142,16 @@ router.post(
   asyncHandler(siteController.generateShiftsForSite),
 );
 
+// ===== Kontrollgang-Vorschläge =====
+
+// GET /api/sites/:id/control-round-suggestions - Intelligente Kontrollgang-Vorschläge
+router.get(
+  '/:id/control-round-suggestions',
+  authenticate,
+  authorize('ADMIN', 'MANAGER', 'DISPATCHER'),
+  asyncHandler(siteController.getControlRoundSuggestions),
+);
+
 // ===== Dokumente-Management =====
 
 // GET /api/sites/:siteId/documents

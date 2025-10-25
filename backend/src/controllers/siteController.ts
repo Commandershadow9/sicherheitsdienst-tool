@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import prisma from '../utils/prisma';
 import ExcelJS from 'exceljs';
 import { streamCsv } from '../utils/csv';
+import logger from '../utils/logger';
 
 
 // GET /api/sites - Alle Sites
@@ -742,6 +743,30 @@ export const generateShiftsForSite = async (req: Request, res: Response, next: N
       res.status(400).json({ success: false, message: error.message });
       return;
     }
+    next(error);
+  }
+};
+
+// GET /api/sites/:id/control-round-suggestions - Intelligente Kontrollgang-Vorschläge
+export const getControlRoundSuggestions = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { id } = req.params;
+
+    // Service dynamisch importieren
+    const { generateControlRoundSuggestions } = await import('../services/controlRoundSuggestionService');
+
+    const suggestions = await generateControlRoundSuggestions(id);
+
+    res.status(200).json({
+      success: true,
+      data: suggestions,
+    });
+  } catch (error: any) {
+    if (error.message?.includes('nicht gefunden')) {
+      res.status(404).json({ success: false, message: error.message });
+      return;
+    }
+    logger.error('Error in getControlRoundSuggestions:', error);
     next(error);
   }
 };
