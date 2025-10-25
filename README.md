@@ -6,6 +6,8 @@
 
 Kurzer Überblick, klare Quickstarts und schnelles Troubleshooting für Devs/Ops.
 
+> **🔧 Login-Probleme?** Führe `./check-login-health.sh` aus oder siehe [`docs/TROUBLESHOOTING_LOGIN.md`](docs/TROUBLESHOOTING_LOGIN.md)
+
 **🔒 Security-Features (v1.4.0+):**
 - ✅ LUKS-Verschlüsselung für Dokumentenspeicher
 - ✅ BorgBackup mit AES-256 (täglich 03:00 Uhr)
@@ -155,7 +157,7 @@ Monitoring (Compose, optional)
 ## CORS‑Hinweise
 - Lokale Dev‑Kombi: `VITE_API_BASE_URL=http://localhost:3000`, `CORS_ORIGIN=http://localhost:5173`.
 - Dev-Server lassen zusätzlich automatisch `http://127.0.0.1:5173` sowie Vite-Preview (`http://localhost:4173`, `http://127.0.0.1:4173`) zu – kein manuelles Nachtragen notwendig.
-- Remote: `VITE_API_BASE_URL=http://<SERVER_IP>:3000`, `CORS_ORIGIN=http://<SERVER_IP>:5173` (oder `CORS_ORIGINS` als Allowlist setzen).
+- Remote: `VITE_API_BASE_URL=http://<SERVER_IP>:3001`, `CORS_ORIGIN=http://<SERVER_IP>:5173` (oder `CORS_ORIGINS` als Allowlist setzen).
 
 ## Export (CSV/XLSX)
 - Streaming‑Download (100k+ Zeilen) via Accept: `text/csv` oder XLSX MIME‑Type

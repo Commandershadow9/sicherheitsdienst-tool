@@ -294,3 +294,76 @@ export async function fetchAssignmentCandidates(siteId: string, role?: string) {
   }>(`/sites/${siteId}/assignment-candidates${params}`);
   return res.data.data;
 }
+
+// ============================================================================
+// Shift API Functions
+// ============================================================================
+
+export interface Shift {
+  id: string;
+  siteId: string;
+  title: string;
+  description?: string;
+  location?: string;
+  startTime: string;
+  endTime: string;
+  requiredEmployees: number;
+  assignedEmployees?: number;
+  requiredQualifications: string[];
+  status: 'PLANNED' | 'CONFIRMED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface GenerateShiftsPayload {
+  startDate: string; // ISO 8601
+  daysAhead?: number; // default: 30
+}
+
+export interface GenerateShiftsResponse {
+  success: boolean;
+  message: string;
+  data: {
+    created: number;
+    stats: {
+      totalShifts: number;
+      totalRequiredEmployees: number;
+      shiftsByName: Record<string, number>;
+      averageEmployeesPerShift: number;
+    };
+    template: string;
+  };
+}
+
+/**
+ * GET /api/sites/:id/shifts
+ * Fetch all shifts for a site (with optional filters)
+ */
+export async function fetchSiteShifts(
+  siteId: string,
+  filters?: {
+    status?: string;
+    startDate?: string;
+    endDate?: string;
+  }
+) {
+  const params = new URLSearchParams();
+  if (filters?.status) params.append('status', filters.status);
+  if (filters?.startDate) params.append('startDate', filters.startDate);
+  if (filters?.endDate) params.append('endDate', filters.endDate);
+
+  const queryString = params.toString();
+  const url = `/sites/${siteId}/shifts${queryString ? `?${queryString}` : ''}`;
+
+  const res = await api.get<{ success: boolean; data: Shift[] }>(url);
+  return res.data.data;
+}
+
+/**
+ * POST /api/sites/:id/generate-shifts
+ * Generate shifts for a site based on security concept
+ */
+export async function generateShiftsForSite(siteId: string, payload: GenerateShiftsPayload) {
+  const res = await api.post<GenerateShiftsResponse>(`/sites/${siteId}/generate-shifts`, payload);
+  return res.data;
+}

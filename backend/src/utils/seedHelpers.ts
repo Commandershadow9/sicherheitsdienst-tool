@@ -2,6 +2,15 @@ import { PrismaClient, User } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 
 const CLEANUP_ORDER: Array<keyof PrismaClient> = [
+  'controlScan',
+  'controlRound',
+  'controlPoint',
+  'siteDocument',
+  'siteImage',
+  'siteAssignment',
+  'siteCalculation',
+  'incidentHistory',
+  'siteIncident',
   'shiftAssignment',
   'timeEntry',
   'incident',
@@ -18,6 +27,9 @@ const CLEANUP_ORDER: Array<keyof PrismaClient> = [
   'shift',
   'event',
   'site',
+  'siteTemplate',
+  'priceModel',
+  'customer',
   'user',
 ];
 

@@ -43,7 +43,7 @@ Logins:
 
 ## 5) Remote‑Vite & CORS
 - SSH-Tunnel/Dev: `VITE_API_BASE_URL=http://localhost:3000`, CORS_ORIGIN enthält `http://localhost:5173`
-- Server-IP: `VITE_API_BASE_URL=http://<SERVER_IP>:3000`, CORS_ORIGIN enthält `http://<SERVER_IP>:5173` (Compose übernimmt dies via `PUBLIC_HOST`)
+- Server-IP: `VITE_API_BASE_URL=http://<SERVER_IP>:3001`, CORS_ORIGIN enthält `http://<SERVER_IP>:5173` (Compose übernimmt dies via `PUBLIC_HOST`)
 
 ## 6) Erste Schritte
 - System: `/system` (Stats, Build SHA)

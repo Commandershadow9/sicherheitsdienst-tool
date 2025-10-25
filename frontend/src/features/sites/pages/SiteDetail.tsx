@@ -14,7 +14,7 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { FormField } from '@/components/ui/form'
 import { toast } from 'sonner'
-import { completeClearanceTraining, revokeClearance, type Clearance } from '../api'
+import { completeClearanceTraining, revokeClearance, type Clearance, fetchSiteShifts, generateShiftsForSite, type Shift, type GenerateShiftsPayload } from '../api'
 import { fetchControlPoints, fetchControlRounds, type ControlPoint, type ControlRound } from '../controlApi'
 import {
   fetchSiteCalculations,
@@ -93,6 +93,13 @@ type Site = {
     resolution?: string
     reporter: { id: string; firstName: string; lastName: string }
   }>
+  securityConcept?: {
+    tasks?: string[]
+    shiftModel?: string
+    hoursPerWeek?: number
+    templateId?: string
+    templateName?: string
+  }
 }
 
 const STATUS_LABELS: Record<string, string> = {
@@ -215,6 +222,13 @@ export default function SiteDetail() {
       return res.data.data
     },
     enabled: !!viewHistory?.incidentId,
+  })
+
+  // Shifts Query
+  const { data: shifts = [], isLoading: shiftsLoading } = useQuery<Shift[]>({
+    queryKey: ['shifts', id],
+    queryFn: () => fetchSiteShifts(id!),
+    enabled: !!id && activeTab === 'shifts',
   })
 
   const completeTrainingMutation = useMutation({
@@ -528,6 +542,18 @@ export default function SiteDetail() {
     },
   })
 
+  // Generate Shifts Mutation
+  const generateShiftsMutation = useMutation({
+    mutationFn: (payload: GenerateShiftsPayload) => generateShiftsForSite(id!, payload),
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['shifts', id] })
+      toast.success(data.message)
+    },
+    onError: (error: any) => {
+      toast.error(error?.response?.data?.message || 'Fehler beim Generieren der Schichten')
+    },
+  })
+
   if (isLoading) {
     return <SkeletonDetailPage />
   }
@@ -833,31 +859,131 @@ export default function SiteDetail() {
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold flex items-center gap-2">
                 <Calendar size={20} className="text-blue-600" />
-                Schichten
+                Schichten ({shifts.length})
               </h3>
-              <Button onClick={() => nav(`/sites/${id}/shifts`)}>Alle Schichten anzeigen →</Button>
+              <div className="flex gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    const startDate = new Date().toISOString()
+                    generateShiftsMutation.mutate({ startDate, daysAhead: 30 })
+                  }}
+                  disabled={generateShiftsMutation.isPending || !site.securityConcept?.shiftModel}
+                >
+                  {generateShiftsMutation.isPending ? 'Generiere...' : 'Schichten generieren'}
+                </Button>
+                <Button size="sm" onClick={() => nav(`/sites/${id}/shifts`)}>
+                  Alle anzeigen →
+                </Button>
+              </div>
             </div>
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
-              <p className="text-sm text-blue-900">
-                💡 <strong>Tipp:</strong> Wechseln Sie zur{' '}
-                <Link to={`/sites/${id}/shifts`} className="text-blue-600 hover:underline font-medium">
-                  Schichten-Ansicht
-                </Link>
-                , um alle Schichten dieses Objekts zu verwalten, zu bearbeiten und neue Schichten anzulegen.
-              </p>
-            </div>
-            <div className="space-y-3">
-              <p className="text-gray-600">
-                Hier können Sie die Schichten für dieses Objekt verwalten:
-              </p>
-              <ul className="list-disc list-inside space-y-2 text-gray-700">
-                <li>Alle geplanten Schichten anzeigen</li>
-                <li>Neue Schichten für dieses Objekt erstellen</li>
-                <li>Mitarbeiter zu Schichten zuweisen</li>
-                <li>Schicht-Zeiten anpassen</li>
-                <li>Schichten exportieren (CSV, XLSX, ICS)</li>
-              </ul>
-            </div>
+
+            {!site.securityConcept?.shiftModel && (
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
+                <p className="text-sm text-yellow-900">
+                  ⚠️ <strong>Hinweis:</strong> Für dieses Objekt ist noch kein Sicherheitskonzept mit Schichtmodell hinterlegt. Bitte bearbeiten Sie das Objekt und fügen Sie ein Schichtmodell hinzu.
+                </p>
+              </div>
+            )}
+
+            {shiftsLoading ? (
+              <div className="space-y-3">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="bg-gray-100 animate-pulse h-20 rounded-lg" />
+                ))}
+              </div>
+            ) : shifts.length === 0 ? (
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 text-center">
+                <Calendar size={48} className="text-blue-400 mx-auto mb-3" />
+                <p className="text-gray-600 mb-2">Noch keine Schichten vorhanden</p>
+                <p className="text-sm text-gray-500 mb-4">
+                  Klicken Sie auf "Schichten generieren", um automatisch Schichten basierend auf dem Sicherheitskonzept zu erstellen.
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {shifts.slice(0, 10).map((shift) => {
+                  const startDate = new Date(shift.startTime)
+                  const endDate = new Date(shift.endTime)
+                  const isToday = new Date().toDateString() === startDate.toDateString()
+                  const isPast = startDate < new Date()
+
+                  return (
+                    <div
+                      key={shift.id}
+                      className={cn(
+                        'border rounded-lg p-4 hover:shadow-md transition-all duration-200',
+                        isToday && 'border-blue-500 bg-blue-50',
+                        !isToday && 'border-gray-200 bg-white'
+                      )}
+                    >
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-2">
+                            <h4 className="font-semibold text-gray-900">{shift.title}</h4>
+                            {isToday && (
+                              <span className="px-2 py-0.5 text-xs font-medium bg-blue-500 text-white rounded">
+                                Heute
+                              </span>
+                            )}
+                            {shift.status === 'PLANNED' && (
+                              <span className="px-2 py-0.5 text-xs font-medium bg-gray-200 text-gray-700 rounded">
+                                Geplant
+                              </span>
+                            )}
+                            {shift.status === 'CONFIRMED' && (
+                              <span className="px-2 py-0.5 text-xs font-medium bg-green-100 text-green-700 rounded">
+                                Bestätigt
+                              </span>
+                            )}
+                          </div>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm text-gray-600">
+                            <div className="flex items-center gap-1">
+                              <Clock size={14} />
+                              <span>
+                                {startDate.toLocaleDateString('de-DE', {
+                                  weekday: 'short',
+                                  day: '2-digit',
+                                  month: '2-digit',
+                                })}
+                                , {startDate.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })} -{' '}
+                                {endDate.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <UserCheck size={14} />
+                              <span>
+                                {shift.assignedEmployees || 0} / {shift.requiredEmployees} Mitarbeiter
+                              </span>
+                            </div>
+                          </div>
+                          {shift.description && (
+                            <p className="text-sm text-gray-500 mt-2">{shift.description}</p>
+                          )}
+                        </div>
+                        <div className="ml-4">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => nav(`/shifts/${shift.id}`)}
+                          >
+                            Details →
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  )
+                })}
+                {shifts.length > 10 && (
+                  <div className="text-center pt-2">
+                    <Button variant="outline" onClick={() => nav(`/sites/${id}/shifts`)}>
+                      Alle {shifts.length} Schichten anzeigen →
+                    </Button>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         )}
 

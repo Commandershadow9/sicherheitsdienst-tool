@@ -123,7 +123,15 @@ router.get(
   asyncHandler(siteController.getAssignmentCandidates),
 );
 
-// ===== Schicht-Generierung =====
+// ===== Schicht-Verwaltung =====
+
+// GET /api/sites/:siteId/shifts - Schichten abrufen
+router.get(
+  '/:siteId/shifts',
+  authenticate,
+  authorize('ADMIN', 'MANAGER', 'DISPATCHER', 'EMPLOYEE'),
+  asyncHandler(shiftController.getShiftsForSite),
+);
 
 // POST /api/sites/:id/generate-shifts - Schichten generieren
 router.post(
