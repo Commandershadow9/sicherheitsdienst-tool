@@ -367,3 +367,68 @@ export async function generateShiftsForSite(siteId: string, payload: GenerateShi
   const res = await api.post<GenerateShiftsResponse>(`/sites/${siteId}/generate-shifts`, payload);
   return res.data;
 }
+
+// ============================================================================
+// Control Round Suggestions Types
+// ============================================================================
+
+export interface ControlPointSuggestion {
+  id: string;
+  name: string;
+  location: string;
+  order: number;
+  hasNfcTag: boolean;
+  hasQrCode: boolean;
+  latitude?: number | null;
+  longitude?: number | null;
+  estimatedDuration: number; // Sekunden
+  instructions?: string | null;
+}
+
+export interface RouteSegment {
+  from: string; // Control Point ID
+  to: string; // Control Point ID
+  distance: number; // Meter
+  duration: number; // Sekunden
+}
+
+export interface ControlRoundSuggestion {
+  templateName: string;
+  description: string;
+  frequency: string;
+  estimatedDuration: number; // Minuten
+  controlPoints: ControlPointSuggestion[];
+  optimizedRoute: string[]; // Array von Control Point IDs
+  routeSegments: RouteSegment[];
+  requiredTags: {
+    totalPoints: number;
+    withNfc: number;
+    withQr: number;
+    needsTag: number;
+  };
+}
+
+export interface ControlRoundSuggestionsResult {
+  siteId: string;
+  siteName: string;
+  securityLevel: 'HIGH' | 'MEDIUM' | 'LOW';
+  suggestions: ControlRoundSuggestion[];
+  stats: {
+    totalControlPoints: number;
+    activeControlPoints: number;
+    taggedPoints: number;
+    untaggedPoints: number;
+    averagePointsPerRound: number;
+  };
+}
+
+/**
+ * GET /api/sites/:id/control-round-suggestions
+ * Get intelligent control round suggestions for a site
+ */
+export async function fetchControlRoundSuggestions(siteId: string) {
+  const res = await api.get<{ success: boolean; data: ControlRoundSuggestionsResult }>(
+    `/sites/${siteId}/control-round-suggestions`
+  );
+  return res.data.data;
+}

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useMutation, useQueryClient, useQuery } from '@tantml:parameter name="react-query">';
+import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { Modal } from '@/components/ui/modal';
 import { Button } from '@/components/ui/button';
 import { UserSelect } from '@/components/ui/user-select';
@@ -30,7 +30,7 @@ export default function BulkAssignmentModal({ shiftIds, shifts, onClose }: BulkA
   // Bulk Assign Mutation
   const bulkAssignMutation = useMutation({
     mutationFn: () => bulkAssignUserToShifts(selectedUserId, shiftIds),
-    onSuccess: (data) => {
+    onSuccess: (data: any) => {
       queryClient.invalidateQueries({ queryKey: ['shifts'] });
       toast.success(data.message || `${data.data?.assigned || shiftIds.length} Schichten zugewiesen`);
       onClose();

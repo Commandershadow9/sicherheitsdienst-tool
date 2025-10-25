@@ -26,10 +26,11 @@ import {
   sendCalculationEmailAPI,
   type SiteCalculation
 } from '../calculationApi'
-import { Building2, Phone, Shield, Calendar, Image as ImageIcon, UserCheck, FileText, Upload, Download, Trash2, Eye, AlertTriangle, Plus, X, Pencil, CheckCircle, Clock, MapPin, QrCode, Smartphone, Calculator, DollarSign, Send, Check, Copy, Archive, Mail } from 'lucide-react'
+import { Building2, Phone, Shield, Calendar, Image as ImageIcon, UserCheck, FileText, Upload, Download, Trash2, Eye, AlertTriangle, Plus, X, Pencil, CheckCircle, Clock, MapPin, QrCode, Smartphone, Calculator, DollarSign, Send, Check, Copy, Archive, Mail, Lightbulb, Route } from 'lucide-react'
 import DocumentViewerModal from '../components/DocumentViewerModal'
 import CoverageStats from '../components/CoverageStats'
 import SmartAssignmentModal from '../components/SmartAssignmentModal'
+import ControlRoundSuggestionsModal from '../components/ControlRoundSuggestionsModal'
 
 type Site = {
   id: string
@@ -141,6 +142,7 @@ export default function SiteDetail() {
   const [createClearanceModal, setCreateClearanceModal] = useState<{ userId: string; notes: string } | null>(null)
   const [createAssignmentModal, setCreateAssignmentModal] = useState<{ userId: string; role: string } | null>(null)
   const [smartAssignmentModal, setSmartAssignmentModal] = useState<boolean>(false)
+  const [controlRoundSuggestionsModal, setControlRoundSuggestionsModal] = useState<boolean>(false)
   const [deleteAssignmentId, setDeleteAssignmentId] = useState<string | null>(null)
   const [deleteSiteConfirm, setDeleteSiteConfirm] = useState(false)
   const [uploadDocumentModal, setUploadDocumentModal] = useState<{
@@ -1411,6 +1413,14 @@ export default function SiteDetail() {
         isLoading={createAssignmentMutation.isPending}
       />
 
+      {/* Control Round Suggestions Modal */}
+      {controlRoundSuggestionsModal && id && (
+        <ControlRoundSuggestionsModal
+          siteId={id}
+          onClose={() => setControlRoundSuggestionsModal(false)}
+        />
+      )}
+
       {/* Zuweisung entfernen Bestätigung */}
       {deleteAssignmentId && (
         <Modal title="Zuweisung entfernen" open={!!deleteAssignmentId} onClose={() => setDeleteAssignmentId(null)}>
@@ -2552,13 +2562,25 @@ export default function SiteDetail() {
               <h2 className="text-lg font-semibold">Kontrollpunkte</h2>
               <span className="text-sm text-gray-500">({controlPoints.length})</span>
             </div>
-            <Button
-              className="bg-blue-600 hover:bg-blue-700 text-white"
-              onClick={() => nav(`/sites/${id}/control-points/new`)}
-            >
-              <Plus size={16} className="mr-1" />
-              Kontrollpunkt anlegen
-            </Button>
+            <div className="flex gap-2">
+              {controlPoints.length > 0 && (
+                <Button
+                  variant="outline"
+                  className="border-purple-300 text-purple-700 hover:bg-purple-50"
+                  onClick={() => setControlRoundSuggestionsModal(true)}
+                >
+                  <Lightbulb size={16} className="mr-1" />
+                  Rundgang-Vorschläge
+                </Button>
+              )}
+              <Button
+                className="bg-blue-600 hover:bg-blue-700 text-white"
+                onClick={() => nav(`/sites/${id}/control-points/new`)}
+              >
+                <Plus size={16} className="mr-1" />
+                Kontrollpunkt anlegen
+              </Button>
+            </div>
           </div>
 
           {controlPoints.length === 0 ? (
