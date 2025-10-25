@@ -995,3 +995,137 @@ export const getShiftAssignmentCandidates = async (req: Request, res: Response, 
     next(error);
   }
 };
+
+// POST /api/shifts/bulk-assign - Mitarbeiter zu mehreren Schichten zuweisen (Bulk-Operation)
+export const bulkAssignUserToShifts = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { userId, shiftIds } = req.body;
+
+    // Validation
+    if (!userId) {
+      res.status(400).json({
+        success: false,
+        message: 'Benutzer-ID ist erforderlich',
+      });
+      return;
+    }
+
+    if (!Array.isArray(shiftIds) || shiftIds.length === 0) {
+      res.status(400).json({
+        success: false,
+        message: 'Mindestens eine Schicht-ID ist erforderlich',
+      });
+      return;
+    }
+
+    // Limit to 50 shifts at once
+    if (shiftIds.length > 50) {
+      res.status(400).json({
+        success: false,
+        message: 'Maximal 50 Schichten gleichzeitig',
+      });
+      return;
+    }
+
+    // Check if user exists
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (!user) {
+      res.status(404).json({
+        success: false,
+        message: 'Benutzer nicht gefunden',
+      });
+      return;
+    }
+
+    // Fetch all shifts
+    const shifts = await prisma.shift.findMany({
+      where: { id: { in: shiftIds } },
+      include: { assignments: true },
+    });
+
+    if (shifts.length === 0) {
+      res.status(404).json({
+        success: false,
+        message: 'Keine gültigen Schichten gefunden',
+      });
+      return;
+    }
+
+    // Check for existing assignments
+    const existingAssignments = await prisma.shiftAssignment.findMany({
+      where: {
+        userId,
+        shiftId: { in: shiftIds },
+      },
+    });
+
+    const existingShiftIds = new Set(existingAssignments.map((a) => a.shiftId));
+    const shiftsToAssign = shifts.filter((s) => !existingShiftIds.has(s.id));
+
+    if (shiftsToAssign.length === 0) {
+      res.status(400).json({
+        success: false,
+        message: 'Benutzer ist bereits allen ausgewählten Schichten zugewiesen',
+      });
+      return;
+    }
+
+    // Create assignments
+    const assignmentsData = shiftsToAssign.map((shift) => ({
+      userId,
+      shiftId: shift.id,
+      status: 'ASSIGNED' as const,
+      assignedAt: new Date(),
+    }));
+
+    const result = await prisma.shiftAssignment.createMany({
+      data: assignmentsData,
+      skipDuplicates: true,
+    });
+
+    // Submit audit events
+    await Promise.all(
+      shiftsToAssign.map((shift) =>
+        submitAuditEvent(req, {
+          action: 'SHIFT.BULK_ASSIGN',
+          resourceType: 'SHIFT',
+          resourceId: shift.id,
+          outcome: 'SUCCESS',
+          data: { userId, shiftId: shift.id },
+        }),
+      ),
+    );
+
+    // Send notification emails if enabled
+    if (isEmailNotifyEnabled()) {
+      try {
+        const assignedShifts = shiftsToAssign.map((s) => s.title).join(', ');
+        await sendShiftChangedEmail(
+          user.email,
+          `${result.count} Schichten`,
+          `Sie wurden folgenden Schichten zugewiesen: ${assignedShifts}`,
+        );
+      } catch (emailError) {
+        logger.error('Fehler beim Versenden der Bulk-Zuweisungs-E-Mail:', emailError);
+      }
+    }
+
+    res.status(201).json({
+      success: true,
+      message: `${result.count} Schichten erfolgreich zugewiesen`,
+      data: {
+        assigned: result.count,
+        skipped: existingShiftIds.size,
+        total: shiftIds.length,
+        shifts: shiftsToAssign.map((s) => ({
+          id: s.id,
+          title: s.title,
+          startTime: s.startTime,
+        })),
+      },
+    });
+  } catch (error) {
+    logger.error('Error in bulkAssignUserToShifts:', error);
+    next(error);
+  }
+};

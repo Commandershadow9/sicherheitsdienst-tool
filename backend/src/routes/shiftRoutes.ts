@@ -27,6 +27,15 @@ router.post(
   asyncHandler(shiftController.createShift),
 );
 
+// POST /api/shifts/bulk-assign - Bulk-Zuweisung (1 MA zu mehreren Schichten)
+router.post(
+  '/bulk-assign',
+  authenticate,
+  authorize('ADMIN', 'MANAGER', 'DISPATCHER'),
+  assignLimiter,
+  asyncHandler(shiftController.bulkAssignUserToShifts),
+);
+
 // GET /api/shifts/:id - Einzelne Schicht
 router.get('/:id', authenticate, asyncHandler(shiftController.getShiftById));
 
@@ -101,6 +110,7 @@ router.post(
 );
 // 405
 router.all('/', authenticate, methodNotAllowed(['GET', 'POST']));
+router.all('/bulk-assign', authenticate, methodNotAllowed(['POST']));
 router.all('/:id', authenticate, methodNotAllowed(['GET', 'PUT', 'DELETE']));
 router.all('/:id/replacement-candidates/v2', authenticate, methodNotAllowed(['GET']));
 router.all('/:id/replacement-candidates-v2', authenticate, methodNotAllowed(['GET']));
