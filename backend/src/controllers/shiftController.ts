@@ -958,3 +958,40 @@ export const getReplacementCandidatesV2 = async (
     next(error);
   }
 };
+
+// GET /api/shifts/:id/assignment-candidates - Intelligente MA-Vorschläge für Schicht-Zuweisung
+export const getShiftAssignmentCandidates = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { id } = req.params;
+    const { role, limit } = req.query;
+
+    // Import assignment service
+    const { findAssignmentCandidatesForShift } = await import('../services/assignmentService');
+
+    const candidates = await findAssignmentCandidatesForShift(id, {
+      role: role as string | undefined,
+      limit: limit ? parseInt(limit as string, 10) : undefined,
+    });
+
+    // Sort by score (descending)
+    const sortedCandidates = candidates.sort((a, b) => b.score.total - a.score.total);
+
+    res.status(200).json({
+      success: true,
+      data: {
+        shiftId: id,
+        candidates: sortedCandidates,
+        stats: {
+          total: sortedCandidates.length,
+          optimal: sortedCandidates.filter((c) => c.score.recommendation === 'OPTIMAL').length,
+          good: sortedCandidates.filter((c) => c.score.recommendation === 'GOOD').length,
+          acceptable: sortedCandidates.filter((c) => c.score.recommendation === 'ACCEPTABLE').length,
+          notRecommended: sortedCandidates.filter((c) => c.score.recommendation === 'NOT_RECOMMENDED').length,
+        },
+      },
+    });
+  } catch (error) {
+    logger.error('Error in getShiftAssignmentCandidates:', error);
+    next(error);
+  }
+};

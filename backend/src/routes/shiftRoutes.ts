@@ -54,6 +54,14 @@ router.get(
   asyncHandler(shiftController.getShiftReplacementCandidates),
 );
 
+// GET /api/shifts/:id/assignment-candidates - Intelligente MA-Vorschläge für Schicht-Zuweisung
+router.get(
+  '/:id/assignment-candidates',
+  authenticate,
+  authorize('ADMIN', 'MANAGER', 'DISPATCHER'),
+  asyncHandler(shiftController.getShiftAssignmentCandidates),
+);
+
 // PUT /api/shifts/:id - Schicht aktualisieren
 router.put(
   '/:id',
@@ -97,6 +105,7 @@ router.all('/:id', authenticate, methodNotAllowed(['GET', 'PUT', 'DELETE']));
 router.all('/:id/replacement-candidates/v2', authenticate, methodNotAllowed(['GET']));
 router.all('/:id/replacement-candidates-v2', authenticate, methodNotAllowed(['GET']));
 router.all('/:id/replacement-candidates', authenticate, methodNotAllowed(['GET']));
+router.all('/:id/assignment-candidates', authenticate, methodNotAllowed(['GET']));
 router.all('/:id/assign', authenticate, methodNotAllowed(['POST']));
 router.all('/:id/clock-in', authenticate, methodNotAllowed(['POST']));
 router.all('/:id/clock-out', authenticate, methodNotAllowed(['POST']));
