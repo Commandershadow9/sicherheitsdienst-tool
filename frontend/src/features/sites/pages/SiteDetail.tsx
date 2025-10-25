@@ -29,6 +29,7 @@ import {
 import { Building2, Phone, Shield, Calendar, Image as ImageIcon, UserCheck, FileText, Upload, Download, Trash2, Eye, AlertTriangle, Plus, X, Pencil, CheckCircle, Clock, MapPin, QrCode, Smartphone, Calculator, DollarSign, Send, Check, Copy, Archive, Mail } from 'lucide-react'
 import DocumentViewerModal from '../components/DocumentViewerModal'
 import CoverageStats from '../components/CoverageStats'
+import SmartAssignmentModal from '../components/SmartAssignmentModal'
 
 type Site = {
   id: string
@@ -132,6 +133,7 @@ export default function SiteDetail() {
   const [deleteImageId, setDeleteImageId] = useState<string | null>(null)
   const [createClearanceModal, setCreateClearanceModal] = useState<{ userId: string; notes: string } | null>(null)
   const [createAssignmentModal, setCreateAssignmentModal] = useState<{ userId: string; role: string } | null>(null)
+  const [smartAssignmentModal, setSmartAssignmentModal] = useState<boolean>(false)
   const [deleteAssignmentId, setDeleteAssignmentId] = useState<string | null>(null)
   const [deleteSiteConfirm, setDeleteSiteConfirm] = useState(false)
   const [uploadDocumentModal, setUploadDocumentModal] = useState<{
@@ -702,7 +704,7 @@ export default function SiteDetail() {
                   <UserCheck size={20} className="text-purple-600" />
                   Zuweisungen ({site.assignments?.length || 0})
                 </h3>
-                <Button size="sm" onClick={() => setCreateAssignmentModal({ userId: '', role: 'MITARBEITER' })}>
+                <Button size="sm" onClick={() => setSmartAssignmentModal(true)}>
                   Neue Zuweisung
                 </Button>
               </div>
@@ -1257,6 +1259,31 @@ export default function SiteDetail() {
           </div>
         </Modal>
       )}
+
+      {/* Smart Assignment Modal */}
+      <SmartAssignmentModal
+        siteId={id!}
+        siteName={site.name}
+        open={smartAssignmentModal}
+        onClose={() => setSmartAssignmentModal(false)}
+        onAssign={(userId, role) => {
+          // Check if assignment already exists
+          const exists = site.assignments?.some((a) => a.user.id === userId);
+          if (exists) {
+            toast.error('Dieser Mitarbeiter ist bereits diesem Objekt zugewiesen');
+            return;
+          }
+          createAssignmentMutation.mutate(
+            { userId, role },
+            {
+              onSuccess: () => {
+                setSmartAssignmentModal(false);
+              },
+            }
+          );
+        }}
+        isLoading={createAssignmentMutation.isPending}
+      />
 
       {/* Zuweisung entfernen Bestätigung */}
       {deleteAssignmentId && (
