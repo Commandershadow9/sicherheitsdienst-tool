@@ -664,3 +664,84 @@ export const getAssignmentCandidates = async (req: Request, res: Response, next:
     next(error);
   }
 };
+
+// POST /api/sites/:id/generate-shifts - Schichten generieren
+export const generateShiftsForSite = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { id } = req.params;
+    const { startDate, daysAhead = 30 } = req.body;
+
+    // Site laden
+    const site = await prisma.site.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        name: true,
+        requiredStaff: true,
+        requiredQualifications: true,
+        securityConcept: true,
+      },
+    });
+
+    if (!site) {
+      res.status(404).json({ success: false, message: 'Site nicht gefunden' });
+      return;
+    }
+
+    // Sicherheitskonzept prüfen
+    const securityConcept = site.securityConcept as any;
+    if (!securityConcept || !securityConcept.shiftModel) {
+      res.status(400).json({
+        success: false,
+        message: 'Kein Sicherheitskonzept mit Schichtmodell vorhanden',
+      });
+      return;
+    }
+
+    // Dynamischer Import von shiftGenerator
+    const { generateShifts, getShiftGenerationStats } = await import('../utils/shiftGenerator');
+
+    // Start-Datum validieren und parsen
+    const start = startDate ? new Date(startDate) : new Date();
+    if (isNaN(start.getTime())) {
+      res.status(400).json({ success: false, message: 'Ungültiges Start-Datum' });
+      return;
+    }
+
+    // Schichten generieren
+    const shiftsData = generateShifts({
+      siteId: site.id,
+      siteName: site.name,
+      shiftModel: securityConcept.shiftModel,
+      requiredStaff: site.requiredStaff || 1,
+      requiredQualifications: site.requiredQualifications || [],
+      startDate: start,
+      daysAhead: Math.min(Math.max(daysAhead, 1), 90), // Max 90 Tage
+    });
+
+    // In Datenbank speichern
+    const createdShifts = await prisma.shift.createMany({
+      data: shiftsData,
+      skipDuplicates: true, // Überspringt bereits existierende Schichten
+    });
+
+    // Statistiken
+    const stats = getShiftGenerationStats(shiftsData);
+
+    res.status(201).json({
+      success: true,
+      message: `${createdShifts.count} Schichten erfolgreich generiert`,
+      data: {
+        created: createdShifts.count,
+        stats,
+        template: securityConcept.shiftModel,
+      },
+    });
+  } catch (error: any) {
+    if (error.message?.includes('Unbekanntes Schichtmodell')) {
+      res.status(400).json({ success: false, message: error.message });
+      return;
+    }
+    next(error);
+  }
+};

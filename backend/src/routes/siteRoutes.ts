@@ -123,6 +123,17 @@ router.get(
   asyncHandler(siteController.getAssignmentCandidates),
 );
 
+// ===== Schicht-Generierung =====
+
+// POST /api/sites/:id/generate-shifts - Schichten generieren
+router.post(
+  '/:id/generate-shifts',
+  authenticate,
+  authorize('ADMIN', 'MANAGER', 'DISPATCHER'),
+  writeLimiter,
+  asyncHandler(siteController.generateShiftsForSite),
+);
+
 // ===== Dokumente-Management =====
 
 // GET /api/sites/:siteId/documents
@@ -223,6 +234,7 @@ router.all('/:siteId/assignments/:assignmentId', authenticate, methodNotAllowed(
 router.all('/:id/coverage-stats', authenticate, methodNotAllowed(['GET']));
 router.all('/:id/check-qualification', authenticate, methodNotAllowed(['POST']));
 router.all('/:id/assignment-candidates', authenticate, methodNotAllowed(['GET']));
+router.all('/:id/generate-shifts', authenticate, methodNotAllowed(['POST']));
 router.all('/:siteId/documents', authenticate, methodNotAllowed(['GET', 'POST']));
 router.all('/:siteId/documents/:documentId', authenticate, methodNotAllowed(['GET', 'PUT', 'DELETE']));
 router.all('/:siteId/documents/:id/versions', authenticate, methodNotAllowed(['GET']));
