@@ -410,15 +410,55 @@ export const getSiteCoverageStats = async (req: Request, res: Response, next: Ne
       return;
     }
 
-    const activeClearances = site.clearances.length;
+    // Berechnung basierend auf assignments (nicht clearances!)
     const requiredStaff = site.requiredStaff || 1;
-    const coveragePercent = Math.min(100, Math.round((activeClearances / requiredStaff) * 100));
+    const assignedStaff = site.assignments.length;
+    const coveragePercentage = Math.min(100, Math.round((assignedStaff / requiredStaff) * 100));
 
-    const assignments = {
-      objektleiter: site.assignments.filter((a) => a.role === 'OBJEKTLEITER').length,
-      schichtleiter: site.assignments.filter((a) => a.role === 'SCHICHTLEITER').length,
-      mitarbeiter: site.assignments.filter((a) => a.role === 'MITARBEITER').length,
-    };
+    // Status-Logik: OK (>80%), WARNING (50-80%), CRITICAL (<50%)
+    let status: 'OK' | 'WARNING' | 'CRITICAL';
+    if (coveragePercentage >= 80) {
+      status = 'OK';
+    } else if (coveragePercentage >= 50) {
+      status = 'WARNING';
+    } else {
+      status = 'CRITICAL';
+    }
+
+    // Breakdown nach Rollen mit required vs assigned
+    // Empfohlene Verteilung: 1 Objektleiter, ~30% Schichtleiter, Rest Mitarbeiter
+    const requiredObjektleiter = 1;
+    const requiredSchichtleiter = Math.max(1, Math.ceil(requiredStaff * 0.3));
+    const requiredMitarbeiter = Math.max(0, requiredStaff - requiredObjektleiter - requiredSchichtleiter);
+
+    const assignedObjektleiter = site.assignments.filter((a) => a.role === 'OBJEKTLEITER').length;
+    const assignedSchichtleiter = site.assignments.filter((a) => a.role === 'SCHICHTLEITER').length;
+    const assignedMitarbeiter = site.assignments.filter((a) => a.role === 'MITARBEITER').length;
+
+    const breakdown = [
+      {
+        role: 'OBJEKTLEITER',
+        required: requiredObjektleiter,
+        assigned: assignedObjektleiter,
+        percentage: Math.min(100, Math.round((assignedObjektleiter / requiredObjektleiter) * 100)),
+      },
+      {
+        role: 'SCHICHTLEITER',
+        required: requiredSchichtleiter,
+        assigned: assignedSchichtleiter,
+        percentage: requiredSchichtleiter > 0
+          ? Math.min(100, Math.round((assignedSchichtleiter / requiredSchichtleiter) * 100))
+          : 0,
+      },
+      {
+        role: 'MITARBEITER',
+        required: requiredMitarbeiter,
+        assigned: assignedMitarbeiter,
+        percentage: requiredMitarbeiter > 0
+          ? Math.min(100, Math.round((assignedMitarbeiter / requiredMitarbeiter) * 100))
+          : 0,
+      },
+    ];
 
     res.json({
       success: true,
@@ -426,9 +466,198 @@ export const getSiteCoverageStats = async (req: Request, res: Response, next: Ne
         siteId: id,
         siteName: site.name,
         requiredStaff,
-        activeClearances,
-        coveragePercent,
-        assignments,
+        assignedStaff,
+        coveragePercentage,
+        status,
+        breakdown,
+        // Legacy-Felder für Abwärtskompatibilität
+        activeClearances: site.clearances.length,
+        coveragePercent: coveragePercentage, // Deprecated: Nutze coveragePercentage
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// POST /api/sites/:id/check-qualification - Qualifikations-Abgleich für User
+export const checkUserQualification = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { id } = req.params;
+    const { userId } = req.body;
+
+    if (!userId) {
+      res.status(400).json({ success: false, message: 'userId ist erforderlich' });
+      return;
+    }
+
+    // Site mit erforderlichen Qualifikationen laden
+    const site = await prisma.site.findUnique({
+      where: { id },
+      select: { id: true, name: true, requiredQualifications: true },
+    });
+
+    if (!site) {
+      res.status(404).json({ success: false, message: 'Site nicht gefunden' });
+      return;
+    }
+
+    // User mit Qualifikationen laden
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        email: true,
+        qualifications: true,
+      },
+    });
+
+    if (!user) {
+      res.status(404).json({ success: false, message: 'Benutzer nicht gefunden' });
+      return;
+    }
+
+    const requiredQualifications = site.requiredQualifications as string[] || [];
+    const userQualifications = user.qualifications || [];
+
+    // Abgleich: Welche Qualifikationen hat der User, welche fehlen?
+    const hasQualifications = requiredQualifications.filter((req) => userQualifications.includes(req));
+    const missingQualifications = requiredQualifications.filter((req) => !userQualifications.includes(req));
+
+    // Status bestimmen
+    let status: 'FULL' | 'PARTIAL' | 'NONE';
+    if (requiredQualifications.length === 0) {
+      // Keine Qualifikationen erforderlich
+      status = 'FULL';
+    } else if (missingQualifications.length === 0) {
+      // Alle Qualifikationen vorhanden
+      status = 'FULL';
+    } else if (hasQualifications.length > 0) {
+      // Teilweise Qualifikationen vorhanden
+      status = 'PARTIAL';
+    } else {
+      // Keine der erforderlichen Qualifikationen vorhanden
+      status = 'NONE';
+    }
+
+    res.json({
+      success: true,
+      data: {
+        siteId: site.id,
+        siteName: site.name,
+        userId: user.id,
+        userName: `${user.firstName} ${user.lastName}`,
+        required: requiredQualifications,
+        has: hasQualifications,
+        missing: missingQualifications,
+        status,
+        allowOverride: status !== 'FULL', // Override möglich wenn nicht alle Qualifikationen vorhanden
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// GET /api/sites/:id/assignment-candidates - Intelligente MA-Vorschläge für Zuweisung
+export const getAssignmentCandidates = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { id } = req.params;
+    const role = req.query.role as string | undefined;
+
+    // Site laden
+    const site = await prisma.site.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        name: true,
+        requiredQualifications: true,
+        assignments: { select: { userId: true } },
+        clearances: { where: { status: { in: ['ACTIVE', 'TRAINING'] } }, select: { userId: true, status: true } },
+      },
+    });
+
+    if (!site) {
+      res.status(404).json({ success: false, message: 'Site nicht gefunden' });
+      return;
+    }
+
+    const requiredQualifications = site.requiredQualifications as string[] || [];
+    const assignedUserIds = site.assignments.map((a) => a.userId);
+
+    // Alle aktiven Mitarbeiter laden (außer bereits zugewiesene)
+    const candidates = await prisma.user.findMany({
+      where: {
+        isActive: true,
+        id: { notIn: assignedUserIds },
+        ...(role && { role: role as any }),
+      },
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        email: true,
+        role: true,
+        qualifications: true,
+      },
+    });
+
+    // Scoring für jeden Kandidaten
+    const scoredCandidates = candidates.map((user) => {
+      const userQualifications = user.qualifications || [];
+
+      const hasQualifications = requiredQualifications.filter((req) => userQualifications.includes(req));
+      const missingQualifications = requiredQualifications.filter((req) => !userQualifications.includes(req));
+
+      // Qualifikations-Score (0-50%)
+      const qualificationScore = requiredQualifications.length > 0
+        ? (hasQualifications.length / requiredQualifications.length) * 50
+        : 50;
+
+      // Clearance-Score (0-30%)
+      const clearance = site.clearances.find((c) => c.userId === user.id);
+      let clearanceScore = 0;
+      if (clearance) {
+        clearanceScore = clearance.status === 'ACTIVE' ? 30 : 15; // ACTIVE = 30%, TRAINING = 15%
+      }
+
+      // Verfügbarkeits-Score (0-20%) - Placeholder: Immer 20%
+      const availabilityScore = 20;
+
+      // Gesamt-Score (0-100%)
+      const totalScore = Math.round(qualificationScore + clearanceScore + availabilityScore);
+
+      return {
+        userId: user.id,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        email: user.email,
+        role: user.role,
+        qualifications: {
+          required: requiredQualifications,
+          has: hasQualifications,
+          missing: missingQualifications,
+          status: missingQualifications.length === 0 ? 'FULL' : hasQualifications.length > 0 ? 'PARTIAL' : 'NONE',
+        },
+        clearance: clearance
+          ? { status: clearance.status, score: clearanceScore }
+          : { status: 'NONE', score: 0 },
+        score: totalScore,
+      };
+    });
+
+    // Sortieren nach Score (höchste zuerst)
+    scoredCandidates.sort((a, b) => b.score - a.score);
+
+    res.json({
+      success: true,
+      data: {
+        siteId: site.id,
+        siteName: site.name,
+        requiredQualifications,
+        candidates: scoredCandidates,
       },
     });
   } catch (error) {

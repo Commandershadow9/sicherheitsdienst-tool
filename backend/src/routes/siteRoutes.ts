@@ -105,6 +105,24 @@ router.delete(
 // GET /api/sites/:id/coverage-stats
 router.get('/:id/coverage-stats', authenticate, asyncHandler(siteController.getSiteCoverageStats));
 
+// ===== Qualifikations-Check & Intelligente Zuweisung =====
+
+// POST /api/sites/:id/check-qualification - Qualifikations-Abgleich für User
+router.post(
+  '/:id/check-qualification',
+  authenticate,
+  authorize('ADMIN', 'MANAGER', 'DISPATCHER'),
+  asyncHandler(siteController.checkUserQualification),
+);
+
+// GET /api/sites/:id/assignment-candidates - Intelligente MA-Vorschläge
+router.get(
+  '/:id/assignment-candidates',
+  authenticate,
+  authorize('ADMIN', 'MANAGER', 'DISPATCHER'),
+  asyncHandler(siteController.getAssignmentCandidates),
+);
+
 // ===== Dokumente-Management =====
 
 // GET /api/sites/:siteId/documents
@@ -203,6 +221,8 @@ router.all('/:siteId/images/:imageId', authenticate, methodNotAllowed(['DELETE']
 router.all('/:id/assignments', authenticate, methodNotAllowed(['GET', 'POST']));
 router.all('/:siteId/assignments/:assignmentId', authenticate, methodNotAllowed(['DELETE']));
 router.all('/:id/coverage-stats', authenticate, methodNotAllowed(['GET']));
+router.all('/:id/check-qualification', authenticate, methodNotAllowed(['POST']));
+router.all('/:id/assignment-candidates', authenticate, methodNotAllowed(['GET']));
 router.all('/:siteId/documents', authenticate, methodNotAllowed(['GET', 'POST']));
 router.all('/:siteId/documents/:documentId', authenticate, methodNotAllowed(['GET', 'PUT', 'DELETE']));
 router.all('/:siteId/documents/:id/versions', authenticate, methodNotAllowed(['GET']));
