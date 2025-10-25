@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { FormField } from '@/components/ui/form';
 import { Select } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
+import { HelpTooltip } from '@/components/ui/tooltip';
 import { fetchAssignmentCandidates, type AssignmentCandidate } from '../api';
 import { AlertTriangle, CheckCircle2, User, XCircle, Search, Shield } from 'lucide-react';
 import { toast } from 'sonner';
@@ -76,65 +77,114 @@ export default function SmartAssignmentModal({
     onAssign(selectedCandidate.userId, selectedRole);
   };
 
-  const getQualificationStatusBadge = (status: 'FULL' | 'PARTIAL' | 'NONE') => {
+  const getQualificationStatusBadge = (candidate: AssignmentCandidate) => {
+    const status = candidate.qualifications.status;
+    const missing = candidate.qualifications.missing || [];
+
     const statusConfig = {
       FULL: {
         icon: CheckCircle2,
         bg: 'bg-green-100',
         text: 'text-green-800',
         label: 'Alle Qualifikationen',
+        tooltip: 'Dieser Mitarbeiter erfüllt alle erforderlichen Qualifikationen für dieses Objekt.',
       },
       PARTIAL: {
         icon: AlertTriangle,
         bg: 'bg-yellow-100',
         text: 'text-yellow-800',
         label: 'Teilweise qualifiziert',
+        tooltip: missing.length > 0 ? `Fehlende Qualifikationen: ${missing.join(', ')}` : 'Einige Qualifikationen fehlen',
       },
-      NONE: { icon: XCircle, bg: 'bg-red-100', text: 'text-red-800', label: 'Keine Qualifikationen' },
+      NONE: {
+        icon: XCircle,
+        bg: 'bg-red-100',
+        text: 'text-red-800',
+        label: 'Keine Qualifikationen',
+        tooltip: 'Dieser Mitarbeiter erfüllt keine der erforderlichen Qualifikationen.',
+      },
     };
 
     const config = statusConfig[status];
     const Icon = config.icon;
 
     return (
-      <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${config.bg} ${config.text}`}>
-        <Icon size={12} />
-        {config.label}
-      </span>
+      <HelpTooltip content={config.tooltip}>
+        <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${config.bg} ${config.text} cursor-help`}>
+          <Icon size={12} />
+          {config.label}
+        </span>
+      </HelpTooltip>
     );
   };
 
   const getClearanceStatusBadge = (status: string) => {
-    const statusConfig: Record<string, { bg: string; text: string; label: string }> = {
-      ACTIVE: { bg: 'bg-emerald-100', text: 'text-emerald-800', label: 'Eingearbeitet' },
-      TRAINING: { bg: 'bg-blue-100', text: 'text-blue-800', label: 'In Einarbeitung' },
-      NONE: { bg: 'bg-gray-100', text: 'text-gray-600', label: 'Keine Einarbeitung' },
+    const statusConfig: Record<string, { bg: string; text: string; label: string; tooltip: string }> = {
+      ACTIVE: {
+        bg: 'bg-emerald-100',
+        text: 'text-emerald-800',
+        label: 'Eingearbeitet',
+        tooltip: 'Dieser Mitarbeiter wurde erfolgreich für dieses Objekt eingearbeitet und kann sofort eingesetzt werden.',
+      },
+      TRAINING: {
+        bg: 'bg-blue-100',
+        text: 'text-blue-800',
+        label: 'In Einarbeitung',
+        tooltip: 'Dieser Mitarbeiter befindet sich aktuell in der Einarbeitungsphase für dieses Objekt.',
+      },
+      NONE: {
+        bg: 'bg-gray-100',
+        text: 'text-gray-600',
+        label: 'Keine Einarbeitung',
+        tooltip: 'Dieser Mitarbeiter hat noch keine Einarbeitung für dieses Objekt erhalten. Eine Einarbeitung sollte vor dem Einsatz durchgeführt werden.',
+      },
     };
 
     const config = statusConfig[status] || statusConfig.NONE;
 
     return (
-      <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${config.bg} ${config.text}`}>
-        <Shield size={12} />
-        {config.label}
-      </span>
+      <HelpTooltip content={config.tooltip}>
+        <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${config.bg} ${config.text} cursor-help`}>
+          <Shield size={12} />
+          {config.label}
+        </span>
+      </HelpTooltip>
     );
   };
 
   const getScoreBadge = (score: number) => {
     const color =
       score >= 80 ? 'bg-green-500' : score >= 60 ? 'bg-yellow-500' : score >= 40 ? 'bg-orange-500' : 'bg-red-500';
+
+    const scoreExplanation = (
+      <div className="space-y-2">
+        <p className="font-semibold">Gesamt-Score: {score}</p>
+        <p className="text-xs pt-2">
+          Der Score bewertet die Eignung des Mitarbeiters basierend auf:<br/>
+          • Workload (Auslastung)<br/>
+          • Compliance (Arbeitszeitgesetz)<br/>
+          • Fairness (Gleichverteilung)<br/>
+          • Präferenz (Wunsch-Objekte)
+        </p>
+        <p className="text-xs pt-2 border-t border-gray-600">
+          Höhere Scores bedeuten bessere Eignung für diese Zuweisung.
+        </p>
+      </div>
+    );
+
     return (
       <div className="flex items-center gap-2">
-        <div className={`w-12 h-12 rounded-full ${color} flex items-center justify-center text-white font-bold`}>
-          {score}
-        </div>
+        <HelpTooltip content={scoreExplanation}>
+          <div className={`w-12 h-12 rounded-full ${color} flex items-center justify-center text-white font-bold cursor-help`}>
+            {score}
+          </div>
+        </HelpTooltip>
       </div>
     );
   };
 
   return (
-    <Modal title={`Mitarbeiter zuweisen - ${siteName}`} open={open} onClose={onClose} size="large">
+    <Modal title={`Mitarbeiter zuweisen - ${siteName}`} open={open} onClose={onClose} size="xl">
       <div className="space-y-4">
         {/* Role Selection */}
         <FormField label="Rolle *">
@@ -226,7 +276,7 @@ export default function SmartAssignmentModal({
 
                     {/* Qualification Status */}
                     <div className="flex flex-wrap gap-2 mb-2">
-                      {getQualificationStatusBadge(candidate.qualifications.status)}
+                      {getQualificationStatusBadge(candidate)}
                       {getClearanceStatusBadge(candidate.clearance.status)}
                     </div>
 

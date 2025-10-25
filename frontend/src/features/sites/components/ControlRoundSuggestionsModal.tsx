@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Modal } from '@/components/ui/modal';
 import { Button } from '@/components/ui/button';
+import { HelpTooltip } from '@/components/ui/tooltip';
 import {
   fetchControlRoundSuggestions,
   ControlRoundSuggestionsResult,
@@ -47,6 +48,12 @@ export default function ControlRoundSuggestionsModal({
     LOW: 'Niedrig',
   };
 
+  const securityLevelTooltips = {
+    HIGH: 'Hohe Sicherheitsstufe: 24/7-Betrieb mit 3-Schicht-System. Empfohlen werden häufige Rundgänge (alle 2-4 Stunden).',
+    MEDIUM: 'Mittlere Sicherheitsstufe: 2-Schicht-System. Empfohlen werden regelmäßige Rundgänge (alle 4 Stunden).',
+    LOW: 'Niedrige Sicherheitsstufe: Einzelschicht-Betrieb. Tägliche Rundgänge sind ausreichend.',
+  };
+
   return (
     <Modal open={true} onClose={onClose} title="Kontrollgang-Vorschläge" size="xl">
       <div className="space-y-6">
@@ -68,6 +75,7 @@ export default function ControlRoundSuggestionsModal({
                 <div className="flex items-center gap-2 mb-1">
                   <Shield size={16} className="text-gray-600" />
                   <span className="text-sm font-medium text-gray-700">Sicherheitsstufe</span>
+                  <HelpTooltip content={securityLevelTooltips[data.securityLevel]} />
                 </div>
                 <div className={cn(
                   'inline-block px-3 py-1 rounded-full text-sm font-semibold border',
