@@ -7,12 +7,13 @@ services:
       POSTGRES_DB: sicherheitsdienst_db
     volumes:
       - db_data:/var/lib/postgresql/data
+    ports:
+      - '5432:5432'
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U admin -d sicherheitsdienst_db"]
       interval: 5s
       timeout: 5s
       retries: 20
-    # Port 5432 absichtlich nicht veröffentlicht (nur intern nutzbar)
 
   api:
     image: node:20

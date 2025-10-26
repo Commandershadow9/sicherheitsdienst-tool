@@ -2,6 +2,45 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.21.1] - 2025-10-26 – Deployment & Infrastructure Fixes
+
+### Fixed - Database Connectivity
+- **DB Port Exposure**: PostgreSQL Port 5432 nun auf Host exponiert in docker-compose.dev.yml
+  - Ermöglicht Backend-Zugriff auf DB wenn Backend außerhalb Docker läuft
+  - Vorher: DB nur im Docker-Netzwerk erreichbar (172.18.0.x)
+  - Nachher: DB auf localhost:5432 verfügbar
+
+### Fixed - Firewall & Port Configuration
+- **Backend Port Migration**: Backend verschoben von Port 3000 → 3001
+  - Grund: UFW Firewall erlaubt bereits Port 3001, aber nicht 3000
+  - Frontend .env aktualisiert: VITE_API_BASE_URL=http://37.114.53.56:3001
+  - Login funktioniert nun von extern (vorher: ERR_CONNECTION_TIMED_OUT)
+
+### Fixed - Authentication
+- **Admin Password Reset**: admin@sicherheitsdienst.de Passwort zurückgesetzt
+  - Neues Passwort: password123 (bcrypt Hash neu generiert)
+  - Verhindert Login-Probleme nach DB-Resets
+
+### Added - Deployment Scripts
+- **Backend Startup Script**: scripts/start-backend.sh (NEU)
+  - Automatische DB-Verbindungsprüfung
+  - Automatisches Port-Handling (3001 mit Firewall-Check)
+  - Fehlerbehandlung für fehlende DATABASE_URL
+  - Verwendung: `npm run start:prod`
+
+### Changed - Configuration
+- **docker-compose.dev.yml**: DB ports Mapping hinzugefügt
+- **frontend/.env**: API URL auf Port 3001 aktualisiert
+- **Backend .env**: Explizite PORT=3001 Konfiguration
+
+### Documentation
+- **DEPLOYMENT_CHECKLIST.md**: Neue Checkliste für Production-Deployments (NEU)
+  - Schritt-für-Schritt Anleitung
+  - Troubleshooting-Tipps für DB/Login-Probleme
+  - Firewall-Konfiguration
+
+---
+
 ## [1.13.8] - 2025-10-20 – Email & Push Notifications (Phase 3.5c Complete)
 
 ### Added - Email Service
