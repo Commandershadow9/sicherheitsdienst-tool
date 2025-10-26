@@ -79,22 +79,28 @@ jobs:
             before="$(echo "$GH_EVENT_JSON" | jq -r '.before // ""')"
             compare_url="${repo_url}/compare/${before}...${sha}"
 
+            TOTAL_COMMITS="$(echo "$GH_EVENT_JSON" | jq -r '(.commits // []) | length')"
             COMMITS_RAW="$(echo "$GH_EVENT_JSON" | jq -r '
-              (.commits // [])[0:10][]?
-              | "- **" + (.id[0:7]) + "**: " + (((.message // "") | gsub("\n"; " "))[0:200]) + (if ((.message // "") | length) > 200 then "..." else "" end) + "  — _" + ((.author.username // .author.name) // "unknown") + "_"
+              (.commits // [])[0:5][]?
+              | "- **" + (.id[0:7]) + "**: " + (((.message // "") | gsub("\n"; " "))[0:80]) + (if ((.message // "") | length) > 80 then "..." else "" end) + "  — _" + ((.author.username // .author.name) // "unknown") + "_"
             ')"
             [ -z "$COMMITS_RAW" ] && COMMITS_RAW="- (keine Commits übermittelt)"
 
-            # Discord Field-Limit: 1024 Zeichen pro Field
-            # Wenn Commit-Liste zu lang (>900 Zeichen), aufteilen
-            if [ "${#COMMITS_RAW}" -gt 900 ]; then
-              # Erste 900 Zeichen nehmen und bei letztem Zeilenumbruch abschneiden
-              COMMITS_PART1="$(echo "$COMMITS_RAW" | head -c 900 | sed 's/\(.*\)-.*/\1/')"
-              COMMITS_PART2="$(echo "$COMMITS_RAW" | tail -c +901)"
+            # Hinweis wenn mehr als 5 Commits
+            if [ "$TOTAL_COMMITS" -gt 5 ]; then
+              COMMITS_RAW="${COMMITS_RAW}\n\n*...und $((TOTAL_COMMITS - 5)) weitere Commits. [Alle anzeigen](${compare_url})*"
+            fi
+
+            # Discord Field-Limit: 1024 Zeichen pro Field (sicher bei 600 splitten)
+            # Wenn Commit-Liste zu lang (>600 Zeichen), aufteilen
+            if [ "${#COMMITS_RAW}" -gt 600 ]; then
+              # Erste 600 Zeichen nehmen und bei letztem Zeilenumbruch abschneiden
+              COMMITS_PART1="$(echo "$COMMITS_RAW" | head -c 600 | sed 's/\(.*\)-.*/\1/')"
+              COMMITS_PART2="$(echo "$COMMITS_RAW" | tail -c +601)"
 
               # Falls Teil 2 auch zu lang, nochmal kürzen
-              if [ "${#COMMITS_PART2}" -gt 900 ]; then
-                COMMITS_PART2="${COMMITS_PART2:0:900}...\n\n*Weitere Details: ${compare_url}*"
+              if [ "${#COMMITS_PART2}" -gt 600 ]; then
+                COMMITS_PART2="${COMMITS_PART2:0:600}...\n\n*Weitere Details: ${compare_url}*"
               fi
 
               # Zwei separate Embeds erstellen
@@ -203,16 +209,16 @@ jobs:
             [ -z "$TEXT" ] && TEXT="(Keine Release-Notes/Changelog gefunden.)"
             CLEAN_SECTION="$(printf '%s' "$TEXT")"
 
-            # Discord Field-Limit: 1024 Zeichen pro Field
-            # Wenn Release-Notes zu lang (>900 Zeichen), aufteilen
-            if [ "${#CLEAN_SECTION}" -gt 900 ]; then
-              # Erste 900 Zeichen nehmen und bei letztem Zeilenumbruch abschneiden
-              NOTES_PART1="$(echo "$CLEAN_SECTION" | head -c 900 | sed 's/\(.*\)\n.*/\1/')"
-              NOTES_PART2="$(echo "$CLEAN_SECTION" | tail -c +901)"
+            # Discord Field-Limit: 1024 Zeichen pro Field (sicher bei 600 splitten)
+            # Wenn Release-Notes zu lang (>600 Zeichen), aufteilen
+            if [ "${#CLEAN_SECTION}" -gt 600 ]; then
+              # Erste 600 Zeichen nehmen und bei letztem Zeilenumbruch abschneiden
+              NOTES_PART1="$(echo "$CLEAN_SECTION" | head -c 600 | sed 's/\(.*\)\n.*/\1/')"
+              NOTES_PART2="$(echo "$CLEAN_SECTION" | tail -c +601)"
 
               # Falls Teil 2 auch zu lang, nochmal kürzen
-              if [ "${#NOTES_PART2}" -gt 900 ]; then
-                NOTES_PART2="${NOTES_PART2:0:900}...\n\n*Vollständige Release Notes: ${rurl}*"
+              if [ "${#NOTES_PART2}" -gt 600 ]; then
+                NOTES_PART2="${NOTES_PART2:0:600}...\n\n*Vollständige Release Notes: ${rurl}*"
               fi
 
               # Zwei separate Embeds erstellen
