@@ -236,13 +236,18 @@ export default function SiteDetail() {
 
   const completeTrainingMutation = useMutation({
     mutationFn: (data: { id: string; hours: number }) => completeClearanceTraining(data.id, { trainingHours: data.hours }),
-    onSuccess: () => {
+    onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['site', id] })
-      toast.success('Training erfolgreich abgeschlossen')
+      if (trainingModal && site) {
+        const userName = `${trainingModal.clearance.user.firstName} ${trainingModal.clearance.user.lastName}`
+        toastSuccess.clearanceCompleted(userName, site.name)
+      } else {
+        toast.success('Training erfolgreich abgeschlossen')
+      }
       setTrainingModal(null)
     },
     onError: (error: any) => {
-      toast.error(error?.response?.data?.message || 'Fehler beim Abschließen des Trainings')
+      toastError.generic('Fehler beim Abschließen des Trainings', error?.response?.data?.message)
     },
   })
 
@@ -250,11 +255,16 @@ export default function SiteDetail() {
     mutationFn: (data: { id: string; notes: string }) => revokeClearance(data.id, data.notes),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['site', id] })
-      toast.success('Clearance erfolgreich widerrufen')
+      if (revokeModal && site) {
+        const userName = `${revokeModal.clearance.user.firstName} ${revokeModal.clearance.user.lastName}`
+        toastSuccess.clearanceRevoked(userName, site.name)
+      } else {
+        toast.success('Clearance erfolgreich widerrufen')
+      }
       setRevokeModal(null)
     },
     onError: (error: any) => {
-      toast.error(error?.response?.data?.message || 'Fehler beim Widerrufen der Clearance')
+      toastError.generic('Fehler beim Widerrufen der Clearance', error?.response?.data?.message)
     },
   })
 
@@ -268,13 +278,13 @@ export default function SiteDetail() {
       })
       return res.data
     },
-    onSuccess: () => {
+    onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['site', id] })
-      toast.success('Bild erfolgreich hochgeladen')
+      toastSuccess.imageUploaded(variables.category)
       setUploadModal(null)
     },
     onError: (error: any) => {
-      toast.error(error?.response?.data?.message || 'Fehler beim Hochladen')
+      toastError.uploadFailed('Bild', error?.response?.data?.message)
     },
   })
 
@@ -284,11 +294,11 @@ export default function SiteDetail() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['site', id] })
-      toast.success('Bild erfolgreich gelöscht')
+      toastSuccess.imageDeleted()
       setDeleteImageId(null)
     },
     onError: (error: any) => {
-      toast.error(error?.response?.data?.message || 'Fehler beim Löschen')
+      toastError.generic('Fehler beim Löschen', error?.response?.data?.message)
     },
   })
 
@@ -304,13 +314,13 @@ export default function SiteDetail() {
       })
       return res.data
     },
-    onSuccess: () => {
+    onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['site', id] })
-      toast.success('Dokument erfolgreich hochgeladen')
+      toastSuccess.documentUploaded(variables.title, variables.category)
       setUploadDocumentModal(null)
     },
     onError: (error: any) => {
-      toast.error(error?.response?.data?.message || 'Fehler beim Hochladen')
+      toastError.uploadFailed('Dokument', error?.response?.data?.message)
     },
   })
 
@@ -320,11 +330,11 @@ export default function SiteDetail() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['site', id] })
-      toast.success('Dokument erfolgreich gelöscht')
+      toastSuccess.generic('Dokument gelöscht', 'Das Dokument wurde erfolgreich entfernt')
       setDeleteDocumentId(null)
     },
     onError: (error: any) => {
-      toast.error(error?.response?.data?.message || 'Fehler beim Löschen')
+      toastError.generic('Fehler beim Löschen', error?.response?.data?.message)
     },
   })
 
