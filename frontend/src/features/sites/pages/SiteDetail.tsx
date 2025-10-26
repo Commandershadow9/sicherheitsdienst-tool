@@ -1155,9 +1155,10 @@ export default function SiteDetail() {
                 onClick={() =>
                   completeTrainingMutation.mutate({ id: trainingModal.clearance.id, hours: trainingModal.hours })
                 }
-                disabled={completeTrainingMutation.isPending}
+                loading={completeTrainingMutation.isPending}
+                loadingText="Wird gespeichert..."
               >
-                {completeTrainingMutation.isPending ? 'Wird gespeichert...' : 'Abschließen'}
+                Abschließen
               </Button>
             </div>
           </div>
@@ -1191,9 +1192,10 @@ export default function SiteDetail() {
                 onClick={() =>
                   revokeMutation.mutate({ id: revokeModal.clearance.id, notes: revokeModal.notes })
                 }
-                disabled={revokeMutation.isPending}
+                loading={revokeMutation.isPending}
+                loadingText="Wird widerrufen..."
               >
-                {revokeMutation.isPending ? 'Wird widerrufen...' : 'Widerrufen'}
+                Widerrufen
               </Button>
             </div>
           </div>
@@ -1239,9 +1241,11 @@ export default function SiteDetail() {
                     toast.error('Bitte wählen Sie eine Datei aus')
                   }
                 }}
-                disabled={uploadImageMutation.isPending || !uploadModal.file}
+                disabled={!uploadModal.file}
+                loading={uploadImageMutation.isPending}
+                loadingText="Wird hochgeladen..."
               >
-                {uploadImageMutation.isPending ? 'Wird hochgeladen...' : 'Hochladen'}
+                Hochladen
               </Button>
             </div>
           </div>
@@ -1260,9 +1264,10 @@ export default function SiteDetail() {
               <Button
                 className="bg-red-600 hover:bg-red-700 text-white"
                 onClick={() => deleteImageMutation.mutate(deleteImageId)}
-                disabled={deleteImageMutation.isPending}
+                loading={deleteImageMutation.isPending}
+                loadingText="Wird gelöscht..."
               >
-                {deleteImageMutation.isPending ? 'Wird gelöscht...' : 'Löschen'}
+                Löschen
               </Button>
             </div>
           </div>
@@ -1559,9 +1564,10 @@ export default function SiteDetail() {
                     file: uploadDocumentModal.file,
                   })
                 }}
-                disabled={uploadDocumentMutation.isPending}
+                loading={uploadDocumentMutation.isPending}
+                loadingText="Wird hochgeladen..."
               >
-                {uploadDocumentMutation.isPending ? 'Wird hochgeladen...' : 'Hochladen'}
+                Hochladen
               </Button>
             </div>
           </div>
