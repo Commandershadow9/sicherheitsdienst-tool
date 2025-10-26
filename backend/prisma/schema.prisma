@@ -157,16 +157,17 @@ model Site {
   updatedAt DateTime @updatedAt
 
   // Beziehungen
-  shifts        Shift[]
-  events        Event[]
-  clearances    ObjectClearance[]
-  images        SiteImage[]
-  assignments   SiteAssignment[]
-  documents     SiteDocument[]
-  incidents     SiteIncident[]
-  controlPoints ControlPoint[]
-  controlRounds ControlRound[]
-  calculations  SiteCalculation[]
+  shifts          Shift[]
+  events          Event[]
+  clearances      ObjectClearance[]
+  images          SiteImage[]
+  assignments     SiteAssignment[]
+  documents       SiteDocument[]
+  incidents       SiteIncident[]
+  controlPoints   ControlPoint[]
+  controlRounds   ControlRound[]
+  calculations    SiteCalculation[]
+  securityConcepts SecurityConcept[]
 
   @@unique([name, address], name: "sites_name_address_key")
   @@index([name], name: "sites_name_idx")
@@ -653,6 +654,100 @@ enum SiteStatus {
   ACTIVE // Aktiv betreut
   INACTIVE // Inaktiv (Vertrag beendet)
   LOST // Verloren
+}
+
+// ===== SICHERHEITSKONZEPT (Herzstück des Objekt-Managements) =====
+
+model SecurityConcept {
+  id     String @id @default(cuid())
+  siteId String
+  site   Site   @relation(fields: [siteId], references: [id], onDelete: Cascade)
+
+  // Metadaten & Versionierung
+  version    String                  @default("1.0")
+  status     SecurityConceptStatus   @default(DRAFT)
+  validFrom  DateTime?
+  validUntil DateTime?
+
+  // 1. Auftragsrahmen & Vertragsdaten
+  contractScope Json? // { auftraggeber, vertragsnummer, laufzeit, leistungsumfang }
+
+  // 2. Rechtsgrundlagen
+  legalBasis Json? // { §34a, DSGVO, ArbZG, BetrVG, relevante Verordnungen }
+
+  // 3. Objekt-/Lagebild
+  siteSituation Json? // { gebäudetyp, größe, nutzung, zugangswege, umgebungsrisiken }
+
+  // 4. Risikobeurteilung ⭐ KRITISCH
+  // Format: { scenarios: [{ name, wahrscheinlichkeit: 1-5, auswirkung: 1-5, score: 1-25, maßnahmen }] }
+  riskAssessment Json? @map("risk_assessment")
+
+  // 5. Schutz- & Maßnahmenplan
+  protectionMeasures Json? @map("protection_measures") // { zugangskontrolle, videoüberwachung, alarmierung, streifengänge }
+
+  // 6. Personal & Qualifikationen ⭐⭐⭐ KRITISCHSTE KOMPONENTE
+  // Format: { anzahlMA, qualifikationen: ["34a", "Erste Hilfe"], schichtmodell: {...} }
+  staffRequirements Json? @map("staff_requirements")
+
+  // 7. Schichtmodell (aus staffRequirements extrahiert für schnellen Zugriff)
+  // Format: { model: "2-SHIFT"|"3-SHIFT"|"ROTATING", hoursPerWeek: 168, shifts: [{ name, start, end, requiredStaff }] }
+  shiftModel Json? @map("shift_model")
+
+  // 8. Aufgaben-/Postenprofile
+  taskProfiles Json? @map("task_profiles") // [{ position: "Objektleiter", aufgaben: [...], befugnisse: [...] }]
+
+  // 9. Kommunikation & Eskalation ⭐ KRITISCH
+  communicationPlan Json? @map("communication_plan") // { eskalationsstufen: [...], kontakte: [...] }
+
+  // 10. Notfall & Evakuierung ⭐⭐ SEHR KRITISCH
+  emergencyPlan Json? @map("emergency_plan") // { brand, einbruch, evakuierung, sammelplätze, rettungswege }
+
+  // 11. Datenschutz (DSGVO) - PFLICHT bei Videoüberwachung
+  dataProtection Json? @map("data_protection") // { videoüberwachung: true, speicherdauer, zugriffskontrolle, dsb }
+
+  // 12. Arbeits-/Gesundheitsschutz
+  occupationalSafety Json? @map("occupational_safety") // { psa, gefährdungsbeurteilung, erste-hilfe }
+
+  // 13. KPIs & Qualitätskontrolle
+  qualityMetrics Json? @map("quality_metrics") // { kpis: [...], prüfintervalle, audits }
+
+  // 14. Übergaben/Schichtwechsel
+  handoverProcedures Json? @map("handover_procedures") // { ablauf, checklisten, wachbuch }
+
+  // 15. Anhänge & Referenzen
+  attachments Json? // { grundrisse: [...], notfallpläne: [...], dokumentenIDs: [...] }
+
+  // Optional: Weitere Komponenten
+  trafficConcept   Json? @map("traffic_concept") // Verkehrs-/Parkkonzept
+  weaponConcept    Json? @map("weapon_concept") // Waffenkonzept (falls relevant)
+  weatherProtocols Json? @map("weather_protocols") // Unwetter-Protokolle
+
+  // Freigabe & Gültigkeit
+  approvedBy String? @map("approved_by") // User-ID
+  approvedAt DateTime? @map("approved_at")
+
+  // Revisions-Historie (JSON: [{ version, date, changes, approver }])
+  revisionHistory Json? @default("[]") @map("revision_history")
+
+  // Notizen
+  notes String? @db.Text
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([siteId, status], name: "security_concepts_site_status_idx")
+  @@index([status], name: "security_concepts_status_idx")
+  @@index([validUntil], name: "security_concepts_valid_idx")
+  @@map("security_concepts")
+}
+
+enum SecurityConceptStatus {
+  DRAFT // Entwurf
+  IN_REVIEW // In Prüfung
+  APPROVED // Freigegeben
+  ACTIVE // Aktiv
+  EXPIRED // Abgelaufen
+  ARCHIVED // Archiviert
 }
 
 enum ImageCategory {

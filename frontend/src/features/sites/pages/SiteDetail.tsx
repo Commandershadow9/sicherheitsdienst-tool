@@ -37,6 +37,7 @@ import ShiftsTab from '../components/tabs/ShiftsTab'
 import ImagesTab from '../components/tabs/ImagesTab'
 import DocumentsTab from '../components/tabs/DocumentsTab'
 import IncidentsTab from '../components/tabs/IncidentsTab'
+import SecurityConceptTab from '../components/tabs/SecurityConceptTab'
 
 type Site = {
   id: string
@@ -140,7 +141,7 @@ export default function SiteDetail() {
   const nav = useNavigate()
   const queryClient = useQueryClient()
   const { user } = useAuth()
-  const [activeTab, setActiveTab] = useState<'overview' | 'clearances' | 'shifts' | 'images' | 'documents' | 'incidents' | 'control-points' | 'control-rounds' | 'calculations'>('overview')
+  const [activeTab, setActiveTab] = useState<'overview' | 'clearances' | 'shifts' | 'images' | 'documents' | 'incidents' | 'control-points' | 'control-rounds' | 'calculations' | 'security-concept'>('overview')
   const [trainingModal, setTrainingModal] = useState<{ clearance: Clearance; hours: number } | null>(null)
   const [revokeModal, setRevokeModal] = useState<{ clearance: Clearance; notes: string } | null>(null)
   const [uploadModal, setUploadModal] = useState<{ file: File | null; category: string } | null>(null)
@@ -586,6 +587,7 @@ export default function SiteDetail() {
 
   const tabs = [
     { key: 'overview', label: 'Übersicht' },
+    { key: 'security-concept', label: 'Sicherheitskonzept' },
     { key: 'clearances', label: `Clearances (${site.clearances?.length || 0})` },
     { key: 'shifts', label: 'Schichten' },
     { key: 'control-points', label: `Kontrollpunkte (${controlPoints.length})` },
@@ -800,6 +802,8 @@ export default function SiteDetail() {
             )}
           </div>
         )}
+
+        {activeTab === 'security-concept' && <SecurityConceptTab site={site} siteId={id!} />}
 
         {activeTab === 'clearances' && <ClearancesTab site={site} siteId={id!} />}
 

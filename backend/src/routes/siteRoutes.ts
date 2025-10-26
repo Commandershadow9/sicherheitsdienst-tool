@@ -5,6 +5,7 @@ import { createSiteSchema, updateSiteSchema } from '../validations/siteValidatio
 import * as siteController from '../controllers/siteController';
 import * as documentController from '../controllers/documentController';
 import * as siteIncidentController from '../controllers/siteIncidentController';
+import * as securityConceptController from '../controllers/securityConceptController';
 import { asyncHandler } from '../middleware/asyncHandler';
 import { siteListQuerySchema } from '../validations/siteValidation';
 import * as shiftController from '../controllers/shiftController';
@@ -241,6 +242,68 @@ router.delete(
 // GET /api/sites/:siteId/incidents/:id/history
 router.get('/:siteId/incidents/:id/history', authenticate, asyncHandler(siteIncidentController.getIncidentHistory));
 
+// ===== Sicherheitskonzept-Management =====
+
+// GET /api/sites/:siteId/security-concepts - Alle Sicherheitskonzepte (Historie)
+router.get(
+  '/:siteId/security-concepts',
+  authenticate,
+  authorize('ADMIN', 'MANAGER'),
+  asyncHandler(securityConceptController.getAllSecurityConcepts),
+);
+
+// GET /api/sites/:siteId/security-concept - Aktuelles/neuestes Sicherheitskonzept
+router.get(
+  '/:siteId/security-concept',
+  authenticate,
+  authorize('ADMIN', 'MANAGER', 'DISPATCHER'),
+  asyncHandler(securityConceptController.getSecurityConcept),
+);
+
+// GET /api/sites/:siteId/security-concept/:id - Einzelnes Sicherheitskonzept
+router.get(
+  '/:siteId/security-concept/:id',
+  authenticate,
+  authorize('ADMIN', 'MANAGER', 'DISPATCHER'),
+  asyncHandler(securityConceptController.getSecurityConceptById),
+);
+
+// POST /api/sites/:siteId/security-concept - Neues Sicherheitskonzept erstellen
+router.post(
+  '/:siteId/security-concept',
+  authenticate,
+  authorize('ADMIN', 'MANAGER'),
+  writeLimiter,
+  asyncHandler(securityConceptController.createSecurityConcept),
+);
+
+// PUT /api/sites/:siteId/security-concept/:id - Sicherheitskonzept aktualisieren
+router.put(
+  '/:siteId/security-concept/:id',
+  authenticate,
+  authorize('ADMIN', 'MANAGER'),
+  writeLimiter,
+  asyncHandler(securityConceptController.updateSecurityConcept),
+);
+
+// POST /api/sites/:siteId/security-concept/:id/approve - Sicherheitskonzept freigeben
+router.post(
+  '/:siteId/security-concept/:id/approve',
+  authenticate,
+  authorize('ADMIN'),
+  writeLimiter,
+  asyncHandler(securityConceptController.approveSecurityConcept),
+);
+
+// DELETE /api/sites/:siteId/security-concept/:id - Sicherheitskonzept löschen
+router.delete(
+  '/:siteId/security-concept/:id',
+  authenticate,
+  authorize('ADMIN'),
+  writeLimiter,
+  asyncHandler(securityConceptController.deleteSecurityConcept),
+);
+
 // 405
 router.all('/', authenticate, methodNotAllowed(['GET', 'POST']));
 router.all('/:id', authenticate, methodNotAllowed(['GET', 'PUT', 'DELETE']));
@@ -261,5 +324,9 @@ router.all('/:siteId/incidents', authenticate, methodNotAllowed(['GET', 'POST'])
 router.all('/:siteId/incidents/:id', authenticate, methodNotAllowed(['GET', 'PUT', 'DELETE']));
 router.all('/:siteId/incidents/:id/resolve', authenticate, methodNotAllowed(['PUT']));
 router.all('/:siteId/incidents/:id/history', authenticate, methodNotAllowed(['GET']));
+router.all('/:siteId/security-concepts', authenticate, methodNotAllowed(['GET']));
+router.all('/:siteId/security-concept', authenticate, methodNotAllowed(['GET', 'POST']));
+router.all('/:siteId/security-concept/:id', authenticate, methodNotAllowed(['GET', 'PUT', 'DELETE']));
+router.all('/:siteId/security-concept/:id/approve', authenticate, methodNotAllowed(['POST']));
 
 export default router;

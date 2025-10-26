@@ -680,7 +680,7 @@ export const generateShiftsForSite = async (req: Request, res: Response, next: N
         name: true,
         requiredStaff: true,
         requiredQualifications: true,
-        securityConcept: true,
+        securityConcept: true, // Legacy JSON-Feld
       },
     });
 
@@ -689,12 +689,33 @@ export const generateShiftsForSite = async (req: Request, res: Response, next: N
       return;
     }
 
+    // Versuche zuerst das neueste aktive Sicherheitskonzept aus der Tabelle zu laden
+    let securityConceptData: any = null;
+    const activeConceptFromDB = await prisma.securityConcept.findFirst({
+      where: {
+        siteId: id,
+        status: 'ACTIVE',
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+
+    if (activeConceptFromDB && activeConceptFromDB.shiftModel) {
+      // Neues System: Nutze SecurityConcept aus Tabelle
+      securityConceptData = {
+        shiftModel: activeConceptFromDB.shiftModel,
+      };
+    } else if (site.securityConcept) {
+      // Fallback: Legacy JSON-Feld (für Abwärtskompatibilität)
+      securityConceptData = site.securityConcept as any;
+    }
+
     // Sicherheitskonzept prüfen
-    const securityConcept = site.securityConcept as any;
-    if (!securityConcept || !securityConcept.shiftModel) {
+    if (!securityConceptData || !securityConceptData.shiftModel) {
       res.status(400).json({
         success: false,
-        message: 'Kein Sicherheitskonzept mit Schichtmodell vorhanden',
+        message: 'Kein aktives Sicherheitskonzept mit Schichtmodell vorhanden. Bitte erstellen Sie zuerst ein Sicherheitskonzept.',
       });
       return;
     }
@@ -713,7 +734,7 @@ export const generateShiftsForSite = async (req: Request, res: Response, next: N
     const shiftsData = generateShifts({
       siteId: site.id,
       siteName: site.name,
-      shiftModel: securityConcept.shiftModel,
+      shiftModel: securityConceptData.shiftModel,
       requiredStaff: site.requiredStaff || 1,
       requiredQualifications: site.requiredQualifications || [],
       startDate: start,
@@ -731,11 +752,12 @@ export const generateShiftsForSite = async (req: Request, res: Response, next: N
 
     res.status(201).json({
       success: true,
-      message: `${createdShifts.count} Schichten erfolgreich generiert`,
+      message: `${createdShifts.count} Schichten erfolgreich generiert (basierend auf ${activeConceptFromDB ? 'aktivem Sicherheitskonzept' : 'Legacy-Konzept'})`,
       data: {
         created: createdShifts.count,
         stats,
-        template: securityConcept.shiftModel,
+        template: securityConceptData.shiftModel,
+        source: activeConceptFromDB ? 'security_concept_table' : 'legacy_json',
       },
     });
   } catch (error: any) {
