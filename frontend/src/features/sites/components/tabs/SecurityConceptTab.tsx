@@ -7,6 +7,11 @@ import { toast } from 'sonner'
 import { api } from '@/lib/api'
 import ShiftModelEditor from '../ShiftModelEditor'
 import RiskAssessmentEditor from '../RiskAssessmentEditor'
+import ProtectionMeasuresEditor from '../ProtectionMeasuresEditor'
+import SiteSituationEditor from '../SiteSituationEditor'
+import TaskProfilesEditor from '../TaskProfilesEditor'
+import EmergencyPlanEditor from '../EmergencyPlanEditor'
+import CommunicationPlanEditor from '../CommunicationPlanEditor'
 
 type SecurityConcept = {
   id: string
@@ -19,6 +24,10 @@ type SecurityConcept = {
   riskAssessment?: any
   emergencyPlan?: any
   dataProtection?: any
+  protectionMeasures?: any
+  siteSituation?: any
+  taskProfiles?: any
+  communicationPlan?: any
   approvedAt?: string
   createdAt: string
   updatedAt: string
@@ -247,14 +256,58 @@ export default function SecurityConceptTab({ site, siteId }: SecurityConceptTabP
         />
       </div>
 
-      {/* Weitere Sektionen */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <InfoCard
-          title="Notfall & Evakuierung"
-          hasData={!!concept.emergencyPlan}
-          icon={AlertTriangle}
-          color="orange"
+      {/* Objekt-/Lagebild */}
+      <div className="bg-gradient-to-r from-blue-50 to-cyan-50 rounded-xl p-6 border border-blue-200">
+        <SiteSituationEditor
+          siteSituation={concept.siteSituation || null}
+          onSave={(siteSituation) => {
+            updateMutation.mutate({ siteSituation })
+          }}
         />
+      </div>
+
+      {/* Schutzmaßnahmen & Kontrollgänge */}
+      <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl p-6 border border-purple-200">
+        <ProtectionMeasuresEditor
+          protectionMeasures={concept.protectionMeasures || null}
+          onSave={(protectionMeasures) => {
+            updateMutation.mutate({ protectionMeasures })
+          }}
+        />
+      </div>
+
+      {/* Aufgaben- & Postenprofile */}
+      <div className="bg-gradient-to-r from-indigo-50 to-blue-50 rounded-xl p-6 border border-indigo-200">
+        <TaskProfilesEditor
+          taskProfiles={concept.taskProfiles || null}
+          onSave={(taskProfiles) => {
+            updateMutation.mutate({ taskProfiles })
+          }}
+        />
+      </div>
+
+      {/* Kommunikation & Eskalation */}
+      <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl p-6 border border-green-200">
+        <CommunicationPlanEditor
+          communicationPlan={concept.communicationPlan || null}
+          onSave={(communicationPlan) => {
+            updateMutation.mutate({ communicationPlan })
+          }}
+        />
+      </div>
+
+      {/* Notfall & Evakuierung */}
+      <div className="bg-gradient-to-r from-red-50 to-orange-50 rounded-xl p-6 border border-red-200">
+        <EmergencyPlanEditor
+          emergencyPlan={concept.emergencyPlan || null}
+          onSave={(emergencyPlan) => {
+            updateMutation.mutate({ emergencyPlan })
+          }}
+        />
+      </div>
+
+      {/* Weitere Komponenten - Platzhalter */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <InfoCard
           title="Datenschutz (DSGVO)"
           hasData={!!concept.dataProtection}
