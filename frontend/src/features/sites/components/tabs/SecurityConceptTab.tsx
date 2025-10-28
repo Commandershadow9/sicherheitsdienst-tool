@@ -2,9 +2,10 @@ import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
-import { Shield, Plus, Pencil, CheckCircle, Clock, AlertTriangle, FileText } from 'lucide-react'
+import { Shield, Plus, CheckCircle, Clock, AlertTriangle, FileText, Building2, Route, Briefcase, Phone, Calendar } from 'lucide-react'
 import { toast } from 'sonner'
 import { api } from '@/lib/api'
+import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '@/components/ui/accordion'
 import ShiftModelEditor from '../ShiftModelEditor'
 import RiskAssessmentEditor from '../RiskAssessmentEditor'
 import ProtectionMeasuresEditor from '../ProtectionMeasuresEditor'
@@ -213,114 +214,252 @@ export default function SecurityConceptTab({ site, siteId }: SecurityConceptTabP
         </div>
       </div>
 
-      {/* Schichtmodell - KRITISCHSTE KOMPONENTE */}
-      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-6 border border-blue-200">
-        <ShiftModelEditor
-          shiftModel={concept.shiftModel || null}
-          onSave={(shiftModel) => {
-            updateMutation.mutate({ shiftModel })
-          }}
-        />
-      </div>
+      {/* Accordion für alle Bereiche */}
+      <Accordion type="multiple" className="space-y-3">
+        {/* 1. Schichtmodell */}
+        <AccordionItem id="shift-model">
+          <AccordionTrigger
+            id="shift-model"
+            icon={<Calendar className="text-blue-600" size={20} />}
+            badge={
+              concept.shiftModel ? (
+                <span className="text-xs px-2 py-1 rounded-full bg-green-100 text-green-800">✓ Definiert</span>
+              ) : (
+                <span className="text-xs px-2 py-1 rounded-full bg-gray-100 text-gray-600">Nicht definiert</span>
+              )
+            }
+          >
+            <span className="text-gray-900">1. Schichtmodell</span>
+          </AccordionTrigger>
+          <AccordionContent id="shift-model" className="bg-gradient-to-r from-blue-50 to-indigo-50">
+            <ShiftModelEditor
+              shiftModel={concept.shiftModel || null}
+              onSave={(shiftModel) => {
+                updateMutation.mutate({ shiftModel })
+              }}
+            />
+          </AccordionContent>
+        </AccordionItem>
 
-      {/* Personal & Qualifikationen */}
-      {concept.staffRequirements && (
-        <div className="bg-white rounded-xl p-6 border shadow-sm">
-          <h4 className="font-semibold mb-3">Personal & Qualifikationen</h4>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <p className="text-sm text-gray-600 mb-1">Anzahl Mitarbeiter</p>
-              <p className="font-semibold">{concept.staffRequirements.anzahlMA || 'Nicht definiert'}</p>
-            </div>
-            <div>
-              <p className="text-sm text-gray-600 mb-1">Qualifikationen</p>
-              <div className="flex flex-wrap gap-1">
-                {concept.staffRequirements.qualifikationen?.map((q: string, idx: number) => (
-                  <span key={idx} className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded">
-                    {q}
-                  </span>
-                )) || <span className="text-gray-500">Keine</span>}
+        {/* 2. Personal & Qualifikationen */}
+        <AccordionItem id="staff">
+          <AccordionTrigger
+            id="staff"
+            icon={<Shield className="text-indigo-600" size={20} />}
+            badge={
+              concept.staffRequirements ? (
+                <span className="text-xs px-2 py-1 rounded-full bg-green-100 text-green-800">✓ Definiert</span>
+              ) : (
+                <span className="text-xs px-2 py-1 rounded-full bg-gray-100 text-gray-600">Nicht definiert</span>
+              )
+            }
+          >
+            <span className="text-gray-900">2. Personal & Qualifikationen</span>
+          </AccordionTrigger>
+          <AccordionContent id="staff">
+            {concept.staffRequirements && (
+              <div>
+                <h4 className="font-semibold mb-3">Personal & Qualifikationen</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-sm text-gray-600 mb-1">Anzahl Mitarbeiter</p>
+                    <p className="font-semibold">{concept.staffRequirements.anzahlMA || 'Nicht definiert'}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-600 mb-1">Qualifikationen</p>
+                    <div className="flex flex-wrap gap-1">
+                      {concept.staffRequirements.qualifikationen?.map((q: string, idx: number) => (
+                        <span key={idx} className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded">
+                          {q}
+                        </span>
+                      )) || <span className="text-gray-500">Keine</span>}
+                    </div>
+                  </div>
+                </div>
               </div>
+            )}
+          </AccordionContent>
+        </AccordionItem>
+
+        {/* 3. Risikobeurteilung */}
+        <AccordionItem id="risk">
+          <AccordionTrigger
+            id="risk"
+            icon={<AlertTriangle className="text-red-600" size={20} />}
+            badge={
+              concept.riskAssessment ? (
+                <span className="text-xs px-2 py-1 rounded-full bg-green-100 text-green-800">✓ Definiert</span>
+              ) : (
+                <span className="text-xs px-2 py-1 rounded-full bg-gray-100 text-gray-600">Nicht definiert</span>
+              )
+            }
+          >
+            <span className="text-gray-900">3. Risikobeurteilung (5×5 Matrix)</span>
+          </AccordionTrigger>
+          <AccordionContent id="risk" className="bg-gradient-to-r from-red-50 to-orange-50">
+            <RiskAssessmentEditor
+              riskAssessment={concept.riskAssessment || null}
+              onSave={(riskAssessment) => {
+                updateMutation.mutate({ riskAssessment })
+              }}
+            />
+          </AccordionContent>
+        </AccordionItem>
+
+        {/* 4. Objekt-/Lagebild */}
+        <AccordionItem id="site-situation">
+          <AccordionTrigger
+            id="site-situation"
+            icon={<Building2 className="text-cyan-600" size={20} />}
+            badge={
+              concept.siteSituation ? (
+                <span className="text-xs px-2 py-1 rounded-full bg-green-100 text-green-800">✓ Definiert</span>
+              ) : (
+                <span className="text-xs px-2 py-1 rounded-full bg-gray-100 text-gray-600">Nicht definiert</span>
+              )
+            }
+          >
+            <span className="text-gray-900">4. Objekt-/Lagebild</span>
+          </AccordionTrigger>
+          <AccordionContent id="site-situation" className="bg-gradient-to-r from-blue-50 to-cyan-50">
+            <SiteSituationEditor
+              siteSituation={concept.siteSituation || null}
+              onSave={(siteSituation) => {
+                updateMutation.mutate({ siteSituation })
+              }}
+            />
+          </AccordionContent>
+        </AccordionItem>
+
+        {/* 5. Schutzmaßnahmen & Kontrollgänge */}
+        <AccordionItem id="protection">
+          <AccordionTrigger
+            id="protection"
+            icon={<Route className="text-purple-600" size={20} />}
+            badge={
+              concept.protectionMeasures ? (
+                <span className="text-xs px-2 py-1 rounded-full bg-green-100 text-green-800">✓ Definiert</span>
+              ) : (
+                <span className="text-xs px-2 py-1 rounded-full bg-gray-100 text-gray-600">Nicht definiert</span>
+              )
+            }
+          >
+            <span className="text-gray-900">5. Schutzmaßnahmen & Kontrollgänge</span>
+          </AccordionTrigger>
+          <AccordionContent id="protection" className="bg-gradient-to-r from-purple-50 to-pink-50">
+            <ProtectionMeasuresEditor
+              protectionMeasures={concept.protectionMeasures || null}
+              onSave={(protectionMeasures) => {
+                updateMutation.mutate({ protectionMeasures })
+              }}
+            />
+          </AccordionContent>
+        </AccordionItem>
+
+        {/* 6. Aufgaben- & Postenprofile */}
+        <AccordionItem id="tasks">
+          <AccordionTrigger
+            id="tasks"
+            icon={<Briefcase className="text-indigo-600" size={20} />}
+            badge={
+              concept.taskProfiles ? (
+                <span className="text-xs px-2 py-1 rounded-full bg-green-100 text-green-800">✓ Definiert</span>
+              ) : (
+                <span className="text-xs px-2 py-1 rounded-full bg-gray-100 text-gray-600">Nicht definiert</span>
+              )
+            }
+          >
+            <span className="text-gray-900">6. Aufgaben- & Postenprofile</span>
+          </AccordionTrigger>
+          <AccordionContent id="tasks" className="bg-gradient-to-r from-indigo-50 to-blue-50">
+            <TaskProfilesEditor
+              taskProfiles={concept.taskProfiles || null}
+              onSave={(taskProfiles) => {
+                updateMutation.mutate({ taskProfiles })
+              }}
+            />
+          </AccordionContent>
+        </AccordionItem>
+
+        {/* 7. Kommunikation & Eskalation */}
+        <AccordionItem id="communication">
+          <AccordionTrigger
+            id="communication"
+            icon={<Phone className="text-green-600" size={20} />}
+            badge={
+              concept.communicationPlan ? (
+                <span className="text-xs px-2 py-1 rounded-full bg-green-100 text-green-800">✓ Definiert</span>
+              ) : (
+                <span className="text-xs px-2 py-1 rounded-full bg-gray-100 text-gray-600">Nicht definiert</span>
+              )
+            }
+          >
+            <span className="text-gray-900">7. Kommunikation & Eskalation</span>
+          </AccordionTrigger>
+          <AccordionContent id="communication" className="bg-gradient-to-r from-green-50 to-emerald-50">
+            <CommunicationPlanEditor
+              communicationPlan={concept.communicationPlan || null}
+              onSave={(communicationPlan) => {
+                updateMutation.mutate({ communicationPlan })
+              }}
+            />
+          </AccordionContent>
+        </AccordionItem>
+
+        {/* 8. Notfall & Evakuierung */}
+        <AccordionItem id="emergency">
+          <AccordionTrigger
+            id="emergency"
+            icon={<AlertTriangle className="text-orange-600" size={20} />}
+            badge={
+              concept.emergencyPlan ? (
+                <span className="text-xs px-2 py-1 rounded-full bg-green-100 text-green-800">✓ Definiert</span>
+              ) : (
+                <span className="text-xs px-2 py-1 rounded-full bg-gray-100 text-gray-600">Nicht definiert</span>
+              )
+            }
+          >
+            <span className="text-gray-900">8. Notfall & Evakuierung</span>
+          </AccordionTrigger>
+          <AccordionContent id="emergency" className="bg-gradient-to-r from-red-50 to-orange-50">
+            <EmergencyPlanEditor
+              emergencyPlan={concept.emergencyPlan || null}
+              onSave={(emergencyPlan) => {
+                updateMutation.mutate({ emergencyPlan })
+              }}
+            />
+          </AccordionContent>
+        </AccordionItem>
+
+        {/* 9. Weitere Komponenten */}
+        <AccordionItem id="misc">
+          <AccordionTrigger
+            id="misc"
+            icon={<FileText className="text-gray-600" size={20} />}
+            badge={
+              <span className="text-xs px-2 py-1 rounded-full bg-gray-100 text-gray-600">Optional</span>
+            }
+          >
+            <span className="text-gray-900">9. Weitere Komponenten (DSGVO, etc.)</span>
+          </AccordionTrigger>
+          <AccordionContent id="misc">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <InfoCard
+                title="Datenschutz (DSGVO)"
+                hasData={!!concept.dataProtection}
+                icon={Shield}
+                color="purple"
+              />
+              <InfoCard
+                title="Weitere Komponenten"
+                hasData={false}
+                icon={FileText}
+                color="gray"
+              />
             </div>
-          </div>
-        </div>
-      )}
-
-      {/* Risikobeurteilung - 5×5 Matrix */}
-      <div className="bg-gradient-to-r from-red-50 to-orange-50 rounded-xl p-6 border border-red-200">
-        <RiskAssessmentEditor
-          riskAssessment={concept.riskAssessment || null}
-          onSave={(riskAssessment) => {
-            updateMutation.mutate({ riskAssessment })
-          }}
-        />
-      </div>
-
-      {/* Objekt-/Lagebild */}
-      <div className="bg-gradient-to-r from-blue-50 to-cyan-50 rounded-xl p-6 border border-blue-200">
-        <SiteSituationEditor
-          siteSituation={concept.siteSituation || null}
-          onSave={(siteSituation) => {
-            updateMutation.mutate({ siteSituation })
-          }}
-        />
-      </div>
-
-      {/* Schutzmaßnahmen & Kontrollgänge */}
-      <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl p-6 border border-purple-200">
-        <ProtectionMeasuresEditor
-          protectionMeasures={concept.protectionMeasures || null}
-          onSave={(protectionMeasures) => {
-            updateMutation.mutate({ protectionMeasures })
-          }}
-        />
-      </div>
-
-      {/* Aufgaben- & Postenprofile */}
-      <div className="bg-gradient-to-r from-indigo-50 to-blue-50 rounded-xl p-6 border border-indigo-200">
-        <TaskProfilesEditor
-          taskProfiles={concept.taskProfiles || null}
-          onSave={(taskProfiles) => {
-            updateMutation.mutate({ taskProfiles })
-          }}
-        />
-      </div>
-
-      {/* Kommunikation & Eskalation */}
-      <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl p-6 border border-green-200">
-        <CommunicationPlanEditor
-          communicationPlan={concept.communicationPlan || null}
-          onSave={(communicationPlan) => {
-            updateMutation.mutate({ communicationPlan })
-          }}
-        />
-      </div>
-
-      {/* Notfall & Evakuierung */}
-      <div className="bg-gradient-to-r from-red-50 to-orange-50 rounded-xl p-6 border border-red-200">
-        <EmergencyPlanEditor
-          emergencyPlan={concept.emergencyPlan || null}
-          onSave={(emergencyPlan) => {
-            updateMutation.mutate({ emergencyPlan })
-          }}
-        />
-      </div>
-
-      {/* Weitere Komponenten - Platzhalter */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <InfoCard
-          title="Datenschutz (DSGVO)"
-          hasData={!!concept.dataProtection}
-          icon={Shield}
-          color="purple"
-        />
-        <InfoCard
-          title="Weitere Komponenten"
-          hasData={false}
-          icon={FileText}
-          color="gray"
-        />
-      </div>
+          </AccordionContent>
+        </AccordionItem>
+      </Accordion>
 
       {/* Buttons */}
       <div className="flex gap-2 pt-4 border-t">
