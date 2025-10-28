@@ -730,11 +730,24 @@ export const generateShiftsForSite = async (req: Request, res: Response, next: N
       return;
     }
 
+    // Schichtmodell extrahieren (neues Format: { model: "3-SHIFT", ... } oder legacy: "3-SHIFT")
+    let shiftModelId: string;
+    if (typeof securityConceptData.shiftModel === 'object' && securityConceptData.shiftModel !== null) {
+      // Neues Format: { model: "3-SHIFT", hoursPerWeek: 168, shifts: [...] }
+      shiftModelId = securityConceptData.shiftModel.model || '3-SHIFT';
+    } else if (typeof securityConceptData.shiftModel === 'string') {
+      // Legacy Format: "3-SHIFT"
+      shiftModelId = securityConceptData.shiftModel;
+    } else {
+      // Fallback
+      shiftModelId = '3-SHIFT';
+    }
+
     // Schichten generieren
     const shiftsData = generateShifts({
       siteId: site.id,
       siteName: site.name,
-      shiftModel: securityConceptData.shiftModel,
+      shiftModel: shiftModelId,
       requiredStaff: site.requiredStaff || 1,
       requiredQualifications: site.requiredQualifications || [],
       startDate: start,

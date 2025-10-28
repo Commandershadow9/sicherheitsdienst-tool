@@ -27,7 +27,7 @@ export default function SmartAssignmentModal({
   onAssign,
   isLoading = false,
 }: SmartAssignmentModalProps) {
-  const [selectedRole, setSelectedRole] = useState<string>('');
+  const [selectedRole, setSelectedRole] = useState<string>('MITARBEITER'); // Default: Mitarbeiter-Rolle
   const [selectedCandidate, setSelectedCandidate] = useState<AssignmentCandidate | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -55,10 +55,7 @@ export default function SmartAssignmentModal({
       return;
     }
 
-    if (!selectedRole) {
-      toast.error('Bitte wählen Sie eine Rolle aus');
-      return;
-    }
+    // Rolle hat einen Default-Wert, also keine Validierung nötig
 
     // Check for missing qualifications and warn
     if (
@@ -318,7 +315,7 @@ export default function SmartAssignmentModal({
           <Button variant="outline" onClick={onClose} disabled={isLoading}>
             Abbrechen
           </Button>
-          <Button onClick={handleAssign} disabled={isLoading || !selectedCandidate || !selectedRole}>
+          <Button onClick={handleAssign} disabled={isLoading || !selectedCandidate}>
             {isLoading ? 'Wird zugewiesen...' : 'Zuweisen'}
           </Button>
         </div>

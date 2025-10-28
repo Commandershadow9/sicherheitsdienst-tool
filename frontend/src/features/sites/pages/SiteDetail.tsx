@@ -30,6 +30,7 @@ import {
 import { Building2, Phone, Shield, Calendar, Image as ImageIcon, UserCheck, FileText, Upload, Download, Trash2, Eye, AlertTriangle, Plus, X, Pencil, CheckCircle, Clock, MapPin, QrCode, Smartphone, Calculator, DollarSign, Send, Check, Copy, Archive, Mail, Lightbulb, Route } from 'lucide-react'
 import DocumentViewerModal from '../components/DocumentViewerModal'
 import CoverageStats from '../components/CoverageStats'
+import ShiftOverviewCard from '../components/ShiftOverviewCard'
 import SmartAssignmentModal from '../components/SmartAssignmentModal'
 import ControlRoundSuggestionsModal from '../components/ControlRoundSuggestionsModal'
 import ClearancesTab from '../components/tabs/ClearancesTab'
@@ -742,6 +743,12 @@ export default function SiteDetail() {
 
             {/* Coverage Stats */}
             <CoverageStats siteId={site.id} />
+
+            {/* Schichten-Übersicht */}
+            <ShiftOverviewCard
+              siteId={site.id}
+              onShowAll={() => setActiveTab('shifts')}
+            />
 
             {/* Zuweisungen */}
             <div className="bg-gradient-to-br from-purple-50 to-violet-50 rounded-lg p-5 border border-purple-100">
