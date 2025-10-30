@@ -723,12 +723,23 @@ export const generateShiftsForSite = async (req: Request, res: Response, next: N
     // Dynamischer Import von shiftGenerator
     const { generateShifts, getShiftGenerationStats } = await import('../utils/shiftGenerator');
 
-    // Start-Datum validieren und parsen
-    const start = startDate ? new Date(startDate) : new Date();
+    // Start-Datum validieren und parsen (immer auf Mitternacht setzen)
+    let start: Date;
+    if (startDate) {
+      start = new Date(startDate);
+    } else {
+      // Kein Start-Datum angegeben → Heute um Mitternacht
+      start = new Date();
+      start.setHours(0, 0, 0, 0);
+    }
+
     if (isNaN(start.getTime())) {
       res.status(400).json({ success: false, message: 'Ungültiges Start-Datum' });
       return;
     }
+
+    // Stelle sicher dass Start-Zeit immer Mitternacht ist für konsistente Duplikat-Prüfung
+    start.setHours(0, 0, 0, 0);
 
     // Schichtmodell extrahieren (neues Format: { model: "3-SHIFT", ... } oder legacy: "3-SHIFT")
     let shiftModelId: string;
