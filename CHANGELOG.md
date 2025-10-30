@@ -2,6 +2,99 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.22.3] - 2025-10-30 – Schichten-Bugs behoben
+
+### Fixed - Schichten-Generator
+- **Duplikat-Warnungen**: Generator zeigt jetzt klare Nachrichten bei existierenden Schichten
+  - Prüfung auf existierende Schichten im Zeitraum vor Generierung
+  - Nachricht: "Bereits X Schichten vorhanden. Bitte wählen Sie anderen Zeitraum..."
+  - Response enthält: `created`, `existing`, `attempted` Zählungen
+  - Verhindert unendliche Duplikat-Erstellung
+
+### Fixed - MA-Zuweisung Anzeige
+- **Korrekte MA-Anzahl in Übersicht**: Schichten zeigen nun tatsächlich zugewiesene Mitarbeiter
+  - Problem: Übersicht zeigte "0/2 MA" obwohl 2 zugewiesen waren
+  - Ursache: Backend lieferte `assignedEmployees` Feld nicht mit
+  - Lösung: Backend berechnet jetzt `assignedEmployees` aus `assignments.length`
+  - Auch in CSV/XLSX Export integriert
+
+### Changed - Backend API
+- `GET /api/sites/:siteId/shifts`: Enthält jetzt `assignedEmployees` Feld
+- `POST /api/sites/:id/generate-shifts`: Intelligente Response-Nachrichten basierend auf Ergebnis
+
+---
+
+## [1.22.2] - 2025-10-30 – Kritische Backend-Fixes
+
+### Fixed - Schichten-Anzeige
+- **Problem**: Schichten wurden trotz 197 DB-Einträgen als leer angezeigt (0 Schichten)
+- **Ursache**: Backend returnierte Array direkt statt `{ success, data }` Wrapper
+- **Fix**: `shiftController.ts:253` - Konsistentes Response-Format
+  - Von: `res.json(data)`
+  - Zu: `res.json({ success: true, data })`
+
+### Fixed - Sicherheitskonzept-Bearbeitung
+- **Problem**: ACTIVE Konzepte konnten nicht bearbeitet werden (Edit-Lock)
+- **Lösung**: ADMIN und MANAGER dürfen jetzt auch aktive Konzepte ändern
+- **Fix**: `securityConceptController.ts:211-221` - Rollen-basierte Prüfung
+  - Normale Benutzer bleiben weiterhin blockiert (Sicherheitsmechanismus)
+
+---
+
+## [1.22.1] - 2025-10-30 – Massive UX-Verbesserungen
+
+### Changed - Navigation
+- **Schichten-Seite entfernt**: Redundante `/shifts` Navigation entfernt
+  - Schichten sind über Dashboard (kritische Schichten) und Objekt-Details erreichbar
+  - Reduziert Navigation-Komplexität
+
+### Added - Accordion Component
+- **Reusable Accordion**: Neues UI-Component für kollabierbare Abschnitte
+  - Context-basiertes State Management
+  - Single/Multiple open modes
+  - Animierte Expand/Collapse Effekte
+  - Components: `<Accordion>`, `<AccordionItem>`, `<AccordionTrigger>`, `<AccordionContent>`
+
+### Changed - Sicherheitskonzept UI
+- **Von "Wall of Fields" zu Accordion-Struktur**: Übersichtliche Darstellung
+  - Problem: Alle 8+ Abschnitte gleichzeitig sichtbar → überwältigend
+  - Lösung: 9 kollabierbare Accordion-Items mit Status-Badges
+  - Status-Badges: "✓ Definiert" (grün) oder "Nicht definiert" (grau)
+  - Icons für jeden Abschnitt (farbcodiert)
+  - Alle Abschnitte standardmäßig zugeklappt
+  - Gradient-Hintergründe beim Expandieren erhalten
+
+### Sections
+1. Schichtmodell (Calendar, Blau)
+2. Personal & Qualifikationen (Shield, Indigo)
+3. Risikobeurteilung (AlertTriangle, Rot)
+4. Objekt-/Lagebild (Building2, Cyan)
+5. Schutzmaßnahmen & Kontrollgänge (Route, Lila)
+6. Aufgaben-/Postenprofile (Briefcase, Indigo)
+7. Kommunikation & Eskalation (Phone, Grün)
+8. Notfall & Evakuierung (AlertTriangle, Orange)
+9. Weitere Komponenten (FileText, Grau - Optional)
+
+---
+
+## [1.22.0] - 2025-10-29 – Sicherheitskonzept massiv erweitert
+
+### Added - Kontrollgänge (Patrol Rounds)
+- **Neue Sektion im Sicherheitskonzept**: Schutzmaßnahmen & Kontrollgänge
+- **Kontrollgang-Management**:
+  - Definition von Kontrollrouten mit Checkpoints
+  - Intervall-basierte Rundgänge (stündlich, 2-stündlich, etc.)
+  - Checkpoint-Erfassung mit Zeitstempel
+  - Abweichungsmeldung bei verpassten Checks
+- **PatrolEditor Component**: Visuelle Verwaltung von Kontrollgängen
+
+### Added - Weitere Sicherheitskonzept-Komponenten
+- **Aufgaben-/Postenprofile**: Definition von Verantwortlichkeiten
+- **Kommunikation & Eskalation**: Kontaktpersonen und Eskalationsketten
+- **Notfall & Evakuierung**: Notfallpläne und Evakuierungsrouten
+
+---
+
 ## [1.21.1] - 2025-10-26 – Deployment & Infrastructure Fixes
 
 ### Fixed - Database Connectivity
