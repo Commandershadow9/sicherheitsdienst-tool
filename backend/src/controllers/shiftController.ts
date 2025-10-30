@@ -188,8 +188,21 @@ export const getShiftReplacementCandidates = async (req: Request, res: Response,
       return;
     }
 
-    const candidates = await findReplacementCandidatesForShift(shiftId, absentUserId);
-    res.json({ data: candidates });
+    // Nutze V2 für intelligentere Kandidaten-Suche mit Scoring
+    const candidates = await findReplacementCandidatesForShiftV2(shiftId, absentUserId);
+    res.json({
+      success: true,
+      data: {
+        shiftId,
+        candidates,
+        stats: {
+          total: candidates.length,
+          optimal: candidates.filter(c => c.score.recommendation === 'OPTIMAL').length,
+          good: candidates.filter(c => c.score.recommendation === 'GOOD').length,
+          acceptable: candidates.filter(c => c.score.recommendation === 'ACCEPTABLE').length,
+        }
+      }
+    });
   } catch (error) {
     next(error);
   }

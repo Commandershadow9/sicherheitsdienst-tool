@@ -209,7 +209,21 @@ export async function findReplacementCandidatesForShiftV2(
     return map;
   }, new Map());
 
-  // 3. Finde verfügbare Mitarbeiter mit Site-Clearance
+  // 3. Lade ALLE aktiven Mitarbeiter (nicht nur mit Clearance)
+  const allUsers = await prisma.user.findMany({
+    where: {
+      isActive: true,
+      role: { in: ['EMPLOYEE', 'MANAGER'] }, // Nur MA-Rollen
+    },
+    select: {
+      id: true,
+      firstName: true,
+      lastName: true,
+      email: true,
+    },
+  });
+
+  // 4. Lade Clearances separat (für Status-Check)
   const clearances = await prisma.objectClearance.findMany({
     where: {
       siteId: shift.siteId,
@@ -221,21 +235,14 @@ export async function findReplacementCandidatesForShiftV2(
       status: true,
       trainedAt: true,
       validUntil: true,
-      user: {
-        select: {
-          id: true,
-          firstName: true,
-          lastName: true,
-          email: true,
-        },
-      },
     },
   });
 
-  // 4. Filtere bereits zugewiesene und abwesende Mitarbeiter
-  const availableUsers = clearances
-    .filter((c) => !assignedUserIds.has(c.userId) && !absentUserIds.has(c.userId))
-    .map((c) => c.user);
+  const clearancesByUserId = new Map(clearances.map(c => [c.userId, c]));
+
+  // 5. Filtere nur bereits zugewiesene und abwesende Mitarbeiter aus
+  const availableUsers = allUsers
+    .filter((user) => !assignedUserIds.has(user.id) && !absentUserIds.has(user.id));
 
   // 5. Berechne Scores für jeden Kandidaten
   const candidatesWithScores = await Promise.all(
@@ -274,11 +281,24 @@ export async function findReplacementCandidatesForShiftV2(
           enrichedWarnings.unshift(...pendingWarnings);
         }
 
+        // Prüfe Clearance-Status
+        const clearance = clearancesByUserId.get(user.id);
+        const hasClearance = !!clearance;
+
         const warnings: ReplacementCandidateWarning[] = enrichedWarnings.map((warning) => ({
           type: warning.type,
           severity: warning.severity.toLowerCase() as ReplacementCandidateWarning['severity'],
           message: warning.message,
         }));
+
+        // Füge Warning hinzu wenn keine Clearance vorhanden
+        if (!hasClearance) {
+          warnings.unshift({
+            type: 'MISSING_CLEARANCE' as any,
+            severity: 'warning',
+            message: '⚠️ Keine Objekt-Clearance - Einweisung erforderlich',
+          });
+        }
 
         // Transform Backend Score Structure → Frontend Expected Structure
         return {
@@ -288,7 +308,7 @@ export async function findReplacementCandidatesForShiftV2(
           employeeId: user.id.slice(0, 8).toUpperCase(),
           hasRequiredQualifications: true,
           missingQualifications: [],
-          siteAccessStatus: 'CLEARED' as const,
+          siteAccessStatus: hasClearance ? ('CLEARED' as const) : ('NOT_CLEARED' as const),
           isAvailable: true,
           score: {
             total: candidateScore.totalScore,

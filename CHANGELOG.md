@@ -2,6 +2,49 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.22.6] - 2025-10-30 – Intelligente MA-Ersatzsuche (V2 aktiviert)
+
+### Changed - MA-Ersatzsuche (Intelligent Replacement)
+- **Alle Mitarbeiter als Kandidaten anzeigen**: System zeigt nun ALLE verfügbaren MA, nicht nur mit Clearance
+  - Problem: "Keine verfügbaren Kandidaten" trotz 16 aktiven Mitarbeitern
+  - Ursache: V1 API zeigte nur MA mit ACTIVE Objekt-Clearance
+  - Lösung: Realistische Security-Praxis - Einweisung bei Bedarf möglich
+- **V2 API aktiviert**: Intelligentes Scoring-System für Ersatz-Kandidaten
+  - `shiftController.ts:191-205` - Controller nutzt jetzt V2 mit Statistiken
+  - Response enthält: `total`, `optimal`, `good`, `acceptable` Counts
+- **Clearance-Status Warning-System**:
+  - `replacementService.ts:212-245` - Lädt ALLE aktiven Mitarbeiter (EMPLOYEE/MANAGER)
+  - `replacementService.ts:284-301` - Fügt Warning hinzu bei fehlender Clearance
+  - Badge: "⚠️ Keine Objekt-Clearance - Einweisung erforderlich"
+  - Admin kann bewusst zuweisen und Einweisung planen
+
+### Technical
+- TypeScript const assertion Syntax-Fix (`replacementService.ts:311`)
+- Clearance-Map für Performance-Optimierung
+
+---
+
+## [1.22.5] - 2025-10-30 – Duplikat-Prävention Fix (Start-Datum Normalisierung)
+
+### Fixed - Schichten-Generator
+- **Start-Datum auf Mitternacht setzen**: Generator prüft nun korrekt auf Duplikate
+  - Problem: Trotz Warnung "59 Duplikate übersprungen" wurde 1 neue Schicht erstellt
+  - Ursache: Start-Datum verwendete aktuelle Uhrzeit (14:34) statt Mitternacht
+  - Duplikat-Suche `WHERE startTime >= '2025-10-30 14:34:00'` fand Schichten um 05:00 nicht
+  - Fix: `siteController.ts:726-742` - Start-Datum wird zwingend auf 00:00:00 normalisiert
+  - Ergebnis: Alle Schichten im Tagesverlauf werden korrekt als Duplikate erkannt
+
+---
+
+## [1.22.4] - 2025-10-30 – Schichten-Duplikat-Prüfung verbessert
+
+### Fixed - Schichten-Generator
+- **Duplikat-Prüfung vor Generierung**: System prüft jetzt VORHER auf existierende Schichten
+  - Verhindert unnötige Generierungsversuche
+  - Zeigt klare Nachricht: "Bereits X Schichten vorhanden"
+
+---
+
 ## [1.22.3] - 2025-10-30 – Schichten-Bugs behoben
 
 ### Fixed - Schichten-Generator
