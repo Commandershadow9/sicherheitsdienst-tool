@@ -290,7 +290,129 @@ async function main() {
 
     console.log('✅ Employee Profiles erstellt');
 
-    // ===== 4. SITES =====
+    // ===== 4. KUNDEN =====
+    const customer1 = await prisma.customer.create({
+      data: {
+        companyName: 'TechCorp GmbH',
+        industry: 'IT & Software',
+        taxId: 'DE123456789',
+        primaryContact: {
+          name: 'Dr. Marcus Weber',
+          email: 'marcus.weber@techcorp.de',
+          phone: '+49 30 12345-100',
+          position: 'Geschäftsführer',
+        },
+        contacts: [
+          {
+            name: 'Sandra Müller',
+            email: 'sandra.mueller@techcorp.de',
+            phone: '+49 30 12345-101',
+            position: 'Facility Manager',
+          },
+          {
+            name: 'Thomas Klein',
+            email: 'thomas.klein@techcorp.de',
+            phone: '+49 30 12345-102',
+            position: 'Head of Security',
+          },
+        ],
+        address: 'Technologiepark 15',
+        city: 'Berlin',
+        postalCode: '10115',
+        country: 'Deutschland',
+        paymentTerms: '14 Tage netto',
+        discount: 5.0, // 5% Stammkunden-Rabatt
+        notes: 'Wichtiger Stammkunde seit 2020. Regelmäßige Sicherheitschecks erforderlich. Bevorzugt erfahrene Mitarbeiter.',
+      },
+    });
+
+    const customer2 = await prisma.customer.create({
+      data: {
+        companyName: 'Shopping Paradise AG',
+        industry: 'Einzelhandel',
+        taxId: 'DE987654321',
+        primaryContact: {
+          name: 'Jennifer Schmidt',
+          email: 'j.schmidt@shopping-paradise.de',
+          phone: '+49 30 98765-200',
+          position: 'Center Manager',
+        },
+        contacts: [
+          {
+            name: 'Michael Bauer',
+            email: 'm.bauer@shopping-paradise.de',
+            phone: '+49 30 98765-201',
+            position: 'Sicherheitsbeauftragter',
+          },
+        ],
+        address: 'Einzelhandelsstraße 42',
+        city: 'Berlin',
+        postalCode: '10117',
+        country: 'Deutschland',
+        billingAddress: {
+          address: 'Zentrale, Konzernstraße 1',
+          city: 'Hamburg',
+          postalCode: '20095',
+          country: 'Deutschland',
+        },
+        paymentTerms: '30 Tage netto',
+        notes: 'Hoher Besucherverkehr, besonders am Wochenende. 24/7 Sicherheit erforderlich.',
+      },
+    });
+
+    const customer3 = await prisma.customer.create({
+      data: {
+        companyName: 'Industrie Solutions GmbH & Co. KG',
+        industry: 'Industrie & Fertigung',
+        taxId: 'DE555666777',
+        primaryContact: {
+          name: 'Dipl.-Ing. Robert Fischer',
+          email: 'r.fischer@industrie-solutions.de',
+          phone: '+49 30 55566-300',
+          position: 'Betriebsleiter',
+        },
+        contacts: [
+          {
+            name: 'Klaus Werner',
+            email: 'k.werner@industrie-solutions.de',
+            phone: '+49 30 55566-301',
+            position: 'Arbeitssicherheit',
+          },
+        ],
+        address: 'Industrieweg 88',
+        city: 'Berlin',
+        postalCode: '10318',
+        country: 'Deutschland',
+        paymentTerms: '30 Tage netto',
+        discount: 3.0,
+        notes: 'Industriegelände mit mehreren Hallen. Besondere Anforderungen an Brandschutz und Arbeitssicherheit.',
+      },
+    });
+
+    const customer4 = await prisma.customer.create({
+      data: {
+        companyName: 'Premium Events & Messen GmbH',
+        industry: 'Veranstaltungen',
+        taxId: 'DE111222333',
+        primaryContact: {
+          name: 'Lisa Wagner',
+          email: 'lisa.wagner@premium-events.de',
+          phone: '+49 30 11122-400',
+          position: 'Event Director',
+        },
+        contacts: [],
+        address: 'Messegelände Ost 5',
+        city: 'Berlin',
+        postalCode: '14055',
+        country: 'Deutschland',
+        paymentTerms: '7 Tage nach Veranstaltungsende',
+        notes: 'Wechselnde Veranstaltungsorte. Flexible Einsatzplanung erforderlich. Projekt-basierte Abrechnung.',
+      },
+    });
+
+    console.log('✅ 4 Kunden erstellt (IT, Einzelhandel, Industrie, Events)');
+
+    // ===== 5. SITES =====
     const site1 = await prisma.site.create({
       data: {
         name: 'Bürogebäude Zentrum',
@@ -298,6 +420,14 @@ async function main() {
         city: 'Berlin',
         postalCode: '10115',
         status: 'ACTIVE',
+        customerId: customer1.id, // TechCorp
+        buildingType: 'OFFICE',
+        floorCount: 8,
+        squareMeters: 5000,
+        customerName: 'TechCorp GmbH',
+        customerCompany: 'TechCorp GmbH',
+        customerEmail: 'marcus.weber@techcorp.de',
+        customerPhone: '+49 30 12345-100',
       },
     });
 
@@ -308,10 +438,54 @@ async function main() {
         city: 'Berlin',
         postalCode: '10115',
         status: 'ACTIVE',
+        customerId: customer2.id, // Shopping Paradise
+        buildingType: 'RETAIL',
+        floorCount: 3,
+        squareMeters: 12000,
+        customerName: 'Shopping Paradise AG',
+        customerCompany: 'Shopping Paradise AG',
+        customerEmail: 'j.schmidt@shopping-paradise.de',
+        customerPhone: '+49 30 98765-200',
       },
     });
 
-    console.log('✅ 2 Sites erstellt');
+    const site3 = await prisma.site.create({
+      data: {
+        name: 'Produktionshalle Ost',
+        address: 'Industrieweg 88',
+        city: 'Berlin',
+        postalCode: '10318',
+        status: 'ACTIVE',
+        customerId: customer3.id, // Industrie Solutions
+        buildingType: 'INDUSTRIAL',
+        floorCount: 2,
+        squareMeters: 8500,
+        customerName: 'Industrie Solutions GmbH & Co. KG',
+        customerCompany: 'Industrie Solutions GmbH & Co. KG',
+        customerEmail: 'r.fischer@industrie-solutions.de',
+        customerPhone: '+49 30 55566-300',
+      },
+    });
+
+    const site4 = await prisma.site.create({
+      data: {
+        name: 'Messegelände Süd - Halle 7',
+        address: 'Messegelände Ost 5',
+        city: 'Berlin',
+        postalCode: '14055',
+        status: 'ACTIVE',
+        customerId: customer4.id, // Premium Events
+        buildingType: 'EVENT',
+        floorCount: 1,
+        squareMeters: 3000,
+        customerName: 'Premium Events & Messen GmbH',
+        customerCompany: 'Premium Events & Messen GmbH',
+        customerEmail: 'lisa.wagner@premium-events.de',
+        customerPhone: '+49 30 11122-400',
+      },
+    });
+
+    console.log('✅ 4 Sites erstellt (Büro, Shopping, Industrie, Messe) und mit Kunden verknüpft');
 
     // ===== 5. OBJECT CLEARANCES (Gezielt verteilt) =====
     // Nur Mitarbeiter mit hasClearance: true bekommen Clearances
@@ -525,10 +699,16 @@ async function main() {
     console.log(`   👥 Benutzer: ${employees.length + 2} (${employees.length} Employees, 1 Admin, 1 Manager)`);
     console.log(`   🟢 MA mit Clearance: ${employeeProfiles.filter(p => p.hasClearance).length}`);
     console.log(`   🔴 MA ohne Clearance: ${employeeProfiles.filter(p => !p.hasClearance).length} (NEU - für Warning-Badge Test)`);
-    console.log('   🏢 Sites: 2 (Bürogebäude, Einkaufszentrum)');
+    console.log('   🏢 Kunden: 4 (IT, Einzelhandel, Industrie, Events)');
+    console.log('   🏗️  Sites: 4 (Bürogebäude, Einkaufszentrum, Produktionshalle, Messegelände)');
     console.log('   📅 Aktuelle Schichten: 3 (1 kritisch, 2 unterbesetzt)');
     console.log('   📜 Historische Schichten: 4 (für Fairness-Berechnung)');
     console.log('   📝 Abwesenheiten: 1 APPROVED, 1 REQUESTED');
+    console.log('\n🏢 KUNDEN-ÜBERSICHT:');
+    console.log('   1. TechCorp GmbH (IT) → Bürogebäude Zentrum');
+    console.log('   2. Shopping Paradise AG (Retail) → Einkaufszentrum Nord');
+    console.log('   3. Industrie Solutions GmbH & Co. KG (Industrie) → Produktionshalle Ost');
+    console.log('   4. Premium Events & Messen GmbH (Events) → Messegelände Süd - Halle 7');
     console.log('\n🔐 LOGIN:');
     console.log('   Email: admin@sicherheitsdienst.de');
     console.log('   Password: password123');
@@ -550,6 +730,12 @@ async function main() {
     console.log('      → Daniel Richter (20h): GOOD aber mit Clearance-Warning');
     console.log('\n   5️⃣  STATISTIKEN prüfen');
     console.log('      → API Response sollte enthalten: { total: 16, optimal: X, good: Y, acceptable: Z }');
+    console.log('\n   6️⃣  KUNDEN-ÜBERSICHT testen');
+    console.log('      → Navigation → Kunden');
+    console.log('      → Erwartung: 4 Kunden mit unterschiedlichen Branchen');
+    console.log('      → Kunde auswählen → Objekte des Kunden anzeigen');
+    console.log('      → Ansprechpartner-Details prüfen (primär + weitere Kontakte)');
+    console.log('      → Zahlungsbedingungen und Rabatte anzeigen');
     console.log('\n🔧 Seed ausführen:');
     console.log('   cd backend && npx ts-node src/utils/seedReplacementTest.ts\n');
   } catch (error) {

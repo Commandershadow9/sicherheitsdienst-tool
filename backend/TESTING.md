@@ -14,10 +14,20 @@ DATABASE_URL="postgresql://admin:admin123@localhost:5432/sicherheitsdienst_db?sc
 - **18 Benutzer**: 16 Employees, 1 Admin, 1 Manager
 - **11 MA mit Clearance** (sofort einsetzbar)
 - **5 MA ohne Clearance** (benötigen Einweisung - mit ⚠️ Warning-Badge)
-- **2 Sites**: Bürogebäude Zentrum, Einkaufszentrum Nord
+- **4 Kunden**: TechCorp (IT), Shopping Paradise (Retail), Industrie Solutions (Industrie), Premium Events (Events)
+- **4 Sites**: Bürogebäude Zentrum, Einkaufszentrum Nord, Produktionshalle Ost, Messegelände Süd
 - **3 aktuelle Schichten** (1 kritisch, 2 unterbesetzt)
 - **4 historische Schichten** (für Fairness-Score-Berechnung)
 - **Verschiedene Workload-Profile** (80h bis 155h)
+
+### 🏢 Kunden-Details
+
+| Kunde | Branche | Objekte | Besonderheiten |
+|-------|---------|---------|----------------|
+| TechCorp GmbH | IT & Software | Bürogebäude Zentrum (8 Etagen, 5000m²) | Stammkunde, 5% Rabatt, 14 Tage Zahlungsziel |
+| Shopping Paradise AG | Einzelhandel | Einkaufszentrum Nord (3 Etagen, 12000m²) | 24/7 Sicherheit, separate Rechnungsadresse |
+| Industrie Solutions GmbH & Co. KG | Industrie & Fertigung | Produktionshalle Ost (2 Etagen, 8500m²) | Brandschutz-Anforderungen, 3% Rabatt |
+| Premium Events & Messen GmbH | Veranstaltungen | Messegelände Süd - Halle 7 (1 Etage, 3000m²) | Wechselnde Orte, 7 Tage nach Event |
 
 ### 🔐 Login-Daten
 
@@ -172,6 +182,58 @@ GET /api/shifts/:shiftId/replacement-candidates
 **Erwartung**:
 - ✅ Mitarbeiter ohne historische Schichten haben höheren Fairness-Score
 - ✅ Dashboard zeigt "Ersatz-Count" pro Mitarbeiter
+
+---
+
+### 9️⃣ Kunden-Übersicht und Objektverwaltung
+
+**Ziel**: Kunden verwalten und deren Objekte anzeigen
+
+**Schritte**:
+1. Navigation → Kunden
+2. Kundenübersicht mit 4 Kunden anzeigen
+3. Kunde auswählen (z.B. TechCorp GmbH)
+4. Details prüfen
+
+**Erwartete Ergebnisse**:
+
+**Kundenübersicht**:
+- ✅ 4 Kunden werden angezeigt
+- ✅ Branche, Stadt, Anzahl Objekte sichtbar
+- ✅ Filter nach Branche funktioniert
+- ✅ Suche nach Firmenname funktioniert
+
+**Kunden-Details (TechCorp GmbH)**:
+- ✅ **Stammdaten**:
+  - Firmenname: TechCorp GmbH
+  - Branche: IT & Software
+  - Steuernummer: DE123456789
+- ✅ **Hauptansprechpartner**:
+  - Name: Dr. Marcus Weber
+  - Position: Geschäftsführer
+  - Email: marcus.weber@techcorp.de
+  - Telefon: +49 30 12345-100
+- ✅ **Weitere Ansprechpartner**: 2 Kontakte (Sandra Müller, Thomas Klein)
+- ✅ **Firmensitz**: Technologiepark 15, 10115 Berlin
+- ✅ **Zahlungskonditionen**: 14 Tage netto
+- ✅ **Rabatt**: 5% (Stammkunde)
+- ✅ **Notizen**: "Wichtiger Stammkunde seit 2020..."
+- ✅ **Zugeordnete Objekte**: 1 Objekt (Bürogebäude Zentrum)
+
+**Objekt-Verwaltung über Kunde**:
+- ✅ Objekt in Kunden-Details anklicken
+- ✅ Weiterleitung zu Objekt-Details
+- ✅ Objekt zeigt Kunden-Verknüpfung
+- ✅ Von Objekt zurück zu Kunde navigieren
+
+**Verschiedene Kunden-Typen**:
+
+| Kunde | Test-Fokus |
+|-------|-----------|
+| **TechCorp** | Stammkunde mit Rabatt + mehreren Ansprechpartnern |
+| **Shopping Paradise** | Separate Rechnungsadresse (Hamburg vs. Berlin) |
+| **Industrie Solutions** | Lange Firmenbezeichnung (GmbH & Co. KG) + spezielle Anforderungen |
+| **Premium Events** | Keine zusätzlichen Kontakte + projektbasierte Abrechnung (7 Tage) |
 
 ---
 
