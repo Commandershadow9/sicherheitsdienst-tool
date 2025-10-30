@@ -743,6 +743,20 @@ export const generateShiftsForSite = async (req: Request, res: Response, next: N
       shiftModelId = '3-SHIFT';
     }
 
+    // Prüfe ob bereits Schichten im Zeitraum existieren
+    const endDate = new Date(start);
+    endDate.setDate(endDate.getDate() + Math.min(Math.max(daysAhead, 1), 90));
+
+    const existingShiftsCount = await prisma.shift.count({
+      where: {
+        siteId: site.id,
+        startTime: {
+          gte: start,
+          lt: endDate,
+        },
+      },
+    });
+
     // Schichten generieren
     const shiftsData = generateShifts({
       siteId: site.id,
@@ -763,11 +777,31 @@ export const generateShiftsForSite = async (req: Request, res: Response, next: N
     // Statistiken
     const stats = getShiftGenerationStats(shiftsData);
 
-    res.status(201).json({
+    // Intelligente Nachricht basierend auf Ergebnis
+    let message: string;
+    let status: number;
+
+    if (createdShifts.count === 0 && existingShiftsCount > 0) {
+      message = `Keine neuen Schichten erstellt. Für diesen Zeitraum existieren bereits ${existingShiftsCount} Schichten. Bitte wählen Sie einen anderen Zeitraum oder löschen Sie die bestehenden Schichten.`;
+      status = 200;
+    } else if (createdShifts.count === 0) {
+      message = 'Keine Schichten erstellt. Bitte überprüfen Sie das Schichtmodell.';
+      status = 200;
+    } else if (createdShifts.count < shiftsData.length) {
+      message = `${createdShifts.count} neue Schichten erstellt. ${shiftsData.length - createdShifts.count} Schichten existierten bereits und wurden übersprungen.`;
+      status = 201;
+    } else {
+      message = `${createdShifts.count} Schichten erfolgreich generiert (basierend auf ${activeConceptFromDB ? 'aktivem Sicherheitskonzept' : 'Legacy-Konzept'})`;
+      status = 201;
+    }
+
+    res.status(status).json({
       success: true,
-      message: `${createdShifts.count} Schichten erfolgreich generiert (basierend auf ${activeConceptFromDB ? 'aktivem Sicherheitskonzept' : 'Legacy-Konzept'})`,
+      message,
       data: {
         created: createdShifts.count,
+        existing: existingShiftsCount,
+        attempted: shiftsData.length,
         stats,
         template: securityConceptData.shiftModel,
         source: activeConceptFromDB ? 'security_concept_table' : 'legacy_json',

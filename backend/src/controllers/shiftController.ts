@@ -202,14 +202,25 @@ export const getShiftsForSite = async (req: Request, res: Response, next: NextFu
     const data = await prisma.shift.findMany({
       where: { siteId },
       orderBy: { startTime: 'asc' },
-      include: { assignments: false },
+      include: {
+        assignments: {
+          select: { id: true },
+        },
+      },
     });
+
+    // Transform data to include assignedEmployees count
+    const transformedData = data.map((shift: any) => ({
+      ...shift,
+      assignedEmployees: shift.assignments?.length || 0,
+      assignments: undefined, // Remove assignments array from response for cleaner payload
+    }));
 
     const accept = (req.headers['accept'] as string) || '';
     if (accept.includes('text/csv')) {
-      const header = ['id','siteId','title','location','startTime','endTime','requiredEmployees','status'];
+      const header = ['id','siteId','title','location','startTime','endTime','requiredEmployees','assignedEmployees','status'];
       async function* rows() {
-        for (const sh of data as any[]) {
+        for (const sh of transformedData as any[]) {
           yield {
             id: sh.id,
             siteId: sh.siteId || '',
@@ -218,6 +229,7 @@ export const getShiftsForSite = async (req: Request, res: Response, next: NextFu
             startTime: new Date(sh.startTime).toISOString(),
             endTime: new Date(sh.endTime).toISOString(),
             requiredEmployees: sh.requiredEmployees,
+            assignedEmployees: sh.assignedEmployees,
             status: sh.status,
           } as Record<string, unknown>;
         }
@@ -228,9 +240,9 @@ export const getShiftsForSite = async (req: Request, res: Response, next: NextFu
     if (accept.includes('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')) {
       const wb = new ExcelJS.Workbook();
       const ws = wb.addWorksheet('shifts');
-      const header = ['id', 'siteId', 'title', 'location', 'startTime', 'endTime', 'requiredEmployees', 'status'];
+      const header = ['id', 'siteId', 'title', 'location', 'startTime', 'endTime', 'requiredEmployees', 'assignedEmployees', 'status'];
       ws.addRow(header);
-      for (const sh of data as any[]) {
+      for (const sh of transformedData as any[]) {
         ws.addRow([
           sh.id,
           sh.siteId || '',
@@ -239,6 +251,7 @@ export const getShiftsForSite = async (req: Request, res: Response, next: NextFu
           new Date(sh.startTime).toISOString(),
           new Date(sh.endTime).toISOString(),
           sh.requiredEmployees,
+          sh.assignedEmployees,
           sh.status,
         ]);
       }
@@ -250,7 +263,7 @@ export const getShiftsForSite = async (req: Request, res: Response, next: NextFu
       return;
     }
 
-    res.json({ success: true, data });
+    res.json({ success: true, data: transformedData });
   } catch (error) {
     next(error);
   }
