@@ -250,7 +250,7 @@ export const getShiftsForSite = async (req: Request, res: Response, next: NextFu
       return;
     }
 
-    res.json(data);
+    res.json({ success: true, data });
   } catch (error) {
     next(error);
   }

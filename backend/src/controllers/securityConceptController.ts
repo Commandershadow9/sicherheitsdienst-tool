@@ -208,8 +208,11 @@ export const updateSecurityConcept = async (req: Request, res: Response, next: N
       return;
     }
 
-    // Verhindere Aktualisierung von freigegebenen/aktiven Konzepten
-    if (existing.status === 'ACTIVE' || existing.status === 'APPROVED') {
+    // Verhindere Aktualisierung von freigegebenen/aktiven Konzepten (außer für ADMIN/MANAGER)
+    const userRole = req.user?.role;
+    const canManageActiveConcepts = userRole === 'ADMIN' || userRole === 'MANAGER';
+
+    if ((existing.status === 'ACTIVE' || existing.status === 'APPROVED') && !canManageActiveConcepts) {
       res.status(400).json({
         success: false,
         message: 'Freigegebene oder aktive Konzepte können nicht bearbeitet werden. Erstellen Sie eine neue Version.',
