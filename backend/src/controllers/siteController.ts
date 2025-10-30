@@ -743,20 +743,6 @@ export const generateShiftsForSite = async (req: Request, res: Response, next: N
       shiftModelId = '3-SHIFT';
     }
 
-    // Prüfe ob bereits Schichten im Zeitraum existieren
-    const endDate = new Date(start);
-    endDate.setDate(endDate.getDate() + Math.min(Math.max(daysAhead, 1), 90));
-
-    const existingShiftsCount = await prisma.shift.count({
-      where: {
-        siteId: site.id,
-        startTime: {
-          gte: start,
-          lt: endDate,
-        },
-      },
-    });
-
     // Schichten generieren
     const shiftsData = generateShifts({
       siteId: site.id,
@@ -768,30 +754,68 @@ export const generateShiftsForSite = async (req: Request, res: Response, next: N
       daysAhead: Math.min(Math.max(daysAhead, 1), 90), // Max 90 Tage
     });
 
-    // In Datenbank speichern
-    const createdShifts = await prisma.shift.createMany({
-      data: shiftsData,
-      skipDuplicates: true, // Überspringt bereits existierende Schichten
+    // Prüfe welche Schichten bereits existieren (manuelle Duplikat-Prüfung)
+    const endDate = new Date(start);
+    endDate.setDate(endDate.getDate() + Math.min(Math.max(daysAhead, 1), 90));
+
+    const existingShifts = await prisma.shift.findMany({
+      where: {
+        siteId: site.id,
+        startTime: {
+          gte: start,
+          lt: endDate,
+        },
+      },
+      select: {
+        id: true,
+        startTime: true,
+        endTime: true,
+        title: true,
+      },
     });
+
+    // Erstelle Set für schnelle Duplikat-Prüfung
+    // Duplikat = gleiche siteId + startTime + endTime + title
+    const existingShiftKeys = new Set(
+      existingShifts.map((shift) =>
+        `${shift.startTime.toISOString()}_${shift.endTime.toISOString()}_${shift.title}`
+      )
+    );
+
+    // Filtere nur neue Schichten (keine Duplikate)
+    const newShifts = shiftsData.filter((shift) => {
+      const key = `${shift.startTime.toISOString()}_${shift.endTime.toISOString()}_${shift.title}`;
+      return !existingShiftKeys.has(key);
+    });
+
+    // Nur erstellen wenn es neue Schichten gibt
+    let createdCount = 0;
+    if (newShifts.length > 0) {
+      const result = await prisma.shift.createMany({
+        data: newShifts,
+      });
+      createdCount = result.count;
+    }
 
     // Statistiken
     const stats = getShiftGenerationStats(shiftsData);
+    const duplicateCount = shiftsData.length - newShifts.length;
 
     // Intelligente Nachricht basierend auf Ergebnis
     let message: string;
     let status: number;
 
-    if (createdShifts.count === 0 && existingShiftsCount > 0) {
-      message = `Keine neuen Schichten erstellt. Für diesen Zeitraum existieren bereits ${existingShiftsCount} Schichten. Bitte wählen Sie einen anderen Zeitraum oder löschen Sie die bestehenden Schichten.`;
+    if (createdCount === 0 && existingShifts.length > 0) {
+      message = `Keine neuen Schichten erstellt. Für diesen Zeitraum existieren bereits ${existingShifts.length} Schichten. Alle ${shiftsData.length} generierten Schichten sind Duplikate.`;
       status = 200;
-    } else if (createdShifts.count === 0) {
+    } else if (createdCount === 0) {
       message = 'Keine Schichten erstellt. Bitte überprüfen Sie das Schichtmodell.';
       status = 200;
-    } else if (createdShifts.count < shiftsData.length) {
-      message = `${createdShifts.count} neue Schichten erstellt. ${shiftsData.length - createdShifts.count} Schichten existierten bereits und wurden übersprungen.`;
+    } else if (duplicateCount > 0) {
+      message = `${createdCount} neue Schichten erstellt. ${duplicateCount} Duplikate wurden übersprungen (bereits vorhanden).`;
       status = 201;
     } else {
-      message = `${createdShifts.count} Schichten erfolgreich generiert (basierend auf ${activeConceptFromDB ? 'aktivem Sicherheitskonzept' : 'Legacy-Konzept'})`;
+      message = `${createdCount} Schichten erfolgreich generiert (basierend auf ${activeConceptFromDB ? 'aktivem Sicherheitskonzept' : 'Legacy-Konzept'})`;
       status = 201;
     }
 
@@ -799,8 +823,9 @@ export const generateShiftsForSite = async (req: Request, res: Response, next: N
       success: true,
       message,
       data: {
-        created: createdShifts.count,
-        existing: existingShiftsCount,
+        created: createdCount,
+        existing: existingShifts.length,
+        duplicates: duplicateCount,
         attempted: shiftsData.length,
         stats,
         template: securityConceptData.shiftModel,
