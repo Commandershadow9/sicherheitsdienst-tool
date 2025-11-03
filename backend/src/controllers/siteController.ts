@@ -408,6 +408,11 @@ export const getSiteCoverageStats = async (req: Request, res: Response, next: Ne
       include: {
         clearances: { where: { status: 'ACTIVE' } },
         assignments: { include: { user: true } },
+        securityConcepts: {
+          where: { status: 'ACTIVE' },
+          orderBy: { createdAt: 'desc' },
+          take: 1,
+        },
       },
     });
 
@@ -416,8 +421,19 @@ export const getSiteCoverageStats = async (req: Request, res: Response, next: Ne
       return;
     }
 
+    // SINGLE SOURCE OF TRUTH: SecurityConcept
+    const securityConcept = site.securityConcepts?.[0];
+
+    // Personal-Anforderungen aus SecurityConcept (mit Fallback)
+    let requiredStaff = site.requiredStaff || 1; // Fallback
+    if (securityConcept?.staffRequirements) {
+      const staffReqs = securityConcept.staffRequirements as any;
+      if (staffReqs?.anzahlMA) {
+        requiredStaff = staffReqs.anzahlMA;
+      }
+    }
+
     // Berechnung basierend auf assignments (nicht clearances!)
-    const requiredStaff = site.requiredStaff || 1;
     const assignedStaff = site.assignments.length;
     const coveragePercentage = Math.min(100, Math.round((assignedStaff / requiredStaff) * 100));
 
@@ -431,11 +447,22 @@ export const getSiteCoverageStats = async (req: Request, res: Response, next: Ne
       status = 'CRITICAL';
     }
 
-    // Breakdown nach Rollen mit required vs assigned
-    // Empfohlene Verteilung: 1 Objektleiter, ~30% Schichtleiter, Rest Mitarbeiter
-    const requiredObjektleiter = 1;
-    const requiredSchichtleiter = Math.max(1, Math.ceil(requiredStaff * 0.3));
-    const requiredMitarbeiter = Math.max(0, requiredStaff - requiredObjektleiter - requiredSchichtleiter);
+    // Breakdown nach Rollen - nutze taskProfiles aus SecurityConcept falls vorhanden
+    const taskProfiles = securityConcept?.taskProfiles ? (securityConcept.taskProfiles as any) : null;
+    let requiredObjektleiter = 1; // Default
+    let requiredSchichtleiter = Math.max(1, Math.ceil(requiredStaff * 0.3)); // Default: ~30%
+    let requiredMitarbeiter = Math.max(0, requiredStaff - requiredObjektleiter - requiredSchichtleiter);
+
+    // Override mit taskProfiles wenn definiert
+    if (taskProfiles) {
+      if (taskProfiles.objektleiter?.required !== undefined) {
+        requiredObjektleiter = taskProfiles.objektleiter.required ? 1 : 0;
+      }
+      if (taskProfiles.schichtleiter?.required !== undefined) {
+        requiredSchichtleiter = taskProfiles.schichtleiter.required ? Math.max(1, Math.ceil(requiredStaff * 0.3)) : 0;
+      }
+      requiredMitarbeiter = Math.max(0, requiredStaff - requiredObjektleiter - requiredSchichtleiter);
+    }
 
     const assignedObjektleiter = site.assignments.filter((a) => a.role === 'OBJEKTLEITER').length;
     const assignedSchichtleiter = site.assignments.filter((a) => a.role === 'SCHICHTLEITER').length;

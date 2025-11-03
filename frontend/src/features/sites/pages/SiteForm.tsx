@@ -300,6 +300,11 @@ export default function SiteForm({ mode }: SiteFormProps) {
         {/* Anforderungen */}
         <div className="bg-white p-6 rounded-xl border shadow-sm space-y-4">
           <h2 className="text-lg font-semibold text-gray-900">Anforderungen</h2>
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm">
+            <p className="text-blue-900">
+              💡 <strong>Hinweis:</strong> Diese Werte dienen als Fallback-Werte. Sobald ein Sicherheitskonzept für dieses Objekt erstellt wird, werden die Anforderungen daraus übernommen (Single Source of Truth).
+            </p>
+          </div>
           <FormField label="Benötigte Mitarbeiter *">
             <Input
               type="number"

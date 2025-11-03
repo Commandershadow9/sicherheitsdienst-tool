@@ -109,6 +109,25 @@ type Site = {
     templateId?: string
     templateName?: string
   }
+  securityConcepts?: Array<{
+    id: string
+    status: string
+    staffRequirements?: {
+      anzahlMA?: number
+      qualifikationen?: string[]
+    }
+    taskProfiles?: {
+      objektleiter?: {
+        required: boolean
+        qualifikationen?: string[]
+      }
+      schichtleiter?: {
+        required: boolean
+        qualifikationen?: string[]
+      }
+    }
+    shiftModel?: any
+  }>
 }
 
 const STATUS_LABELS: Record<string, string> = {
@@ -718,27 +737,121 @@ export default function SiteDetail() {
               </div>
             )}
 
-            {/* Anforderungen */}
+            {/* Anforderungen - Single Source of Truth: SecurityConcept */}
             <div>
               <h3 className="text-lg font-semibold mb-3">Anforderungen</h3>
-              <dl className="grid grid-cols-2 gap-4">
-                <dt className="text-sm font-medium text-gray-600">Benötigte Mitarbeiter</dt>
-                <dd className="text-sm">{site.requiredStaff || 1}</dd>
-                {site.requiredQualifications && site.requiredQualifications.length > 0 && (
+              {(() => {
+                // Nutze SecurityConcept als Single Source of Truth
+                const securityConcept = site.securityConcepts?.[0]
+                const staffRequirements = securityConcept?.staffRequirements
+                const taskProfiles = securityConcept?.taskProfiles
+
+                // Fallback zu alten Feldern wenn kein SecurityConcept vorhanden
+                const requiredStaff = staffRequirements?.anzahlMA ?? site.requiredStaff ?? 1
+                const requiredQualifications = staffRequirements?.qualifikationen ?? site.requiredQualifications ?? []
+
+                return (
                   <>
-                    <dt className="text-sm font-medium text-gray-600">Benötigte Qualifikationen</dt>
-                    <dd className="text-sm">
-                      <div className="flex flex-wrap gap-1">
-                        {site.requiredQualifications.map((q, idx) => (
-                          <span key={idx} className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-gray-100">
-                            {q}
+                    <dl className="grid grid-cols-2 gap-4">
+                      <dt className="text-sm font-medium text-gray-600">Benötigte Mitarbeiter</dt>
+                      <dd className="text-sm font-semibold">
+                        {requiredStaff}
+                        {!securityConcept && (
+                          <span className="ml-2 text-xs text-orange-600 font-normal">
+                            (ohne Sicherheitskonzept)
                           </span>
-                        ))}
+                        )}
+                      </dd>
+                      {requiredQualifications.length > 0 && (
+                        <>
+                          <dt className="text-sm font-medium text-gray-600">Benötigte Qualifikationen</dt>
+                          <dd className="text-sm">
+                            <div className="flex flex-wrap gap-1">
+                              {requiredQualifications.map((q, idx) => (
+                                <span key={idx} className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-gray-100">
+                                  {q}
+                                </span>
+                              ))}
+                            </div>
+                          </dd>
+                        </>
+                      )}
+                    </dl>
+
+                    {/* TaskProfiles (Objektleiter/Schichtleiter) - Optional */}
+                    {taskProfiles && (taskProfiles.objektleiter || taskProfiles.schichtleiter) && (
+                      <div className="mt-4 pt-4 border-t">
+                        <h4 className="text-sm font-semibold text-gray-700 mb-3">Rollen-Anforderungen</h4>
+                        <dl className="grid grid-cols-1 gap-3">
+                          {taskProfiles.objektleiter && (
+                            <div className="flex items-start gap-2">
+                              <dt className="text-sm font-medium text-gray-600 min-w-[140px]">
+                                Objektleiter:
+                              </dt>
+                              <dd className="text-sm">
+                                {taskProfiles.objektleiter.required ? (
+                                  <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-blue-100 text-blue-800">
+                                    ✓ Erforderlich
+                                  </span>
+                                ) : (
+                                  <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-600">
+                                    Optional
+                                  </span>
+                                )}
+                                {taskProfiles.objektleiter.qualifikationen && taskProfiles.objektleiter.qualifikationen.length > 0 && (
+                                  <div className="flex flex-wrap gap-1 mt-1">
+                                    {taskProfiles.objektleiter.qualifikationen.map((q, idx) => (
+                                      <span key={idx} className="inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-blue-50 text-blue-700">
+                                        {q}
+                                      </span>
+                                    ))}
+                                  </div>
+                                )}
+                              </dd>
+                            </div>
+                          )}
+                          {taskProfiles.schichtleiter && (
+                            <div className="flex items-start gap-2">
+                              <dt className="text-sm font-medium text-gray-600 min-w-[140px]">
+                                Schichtleiter:
+                              </dt>
+                              <dd className="text-sm">
+                                {taskProfiles.schichtleiter.required ? (
+                                  <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-blue-100 text-blue-800">
+                                    ✓ Erforderlich
+                                  </span>
+                                ) : (
+                                  <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-600">
+                                    Optional
+                                  </span>
+                                )}
+                                {taskProfiles.schichtleiter.qualifikationen && taskProfiles.schichtleiter.qualifikationen.length > 0 && (
+                                  <div className="flex flex-wrap gap-1 mt-1">
+                                    {taskProfiles.schichtleiter.qualifikationen.map((q, idx) => (
+                                      <span key={idx} className="inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-blue-50 text-blue-700">
+                                        {q}
+                                      </span>
+                                    ))}
+                                  </div>
+                                )}
+                              </dd>
+                            </div>
+                          )}
+                        </dl>
                       </div>
-                    </dd>
+                    )}
+
+                    {/* Hinweis wenn kein Sicherheitskonzept vorhanden */}
+                    {!securityConcept && (
+                      <div className="mt-4 bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                        <p className="text-sm text-yellow-900">
+                          ⚠️ <strong>Hinweis:</strong> Für dieses Objekt ist noch kein Sicherheitskonzept hinterlegt. Die angezeigten Werte sind Fallback-Werte. Bitte erstellen Sie ein Sicherheitskonzept für genaue Anforderungen.
+                        </p>
+                      </div>
+                    )}
                   </>
-                )}
-              </dl>
+                )
+              })()}
             </div>
 
             {/* Coverage Stats */}
