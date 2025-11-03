@@ -10,10 +10,11 @@ export interface GenerateShiftsOptions {
   siteId: string;
   siteName: string;
   shiftModel: string; // Template-ID (z.B. "3-SHIFT")
-  requiredStaff: number; // Gesamtanzahl benötigter MA
+  requiredStaff: number; // Gesamtanzahl benötigter MA (fallback)
   requiredQualifications: string[];
   startDate: Date;
   daysAhead: number; // Wie viele Tage voraus generieren (default: 30)
+  shiftModelData?: any; // Optional: Komplette Shift-Definitionen aus SecurityConcept
 }
 
 export interface GeneratedShift {
@@ -40,16 +41,30 @@ export function generateShifts(options: GenerateShiftsOptions): GeneratedShift[]
     requiredQualifications,
     startDate,
     daysAhead = 30,
+    shiftModelData,
   } = options;
 
-  // Template laden
-  const template = getShiftTemplate(shiftModel);
-  if (!template) {
-    throw new Error(`Unbekanntes Schichtmodell: ${shiftModel}`);
-  }
+  let shiftsWithStaff: any[];
 
-  // Personalverteilung berechnen
-  const shiftsWithStaff = calculateStaffDistribution(template, requiredStaff);
+  // NEUE LOGIK: SecurityConcept shiftModelData hat Vorrang (Single Source of Truth)
+  if (shiftModelData && shiftModelData.shifts && Array.isArray(shiftModelData.shifts)) {
+    // Nutze Shift-Definitionen direkt aus SecurityConcept
+    shiftsWithStaff = shiftModelData.shifts.map((shift: any) => ({
+      name: shift.name,
+      startTime: shift.start,
+      endTime: shift.end,
+      requiredStaff: shift.requiredStaff || 1,
+      days: [0, 1, 2, 3, 4, 5, 6], // Alle Tage (Mo-So), kann später verfeinert werden
+    }));
+  } else {
+    // ALTE LOGIK: Template-basiert (Fallback)
+    const template = getShiftTemplate(shiftModel);
+    if (!template) {
+      throw new Error(`Unbekanntes Schichtmodell: ${shiftModel}`);
+    }
+    // Personalverteilung berechnen
+    shiftsWithStaff = calculateStaffDistribution(template, requiredStaff);
+  }
 
   const generatedShifts: GeneratedShift[] = [];
 
@@ -95,7 +110,7 @@ export function generateShifts(options: GenerateShiftsOptions): GeneratedShift[]
       generatedShifts.push({
         siteId,
         title: `${siteName} - ${shiftDef.name}`,
-        description: `${template.name} - ${shiftDef.name}`,
+        description: shiftDef.name,
         location: siteName,
         startTime: shiftStart,
         endTime: shiftEnd,

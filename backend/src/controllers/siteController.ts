@@ -748,9 +748,12 @@ export const generateShiftsForSite = async (req: Request, res: Response, next: N
 
     // Schichtmodell extrahieren (neues Format: { model: "3-SHIFT", ... } oder legacy: "3-SHIFT")
     let shiftModelId: string;
+    let shiftModelData: any = null;
+
     if (typeof securityConceptData.shiftModel === 'object' && securityConceptData.shiftModel !== null) {
       // Neues Format: { model: "3-SHIFT", hoursPerWeek: 168, shifts: [...] }
-      shiftModelId = securityConceptData.shiftModel.model || '3-SHIFT';
+      shiftModelData = securityConceptData.shiftModel;
+      shiftModelId = shiftModelData.model || '3-SHIFT';
     } else if (typeof securityConceptData.shiftModel === 'string') {
       // Legacy Format: "3-SHIFT"
       shiftModelId = securityConceptData.shiftModel;
@@ -759,15 +762,26 @@ export const generateShiftsForSite = async (req: Request, res: Response, next: N
       shiftModelId = '3-SHIFT';
     }
 
+    // Personal-Anforderungen aus SecurityConcept (SINGLE SOURCE OF TRUTH)
+    let requiredStaffTotal = site.requiredStaff || 1; // Fallback
+    let requiredQualifications = site.requiredQualifications || [];
+
+    if (securityConceptData.staffRequirements) {
+      // staffRequirements: { anzahlMA, qualifikationen }
+      requiredStaffTotal = securityConceptData.staffRequirements.anzahlMA || requiredStaffTotal;
+      requiredQualifications = securityConceptData.staffRequirements.qualifikationen || requiredQualifications;
+    }
+
     // Schichten generieren
     const shiftsData = generateShifts({
       siteId: site.id,
       siteName: site.name,
       shiftModel: shiftModelId,
-      requiredStaff: site.requiredStaff || 1,
-      requiredQualifications: site.requiredQualifications || [],
+      requiredStaff: requiredStaffTotal,
+      requiredQualifications: requiredQualifications,
       startDate: start,
       daysAhead: Math.min(Math.max(daysAhead, 1), 90), // Max 90 Tage
+      shiftModelData: shiftModelData, // Übergebe die kompletten Shift-Definitionen
     });
 
     // Prüfe welche Schichten bereits existieren (manuelle Duplikat-Prüfung)
