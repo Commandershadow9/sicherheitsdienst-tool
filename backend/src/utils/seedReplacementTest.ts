@@ -489,6 +489,9 @@ async function main() {
 
     // ===== 5. OBJECT CLEARANCES (Gezielt verteilt) =====
     // Nur Mitarbeiter mit hasClearance: true bekommen Clearances
+    // Realistische Verteilung über alle Sites
+
+    // Site 1 (Bürogebäude): Alle 11 MA mit Clearance
     for (let i = 0; i < employeeProfiles.length; i++) {
       if (employeeProfiles[i].hasClearance) {
         await prisma.objectClearance.create({
@@ -503,7 +506,59 @@ async function main() {
       }
     }
 
-    console.log(`✅ ${employeeProfiles.filter(p => p.hasClearance).length} Object Clearances für Site 1 erstellt`);
+    // Site 2 (Einkaufszentrum): 8 MA (überschneidend mit Site 1)
+    const site2Employees = [0, 1, 2, 4, 5, 6, 10, 11]; // Mix aus erfahrenen MA
+    for (const idx of site2Employees) {
+      if (employeeProfiles[idx].hasClearance) {
+        await prisma.objectClearance.create({
+          data: {
+            userId: employees[idx].id,
+            siteId: site2.id,
+            status: 'ACTIVE',
+            trainedAt: new Date('2024-03-01'),
+            validUntil: new Date('2025-12-31'),
+          },
+        });
+      }
+    }
+
+    // Site 3 (Produktionshalle): 6 MA (Industrie-erfahren)
+    const site3Employees = [0, 2, 3, 6, 10, 12]; // Thomas, Michael, Julia, Markus, Robert, Frank
+    for (const idx of site3Employees) {
+      if (employeeProfiles[idx].hasClearance) {
+        await prisma.objectClearance.create({
+          data: {
+            userId: employees[idx].id,
+            siteId: site3.id,
+            status: 'ACTIVE',
+            trainedAt: new Date('2024-06-01'),
+            validUntil: new Date('2025-12-31'),
+          },
+        });
+      }
+    }
+
+    // Site 4 (Messegelände): 5 MA (Event-erfahren)
+    const site4Employees = [1, 4, 5, 11, 12]; // Anna, Stefan, Petra, Maria, Frank
+    for (const idx of site4Employees) {
+      if (employeeProfiles[idx].hasClearance) {
+        await prisma.objectClearance.create({
+          data: {
+            userId: employees[idx].id,
+            siteId: site4.id,
+            status: 'ACTIVE',
+            trainedAt: new Date('2024-08-01'),
+            validUntil: new Date('2025-12-31'),
+          },
+        });
+      }
+    }
+
+    console.log(`✅ Object Clearances erstellt:`);
+    console.log(`   - Site 1 (Bürogebäude): 11 MA`);
+    console.log(`   - Site 2 (Einkaufszentrum): 8 MA`);
+    console.log(`   - Site 3 (Produktionshalle): 6 MA`);
+    console.log(`   - Site 4 (Messegelände): 5 MA`);
 
     // ===== 6. SCHICHTEN FÜR HEUTE =====
     const today = new Date();

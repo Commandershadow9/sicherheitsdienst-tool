@@ -12,6 +12,11 @@ type Site = {
   securityConcept?: {
     shiftModel?: string
   }
+  securityConcepts?: Array<{
+    id: string
+    status: string
+    shiftModel?: any
+  }>
 }
 
 type ShiftsTabProps = {
@@ -22,6 +27,13 @@ type ShiftsTabProps = {
 export default function ShiftsTab({ site, siteId }: ShiftsTabProps) {
   const nav = useNavigate()
   const queryClient = useQueryClient()
+
+  // Prüfe ob Sicherheitskonzept mit Schichtmodell vorhanden ist
+  // Unterstützt sowohl altes Format (site.securityConcept) als auch neues (site.securityConcepts[])
+  const hasShiftModel = !!(
+    site.securityConcept?.shiftModel ||
+    (site.securityConcepts && site.securityConcepts.length > 0 && site.securityConcepts[0].shiftModel)
+  )
 
   // Fetch shifts
   const { data: shifts = [], isLoading: shiftsLoading } = useQuery({
@@ -57,7 +69,7 @@ export default function ShiftsTab({ site, siteId }: ShiftsTabProps) {
               const startDate = new Date().toISOString()
               generateShiftsMutation.mutate({ startDate, daysAhead: 30 })
             }}
-            disabled={generateShiftsMutation.isPending || !site.securityConcept?.shiftModel}
+            disabled={generateShiftsMutation.isPending || !hasShiftModel}
           >
             {generateShiftsMutation.isPending ? 'Generiere...' : 'Schichten generieren'}
           </Button>
@@ -67,7 +79,7 @@ export default function ShiftsTab({ site, siteId }: ShiftsTabProps) {
         </div>
       </div>
 
-      {!site.securityConcept?.shiftModel && (
+      {!hasShiftModel && (
         <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
           <p className="text-sm text-yellow-900">
             ⚠️ <strong>Hinweis:</strong> Für dieses Objekt ist noch kein Sicherheitskonzept mit Schichtmodell hinterlegt. Bitte bearbeiten Sie das Objekt und fügen Sie ein Schichtmodell hinzu.

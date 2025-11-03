@@ -170,6 +170,11 @@ export const getSiteById = async (req: Request, res: Response, next: NextFunctio
               include: { user: { select: { id: true, firstName: true, lastName: true } } },
               orderBy: { createdAt: 'desc' },
             },
+            securityConcepts: {
+              where: { status: 'ACTIVE' },
+              orderBy: { createdAt: 'desc' },
+              take: 1,
+            },
           }
         : undefined,
     });
