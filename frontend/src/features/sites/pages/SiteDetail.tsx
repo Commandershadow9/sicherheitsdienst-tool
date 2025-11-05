@@ -39,129 +39,15 @@ import ImagesTab from '../components/tabs/ImagesTab'
 import DocumentsTab from '../components/tabs/DocumentsTab'
 import IncidentsTab from '../components/tabs/IncidentsTab'
 import SecurityConceptTab from '../components/tabs/SecurityConceptTab'
-
-type Site = {
-  id: string
-  name: string
-  address: string
-  city: string
-  postalCode: string
-  customerName?: string
-  customerCompany?: string
-  customerEmail?: string
-  customerPhone?: string
-  emergencyContacts?: Array<{ name: string; phone: string; role?: string }>
-  status?: 'INQUIRY' | 'IN_REVIEW' | 'CALCULATING' | 'OFFER_SENT' | 'ACTIVE' | 'INACTIVE' | 'LOST'
-  requiredStaff?: number
-  requiredQualifications?: string[]
-  description?: string
-  notes?: string
-  images?: Array<{
-    id: string
-    filename: string
-    category: string
-    uploadedAt: string
-    uploader: { firstName: string; lastName: string }
-  }>
-  assignments?: Array<{
-    id: string
-    role: string
-    user: { id: string; firstName: string; lastName: string; email: string }
-  }>
-  clearances?: Array<{
-    id: string
-    status: string
-    user: { id: string; firstName: string; lastName: string }
-    trainingCompletedAt?: string
-  }>
-  documents?: Array<{
-    id: string
-    title: string
-    description?: string
-    category: string
-    filename: string
-    fileSize: number
-    mimeType: string
-    version: number
-    isLatest: boolean
-    uploadedAt: string
-    uploader: { id: string; firstName: string; lastName: string }
-  }>
-  incidents?: Array<{
-    id: string
-    title: string
-    description?: string
-    category: string
-    severity: string
-    status: string
-    occurredAt: string
-    reportedAt: string
-    location?: string
-    involvedPersons?: string
-    resolvedAt?: string
-    resolution?: string
-    reporter: { id: string; firstName: string; lastName: string }
-  }>
-  securityConcept?: {
-    tasks?: string[]
-    shiftModel?: string
-    hoursPerWeek?: number
-    templateId?: string
-    templateName?: string
-  }
-  securityConcepts?: Array<{
-    id: string
-    status: string
-    staffRequirements?: {
-      anzahlMA?: number
-      qualifikationen?: string[]
-    }
-    taskProfiles?: {
-      objektleiter?: {
-        required: boolean
-        qualifikationen?: string[]
-      }
-      schichtleiter?: {
-        required: boolean
-        qualifikationen?: string[]
-      }
-    }
-    shiftModel?: any
-  }>
-}
-
-const STATUS_LABELS: Record<string, string> = {
-  INQUIRY: 'Anfrage',
-  IN_REVIEW: 'In Prüfung',
-  CALCULATING: 'Kalkulation',
-  OFFER_SENT: 'Angebot versendet',
-  ACTIVE: 'Aktiv',
-  INACTIVE: 'Inaktiv',
-  LOST: 'Verloren',
-}
-
-const STATUS_COLORS: Record<string, string> = {
-  INQUIRY: 'bg-blue-100 text-blue-800',
-  IN_REVIEW: 'bg-yellow-100 text-yellow-800',
-  CALCULATING: 'bg-orange-100 text-orange-800',
-  OFFER_SENT: 'bg-purple-100 text-purple-800',
-  ACTIVE: 'bg-green-100 text-green-800',
-  INACTIVE: 'bg-gray-100 text-gray-800',
-  LOST: 'bg-red-100 text-red-800',
-}
-
-const ROLE_LABELS: Record<string, string> = {
-  OBJEKTLEITER: 'Objektleiter',
-  SCHICHTLEITER: 'Schichtleiter',
-  MITARBEITER: 'Mitarbeiter',
-}
+import type { Site, TabType } from '../types/site'
+import { STATUS_LABELS, STATUS_COLORS, ROLE_LABELS } from '../constants/site'
 
 export default function SiteDetail() {
   const { id } = useParams<{ id: string }>()
   const nav = useNavigate()
   const queryClient = useQueryClient()
   const { user } = useAuth()
-  const [activeTab, setActiveTab] = useState<'overview' | 'clearances' | 'shifts' | 'images' | 'documents' | 'incidents' | 'control-points' | 'control-rounds' | 'calculations' | 'security-concept'>('overview')
+  const [activeTab, setActiveTab] = useState<TabType>('overview')
   const [trainingModal, setTrainingModal] = useState<{ clearance: Clearance; hours: number } | null>(null)
   const [revokeModal, setRevokeModal] = useState<{ clearance: Clearance; notes: string } | null>(null)
   const [uploadModal, setUploadModal] = useState<{ file: File | null; category: string } | null>(null)
