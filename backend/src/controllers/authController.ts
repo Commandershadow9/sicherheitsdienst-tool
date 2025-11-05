@@ -65,9 +65,11 @@ export const login = async (req: Request, res: Response): Promise<Response> => {
       expiresInValue = '7d'; // Default
     }
 
+    // 🔐 MULTI-TENANCY: customerId im JWT-Token (KRITISCH!)
     const payload = {
       userId: user.id,
       role: user.role,
+      customerId: user.customerId, // 🔐 Multi-Tenancy
     };
 
     // WORKAROUND: expiresInValue mit 'as any' versehen, um den Typfehler zu umgehen
