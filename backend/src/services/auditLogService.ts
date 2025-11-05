@@ -32,7 +32,7 @@ type AuditLogPayload = {
   userAgent: string | null;
   outcome: string | null;
   occurredAt: Date;
-  data?: any;
+  data?: unknown;
 };
 
 const DEFAULT_FLUSH_INTERVAL_MS = 2000;
@@ -71,7 +71,7 @@ function toPayload(event: AuditLogEventInput): AuditLogPayload {
   };
 
   if (event.data !== undefined) {
-    payload.data = event.data === null ? (Prisma as any).DbNull ?? null : (event.data as any);
+    payload.data = event.data === null ? Prisma.DbNull : event.data;
   }
 
   return payload;

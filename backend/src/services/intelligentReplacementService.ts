@@ -495,7 +495,7 @@ export async function calculateCandidateScore(userId: string, shift: Shift): Pro
 
   // Object-Clearance-Score (v1.11.0+)
   const objectClearanceScore = shift.siteId
-    ? calculateObjectClearanceScore(objectClearance as any)
+    ? calculateObjectClearanceScore(objectClearance)
     : undefined;
 
   const totalScore = calculateTotalScore(

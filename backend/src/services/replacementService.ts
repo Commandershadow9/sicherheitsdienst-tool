@@ -294,7 +294,7 @@ export async function findReplacementCandidatesForShiftV2(
         // Füge Warning hinzu wenn keine Clearance vorhanden
         if (!hasClearance) {
           warnings.unshift({
-            type: 'MISSING_CLEARANCE' as any,
+            type: 'MISSING_CLEARANCE',
             severity: 'warning',
             message: '⚠️ Keine Objekt-Clearance - Einweisung erforderlich',
           });
