@@ -6,6 +6,15 @@
 import { addDays, setHours, setMinutes, setSeconds, setMilliseconds, format, isBefore } from 'date-fns';
 import { getShiftTemplate, calculateStaffDistribution, type ShiftDefinition } from './shiftTemplates';
 
+interface ShiftModelData {
+  shifts?: Array<{
+    name: string;
+    start: string;
+    end: string;
+    requiredStaff?: number;
+  }>;
+}
+
 export interface GenerateShiftsOptions {
   siteId: string;
   siteName: string;
@@ -14,7 +23,7 @@ export interface GenerateShiftsOptions {
   requiredQualifications: string[];
   startDate: Date;
   daysAhead: number; // Wie viele Tage voraus generieren (default: 30)
-  shiftModelData?: any; // Optional: Komplette Shift-Definitionen aus SecurityConcept
+  shiftModelData?: ShiftModelData; // Optional: Komplette Shift-Definitionen aus SecurityConcept
 }
 
 export interface GeneratedShift {
@@ -44,12 +53,20 @@ export function generateShifts(options: GenerateShiftsOptions): GeneratedShift[]
     shiftModelData,
   } = options;
 
-  let shiftsWithStaff: any[];
+  interface ShiftWithStaff {
+    name: string;
+    startTime: string;
+    endTime: string;
+    requiredStaff: number;
+    days: number[];
+  }
+
+  let shiftsWithStaff: ShiftWithStaff[];
 
   // NEUE LOGIK: SecurityConcept shiftModelData hat Vorrang (Single Source of Truth)
   if (shiftModelData && shiftModelData.shifts && Array.isArray(shiftModelData.shifts)) {
     // Nutze Shift-Definitionen direkt aus SecurityConcept
-    shiftsWithStaff = shiftModelData.shifts.map((shift: any) => ({
+    shiftsWithStaff = shiftModelData.shifts.map((shift) => ({
       name: shift.name,
       startTime: shift.start,
       endTime: shift.end,
