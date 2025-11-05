@@ -30,7 +30,12 @@ export const authenticate = async (
     const verifyOptions: jwt.VerifyOptions = {};
     if (process.env.JWT_ISSUER) verifyOptions.issuer = process.env.JWT_ISSUER;
     if (process.env.JWT_AUDIENCE) verifyOptions.audience = process.env.JWT_AUDIENCE;
-    const decoded = jwt.verify(token, jwtSecret, verifyOptions) as { userId: string; role: string };
+    // 🔐 MULTI-TENANCY: Token enthält jetzt customerId
+    const decoded = jwt.verify(token, jwtSecret, verifyOptions) as {
+      userId: string;
+      role: string;
+      customerId: string; // 🔐 Multi-Tenancy
+    };
 
     const user = await prisma.user.findUnique({
       where: { id: decoded.userId },
