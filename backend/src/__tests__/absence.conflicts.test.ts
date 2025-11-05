@@ -8,8 +8,26 @@ describe('Absence Conflicts Integration Tests', () => {
   let employeeToken: string;
   let employeeId: string;
   let shiftId: string;
+  let customerId: string; // 🔐 Multi-Tenancy
 
   beforeAll(async () => {
+    // 🔐 MULTI-TENANCY: Create test customer first
+    const customer = await prisma.customer.create({
+      data: {
+        companyName: 'Test Company (Absence Conflicts)',
+        primaryContact: {
+          name: 'Test Admin',
+          email: 'admin@test.com',
+          phone: '+49 000 000000',
+          position: 'Admin',
+        },
+        address: 'Test Street 1',
+        city: 'Test City',
+        postalCode: '12345',
+      },
+    });
+    customerId = customer.id;
+
     // Create test manager
     const hashedPassword = await bcrypt.hash('password123', 10);
     const manager = await prisma.user.create({
@@ -19,6 +37,7 @@ describe('Absence Conflicts Integration Tests', () => {
         firstName: 'Test',
         lastName: 'Manager',
         role: 'MANAGER',
+        customerId, // 🔐 Multi-Tenancy
       },
     });
 
@@ -30,6 +49,7 @@ describe('Absence Conflicts Integration Tests', () => {
         firstName: 'Test',
         lastName: 'Employee',
         role: 'EMPLOYEE',
+        customerId, // 🔐 Multi-Tenancy
       },
     });
     employeeId = employee.id;
@@ -46,13 +66,14 @@ describe('Absence Conflicts Integration Tests', () => {
       .send({ email: 'employee-conflicts@test.com', password: 'password123' });
     employeeToken = employeeLoginRes.body.accessToken;
 
-    // Create a test site
+    // Create a test site (🔐 mit customerId)
     const site = await prisma.site.create({
       data: {
         name: 'Test Site Conflicts',
         address: '123 Test St',
         city: 'Test City',
         postalCode: '12345',
+        customerId, // 🔐 Multi-Tenancy
       },
     });
 
@@ -80,7 +101,7 @@ describe('Absence Conflicts Integration Tests', () => {
   });
 
   afterAll(async () => {
-    // Cleanup
+    // Cleanup (🔐 Customer zuletzt löschen)
     await prisma.shiftAssignment.deleteMany({ where: { userId: employeeId } });
     await prisma.shift.deleteMany({ where: { title: 'Test Shift' } });
     await prisma.site.deleteMany({ where: { name: 'Test Site Conflicts' } });
@@ -90,6 +111,7 @@ describe('Absence Conflicts Integration Tests', () => {
     await prisma.user.deleteMany({
       where: { email: { in: ['manager-conflicts@test.com', 'employee-conflicts@test.com'] } },
     });
+    await prisma.customer.deleteMany({ where: { id: customerId } }); // 🔐 Multi-Tenancy
   });
 
   it('should return conflicts when creating absence overlapping with shift', async () => {

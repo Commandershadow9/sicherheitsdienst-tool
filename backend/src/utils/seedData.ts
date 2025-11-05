@@ -1508,7 +1508,34 @@ async function main() {
     }
     console.log('📁 Beispiel-Dokumente aktualisiert');
 
-    // Kernrollen
+    // 🔐 MULTI-TENANCY: Customers ZUERST erstellen (User brauchen customerId!)
+    const customers = new Map<string, Awaited<ReturnType<typeof prisma.customer.create>>>();
+    for (const blueprint of customerBlueprints) {
+      const { discount, ...customerData } = blueprint.data;
+      const created = await prisma.customer.create({
+        data: {
+          ...customerData,
+          discount:
+            discount === null
+              ? null
+              : discount !== undefined
+                ? new Prisma.Decimal(discount)
+                : undefined,
+        },
+      });
+      customers.set(blueprint.key, created);
+    }
+    console.log('👔 Kunden angelegt (ZUERST für Multi-Tenancy)');
+
+    // Default-Customer für alle User (erster Customer in Map)
+    const defaultCustomer = customers.values().next().value;
+    if (!defaultCustomer) {
+      throw new Error('❌ Kein Customer vorhanden! Customers müssen vor Users erstellt werden.');
+    }
+    const defaultCustomerId = defaultCustomer.id;
+    console.log(`🔐 Default-Customer für Seed-User: ${defaultCustomer.companyName} (${defaultCustomerId})`);
+
+    // Kernrollen (🔐 customerId hinzugefügt)
     const admin = await createUserWithPassword(prisma, {
       email: 'admin@sicherheitsdienst.de',
       firstName: 'Max',
@@ -1519,6 +1546,7 @@ async function main() {
       hireDate: new Date('2020-01-01'),
       qualifications: ['Erste Hilfe', 'Brandschutz', 'Management'],
       isActive: true,
+      customerId: defaultCustomerId, // 🔐 Multi-Tenancy
     });
 
     const manager = await createUserWithPassword(prisma, {
@@ -1531,6 +1559,7 @@ async function main() {
       hireDate: new Date('2020-06-01'),
       qualifications: ['Erste Hilfe', 'Einsatzplanung'],
       isActive: true,
+      customerId: defaultCustomerId, // 🔐 Multi-Tenancy
     });
 
     const dispatcher = await createUserWithPassword(prisma, {
@@ -1543,23 +1572,28 @@ async function main() {
       hireDate: new Date('2021-02-15'),
       qualifications: ['Erste Hilfe', 'Kommunikation', 'Einsatzplanung'],
       isActive: true,
+      customerId: defaultCustomerId, // 🔐 Multi-Tenancy
     });
 
-    // Mitarbeiter*innen erstellen
+    // Mitarbeiter*innen erstellen (🔐 customerId hinzugefügt)
     const employeeSeeds: CreatedUser[] = [];
     for (const blueprint of employeeBlueprints) {
-      const user = await createUserWithPassword(prisma, blueprint.data);
+      const user = await createUserWithPassword(prisma, {
+        ...blueprint.data,
+        customerId: defaultCustomerId, // 🔐 Multi-Tenancy
+      });
       employeeSeeds.push({ user, blueprint });
     }
     const employees = employeeSeeds.map((entry) => entry.user);
     const [thomas, anna, michael, julia, stefan, petra, markus, sabine, daniel, claudia] = employees;
 
-    // Replacement-Kandidaten
+    // Replacement-Kandidaten (🔐 customerId hinzugefügt)
     const replacementSeeds: CreatedUser[] = [];
     for (const blueprint of replacementBlueprints) {
       const user = await createUserWithPassword(prisma, {
         ...blueprint.data,
         password: 'password123',
+        customerId: defaultCustomerId, // 🔐 Multi-Tenancy
       });
       replacementSeeds.push({ user, blueprint });
     }
@@ -1636,23 +1670,8 @@ async function main() {
     }
     console.log('🧩 Sicherheitskonzept-Templates erstellt');
 
-    const customers = new Map<string, Awaited<ReturnType<typeof prisma.customer.create>>>();
-    for (const blueprint of customerBlueprints) {
-      const { discount, ...customerData } = blueprint.data;
-      const created = await prisma.customer.create({
-        data: {
-          ...customerData,
-          discount:
-            discount === null
-              ? null
-              : discount !== undefined
-                ? new Prisma.Decimal(discount)
-                : undefined,
-        },
-      });
-      customers.set(blueprint.key, created);
-    }
-    console.log('👔 Kunden angelegt');
+    // 🔐 MULTI-TENANCY: Customers wurden bereits weiter oben erstellt (Zeile 1512)
+    // (nichts zu tun hier, customers-Map ist bereits gefüllt)
 
     // Sites
     const sites = new Map<string, Awaited<ReturnType<typeof prisma.site.create>>>();
