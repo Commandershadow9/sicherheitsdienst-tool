@@ -90,7 +90,8 @@ class RedisRateLimitStore {
     multi.incr(redisKey);
     multi.pexpire(redisKey, ttlMs);
     multi.pttl(redisKey);
-    const [countRes, _expireRes, pttlRes] = (await multi.exec()) as any[];
+    const results = await multi.exec();
+    const [countRes, _expireRes, pttlRes] = results ?? [];
     const totalHits = Number(Array.isArray(countRes) ? countRes[1] : countRes);
     let pttl = Number(Array.isArray(pttlRes) ? pttlRes[1] : pttlRes);
     if (!Number.isFinite(pttl) || pttl <= 0) {
@@ -125,7 +126,7 @@ function createExpressLimiter(opts: {
   onBlocked?: (req: Request) => void;
 }): RequestHandler {
   const useRedis = Boolean(process.env.REDIS_URL);
-  let store: any;
+  let store: RedisRateLimitStore | undefined;
   if (useRedis) {
     const client = new Redis(process.env.REDIS_URL as string);
     store = new RedisRateLimitStore(client, opts.windowMs);
@@ -142,16 +143,16 @@ function createExpressLimiter(opts: {
     max: opts.max,
     standardHeaders: true,
     legacyHeaders: false,
-    keyGenerator: opts.keyGenerator as any,
-    store: store as any,
+    keyGenerator: opts.keyGenerator,
+    store: store as unknown as rateLimit.Store,
     handler: (req, res) => {
-      const key = opts.keyGenerator(req as any);
+      const key = opts.keyGenerator(req);
       if (key.startsWith('ip:')) incrAuthIp429();
       else if (key.startsWith('user:')) {
         incrAuthUser429();
-        opts.onBlocked?.(req as any);
+        opts.onBlocked?.(req);
       } else {
-        opts.onBlocked?.(req as any);
+        opts.onBlocked?.(req);
       }
       return handler(req, res);
     },

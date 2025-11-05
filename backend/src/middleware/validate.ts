@@ -21,7 +21,7 @@ export const validate = (schema: AnyZodObject): RequestHandler => {
         return;
       }
       // Unerwartete Fehler dem globalen Error-Handler übergeben
-      next(error as any);
+      next(error);
     }
   };
 };

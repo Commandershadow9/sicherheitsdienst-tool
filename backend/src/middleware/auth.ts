@@ -77,8 +77,8 @@ export const authorizeSelfOr = (...roles: string[]) => {
       return next(createError(401, 'Authentifizierung erforderlich.'));
     }
     const user = req.user as User;
-    const isRoleAllowed = roles.includes(user.role as any);
-    const targetId = (req.params as any)?.id;
+    const isRoleAllowed = roles.includes(user.role);
+    const targetId = req.params.id;
     const isSelf = !!targetId && user.id === targetId;
     if (isRoleAllowed || isSelf) {
       return next();
