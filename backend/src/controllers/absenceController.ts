@@ -4,20 +4,12 @@ import { AbsenceStatus, AbsenceType, Prisma } from '@prisma/client';
 import prisma from '../utils/prisma';
 import { submitAuditEvent } from '../utils/audit';
 import { publishNotificationEvent } from '../utils/notificationEvents';
-import { findReplacementCandidatesForShiftV2 } from '../services/replacementService';
 import {
   findConflictingShifts,
-  checkCapacityWarnings,
   getAffectedShiftsWithCapacity,
-  type CapacityWarning,
-  type AffectedShift,
   calculateLeaveDaysSaldo,
   type LeaveDaysSaldo,
 } from '../services/absenceCapacityService';
-import { generateICS } from '../utils/icsGenerator';
-
-export { calculateLeaveDaysSaldo } from '../services/absenceCapacityService';
-export type { LeaveDaysSaldo } from '../services/absenceCapacityService';
 import {
   PAGE_MAX,
   ensureDate,
@@ -27,6 +19,14 @@ import {
   selectAbsence,
 } from './absenceShared';
 
+// Re-export for compatibility
+export { calculateLeaveDaysSaldo } from '../services/absenceCapacityService';
+export type { LeaveDaysSaldo } from '../services/absenceCapacityService';
+
+/**
+ * GET /api/absences
+ * List absences with pagination and filters
+ */
 export const listAbsences = async (req: Request, res: Response) => {
   const actor = req.user!;
   const q = req.query as Record<string, string | undefined>;
@@ -85,7 +85,10 @@ export const listAbsences = async (req: Request, res: Response) => {
   });
 };
 
-
+/**
+ * POST /api/absences
+ * Create new absence request
+ */
 export const createAbsence = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const actor = req.user!;
@@ -208,6 +211,10 @@ export const createAbsence = async (req: Request, res: Response, next: NextFunct
   }
 };
 
+/**
+ * GET /api/absences/:id
+ * Get absence by ID with detailed information
+ */
 export const getAbsenceById = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const actor = req.user!;
@@ -259,339 +266,4 @@ export const getAbsenceById = async (req: Request, res: Response, next: NextFunc
   } catch (error) {
     next(error);
   }
-};
-
-// Preview: Kapazitätswarnungen OHNE zu genehmigen
-export const previewCapacityWarnings = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-  try {
-    const actor = req.user!;
-    const { id } = req.params;
-
-    if (!canManage(actor.role)) {
-      throw createError(403, 'Keine Berechtigung für diese Aktion.');
-    }
-
-    const absence = await prisma.absence.findUnique({
-      where: { id },
-      select: { id: true, userId: true, startsAt: true, endsAt: true, type: true, status: true },
-    });
-
-    if (!absence) {
-      throw createError(404, 'Abwesenheit nicht gefunden.');
-    }
-
-    if (absence.status !== AbsenceStatus.REQUESTED) {
-      throw createError(400, 'Nur offene Anträge können geprüft werden.');
-    }
-
-    // Nur für VACATION prüfen (SICKNESS wird auto-approved, dagegen kann man nichts tun)
-    if (absence.type === 'SICKNESS') {
-      res.json({ warnings: [] });
-      return;
-    }
-
-    const warnings = await checkCapacityWarnings(absence.userId, absence.startsAt, absence.endsAt);
-
-    res.json({ warnings });
-  } catch (error) {
-    next(error);
-  }
-};
-
-async function updateAbsenceStatus(
-  req: Request,
-  res: Response,
-  next: NextFunction,
-  status: AbsenceStatus,
-): Promise<void> {
-  try {
-    const actor = req.user!;
-    const { id } = req.params;
-    const { decisionNote } = (req.body || {}) as { decisionNote?: string };
-    const absence = await prisma.absence.findUnique({
-      where: { id },
-      select: { id: true, status: true, userId: true },
-    });
-    if (!absence) {
-      throw createError(404, 'Abwesenheit nicht gefunden.');
-    }
-
-    if (status === AbsenceStatus.CANCELLED) {
-      if (absence.userId !== actor.id && !canManage(actor.role)) {
-        throw createError(403, 'Nur Antragsteller oder Manager dürfen stornieren.');
-      }
-    } else {
-      if (!canManage(actor.role)) {
-        throw createError(403, 'Keine Berechtigung für diese Aktion.');
-      }
-    }
-
-    if (status === AbsenceStatus.APPROVED || status === AbsenceStatus.REJECTED) {
-      if (absence.status !== AbsenceStatus.REQUESTED) {
-        throw createError(400, 'Nur offene Anträge können entschieden werden.');
-      }
-    }
-
-    if (status === AbsenceStatus.CANCELLED && absence.status === AbsenceStatus.APPROVED && !canManage(actor.role)) {
-      throw createError(403, 'Genehmigte Abwesenheiten dürfen nur von Manager/Admin storniert werden.');
-    }
-
-    const isManager = canManage(actor.role);
-    const decidedByIdUpdate =
-      isManager || (status === AbsenceStatus.CANCELLED && !isManager) ? actor.id : undefined;
-
-    const updated = await prisma.absence.update({
-      where: { id },
-      data: {
-        status,
-        decisionNote: decisionNote?.trim() || null,
-        ...(decidedByIdUpdate !== undefined ? { decidedById: decidedByIdUpdate } : {}),
-      },
-      select: { ...selectAbsence, startsAt: true, endsAt: true },
-    });
-
-    // Kapazitätswarnungen prüfen bei Genehmigung
-    let capacityWarnings: CapacityWarning[] = [];
-    if (status === AbsenceStatus.APPROVED) {
-      capacityWarnings = await checkCapacityWarnings(absence.userId, updated.startsAt, updated.endsAt);
-    }
-
-    await submitAuditEvent(req, {
-      action:
-        status === AbsenceStatus.APPROVED
-          ? 'ABSENCE.REQUEST.APPROVE'
-          : status === AbsenceStatus.REJECTED
-            ? 'ABSENCE.REQUEST.REJECT'
-            : 'ABSENCE.REQUEST.CANCEL',
-      resourceType: 'ABSENCE',
-      resourceId: id,
-      outcome: 'SUCCESS',
-      data: {
-        status,
-        decisionNote: decisionNote?.trim() || null,
-      },
-    });
-
-    // Send notifications
-    const user = await prisma.user.findUnique({
-      where: { id: absence.userId },
-      select: { email: true, firstName: true, lastName: true, emailOptIn: true, pushOptIn: true },
-    });
-
-    if (user) {
-      const userName = `${user.firstName} ${user.lastName}`;
-      const formatDate = (date: Date) => new Date(date).toLocaleDateString('de-DE');
-
-      // Fetch full absence data for notification
-      const fullAbsence = await prisma.absence.findUnique({
-        where: { id },
-        select: { startsAt: true, endsAt: true, type: true },
-      });
-
-      if (fullAbsence) {
-        const notifData = {
-          userName,
-          type: fullAbsence.type,
-          startsAt: formatDate(fullAbsence.startsAt),
-          endsAt: formatDate(fullAbsence.endsAt),
-          decisionNote: decisionNote?.trim() || 'Keine Anmerkung',
-        };
-
-        // Email notification
-        if (user.emailOptIn && process.env.EMAIL_NOTIFY_ABSENCES !== 'false') {
-          const templateKey = status === AbsenceStatus.APPROVED
-            ? 'absence-approved'
-            : status === AbsenceStatus.REJECTED
-              ? 'absence-rejected'
-              : 'absence-cancelled';
-
-          publishNotificationEvent({
-            channel: 'email',
-            status: 'sent',
-            template: templateKey,
-            recipient: user.email,
-            title: status === AbsenceStatus.APPROVED
-              ? 'Abwesenheit genehmigt'
-              : status === AbsenceStatus.REJECTED
-                ? 'Abwesenheit abgelehnt'
-                : 'Abwesenheit storniert',
-            body: JSON.stringify(notifData),
-            metadata: { absenceId: id, userId: absence.userId },
-          });
-        }
-
-        // Push notification
-        if (user.pushOptIn && process.env.PUSH_NOTIFY_ABSENCES !== 'false') {
-          const templateKey = status === AbsenceStatus.APPROVED
-            ? 'absence-approved'
-            : status === AbsenceStatus.REJECTED
-              ? 'absence-rejected'
-              : 'absence-cancelled';
-
-          publishNotificationEvent({
-            channel: 'push',
-            status: 'sent',
-            template: templateKey,
-            userIds: [absence.userId],
-            title: status === AbsenceStatus.APPROVED
-              ? 'Abwesenheit genehmigt'
-              : status === AbsenceStatus.REJECTED
-                ? 'Abwesenheit abgelehnt'
-                : 'Abwesenheit storniert',
-            body: `${fullAbsence.type}: ${notifData.startsAt} - ${notifData.endsAt}`,
-            metadata: { absenceId: id },
-          });
-        }
-      }
-    }
-
-    res.json({ success: true, data: updated, capacityWarnings });
-  } catch (error) {
-    next(error);
-  }
-}
-
-export const approveAbsence = (req: Request, res: Response, next: NextFunction): Promise<void> =>
-  updateAbsenceStatus(req, res, next, AbsenceStatus.APPROVED);
-
-export const rejectAbsence = (req: Request, res: Response, next: NextFunction): Promise<void> =>
-  updateAbsenceStatus(req, res, next, AbsenceStatus.REJECTED);
-
-export const cancelAbsence = (req: Request, res: Response, next: NextFunction): Promise<void> =>
-  updateAbsenceStatus(req, res, next, AbsenceStatus.CANCELLED);
-
-// Upload document for absence
-// Ersatz-Mitarbeiter für betroffene Schichten finden
-export const getReplacementCandidates = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-  try {
-    const actor = req.user!;
-    const { id } = req.params;
-    const { shiftId } = req.query as { shiftId?: string };
-
-    if (!canManage(actor.role)) {
-      throw createError(403, 'Keine Berechtigung für diese Aktion.');
-    }
-
-    const absence = await prisma.absence.findUnique({
-      where: { id },
-      select: { id: true, userId: true, startsAt: true, endsAt: true },
-    });
-
-    if (!absence) {
-      throw createError(404, 'Abwesenheit nicht gefunden.');
-    }
-
-    // Wenn shiftId angegeben: Nur für diese Schicht
-    if (shiftId) {
-      const candidates = await findReplacementCandidatesForShiftV2(shiftId, absence.userId);
-      res.json({ data: candidates });
-      return;
-    }
-
-    // Sonst: Für alle betroffenen Schichten
-    const affectedShifts = await getAffectedShiftsWithCapacity(
-      absence.userId,
-      new Date(absence.startsAt),
-      new Date(absence.endsAt),
-    );
-
-    const results = await Promise.all(
-      affectedShifts.map(async (shift) => ({
-        shiftId: shift.id,
-        shiftTitle: shift.title,
-        candidates: await findReplacementCandidatesForShiftV2(shift.id, absence.userId),
-      })),
-    );
-
-    res.json({ data: results });
-  } catch (error) {
-    next(error);
-  }
-};
-
-/**
- * GET /api/absences/export.ics
- * Exportiert Abwesenheiten als ICS-Datei (iCalendar-Format)
- *
- * Query-Parameter:
- * - userId: Filter nach User (optional, EMPLOYEE sieht nur eigene)
- * - status: Filter nach Status (optional)
- * - from/to: Zeitraum-Filter (optional)
- */
-export const exportAbsencesToICS = async (req: Request, res: Response) => {
-  const actor = req.user!;
-  const q = req.query as Record<string, string | undefined>;
-
-  const where: Prisma.AbsenceWhereInput = {};
-
-  // Permissions: EMPLOYEE sieht nur eigene Abwesenheiten
-  if (actor.role === 'EMPLOYEE') {
-    where.userId = actor.id;
-  } else if (q.userId) {
-    where.userId = q.userId;
-  }
-
-  // Filter nach Status
-  if (q.status && Object.values(AbsenceStatus).includes(q.status as AbsenceStatus)) {
-    where.status = q.status as AbsenceStatus;
-  }
-
-  // Zeitraum-Filter
-  const andConditions: Prisma.AbsenceWhereInput[] = [];
-  if (q.from) {
-    const fromDate = ensureDate(q.from, 'from');
-    andConditions.push({ endsAt: { gte: fromDate } });
-  }
-  if (q.to) {
-    const toDate = ensureDate(q.to, 'to');
-    andConditions.push({ startsAt: { lte: toDate } });
-  }
-  if (andConditions.length > 0) {
-    where.AND = andConditions;
-  }
-
-  // Abwesenheiten abrufen
-  const absences = await prisma.absence.findMany({
-    where,
-    select: {
-      id: true,
-      type: true,
-      status: true,
-      startsAt: true,
-      endsAt: true,
-      reason: true,
-      user: {
-        select: {
-          firstName: true,
-          lastName: true,
-          email: true,
-        },
-      },
-    },
-    orderBy: { startsAt: 'asc' },
-  });
-
-  // Kalender-Name
-  const calendarName =
-    where.userId && actor.role !== 'EMPLOYEE'
-      ? `Abwesenheiten - ${absences[0]?.user.firstName || 'Mitarbeiter'}`
-      : 'Meine Abwesenheiten';
-
-  // ICS generieren
-  const icsContent = generateICS(absences, calendarName);
-
-  // Audit-Log
-  await submitAuditEvent(req, {
-    action: 'ABSENCE_EXPORT_ICS',
-    resourceType: 'ABSENCE',
-    outcome: 'SUCCESS',
-    actorId: actor.id,
-    data: { count: absences.length, filters: q },
-  });
-
-  // Response Headers
-  const filename = `abwesenheiten-${new Date().toISOString().split('T')[0]}.ics`;
-  res.setHeader('Content-Type', 'text/calendar; charset=utf-8');
-  res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
-  res.send(icsContent);
 };

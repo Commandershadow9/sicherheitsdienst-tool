@@ -4,6 +4,8 @@ import { requireRole } from '../middleware/rbac';
 import { asyncHandler } from '../middleware/asyncHandler';
 import * as priceModelController from '../controllers/priceModelController';
 import * as calculationController from '../controllers/calculationController';
+import * as calculationStatusController from '../controllers/calculationStatusController';
+import * as calculationOperationsController from '../controllers/calculationOperationsController';
 
 const router = Router();
 
@@ -98,7 +100,7 @@ router.post(
   '/sites/:siteId/calculations/:id/send',
   authenticate,
   requireRole(['ADMIN', 'MANAGER']),
-  asyncHandler(calculationController.sendSiteCalculation),
+  asyncHandler(calculationStatusController.sendSiteCalculation),
 );
 
 // POST /api/sites/:siteId/calculations/:id/send-email - E-Mail versenden
@@ -106,7 +108,7 @@ router.post(
   '/sites/:siteId/calculations/:id/send-email',
   authenticate,
   requireRole(['ADMIN', 'MANAGER']),
-  asyncHandler(calculationController.sendCalculationEmailEndpoint),
+  asyncHandler(calculationOperationsController.sendCalculationEmailEndpoint),
 );
 
 // POST /api/sites/:siteId/calculations/:id/accept - Annehmen
@@ -114,7 +116,7 @@ router.post(
   '/sites/:siteId/calculations/:id/accept',
   authenticate,
   requireRole(['ADMIN', 'MANAGER']),
-  asyncHandler(calculationController.acceptSiteCalculation),
+  asyncHandler(calculationStatusController.acceptSiteCalculation),
 );
 
 // POST /api/sites/:siteId/calculations/:id/reject - Ablehnen
@@ -122,7 +124,7 @@ router.post(
   '/sites/:siteId/calculations/:id/reject',
   authenticate,
   requireRole(['ADMIN', 'MANAGER']),
-  asyncHandler(calculationController.rejectSiteCalculation),
+  asyncHandler(calculationStatusController.rejectSiteCalculation),
 );
 
 // POST /api/sites/:siteId/calculations/:id/archive - Archivieren
@@ -130,7 +132,7 @@ router.post(
   '/sites/:siteId/calculations/:id/archive',
   authenticate,
   requireRole(['ADMIN', 'MANAGER']),
-  asyncHandler(calculationController.archiveSiteCalculation),
+  asyncHandler(calculationStatusController.archiveSiteCalculation),
 );
 
 // POST /api/sites/:siteId/calculations/:id/duplicate - Duplizieren
@@ -138,7 +140,7 @@ router.post(
   '/sites/:siteId/calculations/:id/duplicate',
   authenticate,
   requireRole(['ADMIN', 'MANAGER']),
-  asyncHandler(calculationController.duplicateSiteCalculation),
+  asyncHandler(calculationOperationsController.duplicateSiteCalculation),
 );
 
 // GET /api/sites/:siteId/calculations/:id/pdf - PDF-Export
@@ -146,7 +148,7 @@ router.get(
   '/sites/:siteId/calculations/:id/pdf',
   authenticate,
   requireRole(['ADMIN', 'MANAGER', 'DISPATCHER']),
-  asyncHandler(calculationController.generateCalculationPDF),
+  asyncHandler(calculationOperationsController.generateCalculationPDF),
 );
 
 export default router;

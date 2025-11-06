@@ -8,6 +8,7 @@ import requestId from './middleware/requestId';
 import { onRequestStart, onResponseStatus } from './utils/stats';
 import { applySecurity } from './middleware/security';
 import { httpRequestDurationSeconds, httpRequestsTotal } from './utils/metrics';
+import { setCustomerContext } from './middleware/multiTenancy'; // 🔐 Multi-Tenancy
 
 // Load environment variables
 dotenv.config();
@@ -79,6 +80,10 @@ app.use(
 );
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+
+// 🔐 MULTI-TENANCY: Setze customerId in AsyncLocalStorage (wirkt auf alle authentifizierten Requests)
+// WICHTIG: Muss VOR den Routes kommen, aber wirkt nur wenn req.user (durch authenticate) gesetzt ist
+app.use(setCustomerContext);
 
 // Swagger UI (nur Development): zeigt docs/openapi.yaml unter /api-docs
 if (process.env.NODE_ENV !== 'production') {

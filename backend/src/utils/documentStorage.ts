@@ -71,8 +71,8 @@ export async function removeDocumentFile(storedAt: string) {
   try {
     const absolute = resolveDocumentPath(storedAt);
     await fs.unlink(absolute);
-  } catch (err: any) {
-    if (err?.code === 'ENOENT') return;
+  } catch (err: unknown) {
+    if ((err as any)?.code === 'ENOENT') return;
     throw err;
   }
 }

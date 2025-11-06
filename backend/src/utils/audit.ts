@@ -49,8 +49,8 @@ export function extractClientIp(req: Request): string | null {
 
 function resolveRequestId(req: Request): string | null {
   const headers = req.headers ?? {};
-  if (typeof (req as any).id === 'string' && (req as any).id.length > 0) {
-    return (req as any).id;
+  if (typeof req.id === 'string' && req.id.length > 0) {
+    return req.id;
   }
   const headerId = headers['x-request-id'];
   if (typeof headerId === 'string' && headerId.length > 0) {

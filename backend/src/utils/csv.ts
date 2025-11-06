@@ -16,15 +16,17 @@ export async function streamCsv(
 ): Promise<void> {
   res.setHeader('Content-Type', 'text/csv; charset=utf-8');
   res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
-  if (typeof (res as any).flushHeaders === 'function') (res as any).flushHeaders();
+  if ('flushHeaders' in res && typeof res.flushHeaders === 'function') {
+    res.flushHeaders();
+  }
 
   async function* gen() {
     yield header.join(',') + '\n';
-    for await (const r of rows as any) {
-      const line = header.map((h) => csvEscape((r as any)[h])).join(',');
+    for await (const r of rows) {
+      const line = header.map((h) => csvEscape(r[h])).join(',');
       yield line + '\n';
     }
   }
 
-  await pipeline(Readable.from(gen()), res as any);
+  await pipeline(Readable.from(gen()), res);
 }

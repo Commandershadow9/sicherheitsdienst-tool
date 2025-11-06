@@ -12,13 +12,13 @@ Willkommen zur Projekt-Dokumentation! Hier findest du alle wichtigen Information
 |----------|--------------|----------------|
 | [CHANGELOG.md](./CHANGELOG.md) | Vollständige Versions-Historie mit allen Änderungen | Bei jedem Release |
 | [ROADMAP.md](./ROADMAP.md) | Langfristige Planung und zukünftige Features | Quartalsweise |
-| [TODO_v1.9.2.md](./TODO_v1.9.2.md) | Aktuelle Sprint-Planung und Tasks | Wöchentlich |
+| [../../docs/TODO.md](../../docs/TODO.md) | **Haupt-Backlog** - Aktuelle Tasks & Roadmap | ⭐ Täglich |
 
 ### 🐛 Bug Tracking
 
-| Dokument | Beschreibung | Status |
-|----------|--------------|--------|
-| [BUGS_v1.9.1.md](./BUGS_v1.9.1.md) | Bugs aus v1.9.1 Testing | ✅ Alle behoben in v1.9.2 |
+**Aktuell:** ✅ Keine offenen Bugs!
+
+**Archiv:** Siehe [archive/bugs/](./archive/bugs/) für behobene Bug-Reports aus früheren Versionen.
 
 **Format**: `BUGS_vX.X.X.md` - Ein Dokument pro Minor-Version mit allen gefundenen Bugs.
 
@@ -36,17 +36,19 @@ Willkommen zur Projekt-Dokumentation! Hier findest du alle wichtigen Information
 
 ### Für Entwickler:
 - **Was wurde geändert**: [CHANGELOG.md](./CHANGELOG.md)
-- **Nächster Sprint**: [TODO_v1.10.0.md](./TODO_v1.10.0.md) (geplant)
-- **Release Summary**: [v1.9.2_RELEASE_SUMMARY.md](./v1.9.2_RELEASE_SUMMARY.md)
+- **Aktuelle Aufgaben**: [../../docs/TODO.md](../../docs/TODO.md)
+- **Refactoring-Status**: [refactoring/REFACTORING_SUMMARY.md](./refactoring/REFACTORING_SUMMARY.md)
+- **Archivierte Releases**: [archive/releases/](./archive/releases/)
 
 ### Für Product Owner:
 - **Zukünftige Features**: [ROADMAP.md](./ROADMAP.md)
-- **Feature-Details**: [FEATURE_*.md](./FEATURE_INTELLIGENT_REPLACEMENT.md)
+- **Feature-Details**: [../../docs/FEATURE_*.md](../../docs/)
+- **Projekt-Übersicht**: [../../docs/PROJECT_STRUCTURE.md](../../docs/PROJECT_STRUCTURE.md)
 
 ### Für Tester:
-- **Test-Szenarien**: Siehe jeweilige `BUGS_*.md` und `FEATURE_*.md`
 - **Test-Setup & Login-Daten**: [TEST_SETUP.md](./TEST_SETUP.md)
 - **Deployment Issues**: [DEPLOYMENT_ISSUES.md](./DEPLOYMENT_ISSUES.md)
+- **Bug-Archiv**: [archive/bugs/](./archive/bugs/)
 
 ---
 
@@ -118,22 +120,23 @@ Bald zu entfernende Features
 ## 🔍 Wie finde ich...?
 
 ### "Welche Bugs gibt es aktuell?"
-→ Keine offenen Bugs! Alle v1.9.1 Bugs wurden in v1.9.2 behoben
-→ Archiv: [BUGS_v1.9.1.md](./BUGS_v1.9.1.md)
+→ ✅ Keine offenen Bugs!
+→ Archiv: [archive/bugs/](./archive/bugs/) für behobene Bugs
 
 ### "Was wurde in Version X.X.X geändert?"
 → [CHANGELOG.md](./CHANGELOG.md) → Suche nach `[X.X.X]`
 
 ### "Wie funktioniert Feature Y?"
-→ [FEATURE_*.md](./FEATURE_INTELLIGENT_REPLACEMENT.md) → Siehe Liste oben
+→ Backend: [FEATURE_*.md](./FEATURE_INTELLIGENT_REPLACEMENT.md)
+→ Gesamt: [../../docs/FEATURE_*.md](../../docs/)
 
 ### "Was kommt als nächstes?"
-→ [TODO_v1.9.2.md](./TODO_v1.9.2.md) für nächsten Sprint
+→ [../../docs/TODO.md](../../docs/TODO.md) für aktuelle Aufgaben
 → [ROADMAP.md](./ROADMAP.md) für langfristige Planung
 
 ### "Wie teste ich Feature Z?"
-→ `FEATURE_Z.md` → Abschnitt "Testing"
-→ `BUGS_vX.X.X.md` → Abschnitt "Test-Szenarien"
+→ [TEST_SETUP.md](./TEST_SETUP.md) für Test-Daten & Login
+→ Feature-Docs → Abschnitt "Testing"
 
 ---
 
@@ -165,22 +168,35 @@ Bald zu entfernende Features
 ## 📁 Datei-Struktur
 
 ```
-docs/
-├── README.md                         # Diese Datei
-├── CHANGELOG.md                      # Versions-Historie
-├── ROADMAP.md                        # Langfristige Planung
+backend/docs/
+├── README.md                            # Diese Datei
+├── CHANGELOG.md                         # Versions-Historie
+├── ROADMAP.md                           # Langfristige Planung
+├── TEST_SETUP.md                        # Test-Daten & Login-Credentials
+├── DEPLOYMENT_ISSUES.md                 # Deployment-Troubleshooting
 │
-├── BUGS_v1.9.1.md                   # Aktuelle Bugs
-├── TODO_v1.9.2.md                   # Nächster Sprint
+├── FEATURE_INTELLIGENT_REPLACEMENT.md   # v1.8.0
+├── FEATURE_DASHBOARD.md                 # v1.9.0+
+├── FEATURE_ABSENCES.md                  # v1.6.0
 │
-├── FEATURE_INTELLIGENT_REPLACEMENT.md  # v1.8.0
-├── FEATURE_DASHBOARD.md                # v1.9.0+
-├── FEATURE_ABSENCES.md                 # v1.6.0
+├── refactoring/                         # Code-Refactoring Dokumentation
+│   ├── REFACTORING_SUMMARY.md          # Refactoring-Übersicht
+│   └── CONTROLLER_SPLITTING_PLAN.md    # Controller-Splitting-Plan
 │
-└── archived/                         # Alte Bug-Reports & TODOs
-    ├── BUGS_v1.8.0.md
-    ├── BUGS_v1.7.0.md
-    └── TODO_v1.9.1.md
+├── deployment/                          # Deployment-Guides
+│   └── PRODUCTION_DEPLOYMENT.md        # Production-Deployment-Guide
+│
+├── security/                            # Security-Dokumentation
+│   └── SECRET_ROTATION.md              # Secret-Rotation-Guide
+│
+└── archive/                             # Archivierte Dokumentation
+    ├── README.md                        # Archiv-Übersicht
+    ├── bugs/                            # Behobene Bug-Reports
+    │   └── BUGS_v1.9.1.md              # ✅ Alle behoben in v1.9.2
+    ├── todos/                           # Abgeschlossene Sprints
+    │   └── TODO_v1.9.2.md              # ✅ Sprint abgeschlossen
+    └── releases/                        # Alte Release-Summaries
+        └── v1.9.2_RELEASE_SUMMARY.md   # v1.9.2 Release
 ```
 
 ---
@@ -222,6 +238,11 @@ docs/
 
 ---
 
-**Letzte Aktualisierung**: 2025-10-07
-**Version**: v1.9.2
+**Letzte Aktualisierung**: 2025-11-06
 **Maintainer**: Development Team
+
+---
+
+## 📦 Archiv
+
+Für archivierte Bugs, TODOs und Release-Summaries siehe [archive/README.md](./archive/README.md).

@@ -57,7 +57,8 @@ export type ReplacementCandidateWarning = {
 
 type ReplacementWarningType =
   | CandidateScore['warnings'][number]['type']
-  | 'PENDING_ABSENCE_REQUEST';
+  | 'PENDING_ABSENCE_REQUEST'
+  | 'MISSING_CLEARANCE';
 
 export async function findReplacementCandidatesForShift(
   shiftId: string,
@@ -294,7 +295,7 @@ export async function findReplacementCandidatesForShiftV2(
         // Füge Warning hinzu wenn keine Clearance vorhanden
         if (!hasClearance) {
           warnings.unshift({
-            type: 'MISSING_CLEARANCE' as any,
+            type: 'MISSING_CLEARANCE',
             severity: 'warning',
             message: '⚠️ Keine Objekt-Clearance - Einweisung erforderlich',
           });

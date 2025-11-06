@@ -21,6 +21,26 @@ async function main() {
     await resetSeedData(prisma);
     console.log('🗑️  Alte Daten gelöscht\n');
 
+    // ===== 0. DEFAULT CUSTOMER ERSTELLEN =====
+    const defaultCustomer = await prisma.customer.create({
+      data: {
+        companyName: 'Test Security GmbH',
+        industry: 'Sicherheitsdienste',
+        taxId: 'DE123456789',
+        primaryContact: {
+          name: 'Test Admin',
+          email: 'admin@test-security.de',
+          phone: '+49 123 456789',
+          position: 'Geschäftsführer',
+        },
+        address: 'Teststraße 1',
+        city: 'Berlin',
+        postalCode: '10115',
+      },
+    });
+    const defaultCustomerId = defaultCustomer.id;
+    console.log('✅ Default Customer erstellt\n');
+
     // ===== 1. ADMIN & MANAGER =====
     const admin = await createUserWithPassword(prisma, {
       email: 'admin@sicherheitsdienst.de',
@@ -32,6 +52,7 @@ async function main() {
       hireDate: new Date('2020-01-01'),
       qualifications: ['Erste Hilfe', 'Brandschutz', 'Management'],
       isActive: true,
+      customerId: defaultCustomerId,
     });
 
     const manager = await createUserWithPassword(prisma, {
@@ -44,6 +65,7 @@ async function main() {
       hireDate: new Date('2020-06-01'),
       qualifications: ['Erste Hilfe', 'Einsatzplanung'],
       isActive: true,
+      customerId: defaultCustomerId,
     });
 
     console.log('✅ Admin & Manager erstellt');
@@ -268,6 +290,7 @@ async function main() {
           hireDate: profile.hireDate,
           qualifications: profile.qualifications,
           isActive: true,
+          customerId: defaultCustomerId,
         }),
       ),
     );

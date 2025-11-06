@@ -5,6 +5,8 @@ import { validate } from '../middleware/validate';
 import { createShiftSchema, updateShiftSchema, shiftListQuerySchema } from '../validations/shiftValidation';
 import { clockInSchema, clockOutSchema } from '../validations/timeValidation';
 import * as shiftController from '../controllers/shiftController';
+import * as shiftAssignmentController from '../controllers/shiftAssignmentController';
+import * as shiftTimeTrackingController from '../controllers/shiftTimeTrackingController';
 import { createWriteRateLimit, createShiftAssignRateLimit, createShiftClockRateLimit } from '../middleware/rateLimit';
 import methodNotAllowed from '../middleware/methodNotAllowed';
 
@@ -33,7 +35,7 @@ router.post(
   authenticate,
   authorize('ADMIN', 'MANAGER', 'DISPATCHER'),
   assignLimiter,
-  asyncHandler(shiftController.bulkAssignUserToShifts),
+  asyncHandler(shiftAssignmentController.bulkAssignUserToShifts),
 );
 
 // GET /api/shifts/:id - Einzelne Schicht
@@ -44,7 +46,7 @@ router.get(
   '/:id/replacement-candidates/v2',
   authenticate,
   authorize('ADMIN', 'MANAGER', 'DISPATCHER'),
-  asyncHandler(shiftController.getReplacementCandidatesV2),
+  asyncHandler(shiftAssignmentController.getReplacementCandidatesV2),
 );
 
 // GET /api/shifts/:id/replacement-candidates-v2 - Intelligente Ersatzkandidaten mit Scoring (Legacy URL)
@@ -52,7 +54,7 @@ router.get(
   '/:id/replacement-candidates-v2',
   authenticate,
   authorize('ADMIN', 'MANAGER', 'DISPATCHER'),
-  asyncHandler(shiftController.getReplacementCandidatesV2),
+  asyncHandler(shiftAssignmentController.getReplacementCandidatesV2),
 );
 
 // GET /api/shifts/:id/replacement-candidates - Ersatzkandidaten für eine Schicht (Legacy)
@@ -60,7 +62,7 @@ router.get(
   '/:id/replacement-candidates',
   authenticate,
   authorize('ADMIN', 'MANAGER', 'DISPATCHER'),
-  asyncHandler(shiftController.getShiftReplacementCandidates),
+  asyncHandler(shiftAssignmentController.getShiftReplacementCandidates),
 );
 
 // GET /api/shifts/:id/assignment-candidates - Intelligente MA-Vorschläge für Schicht-Zuweisung
@@ -68,7 +70,7 @@ router.get(
   '/:id/assignment-candidates',
   authenticate,
   authorize('ADMIN', 'MANAGER', 'DISPATCHER'),
-  asyncHandler(shiftController.getShiftAssignmentCandidates),
+  asyncHandler(shiftAssignmentController.getShiftAssignmentCandidates),
 );
 
 // PUT /api/shifts/:id - Schicht aktualisieren
@@ -90,7 +92,7 @@ router.post(
   authenticate,
   authorize('ADMIN', 'MANAGER', 'DISPATCHER'),
   assignLimiter,
-  asyncHandler(shiftController.assignUserToShift),
+  asyncHandler(shiftAssignmentController.assignUserToShift),
 );
 // POST /api/shifts/:id/clock-in
 router.post(
@@ -98,7 +100,7 @@ router.post(
   authenticate,
   clockLimiter,
   validate(clockInSchema),
-  asyncHandler(shiftController.clockIn),
+  asyncHandler(shiftTimeTrackingController.clockIn),
 );
 // POST /api/shifts/:id/clock-out
 router.post(
@@ -106,7 +108,7 @@ router.post(
   authenticate,
   clockLimiter,
   validate(clockOutSchema),
-  asyncHandler(shiftController.clockOut),
+  asyncHandler(shiftTimeTrackingController.clockOut),
 );
 // 405
 router.all('/', authenticate, methodNotAllowed(['GET', 'POST']));

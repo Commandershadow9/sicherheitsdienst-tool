@@ -2,8 +2,12 @@ import app from './app';
 import logger from './utils/logger';
 import prisma from './utils/prisma';
 import { startIntelligentReplacementSchedulers } from './jobs/intelligentReplacementJobs';
+import { registerMultiTenancyMiddleware } from './middleware/multiTenancy';
 
 const PORT = parseInt(process.env.PORT || '3000', 10); // Default: 3000 (konsistent mit Docker)
+
+// 🔐 MULTI-TENANCY: Registriere Prisma-Middleware (KRITISCH!)
+registerMultiTenancyMiddleware();
 
 startIntelligentReplacementSchedulers();
 

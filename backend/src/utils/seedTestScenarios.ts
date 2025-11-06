@@ -10,6 +10,26 @@ async function main() {
     await resetSeedData(prisma);
     console.log('🗑️  Alte Daten gelöscht');
 
+    // ===== 0. DEFAULT CUSTOMER ERSTELLEN =====
+    const defaultCustomer = await prisma.customer.create({
+      data: {
+        companyName: 'Test Security GmbH',
+        industry: 'Sicherheitsdienste',
+        taxId: 'DE123456789',
+        primaryContact: {
+          name: 'Test Admin',
+          email: 'admin@test-security.de',
+          phone: '+49 123 456789',
+          position: 'Geschäftsführer',
+        },
+        address: 'Teststraße 1',
+        city: 'Berlin',
+        postalCode: '10115',
+      },
+    });
+    const defaultCustomerId = defaultCustomer.id;
+    console.log('✅ Default Customer erstellt');
+
     // ===== 1. BENUTZER ERSTELLEN =====
     const admin = await createUserWithPassword(prisma, {
       email: 'admin@sicherheitsdienst.de',
@@ -21,6 +41,7 @@ async function main() {
       hireDate: new Date('2020-01-01'),
       qualifications: ['Erste Hilfe', 'Brandschutz', 'Management'],
       isActive: true,
+      customerId: defaultCustomerId,
     });
 
     const manager = await createUserWithPassword(prisma, {
@@ -33,6 +54,7 @@ async function main() {
       hireDate: new Date('2020-06-01'),
       qualifications: ['Erste Hilfe', 'Einsatzplanung'],
       isActive: true,
+      customerId: defaultCustomerId,
     });
 
     // Mitarbeiter mit verschiedenen Profilen
@@ -48,6 +70,7 @@ async function main() {
         hireDate: new Date('2023-01-01'),
         qualifications: ['Erste Hilfe', 'Objektschutz'],
         isActive: true,
+        customerId: defaultCustomerId,
       }),
       // Mitarbeiter 2: Hohe Workload
       createUserWithPassword(prisma, {
@@ -60,6 +83,7 @@ async function main() {
         hireDate: new Date('2023-02-01'),
         qualifications: ['Erste Hilfe', 'Veranstaltungsschutz'],
         isActive: true,
+        customerId: defaultCustomerId,
       }),
       // Mitarbeiter 3: Heute abwesend (APPROVED) - macht Schicht kritisch
       createUserWithPassword(prisma, {
@@ -72,6 +96,7 @@ async function main() {
         hireDate: new Date('2023-03-01'),
         qualifications: ['Erste Hilfe', 'Brandschutz'],
         isActive: true,
+        customerId: defaultCustomerId,
       }),
       // Mitarbeiter 4: Urlaubsantrag eingereicht (REQUESTED) - genug Tage
       createUserWithPassword(prisma, {
@@ -84,6 +109,7 @@ async function main() {
         hireDate: new Date('2023-04-01'),
         qualifications: ['Erste Hilfe', 'Personenschutz'],
         isActive: true,
+        customerId: defaultCustomerId,
       }),
       // Mitarbeiter 5: Urlaubsantrag eingereicht - ÜBERSCHREITET Urlaubstage
       createUserWithPassword(prisma, {
@@ -96,6 +122,7 @@ async function main() {
         hireDate: new Date('2023-05-01'),
         qualifications: ['Erste Hilfe', 'Objektschutz'],
         isActive: true,
+        customerId: defaultCustomerId,
       }),
       // Mitarbeiter 6-10: Weitere Mitarbeiter für Replacement
       createUserWithPassword(prisma, {
@@ -108,6 +135,7 @@ async function main() {
         hireDate: new Date('2023-06-01'),
         qualifications: ['Erste Hilfe', 'Objektschutz'],
         isActive: true,
+        customerId: defaultCustomerId,
       }),
       createUserWithPassword(prisma, {
         email: 'markus.klein@sec.de',
@@ -119,6 +147,7 @@ async function main() {
         hireDate: new Date('2023-07-01'),
         qualifications: ['Erste Hilfe', 'Brandschutz'],
         isActive: true,
+        customerId: defaultCustomerId,
       }),
       createUserWithPassword(prisma, {
         email: 'sabine.wolf@sec.de',
@@ -130,6 +159,7 @@ async function main() {
         hireDate: new Date('2023-08-01'),
         qualifications: ['Erste Hilfe', 'Veranstaltungsschutz'],
         isActive: true,
+        customerId: defaultCustomerId,
       }),
       createUserWithPassword(prisma, {
         email: 'daniel.richter@sec.de',
@@ -141,6 +171,7 @@ async function main() {
         hireDate: new Date('2023-09-01'),
         qualifications: ['Erste Hilfe', 'Objektschutz'],
         isActive: true,
+        customerId: defaultCustomerId,
       }),
       createUserWithPassword(prisma, {
         email: 'claudia.zimmermann@sec.de',
@@ -152,6 +183,7 @@ async function main() {
         hireDate: new Date('2023-10-01'),
         qualifications: ['Erste Hilfe', 'Personenschutz'],
         isActive: true,
+        customerId: defaultCustomerId,
       }),
     ]);
 

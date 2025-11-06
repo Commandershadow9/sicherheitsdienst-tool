@@ -1,21 +1,16 @@
 import { useMemo, useEffect, useState, useRef } from 'react'
 import { useParams, useNavigate, useLocation, Link } from 'react-router-dom'
-import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '@/features/auth/AuthProvider'
 import {
   EmployeeDocument,
   EmployeeQualification,
   EmploymentType,
-  addDocument,
-  addQualification,
-  deleteDocument,
-  deleteQualification,
-  fetchUserProfile,
-  updateUserProfile,
   DocumentCategory,
   UserProfileResponse,
 } from './api'
-import { createAbsence, fetchAbsences } from '@/features/absences/api'
+import { useProfileQueries } from './hooks/useProfileQueries'
+import { useProfileMutations } from './hooks/useProfileMutations'
 import type { Absence, AbsenceType } from '@/features/absences/types'
 import { ABSENCE_TYPES, getAbsenceStatusLabel, getAbsenceTypeLabel, formatPeriod } from '@/features/absences/utils'
 import { useForm } from 'react-hook-form'
@@ -142,18 +137,6 @@ function formatDocumentPeriod(issuedAt?: string | null, expiresAt?: string | nul
   return `${issued !== '–' ? issued : 'Ausstellungsdatum unbekannt'} – ${formatDate(expiresAt)}`
 }
 
-function readFileAsDataUrl(file: File) {
-  return new Promise<{ dataUrl: string; size: number; mimeType: string }>((resolve, reject) => {
-    const reader = new FileReader()
-    reader.onload = () => {
-      const result = typeof reader.result === 'string' ? reader.result : ''
-      resolve({ dataUrl: result, size: file.size, mimeType: file.type || 'application/octet-stream' })
-    }
-    reader.onerror = () => reject(reader.error ?? new Error('Datei konnte nicht gelesen werden'))
-    reader.readAsDataURL(file)
-  })
-}
-
 export default function UserProfile() {
   const params = useParams()
   const location = useLocation()
@@ -179,16 +162,14 @@ export default function UserProfile() {
   const [documentFile, setDocumentFile] = useState<File | null>(null)
   const documentFileInputRef = useRef<HTMLInputElement | null>(null)
 
-  const { data, isLoading, isError, error } = useQuery({
-    queryKey: ['user-profile', targetId],
-    queryFn: () => {
-      if (!targetId) {
-        throw new Error('Kein Nutzerziel definiert')
-      }
-      return fetchUserProfile(targetId)
-    },
-    enabled: Boolean(targetId),
-  })
+  const todayIso = new Date().toISOString().substring(0, 10)
+
+  // Data queries
+  const { data, isLoading, isError, error, userAbsenceData, isAbsencesLoading, isAbsencesError, absencesError } =
+    useProfileQueries({
+      targetId,
+      activeTab,
+    })
 
   const form = useForm<ProfileFormValues>({
     resolver: zodResolver(profileSchema),
@@ -208,6 +189,50 @@ export default function UserProfile() {
       monthlyTargetHours: '',
       notes: '',
     },
+  })
+
+  const qualificationForm = useForm<QualificationFormValues>({
+    resolver: zodResolver(qualificationSchema),
+    defaultValues: { title: '', description: '', validFrom: '', validUntil: '' },
+  })
+
+  const documentForm = useForm<DocumentFormValues>({
+    resolver: zodResolver(documentSchema),
+    defaultValues: {
+      category: 'OTHER',
+      filename: '',
+      issuedAt: '',
+      expiresAt: '',
+    },
+  })
+
+  const absenceForm = useForm<AbsenceFormValues>({
+    resolver: zodResolver(absenceRequestSchema),
+    defaultValues: {
+      type: 'VACATION',
+      startsAt: todayIso,
+      endsAt: todayIso,
+      reason: '',
+    },
+  })
+
+  // Data mutations
+  const {
+    updateMutation,
+    qualificationMutation,
+    qualificationDeleteMutation,
+    documentMutation,
+    documentDeleteMutation,
+    absenceMutation,
+  } = useProfileMutations({
+    targetId,
+    setAbsenceModalOpen,
+    setDocumentFile,
+    documentFileInputRef,
+    absenceForm,
+    documentForm,
+    qualificationForm,
+    todayIso,
   })
 
   useEffect(() => {
@@ -230,174 +255,6 @@ export default function UserProfile() {
     })
   }, [data, form])
 
-  const updateMutation = useMutation({
-    mutationFn: (values: ProfileFormValues) =>
-      updateUserProfile(targetId!, {
-        address: {
-          street: values.addressStreet || undefined,
-          postalCode: values.addressPostalCode || undefined,
-          city: values.addressCity || undefined,
-          country: values.addressCountry || undefined,
-        },
-        birthDate: values.birthDate ? new Date(values.birthDate).toISOString() : undefined,
-        phone: values.phone || undefined,
-        employmentType: values.employmentType,
-        employmentStart: values.employmentStart ? new Date(values.employmentStart).toISOString() : undefined,
-        employmentEnd: values.employmentEnd ? new Date(values.employmentEnd).toISOString() : undefined,
-        workSchedule: values.workSchedule || undefined,
-        hourlyRate: values.hourlyRate || undefined,
-        weeklyTargetHours: values.weeklyTargetHours ? Number(values.weeklyTargetHours) : undefined,
-        monthlyTargetHours: values.monthlyTargetHours ? Number(values.monthlyTargetHours) : undefined,
-        notes: values.notes || undefined,
-      }),
-    onSuccess: () => {
-      toast.success('Profil aktualisiert')
-      queryClient.invalidateQueries({ queryKey: ['user-profile', targetId] })
-    },
-    onError: (err: any) => {
-      toast.error(err?.response?.data?.message || 'Aktualisierung fehlgeschlagen')
-    },
-  })
-
-  const qualificationForm = useForm<QualificationFormValues>({
-    resolver: zodResolver(qualificationSchema),
-    defaultValues: { title: '', description: '', validFrom: '', validUntil: '' },
-  })
-
-  const qualificationMutation = useMutation({
-    mutationFn: (values: QualificationFormValues) =>
-      addQualification(targetId!, {
-        title: values.title,
-        description: values.description || undefined,
-        validFrom: values.validFrom ? new Date(values.validFrom).toISOString() : undefined,
-        validUntil: values.validUntil ? new Date(values.validUntil).toISOString() : undefined,
-      }),
-    onSuccess: () => {
-      toast.success('Qualifikation gespeichert')
-      qualificationForm.reset()
-      queryClient.invalidateQueries({ queryKey: ['user-profile', targetId] })
-    },
-    onError: (err: any) => {
-      toast.error(err?.response?.data?.message || 'Qualifikation konnte nicht gespeichert werden')
-    },
-  })
-
-  const qualificationDeleteMutation = useMutation({
-    mutationFn: (qualificationId: string) => deleteQualification(targetId!, qualificationId),
-    onSuccess: () => {
-      toast.success('Qualifikation entfernt')
-      queryClient.invalidateQueries({ queryKey: ['user-profile', targetId] })
-    },
-    onError: (err: any) => {
-      toast.error(err?.response?.data?.message || 'Qualifikation konnte nicht entfernt werden')
-    },
-  })
-
-  const documentForm = useForm<DocumentFormValues>({
-    resolver: zodResolver(documentSchema),
-    defaultValues: {
-      category: 'OTHER',
-      filename: '',
-      issuedAt: '',
-      expiresAt: '',
-    },
-  })
-
-  const documentMutation = useMutation({
-    mutationFn: async ({ values, file }: { values: DocumentFormValues; file: File | null }) => {
-      const payload: {
-        category: DocumentCategory
-        filename: string
-        issuedAt?: string
-        expiresAt?: string
-        mimeType?: string
-        size?: number
-        storedAt?: string
-      } = {
-        category: values.category,
-        filename: values.filename,
-      }
-      if (values.issuedAt) {
-        payload.issuedAt = new Date(values.issuedAt).toISOString()
-      }
-      if (values.expiresAt) {
-        payload.expiresAt = new Date(values.expiresAt).toISOString()
-      }
-      if (file) {
-        const maxBytes = 20 * 1024 * 1024
-        if (file.size > maxBytes) {
-          throw new Error('Datei darf maximal 20 MB groß sein')
-        }
-        const { dataUrl, size, mimeType } = await readFileAsDataUrl(file)
-        payload.mimeType = mimeType
-        payload.size = size
-        payload.storedAt = dataUrl
-      }
-      return addDocument(targetId!, payload)
-    },
-    onSuccess: () => {
-      toast.success('Dokument erfasst')
-      documentForm.reset({ category: 'OTHER', filename: '', issuedAt: '', expiresAt: '' })
-      setDocumentFile(null)
-      if (documentFileInputRef.current) {
-        documentFileInputRef.current.value = ''
-      }
-      queryClient.invalidateQueries({ queryKey: ['user-profile', targetId] })
-    },
-    onError: (err: any) => {
-      const message = err?.response?.data?.message || err?.message || 'Dokument konnte nicht erfasst werden'
-      toast.error(message)
-    },
-  })
-
-  const documentDeleteMutation = useMutation({
-    mutationFn: (documentId: string) => deleteDocument(targetId!, documentId),
-    onSuccess: () => {
-      toast.success('Dokument entfernt')
-      queryClient.invalidateQueries({ queryKey: ['user-profile', targetId] })
-    },
-    onError: (err: any) => {
-      toast.error(err?.response?.data?.message || 'Dokument konnte nicht entfernt werden')
-    },
-  })
-
-  const todayIso = new Date().toISOString().substring(0, 10)
-
-  const absenceForm = useForm<AbsenceFormValues>({
-    resolver: zodResolver(absenceRequestSchema),
-    defaultValues: {
-      type: 'VACATION',
-      startsAt: todayIso,
-      endsAt: todayIso,
-      reason: '',
-    },
-  })
-
-  const absenceMutation = useMutation({
-    mutationFn: (values: AbsenceFormValues) =>
-      createAbsence({
-        userId: targetId!,
-        type: values.type as AbsenceType,
-        startsAt: new Date(values.startsAt).toISOString(),
-        endsAt: new Date(values.endsAt).toISOString(),
-        reason: values.reason?.trim() || undefined,
-      }),
-    onSuccess: (result) => {
-      toast.success('Abwesenheit erfasst')
-      absenceForm.reset({ type: 'VACATION', startsAt: todayIso, endsAt: todayIso, reason: '' })
-      setAbsenceModalOpen(false)
-      queryClient.invalidateQueries({ queryKey: ['user-profile', targetId] })
-      queryClient.invalidateQueries({ queryKey: ['user-absences', targetId] })
-      if (result.conflicts && result.conflicts.length > 0) {
-        toast.warning(`Es bestehen ${result.conflicts.length} Schichtkonflikte.`)
-      }
-    },
-    onError: (err: any) => {
-      const message = err?.response?.data?.message || 'Abwesenheit konnte nicht gespeichert werden'
-      toast.error(message)
-    },
-  })
-
   const applyQuickAbsence = (type: AbsenceType, durationDays: number) => {
     const start = new Date()
     const end = new Date()
@@ -416,18 +273,6 @@ export default function UserProfile() {
     setAbsenceModalOpen(false)
     absenceForm.reset({ type: 'VACATION', startsAt: todayIso, endsAt: todayIso, reason: '' })
   }
-
-  const {
-    data: userAbsenceData,
-    isLoading: isAbsencesLoading,
-    isError: isAbsencesError,
-    error: absencesError,
-  } = useQuery({
-    queryKey: ['user-absences', targetId],
-    queryFn: () => fetchAbsences({ userId: targetId, page: 1, pageSize: 25 }),
-    enabled: Boolean(targetId) && activeTab === 'absences',
-    placeholderData: keepPreviousData,
-  })
 
   const canEdit = user && (user.role === 'ADMIN' || user.role === 'MANAGER' || user.id === targetId)
   const canManageSensitive = user && (user.role === 'ADMIN' || user.role === 'MANAGER')

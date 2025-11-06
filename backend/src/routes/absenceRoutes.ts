@@ -8,13 +8,17 @@ import {
   listAbsences,
   createAbsence,
   getAbsenceById,
+} from '../controllers/absenceController';
+import {
+  previewCapacityWarnings,
   approveAbsence,
   rejectAbsence,
   cancelAbsence,
-  previewCapacityWarnings,
+} from '../controllers/absenceApprovalController';
+import {
   getReplacementCandidates,
   exportAbsencesToICS,
-} from '../controllers/absenceController';
+} from '../controllers/absenceExportController';
 import {
   uploadAbsenceDocument,
   downloadAbsenceDocument,

@@ -1,6 +1,5 @@
 import { useState } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '@/features/auth/AuthProvider'
 import { api } from '@/lib/api'
 import { Button } from '@/components/ui/button'
@@ -39,168 +38,17 @@ import ImagesTab from '../components/tabs/ImagesTab'
 import DocumentsTab from '../components/tabs/DocumentsTab'
 import IncidentsTab from '../components/tabs/IncidentsTab'
 import SecurityConceptTab from '../components/tabs/SecurityConceptTab'
-
-type Site = {
-  id: string
-  name: string
-  address: string
-  city: string
-  postalCode: string
-  customerName?: string
-  customerCompany?: string
-  customerEmail?: string
-  customerPhone?: string
-  emergencyContacts?: Array<{ name: string; phone: string; role?: string }>
-  status?: 'INQUIRY' | 'IN_REVIEW' | 'CALCULATING' | 'OFFER_SENT' | 'ACTIVE' | 'INACTIVE' | 'LOST'
-  requiredStaff?: number
-  requiredQualifications?: string[]
-  description?: string
-  notes?: string
-  images?: Array<{
-    id: string
-    filename: string
-    category: string
-    uploadedAt: string
-    uploader: { firstName: string; lastName: string }
-  }>
-  assignments?: Array<{
-    id: string
-    role: string
-    user: { id: string; firstName: string; lastName: string; email: string }
-  }>
-  clearances?: Array<{
-    id: string
-    status: string
-    user: { id: string; firstName: string; lastName: string }
-    trainingCompletedAt?: string
-  }>
-  documents?: Array<{
-    id: string
-    title: string
-    description?: string
-    category: string
-    filename: string
-    fileSize: number
-    mimeType: string
-    version: number
-    isLatest: boolean
-    uploadedAt: string
-    uploader: { id: string; firstName: string; lastName: string }
-  }>
-  incidents?: Array<{
-    id: string
-    title: string
-    description?: string
-    category: string
-    severity: string
-    status: string
-    occurredAt: string
-    reportedAt: string
-    location?: string
-    involvedPersons?: string
-    resolvedAt?: string
-    resolution?: string
-    reporter: { id: string; firstName: string; lastName: string }
-  }>
-  securityConcept?: {
-    tasks?: string[]
-    shiftModel?: string
-    hoursPerWeek?: number
-    templateId?: string
-    templateName?: string
-  }
-  securityConcepts?: Array<{
-    id: string
-    status: string
-    staffRequirements?: {
-      anzahlMA?: number
-      qualifikationen?: string[]
-    }
-    taskProfiles?: {
-      objektleiter?: {
-        required: boolean
-        qualifikationen?: string[]
-      }
-      schichtleiter?: {
-        required: boolean
-        qualifikationen?: string[]
-      }
-    }
-    shiftModel?: any
-  }>
-}
-
-const STATUS_LABELS: Record<string, string> = {
-  INQUIRY: 'Anfrage',
-  IN_REVIEW: 'In Prüfung',
-  CALCULATING: 'Kalkulation',
-  OFFER_SENT: 'Angebot versendet',
-  ACTIVE: 'Aktiv',
-  INACTIVE: 'Inaktiv',
-  LOST: 'Verloren',
-}
-
-const STATUS_COLORS: Record<string, string> = {
-  INQUIRY: 'bg-blue-100 text-blue-800',
-  IN_REVIEW: 'bg-yellow-100 text-yellow-800',
-  CALCULATING: 'bg-orange-100 text-orange-800',
-  OFFER_SENT: 'bg-purple-100 text-purple-800',
-  ACTIVE: 'bg-green-100 text-green-800',
-  INACTIVE: 'bg-gray-100 text-gray-800',
-  LOST: 'bg-red-100 text-red-800',
-}
-
-const ROLE_LABELS: Record<string, string> = {
-  OBJEKTLEITER: 'Objektleiter',
-  SCHICHTLEITER: 'Schichtleiter',
-  MITARBEITER: 'Mitarbeiter',
-}
+import type { Site, TabType } from '../types/site'
+import { STATUS_LABELS, STATUS_COLORS, ROLE_LABELS } from '../constants/site'
+import { useSiteModals } from '../hooks/useSiteModals'
+import { useSiteQueries } from '../hooks/useSiteQueries'
+import { useSiteMutations } from '../hooks/useSiteMutations'
 
 export default function SiteDetail() {
   const { id } = useParams<{ id: string }>()
   const nav = useNavigate()
-  const queryClient = useQueryClient()
   const { user } = useAuth()
-  const [activeTab, setActiveTab] = useState<'overview' | 'clearances' | 'shifts' | 'images' | 'documents' | 'incidents' | 'control-points' | 'control-rounds' | 'calculations' | 'security-concept'>('overview')
-  const [trainingModal, setTrainingModal] = useState<{ clearance: Clearance; hours: number } | null>(null)
-  const [revokeModal, setRevokeModal] = useState<{ clearance: Clearance; notes: string } | null>(null)
-  const [uploadModal, setUploadModal] = useState<{ file: File | null; category: string } | null>(null)
-  const [deleteImageId, setDeleteImageId] = useState<string | null>(null)
-  const [createClearanceModal, setCreateClearanceModal] = useState<{ userId: string; notes: string } | null>(null)
-  const [createAssignmentModal, setCreateAssignmentModal] = useState<{ userId: string; role: string } | null>(null)
-  const [smartAssignmentModal, setSmartAssignmentModal] = useState<boolean>(false)
-  const [controlRoundSuggestionsModal, setControlRoundSuggestionsModal] = useState<boolean>(false)
-  const [deleteAssignmentId, setDeleteAssignmentId] = useState<string | null>(null)
-  const [deleteSiteConfirm, setDeleteSiteConfirm] = useState(false)
-  const [uploadDocumentModal, setUploadDocumentModal] = useState<{
-    title: string
-    description: string
-    category: string
-    file: File | null
-  } | null>(null)
-  const [deleteDocumentId, setDeleteDocumentId] = useState<string | null>(null)
-  const [viewDocument, setViewDocument] = useState<{
-    id: string
-    title: string
-    filename: string
-    mimeType: string
-    fileSize: number
-  } | null>(null)
-  const [createIncidentModal, setCreateIncidentModal] = useState<{
-    title: string
-    description: string
-    category: string
-    severity: string
-    occurredAt: string
-    location: string
-    involvedPersons: Array<{ name: string; role?: string; isWitness?: boolean }>
-  } | null>(null)
-  const [deleteIncidentId, setDeleteIncidentId] = useState<string | null>(null)
-  const [editIncident, setEditIncident] = useState<any>(null)
-  const [resolveIncident, setResolveIncident] = useState<{ id: string; title: string; resolution?: string } | null>(null)
-  const [viewHistory, setViewHistory] = useState<{ incidentId: string; incidentTitle: string } | null>(null)
-  const [rejectCalculationModal, setRejectCalculationModal] = useState<{ calculationId: string; notes: string } | null>(null)
-  const [emailCalculationModal, setEmailCalculationModal] = useState<{ calculationId: string; email: string } | null>(null)
+  const [activeTab, setActiveTab] = useState<TabType>('overview')
   const [incidentFilters, setIncidentFilters] = useState<{
     status: string
     severity: string
@@ -211,386 +59,94 @@ export default function SiteDetail() {
     category: 'ALL',
   })
 
-  const { data: site, isLoading, isError, error } = useQuery<Site>({
-    queryKey: ['site', id],
-    queryFn: async () => {
-      const res = await api.get<{ data: Site }>(`/sites/${id}?include=relations`)
-      return res.data.data
-    },
-    enabled: !!id,
+  // Modal states consolidated into custom hook
+  const {
+    trainingModal, setTrainingModal,
+    revokeModal, setRevokeModal,
+    uploadModal, setUploadModal,
+    deleteImageId, setDeleteImageId,
+    createClearanceModal, setCreateClearanceModal,
+    createAssignmentModal, setCreateAssignmentModal,
+    smartAssignmentModal, setSmartAssignmentModal,
+    controlRoundSuggestionsModal, setControlRoundSuggestionsModal,
+    deleteAssignmentId, setDeleteAssignmentId,
+    deleteSiteConfirm, setDeleteSiteConfirm,
+    uploadDocumentModal, setUploadDocumentModal,
+    deleteDocumentId, setDeleteDocumentId,
+    viewDocument, setViewDocument,
+    createIncidentModal, setCreateIncidentModal,
+    deleteIncidentId, setDeleteIncidentId,
+    editIncident, setEditIncident,
+    resolveIncident, setResolveIncident,
+    viewHistory, setViewHistory,
+    rejectCalculationModal, setRejectCalculationModal,
+    emailCalculationModal, setEmailCalculationModal,
+  } = useSiteModals()
+
+  // Consolidate all queries in custom hook
+  const {
+    site,
+    isLoading,
+    isError,
+    error,
+    controlPoints,
+    controlRounds,
+    calculations,
+    incidentHistory,
+    shifts,
+    shiftsLoading,
+    usersData,
+  } = useSiteQueries({
+    siteId: id,
+    activeTab,
+    viewHistoryIncidentId: viewHistory?.incidentId,
+    createClearanceModalOpen: !!createClearanceModal,
+    createAssignmentModalOpen: !!createAssignmentModal,
   })
 
-  // Control Points Query
-  const { data: controlPoints = [] } = useQuery({
-    queryKey: ['controlPoints', id],
-    queryFn: () => fetchControlPoints(id!),
-    enabled: !!id && activeTab === 'control-points',
-  })
-
-  // Control Rounds Query
-  const { data: controlRoundsData } = useQuery({
-    queryKey: ['controlRounds', id],
-    queryFn: () => fetchControlRounds(id!),
-    enabled: !!id && activeTab === 'control-rounds',
-  })
-
-  const controlRounds = controlRoundsData?.data || []
-
-  // Calculations Query
-  const { data: calculations = [] } = useQuery({
-    queryKey: ['calculations', id],
-    queryFn: () => fetchSiteCalculations(id!),
-    enabled: !!id && activeTab === 'calculations',
-  })
-
-  // History Query
-  const { data: incidentHistory } = useQuery({
-    queryKey: ['incidentHistory', viewHistory?.incidentId],
-    queryFn: async () => {
-      const res = await api.get(`/sites/${id}/incidents/${viewHistory?.incidentId}/history`)
-      return res.data.data
-    },
-    enabled: !!viewHistory?.incidentId,
-  })
-
-  // Shifts Query
-  const { data: shifts = [], isLoading: shiftsLoading } = useQuery<Shift[]>({
-    queryKey: ['shifts', id],
-    queryFn: () => fetchSiteShifts(id!),
-    enabled: !!id && activeTab === 'shifts',
-  })
-
-  const completeTrainingMutation = useMutation({
-    mutationFn: (data: { id: string; hours: number }) => completeClearanceTraining(data.id, { trainingHours: data.hours }),
-    onSuccess: (_data, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['site', id] })
-      if (trainingModal && site) {
-        const userName = `${trainingModal.clearance.user.firstName} ${trainingModal.clearance.user.lastName}`
-        toastSuccess.clearanceCompleted(userName, site.name)
-      } else {
-        toast.success('Training erfolgreich abgeschlossen')
-      }
-      setTrainingModal(null)
-    },
-    onError: (error: any) => {
-      toastError.generic('Fehler beim Abschließen des Trainings', error?.response?.data?.message)
-    },
-  })
-
-  const revokeMutation = useMutation({
-    mutationFn: (data: { id: string; notes: string }) => revokeClearance(data.id, data.notes),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['site', id] })
-      if (revokeModal && site) {
-        const userName = `${revokeModal.clearance.user.firstName} ${revokeModal.clearance.user.lastName}`
-        toastSuccess.clearanceRevoked(userName, site.name)
-      } else {
-        toast.success('Clearance erfolgreich widerrufen')
-      }
-      setRevokeModal(null)
-    },
-    onError: (error: any) => {
-      toastError.generic('Fehler beim Widerrufen der Clearance', error?.response?.data?.message)
-    },
-  })
-
-  const uploadImageMutation = useMutation({
-    mutationFn: async (data: { file: File; category: string }) => {
-      const formData = new FormData()
-      formData.append('image', data.file)
-      formData.append('category', data.category)
-      const res = await api.post(`/sites/${id}/images`, formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      })
-      return res.data
-    },
-    onSuccess: (_data, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['site', id] })
-      toastSuccess.imageUploaded(variables.category)
-      setUploadModal(null)
-    },
-    onError: (error: any) => {
-      toastError.uploadFailed('Bild', error?.response?.data?.message)
-    },
-  })
-
-  const deleteImageMutation = useMutation({
-    mutationFn: async (imageId: string) => {
-      await api.delete(`/sites/${id}/images/${imageId}`)
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['site', id] })
-      toastSuccess.imageDeleted()
-      setDeleteImageId(null)
-    },
-    onError: (error: any) => {
-      toastError.generic('Fehler beim Löschen', error?.response?.data?.message)
-    },
-  })
-
-  const uploadDocumentMutation = useMutation({
-    mutationFn: async (data: { title: string; description: string; category: string; file: File }) => {
-      const formData = new FormData()
-      formData.append('document', data.file)
-      formData.append('title', data.title)
-      formData.append('description', data.description)
-      formData.append('category', data.category)
-      const res = await api.post(`/sites/${id}/documents`, formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      })
-      return res.data
-    },
-    onSuccess: (_data, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['site', id] })
-      toastSuccess.documentUploaded(variables.title, variables.category)
-      setUploadDocumentModal(null)
-    },
-    onError: (error: any) => {
-      toastError.uploadFailed('Dokument', error?.response?.data?.message)
-    },
-  })
-
-  const deleteDocumentMutation = useMutation({
-    mutationFn: async (documentId: string) => {
-      await api.delete(`/sites/${id}/documents/${documentId}`)
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['site', id] })
-      toastSuccess.generic('Dokument gelöscht', 'Das Dokument wurde erfolgreich entfernt')
-      setDeleteDocumentId(null)
-    },
-    onError: (error: any) => {
-      toastError.generic('Fehler beim Löschen', error?.response?.data?.message)
-    },
-  })
-
-  const createClearanceMutation = useMutation({
-    mutationFn: async (data: { userId: string; notes: string }) => {
-      const res = await api.post('/clearances', {
-        userId: data.userId,
-        siteId: id,
-        status: 'TRAINING',
-        notes: data.notes,
-      })
-      return res.data
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['site', id] })
-      toast.success('Clearance erfolgreich angelegt')
-      setCreateClearanceModal(null)
-    },
-    onError: (error: any) => {
-      toast.error(error?.response?.data?.message || 'Fehler beim Anlegen')
-    },
-  })
-
-  // Fetch all users for clearance creation
-  const { data: usersData } = useQuery({
-    queryKey: ['users'],
-    queryFn: async () => {
-      const res = await api.get('/users?pageSize=1000')
-      return res.data
-    },
-    enabled: !!createClearanceModal || !!createAssignmentModal,
-  })
-
-  const createAssignmentMutation = useMutation({
-    mutationFn: async (data: { userId: string; role: string }) => {
-      const res = await api.post(`/sites/${id}/assignments`, data)
-      return res.data
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['site', id] })
-      toast.success('Zuweisung erfolgreich erstellt')
-      setCreateAssignmentModal(null)
-    },
-    onError: (error: any) => {
-      toast.error(error?.response?.data?.message || 'Fehler beim Erstellen der Zuweisung')
-    },
-  })
-
-  const deleteAssignmentMutation = useMutation({
-    mutationFn: async (assignmentId: string) => {
-      await api.delete(`/sites/${id}/assignments/${assignmentId}`)
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['site', id] })
-      toast.success('Zuweisung erfolgreich entfernt')
-      setDeleteAssignmentId(null)
-    },
-    onError: (error: any) => {
-      toast.error(error?.response?.data?.message || 'Fehler beim Entfernen der Zuweisung')
-    },
-  })
-
-  const deleteSiteMutation = useMutation({
-    mutationFn: async () => {
-      await api.delete(`/sites/${id}`)
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['sites'] })
-      toast.success('Objekt erfolgreich gelöscht')
-      nav('/sites')
-    },
-    onError: (error: any) => {
-      toast.error(error?.response?.data?.message || 'Fehler beim Löschen des Objekts')
-    },
-  })
-
-  const createIncidentMutation = useMutation({
-    mutationFn: async (data: {
-      title: string
-      description: string
-      category: string
-      severity: string
-      occurredAt: string
-      location?: string
-      involvedPersons?: string
-    }) => {
-      const res = await api.post(`/sites/${id}/incidents`, data)
-      return res.data
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['site', id] })
-      toast.success('Vorfall erfolgreich gemeldet')
-      setCreateIncidentModal(null)
-    },
-    onError: (error: any) => {
-      toast.error(error?.response?.data?.message || 'Fehler beim Melden des Vorfalls')
-    },
-  })
-
-  const updateIncidentMutation = useMutation({
-    mutationFn: async ({ incidentId, data }: { incidentId: string; data: Partial<{
-      title: string
-      description: string
-      category: string
-      severity: string
-      location?: string
-      involvedPersons?: string
-    }> }) => {
-      const res = await api.put(`/sites/${id}/incidents/${incidentId}`, data)
-      return res.data
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['site', id] })
-      toast.success('Vorfall erfolgreich aktualisiert')
-      setEditIncident(null)
-    },
-    onError: (error: any) => {
-      toast.error(error?.response?.data?.message || 'Fehler beim Aktualisieren des Vorfalls')
-    },
-  })
-
-  const resolveIncidentMutation = useMutation({
-    mutationFn: async ({ incidentId, resolution }: { incidentId: string; resolution: string }) => {
-      const res = await api.put(`/sites/${id}/incidents/${incidentId}/resolve`, { resolution })
-      return res.data
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['site', id] })
-      toast.success('Vorfall als gelöst markiert')
-      setResolveIncident(null)
-    },
-    onError: (error: any) => {
-      toast.error(error?.response?.data?.message || 'Fehler beim Auflösen des Vorfalls')
-    },
-  })
-
-  const deleteIncidentMutation = useMutation({
-    mutationFn: async (incidentId: string) => {
-      await api.delete(`/sites/${id}/incidents/${incidentId}`)
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['site', id] })
-      toast.success('Vorfall erfolgreich gelöscht')
-      setDeleteIncidentId(null)
-    },
-    onError: (error: any) => {
-      toast.error(error?.response?.data?.message || 'Fehler beim Löschen des Vorfalls')
-    },
-  })
-
-  // Calculation Mutations
-  const sendCalculationMutation = useMutation({
-    mutationFn: (calculationId: string) => sendSiteCalculation(id!, calculationId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['calculations', id] })
-      toast.success('Kalkulation erfolgreich versendet')
-    },
-    onError: (error: any) => {
-      toast.error(error?.response?.data?.message || 'Fehler beim Versenden der Kalkulation')
-    },
-  })
-
-  const acceptCalculationMutation = useMutation({
-    mutationFn: (calculationId: string) => acceptSiteCalculation(id!, calculationId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['calculations', id] })
-      toast.success('Kalkulation erfolgreich angenommen')
-    },
-    onError: (error: any) => {
-      toast.error(error?.response?.data?.message || 'Fehler beim Annehmen der Kalkulation')
-    },
-  })
-
-  const rejectCalculationMutation = useMutation({
-    mutationFn: ({ calculationId, notes }: { calculationId: string; notes?: string }) =>
-      rejectSiteCalculation(id!, calculationId, notes),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['calculations', id] })
-      toast.success('Kalkulation erfolgreich abgelehnt')
-      setRejectCalculationModal(null)
-    },
-    onError: (error: any) => {
-      toast.error(error?.response?.data?.message || 'Fehler beim Ablehnen der Kalkulation')
-    },
-  })
-
-  const archiveCalculationMutation = useMutation({
-    mutationFn: (calculationId: string) => archiveSiteCalculation(id!, calculationId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['calculations', id] })
-      toast.success('Kalkulation erfolgreich archiviert')
-    },
-    onError: (error: any) => {
-      toast.error(error?.response?.data?.message || 'Fehler beim Archivieren der Kalkulation')
-    },
-  })
-
-  const duplicateCalculationMutation = useMutation({
-    mutationFn: (calculationId: string) => duplicateSiteCalculation(id!, calculationId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['calculations', id] })
-      toast.success('Kalkulation erfolgreich dupliziert')
-    },
-    onError: (error: any) => {
-      toast.error(error?.response?.data?.message || 'Fehler beim Duplizieren der Kalkulation')
-    },
-  })
-
-  const sendEmailCalculationMutation = useMutation({
-    mutationFn: ({ calculationId, email }: { calculationId: string; email: string }) =>
-      sendCalculationEmailAPI(id!, calculationId, email),
-    onSuccess: () => {
-      toast.success('E-Mail wird versendet')
-      setEmailCalculationModal(null)
-    },
-    onError: (error: any) => {
-      toast.error(error?.response?.data?.message || 'Fehler beim Versenden der E-Mail')
-    },
-  })
-
-  // Generate Shifts Mutation
-  const generateShiftsMutation = useMutation({
-    mutationFn: (payload: GenerateShiftsPayload) => generateShiftsForSite(id!, payload),
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ['shifts', id] })
-      toast.success(data.message)
-    },
-    onError: (error: any) => {
-      toast.error(error?.response?.data?.message || 'Fehler beim Generieren der Schichten')
-    },
+  // Consolidate all mutations in custom hook
+  const {
+    completeTrainingMutation,
+    revokeMutation,
+    createClearanceMutation,
+    uploadImageMutation,
+    deleteImageMutation,
+    uploadDocumentMutation,
+    deleteDocumentMutation,
+    createAssignmentMutation,
+    deleteAssignmentMutation,
+    deleteSiteMutation,
+    createIncidentMutation,
+    updateIncidentMutation,
+    resolveIncidentMutation,
+    deleteIncidentMutation,
+    sendCalculationMutation,
+    acceptCalculationMutation,
+    rejectCalculationMutation,
+    archiveCalculationMutation,
+    duplicateCalculationMutation,
+    sendEmailCalculationMutation,
+    generateShiftsMutation,
+  } = useSiteMutations({
+    siteId: id,
+    site,
+    trainingModal,
+    setTrainingModal,
+    revokeModal,
+    setRevokeModal,
+    setUploadModal,
+    setDeleteImageId,
+    setUploadDocumentModal,
+    setDeleteDocumentId,
+    setCreateClearanceModal,
+    setCreateAssignmentModal,
+    setDeleteAssignmentId,
+    setCreateIncidentModal,
+    setEditIncident,
+    setResolveIncident,
+    setDeleteIncidentId,
+    setRejectCalculationModal,
+    setEmailCalculationModal,
   })
 
   if (isLoading) {

@@ -19,6 +19,10 @@ model User {
   role      UserRole @default(EMPLOYEE)
   isActive  Boolean  @default(true)
 
+  // 🔐 MULTI-TENANCY: Kunden-Zuordnung (KRITISCH für Datenisolation)
+  customerId String
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Restrict)
+
   // Arbeitsbezogene Informationen
   employeeId     String?   @unique
   hireDate       DateTime?
@@ -59,6 +63,7 @@ model User {
   @@index([createdAt], name: "users_createdAt_idx")
   @@index([isActive], name: "users_isActive_idx")
   @@index([role], name: "users_role_idx")
+  @@index([customerId], name: "users_customer_idx") // 🔐 Multi-Tenancy Index
   @@map("users")
 }
 
@@ -100,6 +105,7 @@ model Customer {
 
   // Beziehungen
   sites Site[]
+  users User[] // 🔐 Multi-Tenancy: Kunden haben User
 
   @@index([companyName])
   @@map("customers")

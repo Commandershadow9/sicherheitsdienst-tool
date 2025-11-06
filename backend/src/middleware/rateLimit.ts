@@ -1,3 +1,5 @@
+import type { Request, Response, NextFunction } from 'express';
+
 type Key = string;
 type Bucket = { count: number; resetAt: number };
 const buckets = new Map<Key, Bucket>();
@@ -19,7 +21,7 @@ function isEnabled(): boolean {
   return raw !== 'false' && raw !== '0' && raw !== 'off';
 }
 
-function getClientKey(req: any): string {
+function getClientKey(req: Request): string {
   const userId = req.user?.id;
   const xff = (req.headers['x-forwarded-for'] as string) || '';
   const firstForwarded = xff.split(',')[0]?.trim();
@@ -27,7 +29,7 @@ function getClientKey(req: any): string {
   return `${userId || ip}:notifications:test`;
 }
 
-export const notificationsTestRateLimit = (req: any, res: any, next: any) => {
+export const notificationsTestRateLimit = (req: Request, res: Response, next: NextFunction) => {
   if (!isEnabled()) return next();
 
   const key = getClientKey(req);
