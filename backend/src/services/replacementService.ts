@@ -57,7 +57,8 @@ export type ReplacementCandidateWarning = {
 
 type ReplacementWarningType =
   | CandidateScore['warnings'][number]['type']
-  | 'PENDING_ABSENCE_REQUEST';
+  | 'PENDING_ABSENCE_REQUEST'
+  | 'MISSING_CLEARANCE';
 
 export async function findReplacementCandidatesForShift(
   shiftId: string,

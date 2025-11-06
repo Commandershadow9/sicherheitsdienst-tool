@@ -7,12 +7,9 @@
 import { useQuery } from '@tanstack/react-query'
 import { api } from '@/lib/api'
 import type { Site, TabType } from '../types/site'
-import {
-  fetchControlPoints,
-  fetchControlRounds,
-  fetchSiteCalculations,
-  fetchSiteShifts,
-} from '../api'
+import { fetchSiteShifts } from '../api';
+import { fetchControlPoints, fetchControlRounds } from '../controlApi';
+import { fetchSiteCalculations } from '../calculationApi'
 
 interface Shift {
   id: string

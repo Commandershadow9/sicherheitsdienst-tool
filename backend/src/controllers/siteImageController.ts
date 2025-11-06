@@ -6,6 +6,7 @@
 
 import { Request, Response, NextFunction } from 'express';
 import prisma from '../utils/prisma';
+import { ImageCategory } from '@prisma/client';
 
 // GET /api/sites/:id/images - Get all images for a site
 export const getSiteImages = async (req: Request, res: Response, next: NextFunction) => {
@@ -16,7 +17,7 @@ export const getSiteImages = async (req: Request, res: Response, next: NextFunct
     const images = await prisma.siteImage.findMany({
       where: {
         siteId: id,
-        ...(category && { category: category as string }),
+        ...(category && { category: category as ImageCategory }),
       },
       include: { uploader: { select: { id: true, firstName: true, lastName: true } } },
       orderBy: { uploadedAt: 'desc' },

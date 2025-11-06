@@ -18,7 +18,7 @@ import { notificationPreferenceSchema } from '../validations/notificationValidat
 
 const router = Router();
 
-router.post(
+(router.post as any)(
   '/test',
   authenticate,
   notificationsRBAC,

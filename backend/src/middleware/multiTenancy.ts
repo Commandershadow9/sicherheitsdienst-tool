@@ -15,7 +15,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { AsyncLocalStorage } from 'async_hooks';
 import prisma from '../utils/prisma';
-import { logger } from '../utils/logger';
+import logger from '../utils/logger';
 
 // AsyncLocalStorage für Request-Context (customerId speichern)
 const asyncLocalStorage = new AsyncLocalStorage<{ customerId: string }>();

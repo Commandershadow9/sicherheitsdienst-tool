@@ -144,7 +144,7 @@ function createExpressLimiter(opts: {
     standardHeaders: true,
     legacyHeaders: false,
     keyGenerator: opts.keyGenerator,
-    store: store as unknown as rateLimit.Store,
+    store: store as any,
     handler: (req, res) => {
       const key = opts.keyGenerator(req);
       if (key.startsWith('ip:')) incrAuthIp429();

@@ -177,6 +177,12 @@ export const createUser = async (req: Request, res: Response, next: NextFunction
 
     const hashedPassword = await bcrypt.hash(password, 12);
 
+    // 🔐 MULTI-TENANCY: customerId vom authentifizierten User übernehmen
+    const customerId = req.user?.customerId;
+    if (!customerId) {
+      return next(createError(403, 'Keine Customer-Zuordnung gefunden'));
+    }
+
     const user = await prisma.user.create({
       data: {
         email,
@@ -188,6 +194,7 @@ export const createUser = async (req: Request, res: Response, next: NextFunction
         employeeId,
         hireDate: hireDate ? new Date(hireDate) : null,
         qualifications: Array.isArray(qualifications) ? qualifications : [],
+        customerId, // 🔐 Multi-Tenancy
       },
       select: {
         id: true,

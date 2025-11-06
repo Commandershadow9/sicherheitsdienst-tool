@@ -160,7 +160,7 @@ function calculateRouteSegments(
 /**
  * Bestimmt Security Level basierend auf Security Concept
  */
-function determineSecurityLevel(site: { securityConcept?: { riskLevel?: string } }): 'HIGH' | 'MEDIUM' | 'LOW' {
+function determineSecurityLevel(site: { securityConcept?: any }): 'HIGH' | 'MEDIUM' | 'LOW' {
   const concept = site.securityConcept;
 
   if (!concept) return 'MEDIUM';

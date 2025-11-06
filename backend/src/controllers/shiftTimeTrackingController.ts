@@ -133,7 +133,7 @@ export const clockOut = async (req: Request, res: Response, next: NextFunction) 
       where: { id: openEntry.id },
       data: {
         endTime: end,
-        breakMinutes: breakMins,
+        breakTime: breakMins,
         endLocation: location || null,
         notes: notes || openEntry.notes,
       },

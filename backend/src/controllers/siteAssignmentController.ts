@@ -6,6 +6,7 @@
 
 import { Request, Response, NextFunction } from 'express';
 import prisma from '../utils/prisma';
+import { SiteRole, UserRole } from '@prisma/client';
 
 // GET /api/sites/:id/assignments - Get all assignments for a site
 export const getSiteAssignments = async (req: Request, res: Response, next: NextFunction) => {
@@ -16,7 +17,7 @@ export const getSiteAssignments = async (req: Request, res: Response, next: Next
     const assignments = await prisma.siteAssignment.findMany({
       where: {
         siteId: id,
-        ...(role && { role: role as string }),
+        ...(role && { role: role as SiteRole }),
       },
       include: { user: { select: { id: true, firstName: true, lastName: true, email: true, role: true } } },
       orderBy: { assignedAt: 'desc' },
@@ -183,7 +184,7 @@ export const getAssignmentCandidates = async (req: Request, res: Response, next:
       where: {
         isActive: true,
         id: { notIn: assignedUserIds },
-        ...(role && { role }),
+        ...(role && { role: role as UserRole }),
       },
       select: {
         id: true,
