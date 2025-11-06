@@ -3,6 +3,9 @@ import { authenticate, authorize } from '../middleware/auth';
 import { validate } from '../middleware/validate';
 import { createSiteSchema, updateSiteSchema } from '../validations/siteValidation';
 import * as siteController from '../controllers/siteController';
+import * as siteImageController from '../controllers/siteImageController';
+import * as siteAssignmentController from '../controllers/siteAssignmentController';
+import * as siteAnalyticsController from '../controllers/siteAnalyticsController';
 import * as documentController from '../controllers/documentController';
 import * as siteIncidentController from '../controllers/siteIncidentController';
 import * as securityConceptController from '../controllers/securityConceptController';
@@ -58,7 +61,7 @@ router.delete('/:id', authenticate, authorize('ADMIN'), writeLimiter, asyncHandl
 // ===== Bilder-Management =====
 
 // GET /api/sites/:id/images
-router.get('/:id/images', authenticate, asyncHandler(siteController.getSiteImages));
+router.get('/:id/images', authenticate, asyncHandler(siteImageController.getSiteImages));
 
 // POST /api/sites/:id/images
 router.post(
@@ -66,7 +69,7 @@ router.post(
   authenticate,
   authorize('ADMIN', 'MANAGER', 'DISPATCHER'),
   writeLimiter,
-  asyncHandler(siteController.uploadSiteImage),
+  asyncHandler(siteImageController.uploadSiteImage),
 );
 
 // DELETE /api/sites/:siteId/images/:imageId
@@ -75,13 +78,13 @@ router.delete(
   authenticate,
   authorize('ADMIN', 'MANAGER'),
   writeLimiter,
-  asyncHandler(siteController.deleteSiteImage),
+  asyncHandler(siteImageController.deleteSiteImage),
 );
 
 // ===== Zuweisungen-Management =====
 
 // GET /api/sites/:id/assignments
-router.get('/:id/assignments', authenticate, asyncHandler(siteController.getSiteAssignments));
+router.get('/:id/assignments', authenticate, asyncHandler(siteAssignmentController.getSiteAssignments));
 
 // POST /api/sites/:id/assignments
 router.post(
@@ -89,7 +92,7 @@ router.post(
   authenticate,
   authorize('ADMIN', 'MANAGER'),
   writeLimiter,
-  asyncHandler(siteController.createSiteAssignment),
+  asyncHandler(siteAssignmentController.createSiteAssignment),
 );
 
 // DELETE /api/sites/:siteId/assignments/:assignmentId
@@ -98,13 +101,13 @@ router.delete(
   authenticate,
   authorize('ADMIN', 'MANAGER'),
   writeLimiter,
-  asyncHandler(siteController.deleteSiteAssignment),
+  asyncHandler(siteAssignmentController.deleteSiteAssignment),
 );
 
 // ===== Coverage-Stats =====
 
 // GET /api/sites/:id/coverage-stats
-router.get('/:id/coverage-stats', authenticate, asyncHandler(siteController.getSiteCoverageStats));
+router.get('/:id/coverage-stats', authenticate, asyncHandler(siteAnalyticsController.getSiteCoverageStats));
 
 // ===== Qualifikations-Check & Intelligente Zuweisung =====
 
@@ -113,7 +116,7 @@ router.post(
   '/:id/check-qualification',
   authenticate,
   authorize('ADMIN', 'MANAGER', 'DISPATCHER'),
-  asyncHandler(siteController.checkUserQualification),
+  asyncHandler(siteAssignmentController.checkUserQualification),
 );
 
 // GET /api/sites/:id/assignment-candidates - Intelligente MA-Vorschläge
@@ -121,7 +124,7 @@ router.get(
   '/:id/assignment-candidates',
   authenticate,
   authorize('ADMIN', 'MANAGER', 'DISPATCHER'),
-  asyncHandler(siteController.getAssignmentCandidates),
+  asyncHandler(siteAssignmentController.getAssignmentCandidates),
 );
 
 // ===== Schicht-Verwaltung =====
@@ -140,7 +143,7 @@ router.post(
   authenticate,
   authorize('ADMIN', 'MANAGER', 'DISPATCHER'),
   writeLimiter,
-  asyncHandler(siteController.generateShiftsForSite),
+  asyncHandler(siteAnalyticsController.generateShiftsForSite),
 );
 
 // ===== Kontrollgang-Vorschläge =====
@@ -150,7 +153,7 @@ router.get(
   '/:id/control-round-suggestions',
   authenticate,
   authorize('ADMIN', 'MANAGER', 'DISPATCHER'),
-  asyncHandler(siteController.getControlRoundSuggestions),
+  asyncHandler(siteAnalyticsController.getControlRoundSuggestions),
 );
 
 // ===== Dokumente-Management =====
