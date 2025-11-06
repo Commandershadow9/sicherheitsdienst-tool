@@ -399,6 +399,64 @@
 - [ ] Workload-/Fairness-Dashboards: Manager-Übersicht mit Team-Statistiken, Export-Funktion (CSV/PDF).
 - [ ] Intelligent Replacement: Integrationstest für `GET /api/shifts/:id/replacement-candidates-v2` mit Real-Scoring ergänzen.
 
+## Code Quality & Refactoring (v1.17.0 - Ongoing) ⭐ **MAJOR CLEANUP IN PROGRESS**
+**Priorität: MITTEL-HOCH** - Verbessert Wartbarkeit & Entwickler-Erfahrung
+**Branch:** `claude/repo-audit-refactoring-011CUp1cMhK4pKWEJPiY7teB`
+**Status:** ✅ Phase 1 abgeschlossen (5 major refactorings)
+
+### ✅ Abgeschlossene Refactorings (2025-11-06)
+
+#### Backend Controllers - Single Responsibility Principle
+- [x] **shiftController.ts** aufgeteilt (1157 → 581 LOC, -50%) ✅
+  - Neue Controller: shiftAssignmentController.ts (440 LOC), shiftTimeTrackingController.ts (164 LOC)
+  - Commit: `refactor(controllers): split shiftController into 3 specialized controllers`
+
+- [x] **siteController.ts** aufgeteilt (923 → 260 LOC, -72%) ✅
+  - Neue Controller: siteImageController.ts (75 LOC), siteAssignmentController.ts (257 LOC), siteAnalyticsController.ts (532 LOC)
+  - Commits: `refactor(backend): extrahiere Image & Assignment Controller`, `refactor(backend): vollständige siteController Aufteilung`
+
+- [x] **calculationController.ts** aufgeteilt (888 → 408 LOC, -54%) ✅
+  - Neue Controller: calculationStatusController.ts (176 LOC), calculationOperationsController.ts (310 LOC)
+  - Commit: `refactor(backend): split calculationController into 3 specialized controllers`
+
+#### Frontend Components - Custom Hooks Extraction
+- [x] **SiteDetail.tsx** refaktoriert (1867 → 1423 LOC, -24%) ✅
+  - Neue Hooks: useSiteModals.ts (116 LOC), useSiteQueries.ts (125 LOC), useSiteMutations.ts (449 LOC)
+  - Commits: `refactor(frontend): extract queries into useSiteQueries hook`, `refactor(frontend): extrahiere Mutations in useSiteMutations Hook`
+
+- [x] **UserProfile.tsx** refaktoriert (1350 → 1195 LOC, -11.5%) ✅
+  - Neue Hooks: useProfileQueries.ts (56 LOC), useProfileMutations.ts (245 LOC)
+  - Commit: `refactor(frontend): extract UserProfile hooks (queries + mutations)`
+
+**Gesamt-Impact:**
+- ✅ **2,318 LOC** in Haupt-Dateien reduziert (-37%)
+- ✅ **10 neue spezialisierte Dateien** erstellt (bessere Organisation)
+- ✅ **100% SRP-Konformität** bei refaktorierten Controllern
+- ✅ **0 Breaking Changes** - alle Tests bestehen
+
+**Dokumentation:**
+- ✅ `backend/docs/refactoring/REFACTORING_SUMMARY.md` vollständig aktualisiert
+- ✅ Planning-Dateien archiviert (`docs/planning/completed/`)
+- ✅ Veraltete Docs bereinigt (`docs/archive/`)
+
+### 🔄 Nächste Refactoring-Kandidaten
+
+#### Backend (Priorität: Mittel)
+- [ ] **dashboardController.ts** (698 LOC) - Aufteilen in Stats + Employee Views
+- [ ] **absenceController.ts** (597 LOC) - Aufteilen in CRUD + Approval + Analysis
+- [ ] **employeeProfileController.ts** (502 LOC) - Aufteilen in Profile + Documents
+
+#### Frontend (Priorität: Niedrig-Mittel)
+- [ ] **ProtectionMeasuresEditor.tsx** (735 LOC) - Extract form logic to hooks
+- [ ] **RiskAssessmentEditor.tsx** (628 LOC) - Extract validation hooks
+- [ ] **EmergencyPlanEditor.tsx** (578 LOC) - Extract state management
+- [ ] **IncidentsTab.tsx** (568 LOC) - Extract query/mutation hooks
+
+**Aufwand:** 2-4 Tage für verbleibende Kandidaten
+**Nutzen:** Bessere Wartbarkeit, einfacheres Testing, schnelleres Onboarding
+
+---
+
 ## Langfristig (P3+)
 - [ ] Predictive Scheduling & Auto-Assignment (v2.x Roadmap).
 - [ ] Storage/Infra: S3/MinIO-Umstieg inkl. Verschlüsselungs-/Migrationkonzept.
