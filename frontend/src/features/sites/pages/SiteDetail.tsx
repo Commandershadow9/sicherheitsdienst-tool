@@ -42,6 +42,7 @@ import SecurityConceptTab from '../components/tabs/SecurityConceptTab'
 import type { Site, TabType } from '../types/site'
 import { STATUS_LABELS, STATUS_COLORS, ROLE_LABELS } from '../constants/site'
 import { useSiteModals } from '../hooks/useSiteModals'
+import { useSiteQueries } from '../hooks/useSiteQueries'
 
 export default function SiteDetail() {
   const { id } = useParams<{ id: string }>()
@@ -83,53 +84,25 @@ export default function SiteDetail() {
     emailCalculationModal, setEmailCalculationModal,
   } = useSiteModals()
 
-  const { data: site, isLoading, isError, error } = useQuery<Site>({
-    queryKey: ['site', id],
-    queryFn: async () => {
-      const res = await api.get<{ data: Site }>(`/sites/${id}?include=relations`)
-      return res.data.data
-    },
-    enabled: !!id,
-  })
-
-  // Control Points Query
-  const { data: controlPoints = [] } = useQuery({
-    queryKey: ['controlPoints', id],
-    queryFn: () => fetchControlPoints(id!),
-    enabled: !!id && activeTab === 'control-points',
-  })
-
-  // Control Rounds Query
-  const { data: controlRoundsData } = useQuery({
-    queryKey: ['controlRounds', id],
-    queryFn: () => fetchControlRounds(id!),
-    enabled: !!id && activeTab === 'control-rounds',
-  })
-
-  const controlRounds = controlRoundsData?.data || []
-
-  // Calculations Query
-  const { data: calculations = [] } = useQuery({
-    queryKey: ['calculations', id],
-    queryFn: () => fetchSiteCalculations(id!),
-    enabled: !!id && activeTab === 'calculations',
-  })
-
-  // History Query
-  const { data: incidentHistory } = useQuery({
-    queryKey: ['incidentHistory', viewHistory?.incidentId],
-    queryFn: async () => {
-      const res = await api.get(`/sites/${id}/incidents/${viewHistory?.incidentId}/history`)
-      return res.data.data
-    },
-    enabled: !!viewHistory?.incidentId,
-  })
-
-  // Shifts Query
-  const { data: shifts = [], isLoading: shiftsLoading } = useQuery<Shift[]>({
-    queryKey: ['shifts', id],
-    queryFn: () => fetchSiteShifts(id!),
-    enabled: !!id && activeTab === 'shifts',
+  // Consolidate all queries in custom hook
+  const {
+    site,
+    isLoading,
+    isError,
+    error,
+    controlPoints,
+    controlRounds,
+    calculations,
+    incidentHistory,
+    shifts,
+    shiftsLoading,
+    usersData,
+  } = useSiteQueries({
+    siteId: id,
+    activeTab,
+    viewHistoryIncidentId: viewHistory?.incidentId,
+    createClearanceModalOpen: !!createClearanceModal,
+    createAssignmentModalOpen: !!createAssignmentModal,
   })
 
   const completeTrainingMutation = useMutation({
@@ -254,16 +227,6 @@ export default function SiteDetail() {
     onError: (error: any) => {
       toast.error(error?.response?.data?.message || 'Fehler beim Anlegen')
     },
-  })
-
-  // Fetch all users for clearance creation
-  const { data: usersData } = useQuery({
-    queryKey: ['users'],
-    queryFn: async () => {
-      const res = await api.get('/users?pageSize=1000')
-      return res.data
-    },
-    enabled: !!createClearanceModal || !!createAssignmentModal,
   })
 
   const createAssignmentMutation = useMutation({
