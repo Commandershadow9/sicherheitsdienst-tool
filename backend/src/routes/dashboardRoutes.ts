@@ -3,13 +3,17 @@ import { asyncHandler } from '../middleware/asyncHandler';
 import { authenticate, authorize } from '../middleware/auth';
 import {
   getCriticalShifts,
-  getPendingApprovals,
   getWarnings,
+} from '../controllers/dashboardShiftController';
+import {
+  getPendingApprovals,
+} from '../controllers/dashboardApprovalController';
+import {
   getStats,
   getAvailableEmployees,
   getEmployeesOnVacation,
   getEmployeesOnSickLeave,
-} from '../controllers/dashboardController';
+} from '../controllers/dashboardEmployeeController';
 
 const router = Router();
 
