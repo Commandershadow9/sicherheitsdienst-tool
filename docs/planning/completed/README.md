@@ -65,18 +65,32 @@ This directory contains planning documents for features that have been **success
 
 ---
 
+### Absences & Employee Profile (2025-10)
+
+| Document | Version | Status |
+|----------|---------|--------|
+| `absences.md` | v1.5.0 - v1.10.0 | ✅ **MVP Complete** |
+| `employee-profile.md` | v1.x.x | ✅ **Core Complete** |
+
+**What was delivered:**
+- ✅ Absence management (Vacation, Sickness, Special Leave)
+- ✅ Approval workflow (Request → Approved/Rejected)
+- ✅ ICS calendar export
+- ✅ Employee profile with time tracking
+- ✅ Document & qualification management
+
+---
+
 ## 🎯 Active Planning Documents
 
 These documents remain in the main `/docs/planning` directory:
 
 | Document | Status | Priority |
 |----------|--------|----------|
-| `absences.md` | ⏳ In Progress | High |
-| `employee-profile.md` | 📋 Planned | Medium |
 | `replacement-scoring-improvements.md` | 🔄 Ongoing | High |
 | `scoring-objekt-integration.md` | ✅ Partially Complete | Medium |
 | `security-hardening.md` | 📋 Planned | High |
-| `sicherheitskonzept-modul-konzept.md` | 📋 Planned | Medium |
+| `sicherheitskonzept-modul-konzept.md` | 🚧 In Progress (Phase 1-2 Complete) | High |
 
 ---
 
@@ -112,11 +126,11 @@ docs/planning/
 │   ├── analysis-2025-09-09.md
 │   ├── tickets-2025-09-09.md
 │   ├── tickets-2025-09-notify-observability.md
-│   └── milestone-2025-09-notify-observability.md
+│   ├── milestone-2025-09-notify-observability.md
+│   ├── absences.md                    # NEW (2025-11-06)
+│   └── employee-profile.md            # NEW (2025-11-06)
 │
 └── (active planning docs)  # 📋 Current/future features
-    ├── absences.md
-    ├── employee-profile.md
     ├── replacement-scoring-improvements.md
     ├── scoring-objekt-integration.md
     ├── security-hardening.md
