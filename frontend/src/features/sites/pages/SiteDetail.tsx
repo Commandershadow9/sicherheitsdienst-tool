@@ -41,6 +41,7 @@ import IncidentsTab from '../components/tabs/IncidentsTab'
 import SecurityConceptTab from '../components/tabs/SecurityConceptTab'
 import type { Site, TabType } from '../types/site'
 import { STATUS_LABELS, STATUS_COLORS, ROLE_LABELS } from '../constants/site'
+import { useSiteModals } from '../hooks/useSiteModals'
 
 export default function SiteDetail() {
   const { id } = useParams<{ id: string }>()
@@ -48,45 +49,6 @@ export default function SiteDetail() {
   const queryClient = useQueryClient()
   const { user } = useAuth()
   const [activeTab, setActiveTab] = useState<TabType>('overview')
-  const [trainingModal, setTrainingModal] = useState<{ clearance: Clearance; hours: number } | null>(null)
-  const [revokeModal, setRevokeModal] = useState<{ clearance: Clearance; notes: string } | null>(null)
-  const [uploadModal, setUploadModal] = useState<{ file: File | null; category: string } | null>(null)
-  const [deleteImageId, setDeleteImageId] = useState<string | null>(null)
-  const [createClearanceModal, setCreateClearanceModal] = useState<{ userId: string; notes: string } | null>(null)
-  const [createAssignmentModal, setCreateAssignmentModal] = useState<{ userId: string; role: string } | null>(null)
-  const [smartAssignmentModal, setSmartAssignmentModal] = useState<boolean>(false)
-  const [controlRoundSuggestionsModal, setControlRoundSuggestionsModal] = useState<boolean>(false)
-  const [deleteAssignmentId, setDeleteAssignmentId] = useState<string | null>(null)
-  const [deleteSiteConfirm, setDeleteSiteConfirm] = useState(false)
-  const [uploadDocumentModal, setUploadDocumentModal] = useState<{
-    title: string
-    description: string
-    category: string
-    file: File | null
-  } | null>(null)
-  const [deleteDocumentId, setDeleteDocumentId] = useState<string | null>(null)
-  const [viewDocument, setViewDocument] = useState<{
-    id: string
-    title: string
-    filename: string
-    mimeType: string
-    fileSize: number
-  } | null>(null)
-  const [createIncidentModal, setCreateIncidentModal] = useState<{
-    title: string
-    description: string
-    category: string
-    severity: string
-    occurredAt: string
-    location: string
-    involvedPersons: Array<{ name: string; role?: string; isWitness?: boolean }>
-  } | null>(null)
-  const [deleteIncidentId, setDeleteIncidentId] = useState<string | null>(null)
-  const [editIncident, setEditIncident] = useState<any>(null)
-  const [resolveIncident, setResolveIncident] = useState<{ id: string; title: string; resolution?: string } | null>(null)
-  const [viewHistory, setViewHistory] = useState<{ incidentId: string; incidentTitle: string } | null>(null)
-  const [rejectCalculationModal, setRejectCalculationModal] = useState<{ calculationId: string; notes: string } | null>(null)
-  const [emailCalculationModal, setEmailCalculationModal] = useState<{ calculationId: string; email: string } | null>(null)
   const [incidentFilters, setIncidentFilters] = useState<{
     status: string
     severity: string
@@ -96,6 +58,30 @@ export default function SiteDetail() {
     severity: 'ALL',
     category: 'ALL',
   })
+
+  // Modal states consolidated into custom hook
+  const {
+    trainingModal, setTrainingModal,
+    revokeModal, setRevokeModal,
+    uploadModal, setUploadModal,
+    deleteImageId, setDeleteImageId,
+    createClearanceModal, setCreateClearanceModal,
+    createAssignmentModal, setCreateAssignmentModal,
+    smartAssignmentModal, setSmartAssignmentModal,
+    controlRoundSuggestionsModal, setControlRoundSuggestionsModal,
+    deleteAssignmentId, setDeleteAssignmentId,
+    deleteSiteConfirm, setDeleteSiteConfirm,
+    uploadDocumentModal, setUploadDocumentModal,
+    deleteDocumentId, setDeleteDocumentId,
+    viewDocument, setViewDocument,
+    createIncidentModal, setCreateIncidentModal,
+    deleteIncidentId, setDeleteIncidentId,
+    editIncident, setEditIncident,
+    resolveIncident, setResolveIncident,
+    viewHistory, setViewHistory,
+    rejectCalculationModal, setRejectCalculationModal,
+    emailCalculationModal, setEmailCalculationModal,
+  } = useSiteModals()
 
   const { data: site, isLoading, isError, error } = useQuery<Site>({
     queryKey: ['site', id],

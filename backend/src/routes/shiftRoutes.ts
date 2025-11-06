@@ -5,6 +5,7 @@ import { validate } from '../middleware/validate';
 import { createShiftSchema, updateShiftSchema, shiftListQuerySchema } from '../validations/shiftValidation';
 import { clockInSchema, clockOutSchema } from '../validations/timeValidation';
 import * as shiftController from '../controllers/shiftController';
+import * as shiftTimeTrackingController from '../controllers/shiftTimeTrackingController';
 import { createWriteRateLimit, createShiftAssignRateLimit, createShiftClockRateLimit } from '../middleware/rateLimit';
 import methodNotAllowed from '../middleware/methodNotAllowed';
 
@@ -98,7 +99,7 @@ router.post(
   authenticate,
   clockLimiter,
   validate(clockInSchema),
-  asyncHandler(shiftController.clockIn),
+  asyncHandler(shiftTimeTrackingController.clockIn),
 );
 // POST /api/shifts/:id/clock-out
 router.post(
@@ -106,7 +107,7 @@ router.post(
   authenticate,
   clockLimiter,
   validate(clockOutSchema),
-  asyncHandler(shiftController.clockOut),
+  asyncHandler(shiftTimeTrackingController.clockOut),
 );
 // 405
 router.all('/', authenticate, methodNotAllowed(['GET', 'POST']));
