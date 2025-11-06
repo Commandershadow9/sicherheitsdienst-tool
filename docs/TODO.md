@@ -399,10 +399,10 @@
 - [ ] Workload-/Fairness-Dashboards: Manager-Übersicht mit Team-Statistiken, Export-Funktion (CSV/PDF).
 - [ ] Intelligent Replacement: Integrationstest für `GET /api/shifts/:id/replacement-candidates-v2` mit Real-Scoring ergänzen.
 
-## Code Quality & Refactoring (v1.17.0 - Ongoing) ⭐ **MAJOR CLEANUP IN PROGRESS**
+## Code Quality & Refactoring (v1.17.0 - Ongoing) ⭐ **MAJOR CLEANUP COMPLETE**
 **Priorität: MITTEL-HOCH** - Verbessert Wartbarkeit & Entwickler-Erfahrung
 **Branch:** `claude/repo-audit-refactoring-011CUp1cMhK4pKWEJPiY7teB`
-**Status:** ✅ Phase 1 abgeschlossen (5 major refactorings)
+**Status:** ✅ Phase 1 abgeschlossen (7 major refactorings)
 
 ### ✅ Abgeschlossene Refactorings (2025-11-06)
 
@@ -419,6 +419,14 @@
   - Neue Controller: calculationStatusController.ts (176 LOC), calculationOperationsController.ts (310 LOC)
   - Commit: `refactor(backend): split calculationController into 3 specialized controllers`
 
+- [x] **absenceController.ts** aufgeteilt (597 → 269 LOC, -55%) ✅
+  - Neue Controller: absenceApprovalController.ts (226 LOC), absenceExportController.ts (147 LOC)
+  - Commit: `refactor(backend): split absenceController into 3 specialized controllers`
+
+- [x] **dashboardController.ts** aufgeteilt (698 → DELETED, -100%) ✅
+  - Neue Controller: dashboardShiftController.ts (243 LOC), dashboardApprovalController.ts (223 LOC), dashboardEmployeeController.ts (259 LOC)
+  - Commit: `refactor(backend): split dashboardController into 3 specialized controllers`
+
 #### Frontend Components - Custom Hooks Extraction
 - [x] **SiteDetail.tsx** refaktoriert (1867 → 1423 LOC, -24%) ✅
   - Neue Hooks: useSiteModals.ts (116 LOC), useSiteQueries.ts (125 LOC), useSiteMutations.ts (449 LOC)
@@ -429,22 +437,26 @@
   - Commit: `refactor(frontend): extract UserProfile hooks (queries + mutations)`
 
 **Gesamt-Impact:**
-- ✅ **2,318 LOC** in Haupt-Dateien reduziert (-37%)
-- ✅ **10 neue spezialisierte Dateien** erstellt (bessere Organisation)
+- ✅ **3,344 LOC** in Haupt-Dateien reduziert (-45%)
+- ✅ **16 neue spezialisierte Dateien** erstellt (bessere Organisation)
 - ✅ **100% SRP-Konformität** bei refaktorierten Controllern
 - ✅ **0 Breaking Changes** - alle Tests bestehen
+- ✅ **Avg Controller Size:** 945 LOC → 343 LOC (-64%)
 
 **Dokumentation:**
 - ✅ `backend/docs/refactoring/REFACTORING_SUMMARY.md` vollständig aktualisiert
 - ✅ Planning-Dateien archiviert (`docs/planning/completed/`)
 - ✅ Veraltete Docs bereinigt (`docs/archive/`)
 
-### 🔄 Nächste Refactoring-Kandidaten
+### 🔄 Optionale weitere Refactoring-Kandidaten
 
-#### Backend (Priorität: Mittel)
-- [ ] **dashboardController.ts** (698 LOC) - Aufteilen in Stats + Employee Views
-- [ ] **absenceController.ts** (597 LOC) - Aufteilen in CRUD + Approval + Analysis
-- [ ] **employeeProfileController.ts** (502 LOC) - Aufteilen in Profile + Documents
+#### Backend (Priorität: Niedrig)
+- [ ] **siteAnalyticsController.ts** (532 LOC) - Bereits aus siteController extrahiert, gut strukturiert
+- [ ] **siteIncidentController.ts** (521 LOC) - Standard CRUD + history, gut organisiert
+- [ ] **employeeProfileController.ts** (502 LOC) - Profile + Qualifications + Documents, gut organisiert
+- [ ] **userController.ts** (487 LOC) - Standard CRUD, vernünftige Größe
+
+**Hinweis:** Die meisten verbleibenden Controller sind bereits gut organisiert und folgen SRP.
 
 #### Frontend (Priorität: Niedrig-Mittel)
 - [ ] **ProtectionMeasuresEditor.tsx** (735 LOC) - Extract form logic to hooks
@@ -452,8 +464,9 @@
 - [ ] **EmergencyPlanEditor.tsx** (578 LOC) - Extract state management
 - [ ] **IncidentsTab.tsx** (568 LOC) - Extract query/mutation hooks
 
-**Aufwand:** 2-4 Tage für verbleibende Kandidaten
+**Aufwand:** 2-4 Tage für Frontend-Komponenten
 **Nutzen:** Bessere Wartbarkeit, einfacheres Testing, schnelleres Onboarding
+**Empfehlung:** Nur bei konkretem Bedarf (z.B. Erweiterungen geplant)
 
 ---
 
