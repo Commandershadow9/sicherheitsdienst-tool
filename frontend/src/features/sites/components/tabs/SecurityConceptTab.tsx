@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
-import { Shield, Plus, CheckCircle, Clock, AlertTriangle, FileText, Building2, Route, Briefcase, Phone, Calendar } from 'lucide-react'
+import { Shield, Plus, CheckCircle, Clock, AlertTriangle, FileText, Building2, Route, Briefcase, Phone, Calendar, BarChart3, RefreshCw } from 'lucide-react'
 import { toast } from 'sonner'
 import { api } from '@/lib/api'
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '@/components/ui/accordion'
@@ -13,6 +13,9 @@ import SiteSituationEditor from '../SiteSituationEditor'
 import TaskProfilesEditor from '../TaskProfilesEditor'
 import EmergencyPlanEditor from '../EmergencyPlanEditor'
 import CommunicationPlanEditor from '../CommunicationPlanEditor'
+import KPIEditor from '../KPIEditor'
+import HandoverEditor from '../HandoverEditor'
+import AttachmentManager from '../AttachmentManager'
 
 type SecurityConcept = {
   id: string
@@ -29,6 +32,9 @@ type SecurityConcept = {
   siteSituation?: any
   taskProfiles?: any
   communicationPlan?: any
+  qualityMetrics?: any
+  handoverProcedures?: any
+  attachments?: any
   approvedAt?: string
   createdAt: string
   updatedAt: string
@@ -431,7 +437,84 @@ export default function SecurityConceptTab({ site, siteId }: SecurityConceptTabP
           </AccordionContent>
         </AccordionItem>
 
-        {/* 9. Weitere Komponenten */}
+        {/* 9. KPIs & Qualitätssicherung */}
+        <AccordionItem id="quality-metrics">
+          <AccordionTrigger
+            id="quality-metrics"
+            icon={<BarChart3 className="text-teal-600" size={20} />}
+            badge={
+              concept.qualityMetrics ? (
+                <span className="text-xs px-2 py-1 rounded-full bg-green-100 text-green-800">✓ Definiert</span>
+              ) : (
+                <span className="text-xs px-2 py-1 rounded-full bg-gray-100 text-gray-600">Nicht definiert</span>
+              )
+            }
+          >
+            <span className="text-gray-900">9. KPIs & Qualitätssicherung</span>
+          </AccordionTrigger>
+          <AccordionContent id="quality-metrics" className="bg-gradient-to-r from-teal-50 to-cyan-50">
+            <KPIEditor
+              qualityMetrics={concept.qualityMetrics || null}
+              onSave={(qualityMetrics) => {
+                updateMutation.mutate({ qualityMetrics })
+              }}
+            />
+          </AccordionContent>
+        </AccordionItem>
+
+        {/* 10. Übergaben/Schichtwechsel */}
+        <AccordionItem id="handover">
+          <AccordionTrigger
+            id="handover"
+            icon={<RefreshCw className="text-amber-600" size={20} />}
+            badge={
+              concept.handoverProcedures ? (
+                <span className="text-xs px-2 py-1 rounded-full bg-green-100 text-green-800">✓ Definiert</span>
+              ) : (
+                <span className="text-xs px-2 py-1 rounded-full bg-gray-100 text-gray-600">Nicht definiert</span>
+              )
+            }
+          >
+            <span className="text-gray-900">10. Übergaben/Schichtwechsel</span>
+          </AccordionTrigger>
+          <AccordionContent id="handover" className="bg-gradient-to-r from-amber-50 to-yellow-50">
+            <HandoverEditor
+              handoverProcedures={concept.handoverProcedures || null}
+              onSave={(handoverProcedures) => {
+                updateMutation.mutate({ handoverProcedures })
+              }}
+            />
+          </AccordionContent>
+        </AccordionItem>
+
+        {/* 11. Anhänge & Dokumente */}
+        <AccordionItem id="attachments">
+          <AccordionTrigger
+            id="attachments"
+            icon={<FileText className="text-slate-600" size={20} />}
+            badge={
+              concept.attachments ? (
+                <span className="text-xs px-2 py-1 rounded-full bg-green-100 text-green-800">
+                  ✓ {concept.attachments.completionPercentage || 0}%
+                </span>
+              ) : (
+                <span className="text-xs px-2 py-1 rounded-full bg-gray-100 text-gray-600">Nicht definiert</span>
+              )
+            }
+          >
+            <span className="text-gray-900">11. Anhänge & Dokumente</span>
+          </AccordionTrigger>
+          <AccordionContent id="attachments" className="bg-gradient-to-r from-slate-50 to-gray-50">
+            <AttachmentManager
+              attachments={concept.attachments || null}
+              onSave={(attachments) => {
+                updateMutation.mutate({ attachments })
+              }}
+            />
+          </AccordionContent>
+        </AccordionItem>
+
+        {/* 12. Weitere Komponenten */}
         <AccordionItem id="misc">
           <AccordionTrigger
             id="misc"
@@ -440,7 +523,7 @@ export default function SecurityConceptTab({ site, siteId }: SecurityConceptTabP
               <span className="text-xs px-2 py-1 rounded-full bg-gray-100 text-gray-600">Optional</span>
             }
           >
-            <span className="text-gray-900">9. Weitere Komponenten (DSGVO, etc.)</span>
+            <span className="text-gray-900">12. Weitere Komponenten (DSGVO, etc.)</span>
           </AccordionTrigger>
           <AccordionContent id="misc">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
