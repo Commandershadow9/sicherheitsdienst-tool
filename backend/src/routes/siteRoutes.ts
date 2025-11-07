@@ -9,6 +9,7 @@ import * as siteAnalyticsController from '../controllers/siteAnalyticsController
 import * as documentController from '../controllers/documentController';
 import * as siteIncidentController from '../controllers/siteIncidentController';
 import * as securityConceptController from '../controllers/securityConceptController';
+import * as shiftRuleController from '../controllers/shiftRuleController';
 import { asyncHandler } from '../middleware/asyncHandler';
 import { siteListQuerySchema } from '../validations/siteValidation';
 import * as shiftController from '../controllers/shiftController';
@@ -318,6 +319,60 @@ router.post(
   asyncHandler(securityConceptController.uploadAttachment),
 );
 
+// ===== Schichtplanungs-Regeln (Shift Rules) =====
+
+// GET /api/sites/:siteId/shift-rules - Alle Schichtregeln abrufen
+router.get(
+  '/:siteId/shift-rules',
+  authenticate,
+  authorize('ADMIN', 'MANAGER', 'DISPATCHER'),
+  asyncHandler(shiftRuleController.getShiftRules),
+);
+
+// GET /api/sites/:siteId/shift-rules/:ruleId - Einzelne Regel abrufen
+router.get(
+  '/:siteId/shift-rules/:ruleId',
+  authenticate,
+  authorize('ADMIN', 'MANAGER', 'DISPATCHER'),
+  asyncHandler(shiftRuleController.getShiftRule),
+);
+
+// POST /api/sites/:siteId/shift-rules - Neue Schichtregel erstellen
+router.post(
+  '/:siteId/shift-rules',
+  authenticate,
+  authorize('ADMIN', 'MANAGER'),
+  writeLimiter,
+  asyncHandler(shiftRuleController.createShiftRule),
+);
+
+// PUT /api/sites/:siteId/shift-rules/:ruleId - Schichtregel aktualisieren
+router.put(
+  '/:siteId/shift-rules/:ruleId',
+  authenticate,
+  authorize('ADMIN', 'MANAGER'),
+  writeLimiter,
+  asyncHandler(shiftRuleController.updateShiftRule),
+);
+
+// DELETE /api/sites/:siteId/shift-rules/:ruleId - Schichtregel löschen
+router.delete(
+  '/:siteId/shift-rules/:ruleId',
+  authenticate,
+  authorize('ADMIN', 'MANAGER'),
+  writeLimiter,
+  asyncHandler(shiftRuleController.deleteShiftRule),
+);
+
+// POST /api/sites/:siteId/shift-rules/generate-shifts - Schichten aus Regeln generieren
+router.post(
+  '/:siteId/shift-rules/generate-shifts',
+  authenticate,
+  authorize('ADMIN', 'MANAGER', 'DISPATCHER'),
+  writeLimiter,
+  asyncHandler(shiftRuleController.generateShiftsFromRules),
+);
+
 // 405
 router.all('/', authenticate, methodNotAllowed(['GET', 'POST']));
 router.all('/:id', authenticate, methodNotAllowed(['GET', 'PUT', 'DELETE']));
@@ -343,5 +398,8 @@ router.all('/:siteId/security-concept', authenticate, methodNotAllowed(['GET', '
 router.all('/:siteId/security-concept/:id', authenticate, methodNotAllowed(['GET', 'PUT', 'DELETE']));
 router.all('/:siteId/security-concept/:id/approve', authenticate, methodNotAllowed(['POST']));
 router.all('/:siteId/security-concept/:id/upload-attachment', authenticate, methodNotAllowed(['POST']));
+router.all('/:siteId/shift-rules', authenticate, methodNotAllowed(['GET', 'POST']));
+router.all('/:siteId/shift-rules/:ruleId', authenticate, methodNotAllowed(['GET', 'PUT', 'DELETE']));
+router.all('/:siteId/shift-rules/generate-shifts', authenticate, methodNotAllowed(['POST']));
 
 export default router;
