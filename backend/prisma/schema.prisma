@@ -163,16 +163,17 @@ model Site {
   updatedAt DateTime @updatedAt
 
   // Beziehungen
-  shifts          Shift[]
-  events          Event[]
-  clearances      ObjectClearance[]
-  images          SiteImage[]
-  assignments     SiteAssignment[]
-  documents       SiteDocument[]
-  incidents       SiteIncident[]
-  controlPoints   ControlPoint[]
-  controlRounds   ControlRound[]
-  calculations    SiteCalculation[]
+  shifts           Shift[]
+  shiftRules       ShiftRule[]
+  events           Event[]
+  clearances       ObjectClearance[]
+  images           SiteImage[]
+  assignments      SiteAssignment[]
+  documents        SiteDocument[]
+  incidents        SiteIncident[]
+  controlPoints    ControlPoint[]
+  controlRounds    ControlRound[]
+  calculations     SiteCalculation[]
   securityConcepts SecurityConcept[]
 
   @@unique([name, address], name: "sites_name_address_key")
@@ -267,6 +268,55 @@ enum ShiftStatus {
   ACTIVE
   COMPLETED
   CANCELLED
+}
+
+// ===== SHIFT PLANNING RULES (Advanced Scheduling) =====
+
+// Schichtplanungs-Regeln (Wiederholungsmuster für automatische Schicht-Generierung)
+model ShiftRule {
+  id     String @id @default(cuid())
+  siteId String
+  site   Site   @relation(fields: [siteId], references: [id], onDelete: Cascade)
+
+  // Schicht-Definition
+  name                   String // z.B. "Frühschicht Mo-Fr"
+  startTime              String // "06:00"
+  endTime                String // "14:00"
+  requiredStaff          Int    @default(1)
+  requiredQualifications String[] @default([])
+
+  // Wiederholungs-Muster
+  pattern       RulePattern @default(WEEKLY)
+  daysOfWeek    Int[] // [1,2,3,4,5] = Mo-Fr, [6,0] = Sa-So, 0=Sonntag, 1=Montag, ...
+  specificDates DateTime[] // Konkrete Daten (für pattern=SPECIFIC_DATES)
+
+  // Gültigkeit
+  validFrom  DateTime
+  validUntil DateTime?
+
+  // Priorität (höher = überschreibt niedrigere Regeln, für Ausnahmen)
+  // Basis-Regeln: 0, Ausnahmen: 10+
+  priority Int @default(0)
+
+  // Status
+  isActive Boolean @default(true)
+
+  // Metadaten
+  description String? @db.Text
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([siteId, validFrom], name: "shift_rules_site_valid_idx")
+  @@index([siteId, isActive], name: "shift_rules_site_active_idx")
+  @@index([pattern], name: "shift_rules_pattern_idx")
+  @@map("shift_rules")
+}
+
+enum RulePattern {
+  DAILY          // Jeden Tag (validFrom bis validUntil)
+  WEEKLY         // Bestimmte Wochentage (daysOfWeek)
+  SPECIFIC_DATES // Nur an bestimmten Daten (specificDates)
+  DATE_RANGE     // Jeden Tag in Zeitraum (alternative zu DAILY)
 }
 
 // Zuweisungen von Mitarbeitern zu Schichten

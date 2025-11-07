@@ -87,8 +87,8 @@ export default function SitesList() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-semibold">Objekte</h1>
-        <Button onClick={() => nav('/sites/new')}>Neues Objekt</Button>
+        <h1 className="text-xl font-semibold">Aufträge</h1>
+        <Button onClick={() => nav('/sites/new')}>Neuer Auftrag</Button>
       </div>
 
       <div className="flex gap-2 items-end flex-wrap">
