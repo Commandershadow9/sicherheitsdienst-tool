@@ -1,10 +1,10 @@
 # Sicherheitskonzept-Modul – Vollständiges Konzept
 
-**Status:** 🚧 IN ENTWICKLUNG (Phase 1 & 2 ✅ COMPLETE)
-**Priorität:** 🔥 KRITISCH (Kernfunktionalität fehlt!)
+**Status:** 🚧 IN ENTWICKLUNG (Phase 1, 2 & 3 ✅ COMPLETE)
+**Priorität:** 🔥 KRITISCH (Phase 4 & 5 pending)
 **Ziel:** Rechtssicheres, vollständiges Sicherheitskonzept-Management im System
 **Erstellt:** 26. Oktober 2025
-**Letzte Aktualisierung:** 26. Oktober 2025 (v1.21.0 deployed)
+**Letzte Aktualisierung:** 07. November 2025 (v1.22.0 - Phase 3 complete)
 
 ---
 
@@ -14,7 +14,7 @@
 |-------|--------|---------|----------|
 | **Phase 1: MVP** | ✅ COMPLETE | v1.21.0 | ShiftModelEditor, SecurityConceptTab, Backend CRUD |
 | **Phase 2: Risiko** | ✅ COMPLETE | v1.21.0 | RiskAssessmentEditor, 5×5 Matrix, Maßnahmen |
-| **Phase 3: Compliance** | ❌ PENDING | - | Rechtliche Anforderungen, Auditierung |
+| **Phase 3: Detaillierung** | ✅ COMPLETE | v1.22.0 | KPIEditor, HandoverEditor, AttachmentManager, File Upload |
 | **Phase 4: Personal** | ❌ PENDING | - | Qualifikationsmatrix, Aufgabenprofile |
 | **Phase 5: Vollständig** | ❌ PENDING | - | PDF-Export, Freigabe-Workflow |
 
@@ -1097,18 +1097,28 @@ Akkordeon-Struktur mit 14 Haupt-Sektionen:
 
 ---
 
-### **Phase 3: Detaillierung** (Woche 4-5)
+### **Phase 3: Detaillierung** ✅ COMPLETE (v1.22.0)
 
 **Features:**
-- [ ] Objekt-/Lagebild (Upload Pläne)
-- [ ] Aufgaben-/Postenprofile
-- [ ] Kommunikation & Eskalation
-- [ ] KPIs & Qualität
-- [ ] Übergaben/Schichtwechsel
-- [ ] Anhänge-Management
+- [x] Objekt-/Lagebild (✅ SiteSituationEditor.tsx existiert bereits)
+- [x] Aufgaben-/Postenprofile (✅ TaskProfilesEditor.tsx existiert bereits)
+- [x] Kommunikation & Eskalation (✅ CommunicationPlanEditor.tsx existiert bereits)
+- [x] KPIs & Qualität ✅ KPIEditor.tsx (340 LOC)
+- [x] Übergaben/Schichtwechsel ✅ HandoverEditor.tsx (360 LOC)
+- [x] Anhänge-Management ✅ AttachmentManager.tsx (310 LOC)
+- [x] File-Upload Backend ✅ uploadAttachment middleware + endpoint
 
-**Priorität:** 🟢 MITTEL
-**Nutzen:** Vollständiges Konzept
+**Implementiert in:**
+- Frontend: `frontend/src/features/sites/components/KPIEditor.tsx` (340 LOC)
+- Frontend: `frontend/src/features/sites/components/HandoverEditor.tsx` (360 LOC)
+- Frontend: `frontend/src/features/sites/components/AttachmentManager.tsx` (310 LOC)
+- Frontend: `frontend/src/types/securityConcept.ts` (468 LOC)
+- Backend: `backend/src/middleware/uploadAttachment.ts` (44 LOC)
+- Backend: `backend/src/controllers/securityConceptController.ts` (+42 LOC)
+- Integration: SecurityConceptTab.tsx (+86 LOC)
+
+**Priorität:** 🔥 KRITISCH
+**Nutzen:** ✅ Vollständige Phase 3 Detaillierung implementiert!
 
 ---
 

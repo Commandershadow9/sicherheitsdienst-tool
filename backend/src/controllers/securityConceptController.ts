@@ -366,3 +366,42 @@ export const deleteSecurityConcept = async (req: Request, res: Response, next: N
     next(error);
   }
 };
+
+// POST /api/sites/:siteId/security-concept/:id/upload-attachment - Anhang hochladen
+export const uploadAttachment = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { siteId, id } = req.params;
+
+    // Prüfe ob Konzept existiert
+    const concept = await prisma.securityConcept.findFirst({
+      where: { id, siteId },
+    });
+
+    if (!concept) {
+      res.status(404).json({ success: false, message: 'Sicherheitskonzept nicht gefunden' });
+      return;
+    }
+
+    // Prüfe ob Datei hochgeladen wurde
+    if (!req.file) {
+      res.status(400).json({ success: false, message: 'Keine Datei hochgeladen' });
+      return;
+    }
+
+    // Erstelle URL für Frontend
+    const fileUrl = `/uploads/security-concept-attachments/${req.file.filename}`;
+
+    res.status(200).json({
+      success: true,
+      message: 'Anhang erfolgreich hochgeladen',
+      data: {
+        filename: req.file.originalname,
+        fileUrl,
+        fileSize: req.file.size,
+        mimeType: req.file.mimetype,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};

@@ -15,6 +15,7 @@ import * as shiftController from '../controllers/shiftController';
 import { createWriteRateLimit } from '../middleware/rateLimit';
 import methodNotAllowed from '../middleware/methodNotAllowed';
 import { uploadDocument } from '../middleware/uploadDocument';
+import { uploadAttachment } from '../middleware/uploadAttachment';
 
 const writeLimiter = createWriteRateLimit();
 
@@ -307,6 +308,16 @@ router.delete(
   asyncHandler(securityConceptController.deleteSecurityConcept),
 );
 
+// POST /api/sites/:siteId/security-concept/:id/upload-attachment - Anhang hochladen
+router.post(
+  '/:siteId/security-concept/:id/upload-attachment',
+  authenticate,
+  authorize('ADMIN', 'MANAGER'),
+  writeLimiter,
+  uploadAttachment.single('file'),
+  asyncHandler(securityConceptController.uploadAttachment),
+);
+
 // 405
 router.all('/', authenticate, methodNotAllowed(['GET', 'POST']));
 router.all('/:id', authenticate, methodNotAllowed(['GET', 'PUT', 'DELETE']));
@@ -331,5 +342,6 @@ router.all('/:siteId/security-concepts', authenticate, methodNotAllowed(['GET'])
 router.all('/:siteId/security-concept', authenticate, methodNotAllowed(['GET', 'POST']));
 router.all('/:siteId/security-concept/:id', authenticate, methodNotAllowed(['GET', 'PUT', 'DELETE']));
 router.all('/:siteId/security-concept/:id/approve', authenticate, methodNotAllowed(['POST']));
+router.all('/:siteId/security-concept/:id/upload-attachment', authenticate, methodNotAllowed(['POST']));
 
 export default router;
