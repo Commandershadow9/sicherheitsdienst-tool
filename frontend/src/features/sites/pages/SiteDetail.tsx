@@ -401,7 +401,7 @@ export default function SiteDetail() {
                     {!securityConcept && (
                       <div className="mt-4 bg-yellow-50 border border-yellow-200 rounded-lg p-3">
                         <p className="text-sm text-yellow-900">
-                          ⚠️ <strong>Hinweis:</strong> Für dieses Objekt ist noch kein Sicherheitskonzept hinterlegt. Die angezeigten Werte sind Fallback-Werte. Bitte erstellen Sie ein Sicherheitskonzept für genaue Anforderungen.
+                          ⚠️ <strong>Hinweis:</strong> Für diesen Auftrag ist noch kein Sicherheitskonzept hinterlegt. Die angezeigten Werte sind Fallback-Werte. Bitte erstellen Sie ein Sicherheitskonzept für genaue Anforderungen.
                         </p>
                       </div>
                     )}
@@ -678,7 +678,7 @@ export default function SiteDetail() {
                   // Check if clearance already exists
                   const exists = site.clearances?.some((c) => c.user.id === createClearanceModal.userId)
                   if (exists) {
-                    toast.error('Dieser Mitarbeiter hat bereits eine Clearance für dieses Objekt')
+                    toast.error('Dieser Mitarbeiter hat bereits eine Clearance für diesen Auftrag')
                     return
                   }
                   createClearanceMutation.mutate({
@@ -719,7 +719,7 @@ export default function SiteDetail() {
             </FormField>
             <div className="bg-blue-50 border border-blue-200 rounded p-3">
               <p className="text-sm text-blue-900">
-                💡 <strong>Hinweis:</strong> Objektleiter und Schichtleiter haben erweiterte Berechtigungen für dieses Objekt.
+                💡 <strong>Hinweis:</strong> Objektleiter und Schichtleiter haben erweiterte Berechtigungen für diesen Auftrag.
               </p>
             </div>
             <div className="flex justify-end gap-2 pt-2">
@@ -739,7 +739,7 @@ export default function SiteDetail() {
                   // Check if assignment already exists
                   const exists = site.assignments?.some((a) => a.user.id === createAssignmentModal.userId)
                   if (exists) {
-                    toast.error('Dieser Mitarbeiter ist bereits diesem Objekt zugewiesen')
+                    toast.error('Dieser Mitarbeiter ist bereits diesem Auftrag zugewiesen')
                     return
                   }
                   createAssignmentMutation.mutate({
@@ -766,7 +766,7 @@ export default function SiteDetail() {
           // Check if assignment already exists
           const exists = site.assignments?.some((a) => a.user.id === userId);
           if (exists) {
-            toast.error('Dieser Mitarbeiter ist bereits diesem Objekt zugewiesen');
+            toast.error('Dieser Mitarbeiter ist bereits diesem Auftrag zugewiesen');
             return;
           }
           createAssignmentMutation.mutate(
@@ -794,7 +794,7 @@ export default function SiteDetail() {
         <Modal title="Zuweisung entfernen" open={!!deleteAssignmentId} onClose={() => setDeleteAssignmentId(null)}>
           <div className="space-y-4">
             <p className="text-red-600">
-              Möchten Sie diese Zuweisung wirklich entfernen? Der Mitarbeiter verliert damit seine erweiterten Berechtigungen für dieses Objekt.
+              Möchten Sie diese Zuweisung wirklich entfernen? Der Mitarbeiter verliert damit seine erweiterten Berechtigungen für diesen Auftrag.
             </p>
             <div className="flex justify-end gap-2 pt-2">
               <Button
@@ -816,24 +816,24 @@ export default function SiteDetail() {
         </Modal>
       )}
 
-      {/* Objekt löschen Bestätigung */}
+      {/* Auftrag löschen Bestätigung */}
       {deleteSiteConfirm && (
-        <Modal title="Objekt löschen" open={deleteSiteConfirm} onClose={() => setDeleteSiteConfirm(false)}>
+        <Modal title="Auftrag löschen" open={deleteSiteConfirm} onClose={() => setDeleteSiteConfirm(false)}>
           <div className="space-y-4">
             <div className="bg-red-50 border border-red-200 rounded p-4">
               <p className="text-red-900 font-semibold mb-2">⚠️ Achtung: Diese Aktion kann nicht rückgängig gemacht werden!</p>
               <p className="text-red-800 text-sm">
-                Das Löschen des Objekts "<strong>{site.name}</strong>" führt zu folgenden Konsequenzen:
+                Das Löschen des Auftrags "<strong>{site.name}</strong>" führt zu folgenden Konsequenzen:
               </p>
               <ul className="list-disc list-inside text-red-800 text-sm mt-2 space-y-1">
                 <li>Alle Clearances werden gelöscht</li>
                 <li>Alle Zuweisungen werden entfernt</li>
                 <li>Alle hochgeladenen Bilder werden gelöscht</li>
-                <li>Schichten werden vom Objekt getrennt (bleiben aber erhalten)</li>
+                <li>Schichten werden vom Auftrag getrennt (bleiben aber erhalten)</li>
               </ul>
             </div>
             <p className="text-gray-700">
-              Sind Sie sicher, dass Sie dieses Objekt endgültig löschen möchten?
+              Sind Sie sicher, dass Sie diesen Auftrag endgültig löschen möchten?
             </p>
             <div className="flex justify-end gap-2 pt-2">
               <Button
@@ -848,7 +848,7 @@ export default function SiteDetail() {
                 onClick={() => deleteSiteMutation.mutate()}
                 disabled={deleteSiteMutation.isPending}
               >
-                {deleteSiteMutation.isPending ? 'Wird gelöscht...' : 'Objekt endgültig löschen'}
+                {deleteSiteMutation.isPending ? 'Wird gelöscht...' : 'Auftrag endgültig löschen'}
               </Button>
             </div>
           </div>
@@ -1197,7 +1197,7 @@ export default function SiteDetail() {
               <Calculator size={48} className="mx-auto text-gray-400 mb-4" />
               <h3 className="text-lg font-medium text-gray-900 mb-2">Keine Kalkulationen</h3>
               <p className="text-gray-600 mb-4">
-                Erstellen Sie eine neue Kalkulation für dieses Objekt, um Angebote zu erstellen.
+                Erstellen Sie eine neue Kalkulation für diesen Auftrag, um Angebote zu erstellen.
               </p>
               <Button onClick={() => nav(`/sites/${id}/calculations/new`)}>
                 Erste Kalkulation erstellen

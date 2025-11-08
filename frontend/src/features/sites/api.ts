@@ -146,11 +146,11 @@ export const useCreateSite = () => {
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['sites'] });
-      toast.success('Objekt erfolgreich erstellt');
+      toast.success('Auftrag erfolgreich erstellt');
       return data;
     },
     onError: (error: any) => {
-      const message = error.response?.data?.message || 'Fehler beim Erstellen des Objekts';
+      const message = error.response?.data?.message || 'Fehler beim Erstellen des Auftrags';
       toast.error(message);
     },
   });

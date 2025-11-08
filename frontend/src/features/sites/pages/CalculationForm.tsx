@@ -158,7 +158,7 @@ export default function CalculationForm() {
       <div className="mb-6">
         <Button variant="ghost" onClick={() => navigate(`/sites/${siteId}`)}>
           <ArrowLeft size={16} className="mr-2" />
-          Zurück zum Objekt
+          Zurück zum Auftrag
         </Button>
       </div>
 

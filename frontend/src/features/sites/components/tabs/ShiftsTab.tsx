@@ -396,13 +396,6 @@ export default function ShiftsTab({ site, siteId }: ShiftsTabProps) {
                   </div>
                 )
               })}
-              {shifts.length > 10 && (
-                <div className="text-center pt-2">
-                  <Button variant="outline" onClick={() => nav(`/sites/${siteId}/shifts`)}>
-                    Alle {shifts.length} Schichten anzeigen →
-                  </Button>
-                </div>
-              )}
             </div>
           )}
         </>

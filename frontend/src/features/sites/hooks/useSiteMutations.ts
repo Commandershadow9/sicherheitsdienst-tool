@@ -237,11 +237,11 @@ export function useSiteMutations({
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['sites'] })
-      toast.success('Objekt erfolgreich gelöscht')
+      toast.success('Auftrag erfolgreich gelöscht')
       nav('/sites')
     },
     onError: (error: any) => {
-      toast.error(error?.response?.data?.message || 'Fehler beim Löschen des Objekts')
+      toast.error(error?.response?.data?.message || 'Fehler beim Löschen des Auftrags')
     },
   })
 

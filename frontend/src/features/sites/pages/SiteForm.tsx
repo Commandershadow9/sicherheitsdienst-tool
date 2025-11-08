@@ -107,7 +107,7 @@ export default function SiteForm({ mode }: SiteFormProps) {
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['sites'] })
-      toast.success('Objekt erfolgreich erstellt')
+      toast.success('Auftrag erfolgreich erstellt')
       navigate(`/sites/${data.data.id}`)
     },
     onError: (error: any) => {
@@ -124,7 +124,7 @@ export default function SiteForm({ mode }: SiteFormProps) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['site', id] })
       queryClient.invalidateQueries({ queryKey: ['sites'] })
-      toast.success('Objekt erfolgreich aktualisiert')
+      toast.success('Auftrag erfolgreich aktualisiert')
       navigate(`/sites/${id}`)
     },
     onError: (error: any) => {
@@ -194,7 +194,7 @@ export default function SiteForm({ mode }: SiteFormProps) {
           <Button variant="link" onClick={() => navigate('/sites')} className="px-0 mb-2">
             ← Zurück zur Liste
           </Button>
-          <h1 className="text-2xl font-bold">{mode === 'create' ? 'Neues Objekt anlegen' : 'Objekt bearbeiten'}</h1>
+          <h1 className="text-2xl font-bold">{mode === 'create' ? 'Neuen Auftrag anlegen' : 'Auftrag bearbeiten'}</h1>
         </div>
       </div>
 
@@ -203,7 +203,7 @@ export default function SiteForm({ mode }: SiteFormProps) {
         <div className="bg-white p-6 rounded-xl border shadow-sm space-y-4">
           <h2 className="text-lg font-semibold text-gray-900">Basis-Informationen</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <FormField label="Objekt-Name *">
+            <FormField label="Auftrags-Name *">
               <Input
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
@@ -254,7 +254,7 @@ export default function SiteForm({ mode }: SiteFormProps) {
             <Textarea
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              placeholder="Zusätzliche Informationen zum Objekt..."
+              placeholder="Zusätzliche Informationen zum Auftrag..."
               rows={3}
             />
           </FormField>
@@ -302,7 +302,7 @@ export default function SiteForm({ mode }: SiteFormProps) {
           <h2 className="text-lg font-semibold text-gray-900">Anforderungen</h2>
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm">
             <p className="text-blue-900">
-              💡 <strong>Hinweis:</strong> Diese Werte dienen als Fallback-Werte. Sobald ein Sicherheitskonzept für dieses Objekt erstellt wird, werden die Anforderungen daraus übernommen (Single Source of Truth).
+              💡 <strong>Hinweis:</strong> Diese Werte dienen als Fallback-Werte. Sobald ein Sicherheitskonzept für diesen Auftrag erstellt wird, werden die Anforderungen daraus übernommen (Single Source of Truth).
             </p>
           </div>
           <FormField label="Benötigte Mitarbeiter *">
@@ -415,7 +415,7 @@ export default function SiteForm({ mode }: SiteFormProps) {
           </Button>
           <Button type="submit" disabled={isPending}>
             {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            {isPending ? 'Wird gespeichert...' : mode === 'create' ? 'Objekt anlegen' : 'Änderungen speichern'}
+            {isPending ? 'Wird gespeichert...' : mode === 'create' ? 'Auftrag anlegen' : 'Änderungen speichern'}
           </Button>
         </div>
       </form>

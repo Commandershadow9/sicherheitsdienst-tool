@@ -185,9 +185,6 @@ export default function SitesList() {
                 <Link className="underline text-blue-600 hover:text-blue-800" to={`/sites/${r.id}`}>
                   Details
                 </Link>
-                <Link className="underline text-blue-600 hover:text-blue-800" to={`/sites/${r.id}/shifts`}>
-                  Schichten
-                </Link>
               </div>
             ),
           },

@@ -27,7 +27,7 @@ interface AttachmentManagerProps {
 }
 
 const defaultRequiredAttachments: AttachmentItem[] = [
-  { id: 'req-1', name: 'Lageplan Objekt', type: 'FLOOR_PLAN', required: true, status: 'MISSING' },
+  { id: 'req-1', name: 'Lageplan Auftrag', type: 'FLOOR_PLAN', required: true, status: 'MISSING' },
   { id: 'req-2', name: 'Fluchtpläne (alle Stockwerke)', type: 'EVACUATION_PLAN', required: true, status: 'MISSING' },
   { id: 'req-3', name: 'Brandschutzordnung', type: 'FIRE_SAFETY', required: true, status: 'MISSING' },
   { id: 'req-4', name: 'Kontaktlisten (Notfall, Behörden, Kunde)', type: 'CONTACT_LIST', required: true, status: 'MISSING' },

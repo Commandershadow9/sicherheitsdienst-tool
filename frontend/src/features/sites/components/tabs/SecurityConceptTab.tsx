@@ -6,7 +6,6 @@ import { Shield, Plus, CheckCircle, AlertTriangle, FileText, Building2, Route, B
 import { toast } from 'sonner'
 import { api } from '@/lib/api'
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '@/components/ui/accordion'
-import ShiftModelEditor from '../ShiftModelEditor'
 import RiskAssessmentEditor from '../RiskAssessmentEditor'
 import ProtectionMeasuresEditor from '../ProtectionMeasuresEditor'
 import SiteSituationEditor from '../SiteSituationEditor'
@@ -244,12 +243,31 @@ export default function SecurityConceptTab({ site, siteId }: SecurityConceptTabP
               <span className="text-slate-900 font-medium">Schichtmodell & Personal</span>
             </AccordionTrigger>
             <AccordionContent id="shift-model" className="bg-slate-50">
-              <ShiftModelEditor
-                shiftModel={concept.shiftModel || null}
-                onSave={(shiftModel) => {
-                  updateMutation.mutate({ shiftModel })
-                }}
-              />
+              <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                <div className="flex items-start gap-3">
+                  <Calendar size={20} className="text-blue-600 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-medium text-blue-900 mb-1">Schichtplanung im separaten Tab</p>
+                    <p className="text-sm text-blue-800 mb-3">
+                      Die Schichtplanung wurde in einen eigenen Tab ausgelagert, um eine bessere Übersicht und mehr Funktionen zu bieten.
+                    </p>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => {
+                        const tabs = document.querySelectorAll('[role="tab"]')
+                        const shiftsTab = Array.from(tabs).find((tab) => tab.textContent?.includes('Schichtplanung'))
+                        if (shiftsTab instanceof HTMLElement) {
+                          shiftsTab.click()
+                        }
+                      }}
+                      className="bg-blue-600 text-white hover:bg-blue-700 border-blue-600"
+                    >
+                      Zur Schichtplanung wechseln →
+                    </Button>
+                  </div>
+                </div>
+              </div>
             </AccordionContent>
           </AccordionItem>
 
@@ -334,14 +352,14 @@ export default function SecurityConceptTab({ site, siteId }: SecurityConceptTabP
       {/* Important Components */}
       <SectionGroup priority="important" title="WICHTIGE KOMPONENTEN">
         <Accordion type="multiple" className="space-y-2">
-          {/* 5. Objekt-/Lagebild */}
+          {/* 5. Auftrags-/Lagebild */}
           <AccordionItem id="site-situation">
             <AccordionTrigger
               id="site-situation"
               icon={<Building2 className="text-cyan-600" size={18} />}
               badge={<CompletionBadge status={getCompletionStatus(concept.siteSituation)} />}
             >
-              <span className="text-slate-900 font-medium">Objekt-/Lagebild</span>
+              <span className="text-slate-900 font-medium">Auftrags-/Lagebild</span>
             </AccordionTrigger>
             <AccordionContent id="site-situation" className="bg-slate-50">
               <SiteSituationEditor

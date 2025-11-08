@@ -87,7 +87,7 @@ export default function ControlRoundDetail() {
             className="flex items-center gap-2 mb-2"
           >
             <ArrowLeft size={16} />
-            Zurück zum Objekt
+            Zurück zum Auftrag
           </Button>
           <h1 className="text-2xl font-bold">Kontrollgang-Details</h1>
           <p className="text-gray-600">

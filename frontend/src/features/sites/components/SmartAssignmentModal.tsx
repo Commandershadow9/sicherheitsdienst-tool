@@ -84,7 +84,7 @@ export default function SmartAssignmentModal({
         bg: 'bg-green-100',
         text: 'text-green-800',
         label: 'Alle Qualifikationen',
-        tooltip: 'Dieser Mitarbeiter erfüllt alle erforderlichen Qualifikationen für dieses Objekt.',
+        tooltip: 'Dieser Mitarbeiter erfüllt alle erforderlichen Qualifikationen für diesen Auftrag.',
       },
       PARTIAL: {
         icon: AlertTriangle,
@@ -121,19 +121,19 @@ export default function SmartAssignmentModal({
         bg: 'bg-emerald-100',
         text: 'text-emerald-800',
         label: 'Eingearbeitet',
-        tooltip: 'Dieser Mitarbeiter wurde erfolgreich für dieses Objekt eingearbeitet und kann sofort eingesetzt werden.',
+        tooltip: 'Dieser Mitarbeiter wurde erfolgreich für diesen Auftrag eingearbeitet und kann sofort eingesetzt werden.',
       },
       TRAINING: {
         bg: 'bg-blue-100',
         text: 'text-blue-800',
         label: 'In Einarbeitung',
-        tooltip: 'Dieser Mitarbeiter befindet sich aktuell in der Einarbeitungsphase für dieses Objekt.',
+        tooltip: 'Dieser Mitarbeiter befindet sich aktuell in der Einarbeitungsphase für diesen Auftrag.',
       },
       NONE: {
         bg: 'bg-gray-100',
         text: 'text-gray-600',
         label: 'Keine Einarbeitung',
-        tooltip: 'Dieser Mitarbeiter hat noch keine Einarbeitung für dieses Objekt erhalten. Eine Einarbeitung sollte vor dem Einsatz durchgeführt werden.',
+        tooltip: 'Dieser Mitarbeiter hat noch keine Einarbeitung für diesen Auftrag erhalten. Eine Einarbeitung sollte vor dem Einsatz durchgeführt werden.',
       },
     };
 
@@ -161,7 +161,7 @@ export default function SmartAssignmentModal({
           • Workload (Auslastung)<br/>
           • Compliance (Arbeitszeitgesetz)<br/>
           • Fairness (Gleichverteilung)<br/>
-          • Präferenz (Wunsch-Objekte)
+          • Präferenz (Wunsch-Aufträge)
         </p>
         <p className="text-xs pt-2 border-t border-gray-600">
           Höhere Scores bedeuten bessere Eignung für diese Zuweisung.

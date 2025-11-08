@@ -292,7 +292,7 @@ export default function ClearancesTab({ site, siteId }: ClearancesTabProps) {
                   // Check if clearance already exists
                   const exists = site.clearances?.some((c) => c.user.id === createClearanceModal.userId)
                   if (exists) {
-                    toast.error('Dieser Mitarbeiter hat bereits eine Clearance für dieses Objekt')
+                    toast.error('Dieser Mitarbeiter hat bereits eine Clearance für diesen Auftrag')
                     return
                   }
                   createClearanceMutation.mutate({

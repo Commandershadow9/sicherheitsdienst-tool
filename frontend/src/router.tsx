@@ -15,7 +15,6 @@ function RouteError() {
 }
 import SitesList from '@/features/sites/pages/SitesList'
 import SiteDetail from '@/features/sites/pages/SiteDetail'
-import SiteShifts from '@/features/sites/pages/SiteShifts'
 import SiteForm from '@/features/sites/pages/SiteForm'
 import ControlPointForm from '@/features/sites/pages/ControlPointForm'
 import ControlRoundDetail from '@/features/sites/pages/ControlRoundDetail'
@@ -79,11 +78,6 @@ export const router = createBrowserRouter([
           { path: 'sites/:id/edit', element: (
             <RequireRole roles={['ADMIN','DISPATCHER','MANAGER']}>
               <SiteForm mode="edit" />
-            </RequireRole>
-          ) },
-          { path: 'sites/:id/shifts', element: (
-            <RequireRole roles={['ADMIN','DISPATCHER','MANAGER']}>
-              <SiteShifts />
             </RequireRole>
           ) },
           { path: 'sites/:siteId/control-points/:pointId', element: (

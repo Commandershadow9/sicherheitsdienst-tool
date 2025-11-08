@@ -272,7 +272,7 @@ export default function ControlRoundSuggestionsModal({
                   Keine Kontrollpunkte vorhanden.
                 </p>
                 <p className="text-sm text-gray-500 mt-2">
-                  Legen Sie zuerst Kontrollpunkte für dieses Objekt an.
+                  Legen Sie zuerst Kontrollpunkte für diesen Auftrag an.
                 </p>
               </div>
             )}

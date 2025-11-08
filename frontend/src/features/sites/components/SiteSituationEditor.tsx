@@ -58,7 +58,7 @@ export default function SiteSituationEditor({
 
     onSave(data);
     setIsEditing(false);
-    toast.success('Objektbeschreibung gespeichert');
+    toast.success('Auftragsbeschreibung gespeichert');
   };
 
   if (!isEditing && siteSituation) {
@@ -67,7 +67,7 @@ export default function SiteSituationEditor({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Building2 className="text-blue-600" size={20} />
-            <h4 className="font-semibold text-gray-900">Objekt-/Lagebild</h4>
+            <h4 className="font-semibold text-gray-900">Auftrags-/Lagebild</h4>
           </div>
           <Button onClick={() => setIsEditing(true)} size="sm" variant="outline" className="gap-1">
             <Edit size={14} />
@@ -135,7 +135,7 @@ export default function SiteSituationEditor({
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Building2 className="text-blue-600" size={20} />
-          <h4 className="font-semibold text-gray-900">Objekt-/Lagebild</h4>
+          <h4 className="font-semibold text-gray-900">Auftrags-/Lagebild</h4>
         </div>
         {siteSituation && (
           <Button onClick={() => setIsEditing(false)} size="sm" variant="ghost">
