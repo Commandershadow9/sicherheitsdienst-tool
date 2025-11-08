@@ -51,6 +51,11 @@ export default function SitesList() {
   const nav = useNavigate()
   const queryClient = useQueryClient()
   const [downloading, setDownloading] = React.useState<null | { type: 'csv'|'xlsx'; progress?: number }>(null)
+  const [selectedIds, setSelectedIds] = React.useState<string[]>([])
+
+  const allIds = React.useMemo(() => data?.data?.map((s) => s.id) || [], [data])
+  const isAllSelected = selectedIds.length > 0 && selectedIds.length === allIds.length
+  const isSomeSelected = selectedIds.length > 0 && selectedIds.length < allIds.length
   const qk = ['sites', params]
   const { data, isLoading, isError, error } = useQuery<ListResp>({
     queryKey: qk,
@@ -74,6 +79,48 @@ export default function SitesList() {
       toast.error(error?.response?.data?.message || 'Fehler beim Aktualisieren des Status')
     },
   })
+
+  const bulkUpdateStatusMutation = useMutation({
+    mutationFn: async ({ ids, status }: { ids: string[]; status: string }) => {
+      await Promise.all(ids.map((id) => api.put(`/sites/${id}`, { status })))
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['sites'] })
+      toast.success(`${variables.ids.length} Aufträge erfolgreich aktualisiert`)
+      setSelectedIds([])
+    },
+    onError: (error: any) => {
+      toast.error(error?.response?.data?.message || 'Fehler beim Aktualisieren der Aufträge')
+    },
+  })
+
+  const bulkDeleteMutation = useMutation({
+    mutationFn: async (ids: string[]) => {
+      await Promise.all(ids.map((id) => api.delete(`/sites/${id}`)))
+    },
+    onSuccess: (_, ids) => {
+      queryClient.invalidateQueries({ queryKey: ['sites'] })
+      toast.success(`${ids.length} Aufträge erfolgreich gelöscht`)
+      setSelectedIds([])
+    },
+    onError: (error: any) => {
+      toast.error(error?.response?.data?.message || 'Fehler beim Löschen der Aufträge')
+    },
+  })
+
+  const toggleSelectAll = () => {
+    if (isAllSelected) {
+      setSelectedIds([])
+    } else {
+      setSelectedIds(allIds)
+    }
+  }
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds((prev) =>
+      prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]
+    )
+  }
 
   const currentExportParams = React.useMemo(() => {
     const sp = toSearchParams(params)
@@ -117,6 +164,49 @@ export default function SitesList() {
           </Button>
         </div>
       </div>
+
+      {/* Bulk Actions Bar */}
+      {selectedIds.length > 0 && (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 flex items-center justify-between animate-in slide-in-from-top-2">
+          <div className="flex items-center gap-3">
+            <span className="font-semibold text-blue-900">{selectedIds.length} ausgewählt</span>
+            <div className="h-6 w-px bg-blue-300" />
+            <Select
+              onChange={(e) => {
+                if (e.target.value) {
+                  bulkUpdateStatusMutation.mutate({ ids: selectedIds, status: e.target.value })
+                }
+              }}
+              className="text-sm"
+              defaultValue=""
+            >
+              <option value="">Status ändern...</option>
+              <option value="INQUIRY">Anfrage</option>
+              <option value="IN_REVIEW">In Prüfung</option>
+              <option value="CALCULATING">Kalkulation</option>
+              <option value="OFFER_SENT">Angebot versendet</option>
+              <option value="ACTIVE">Aktiv</option>
+              <option value="INACTIVE">Inaktiv</option>
+              <option value="LOST">Verloren</option>
+            </Select>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                if (confirm(`Wirklich ${selectedIds.length} Aufträge löschen?`)) {
+                  bulkDeleteMutation.mutate(selectedIds)
+                }
+              }}
+              className="text-red-600 hover:text-red-700"
+            >
+              Löschen
+            </Button>
+          </div>
+          <Button variant="ghost" size="sm" onClick={() => setSelectedIds([])}>
+            Auswahl aufheben
+          </Button>
+        </div>
+      )}
 
       <div className="flex gap-2 items-end flex-wrap">
         <FormField label="Name">
@@ -180,6 +270,27 @@ export default function SitesList() {
 
       <DataTable
         columns={[
+          {
+            key: 'select',
+            header: (
+              <input
+                type="checkbox"
+                checked={isAllSelected}
+                ref={(el) => el && (el.indeterminate = isSomeSelected && !isAllSelected)}
+                onChange={toggleSelectAll}
+                className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+              />
+            ),
+            render: (r: Site) => (
+              <input
+                type="checkbox"
+                checked={selectedIds.includes(r.id)}
+                onChange={() => toggleSelect(r.id)}
+                className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                onClick={(e) => e.stopPropagation()}
+              />
+            ),
+          },
           { key: 'name', header: 'Name', sortable: true },
           { key: 'city', header: 'Stadt', sortable: true },
           { key: 'postalCode', header: 'PLZ', sortable: true },

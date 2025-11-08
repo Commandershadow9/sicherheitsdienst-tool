@@ -6,8 +6,10 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { FormField } from '@/components/ui/form'
 import { toast } from 'sonner'
-import { Loader2, MapPin, Smartphone, QrCode, ArrowLeft } from 'lucide-react'
+import { Loader2, MapPin, Smartphone, QrCode, ArrowLeft, Briefcase, Shield } from 'lucide-react'
 import { SkeletonForm } from '@/components/ui/skeleton'
+import { Breadcrumbs } from '@/components/ui/breadcrumbs'
+import { api } from '@/lib/api'
 import {
   fetchControlPoint,
   createControlPoint,
@@ -46,6 +48,16 @@ export default function ControlPointForm() {
   const queryClient = useQueryClient()
   const [formData, setFormData] = useState<ControlPointFormData>(INITIAL_FORM_DATA)
   const isEditMode = pointId !== 'new'
+
+  // Fetch site info for breadcrumbs
+  const { data: site } = useQuery({
+    queryKey: ['site', siteId],
+    queryFn: async () => {
+      const res = await api.get(`/sites/${siteId}`)
+      return res.data.data
+    },
+    enabled: !!siteId,
+  })
 
   // Fetch existing control point for edit mode
   const { data: existingPoint, isLoading } = useQuery({
@@ -162,18 +174,25 @@ export default function ControlPointForm() {
 
   const isPending = createMutation.isPending || updateMutation.isPending
 
+  const breadcrumbItems = isEditMode
+    ? [
+        { label: 'Aufträge', href: '/sites', icon: Briefcase },
+        { label: site?.name || 'Auftrag', href: `/sites/${siteId}` },
+        { label: 'Kontrollpunkte', icon: Shield },
+        { label: existingPoint?.name || 'Kontrollpunkt', icon: MapPin },
+      ]
+    : [
+        { label: 'Aufträge', href: '/sites', icon: Briefcase },
+        { label: site?.name || 'Auftrag', href: `/sites/${siteId}` },
+        { label: 'Kontrollpunkte', icon: Shield },
+        { label: 'Neuer Kontrollpunkt', icon: MapPin },
+      ]
+
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       {/* Header */}
-      <div className="flex items-center gap-4">
-        <Button
-          variant="outline"
-          onClick={() => navigate(`/sites/${siteId}`)}
-          className="flex items-center gap-2"
-        >
-          <ArrowLeft size={16} />
-          Zurück
-        </Button>
+      <div className="space-y-4">
+        <Breadcrumbs items={breadcrumbItems} />
         <h1 className="text-2xl font-bold">
           {isEditMode ? 'Kontrollpunkt bearbeiten' : 'Neuer Kontrollpunkt'}
         </h1>

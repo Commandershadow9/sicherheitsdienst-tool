@@ -8,8 +8,9 @@ import { Textarea } from '@/components/ui/textarea'
 import { Select } from '@/components/ui/select'
 import { FormField } from '@/components/ui/form'
 import { toast } from 'sonner'
-import { Plus, Trash2, Loader2 } from 'lucide-react'
+import { Plus, Trash2, Loader2, Briefcase, FileEdit } from 'lucide-react'
 import { SkeletonForm } from '@/components/ui/skeleton'
+import { Breadcrumbs } from '@/components/ui/breadcrumbs'
 
 type SiteFormProps = {
   mode: 'create' | 'edit'
@@ -187,15 +188,22 @@ export default function SiteForm({ mode }: SiteFormProps) {
 
   const isPending = createMutation.isPending || updateMutation.isPending
 
+  const breadcrumbItems = mode === 'create'
+    ? [
+        { label: 'Aufträge', href: '/sites', icon: Briefcase },
+        { label: 'Neuer Auftrag', icon: FileEdit },
+      ]
+    : [
+        { label: 'Aufträge', href: '/sites', icon: Briefcase },
+        { label: existingSite?.name || 'Auftrag', href: `/sites/${id}` },
+        { label: 'Bearbeiten', icon: FileEdit },
+      ]
+
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <Button variant="link" onClick={() => navigate('/sites')} className="px-0 mb-2">
-            ← Zurück zur Liste
-          </Button>
-          <h1 className="text-2xl font-bold">{mode === 'create' ? 'Neuen Auftrag anlegen' : 'Auftrag bearbeiten'}</h1>
-        </div>
+      <div className="space-y-4">
+        <Breadcrumbs items={breadcrumbItems} />
+        <h1 className="text-2xl font-bold">{mode === 'create' ? 'Neuen Auftrag anlegen' : 'Auftrag bearbeiten'}</h1>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">

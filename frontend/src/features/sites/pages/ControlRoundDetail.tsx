@@ -2,6 +2,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { Button } from '@/components/ui/button'
 import { SkeletonDetailPage } from '@/components/ui/skeleton'
+import { Breadcrumbs } from '@/components/ui/breadcrumbs'
 import { fetchControlRound } from '../controlApi'
 import {
   ArrowLeft,
@@ -15,6 +16,8 @@ import {
   QrCode,
   XCircle,
   FileText,
+  Briefcase,
+  Shield,
 } from 'lucide-react'
 
 const STATUS_COLORS = {
@@ -76,23 +79,25 @@ export default function ControlRoundDetail() {
       )
     : null
 
+  const breadcrumbItems = [
+    { label: 'Aufträge', href: '/sites', icon: Briefcase },
+    { label: round.site?.name || 'Auftrag', href: `/sites/${round.siteId}` },
+    { label: 'Kontrollgänge', icon: Shield },
+    { label: new Date(round.startedAt).toLocaleDateString('de-DE') },
+  ]
+
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div>
-          <Button
-            variant="outline"
-            onClick={() => navigate(`/sites/${round.siteId}`)}
-            className="flex items-center gap-2 mb-2"
-          >
-            <ArrowLeft size={16} />
-            Zurück zum Auftrag
-          </Button>
-          <h1 className="text-2xl font-bold">Kontrollgang-Details</h1>
-          <p className="text-gray-600">
-            {round.site?.name} • {new Date(round.startedAt).toLocaleString('de-DE')}
-          </p>
+        <div className="space-y-4">
+          <Breadcrumbs items={breadcrumbItems} />
+          <div>
+            <h1 className="text-2xl font-bold">Kontrollgang-Details</h1>
+            <p className="text-gray-600">
+              {round.site?.name} • {new Date(round.startedAt).toLocaleString('de-DE')}
+            </p>
+          </div>
         </div>
         <span className={`px-4 py-2 rounded-full text-sm font-medium ${STATUS_COLORS[round.status]}`}>
           {STATUS_LABELS[round.status]}

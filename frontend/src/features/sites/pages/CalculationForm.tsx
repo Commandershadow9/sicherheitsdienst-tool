@@ -5,6 +5,8 @@ import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { FormField } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
+import { Breadcrumbs } from '@/components/ui/breadcrumbs'
+import { api } from '@/lib/api'
 import {
   ArrowLeft,
   ArrowRight,
@@ -12,7 +14,8 @@ import {
   CheckCircle,
   Clock,
   DollarSign,
-  Save
+  Save,
+  Briefcase
 } from 'lucide-react'
 import {
   createSiteCalculation,
@@ -30,6 +33,16 @@ export default function CalculationForm() {
   const isEditMode = calculationId !== 'new'
   const [currentStep, setCurrentStep] = useState<Step>(1)
   const [isSaving, setIsSaving] = useState(false)
+
+  // Fetch site info for breadcrumbs
+  const { data: site } = useQuery({
+    queryKey: ['site', siteId],
+    queryFn: async () => {
+      const res = await api.get(`/sites/${siteId}`)
+      return res.data.data
+    },
+    enabled: !!siteId,
+  })
 
   // Load existing calculation if editing
   const { data: existingCalculation } = useQuery({
@@ -153,13 +166,17 @@ export default function CalculationForm() {
     (formData.hoursSunday || 0) +
     (formData.hoursHoliday || 0)
 
+  const breadcrumbItems = [
+    { label: 'Aufträge', href: '/sites', icon: Briefcase },
+    { label: site?.name || 'Auftrag', href: `/sites/${siteId}` },
+    { label: 'Kalkulationen', icon: Calculator },
+    { label: isEditMode ? 'Bearbeiten' : 'Neue Kalkulation' },
+  ]
+
   return (
     <div className="max-w-4xl mx-auto p-6">
-      <div className="mb-6">
-        <Button variant="ghost" onClick={() => navigate(`/sites/${siteId}`)}>
-          <ArrowLeft size={16} className="mr-2" />
-          Zurück zum Auftrag
-        </Button>
+      <div className="mb-6 space-y-4">
+        <Breadcrumbs items={breadcrumbItems} />
       </div>
 
       <div className="bg-white rounded-xl shadow-sm border p-6">
