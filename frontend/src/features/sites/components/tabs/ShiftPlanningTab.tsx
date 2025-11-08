@@ -10,7 +10,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Button } from '@/components/ui/button'
 import { Modal } from '@/components/ui/modal'
 import { toast } from 'sonner'
-import { Calendar, Clock, Plus, Trash2, Pencil, Play, AlertCircle } from 'lucide-react'
+import { Calendar, Clock, Plus, Trash2, Pencil, Play, AlertCircle, Lightbulb } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import {
   getShiftRules,
@@ -27,6 +27,8 @@ import type {
 import { RULE_PATTERN_LABELS, WEEKDAY_LABELS } from '../../types/shiftRule'
 import ShiftRuleForm from '../shift-planning/ShiftRuleForm'
 import GenerateShiftsDialog from '../shift-planning/GenerateShiftsDialog'
+import TemplateSelector from '../shift-planning/TemplateSelector'
+import type { ShiftRuleTemplate } from '../../types/shiftRuleTemplates'
 
 type ShiftPlanningTabProps = {
   siteId: string
@@ -38,6 +40,7 @@ export default function ShiftPlanningTab({ siteId }: ShiftPlanningTabProps) {
   const [editingRule, setEditingRule] = useState<ShiftRule | null>(null)
   const [deletingRuleId, setDeletingRuleId] = useState<string | null>(null)
   const [showGenerateDialog, setShowGenerateDialog] = useState(false)
+  const [showTemplateSelector, setShowTemplateSelector] = useState(false)
 
   // Fetch shift rules
   const { data: rules = [], isLoading } = useQuery({
@@ -84,6 +87,31 @@ export default function ShiftPlanningTab({ siteId }: ShiftPlanningTabProps) {
       toast.error(error?.response?.data?.message || 'Fehler beim Löschen der Regel')
     },
   })
+
+  // Handle template selection
+  const handleTemplateSelect = async (template: ShiftRuleTemplate) => {
+    try {
+      // Get default validFrom (today)
+      const today = new Date().toISOString().split('T')[0]
+
+      // Create all rules from template sequentially
+      let created = 0
+      for (const ruleTemplate of template.rules) {
+        const input: CreateShiftRuleInput = {
+          ...ruleTemplate,
+          siteId,
+          validFrom: today,
+        }
+        await createShiftRule(siteId, input)
+        created++
+      }
+
+      queryClient.invalidateQueries({ queryKey: ['shift-rules', siteId] })
+      toast.success(`${created} Regel${created !== 1 ? 'n' : ''} aus Vorlage "${template.name}" erstellt`)
+    } catch (error: any) {
+      toast.error(error?.response?.data?.message || 'Fehler beim Erstellen der Regeln aus Vorlage')
+    }
+  }
 
   // Format date for display
   const formatDate = (dateStr: string) => {
@@ -141,6 +169,14 @@ export default function ShiftPlanningTab({ siteId }: ShiftPlanningTabProps) {
           >
             <Play size={16} className="mr-1" />
             Schichten generieren
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => setShowTemplateSelector(true)}
+          >
+            <Lightbulb size={16} className="mr-1" />
+            Aus Vorlage
           </Button>
           <Button size="sm" onClick={() => setShowCreateModal(true)}>
             <Plus size={16} className="mr-1" />
@@ -372,6 +408,15 @@ export default function ShiftPlanningTab({ siteId }: ShiftPlanningTabProps) {
           siteId={siteId}
           isOpen={showGenerateDialog}
           onClose={() => setShowGenerateDialog(false)}
+        />
+      )}
+
+      {/* Template Selector */}
+      {showTemplateSelector && (
+        <TemplateSelector
+          isOpen={showTemplateSelector}
+          onClose={() => setShowTemplateSelector(false)}
+          onSelectTemplate={handleTemplateSelect}
         />
       )}
     </div>
