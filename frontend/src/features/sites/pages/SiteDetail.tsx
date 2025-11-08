@@ -3,12 +3,10 @@ import { useParams, useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '@/features/auth/AuthProvider'
 import { api } from '@/lib/api'
 import { Button } from '@/components/ui/button'
-import { Select } from '@/components/ui/select'
 import { SkeletonDetailPage } from '@/components/ui/skeleton'
 import { Breadcrumbs } from '@/components/ui/breadcrumbs'
 import { cn } from '@/lib/utils'
 import RbacForbidden from '@/components/RbacForbidden'
-import { Modal } from '@/components/ui/modal'
 import { SubTabs } from '@/components/ui/sub-tabs'
 import { toast } from 'sonner'
 import { toastSuccess, toastError } from '@/lib/toast-helpers'
@@ -24,8 +22,7 @@ import {
   sendCalculationEmailAPI,
   type SiteCalculation
 } from '../calculationApi'
-import { Building2, Phone, Shield, Calendar, Image as ImageIcon, UserCheck, FileText, Upload, Download, Trash2, Eye, AlertTriangle, Plus, X, Pencil, CheckCircle, Clock, MapPin, QrCode, Smartphone, Calculator, DollarSign, Send, Check, Copy, Archive, Mail, Lightbulb, Route, Sparkles, Briefcase } from 'lucide-react'
-import DocumentViewerModal from '../components/DocumentViewerModal'
+import { Building2, Phone, Shield, Calendar, UserCheck, FileText, Calculator, Sparkles, Briefcase } from 'lucide-react'
 import CoverageStats from '../components/CoverageStats'
 import ShiftOverviewCard from '../components/ShiftOverviewCard'
 import SmartAssignmentModal from '../components/SmartAssignmentModal'
@@ -36,6 +33,9 @@ import ImagesTab from '../components/tabs/ImagesTab'
 import DocumentsTab from '../components/tabs/DocumentsTab'
 import IncidentsTab from '../components/tabs/IncidentsTab'
 import SecurityConceptTab from '../components/tabs/SecurityConceptTab'
+import CalculationsTab from '../components/tabs/CalculationsTab'
+import { ControlPointsTab } from '../components/tabs/ControlPointsTab'
+import { ControlRoundsTab } from '../components/tabs/ControlRoundsTab'
 import {
   DeleteConfirmModal,
   TrainingModal,
@@ -565,42 +565,23 @@ export default function SiteDetail() {
                 label: 'Kontrollpunkte',
                 badge: controlPoints.length,
                 content: (
-                  <div className="space-y-6">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <MapPin size={20} className="text-blue-600" />
-                        <h2 className="text-lg font-semibold">Kontrollpunkte</h2>
-                        <span className="text-sm text-gray-500">({controlPoints.length})</span>
-                      </div>
-                      <div className="flex gap-2">
-                        {controlPoints.length > 0 && (
-                          <Button
-                            variant="outline"
-                            className="border-purple-300 text-purple-700 hover:bg-purple-50"
-                            onClick={() => setControlRoundSuggestionsModal(true)}
-                          >
-                            <Lightbulb size={16} className="mr-1" />
-                            Rundgang-Vorschläge
-                          </Button>
-                        )}
-                        <Button
-                          className="bg-blue-600 hover:bg-blue-700 text-white"
-                          onClick={() => nav(`/sites/${id}/control-points/new`)}
-                        >
-                          <Plus size={16} className="mr-1" />
-                          Neuer Kontrollpunkt
-                        </Button>
-                      </div>
-                    </div>
-                    {/* Control Points content will be here - keeping existing code */}
-                  </div>
+                  <ControlPointsTab
+                    siteId={id!}
+                    controlPoints={controlPoints}
+                    onShowSuggestions={() => setControlRoundSuggestionsModal(true)}
+                  />
                 ),
               },
               {
                 key: 'control-rounds',
                 label: 'Kontrollgänge',
                 badge: controlRounds.length,
-                content: <div>Kontrollgänge content</div>, // Placeholder
+                content: (
+                  <ControlRoundsTab
+                    siteId={id!}
+                    controlRounds={controlRounds}
+                  />
+                ),
               },
               {
                 key: 'incidents',
@@ -611,27 +592,6 @@ export default function SiteDetail() {
             ]}
             defaultTab="control-points"
           />
-        </div>
-      )}
-
-      {/* Calculations Tab */}
-      {activeTab === 'calculations' && (
-        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-300">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Calculator size={20} className="text-green-600" />
-              <h2 className="text-lg font-semibold">Kalkulationen</h2>
-              <span className="text-sm text-gray-500">({calculations.length})</span>
-            </div>
-            <Button
-              className="bg-green-600 hover:bg-green-700 text-white"
-              onClick={() => nav(`/sites/${id}/calculations/new`)}
-            >
-              <Plus size={16} className="mr-1" />
-              Neue Kalkulation
-            </Button>
-          </div>
-          {/* Calculations content continues below... */}
         </div>
       )}
 
@@ -781,457 +741,25 @@ export default function SiteDetail() {
         isPending={deleteDocumentMutation.isPending}
       />
 
-      {/* Vorfälle/Wachbuch Tab */}
-      {activeTab === 'incidents' && <IncidentsTab site={site} siteId={id!} />}
-
-      {/* Kontrollpunkt-Tab */}
-      {activeTab === 'control-points' && (
-        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-300">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <MapPin size={20} className="text-blue-600" />
-              <h2 className="text-lg font-semibold">Kontrollpunkte</h2>
-              <span className="text-sm text-gray-500">({controlPoints.length})</span>
-            </div>
-            <div className="flex gap-2">
-              {controlPoints.length > 0 && (
-                <Button
-                  variant="outline"
-                  className="border-purple-300 text-purple-700 hover:bg-purple-50"
-                  onClick={() => setControlRoundSuggestionsModal(true)}
-                >
-                  <Lightbulb size={16} className="mr-1" />
-                  Rundgang-Vorschläge
-                </Button>
-              )}
-              <Button
-                className="bg-blue-600 hover:bg-blue-700 text-white"
-                onClick={() => nav(`/sites/${id}/control-points/new`)}
-              >
-                <Plus size={16} className="mr-1" />
-                Kontrollpunkt anlegen
-              </Button>
-            </div>
-          </div>
-
-          {controlPoints.length === 0 ? (
-            <div className="text-center py-12 bg-gray-50 rounded-lg border-2 border-dashed">
-              <MapPin size={48} className="mx-auto text-gray-400 mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">Keine Kontrollpunkte</h3>
-              <p className="text-gray-600 mb-4">
-                Legen Sie Kontrollpunkte an, um NFC/QR-basierte Rundgänge zu ermöglichen.
-              </p>
-              <Button onClick={() => nav(`/sites/${id}/control-points/new`)}>
-                Ersten Kontrollpunkt anlegen
-              </Button>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {controlPoints
-                .sort((a, b) => a.order - b.order)
-                .map((point) => (
-                  <div
-                    key={point.id}
-                    className="bg-white border rounded-lg p-4 hover:shadow-md transition-shadow"
-                  >
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-2">
-                          <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-blue-100 text-blue-600 font-semibold text-sm">
-                            {point.order}
-                          </span>
-                          <h3 className="font-semibold text-lg">{point.name}</h3>
-                          {!point.isActive && (
-                            <span className="px-2 py-1 rounded-full text-xs bg-gray-100 text-gray-600">
-                              Inaktiv
-                            </span>
-                          )}
-                        </div>
-                        <div className="ml-10 space-y-1">
-                          <div className="flex items-center gap-2 text-sm text-gray-600">
-                            <MapPin size={14} />
-                            <span>{point.location}</span>
-                          </div>
-                          {point.instructions && (
-                            <div className="text-sm text-gray-600 mt-2">
-                              <strong>Anweisungen:</strong> {point.instructions}
-                            </div>
-                          )}
-                          <div className="flex items-center gap-4 mt-3">
-                            {point.nfcTagId && (
-                              <div className="flex items-center gap-1 text-xs bg-green-50 text-green-700 px-2 py-1 rounded">
-                                <Smartphone size={12} />
-                                <span>NFC: {point.nfcTagId}</span>
-                              </div>
-                            )}
-                            {point.qrCode && (
-                              <div className="flex items-center gap-1 text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded">
-                                <QrCode size={12} />
-                                <span>QR: {point.qrCode.substring(0, 20)}...</span>
-                              </div>
-                            )}
-                            {point._count && (
-                              <div className="text-xs text-gray-500">
-                                {point._count.scans} Scans
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                      <div className="flex gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => nav(`/sites/${id}/control-points/${point.id}/edit`)}
-                        >
-                          <Pencil size={14} />
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Kontrollgang-Tab */}
-      {activeTab === 'control-rounds' && (
-        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-300">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Calendar size={20} className="text-green-600" />
-              <h2 className="text-lg font-semibold">Kontrollgänge</h2>
-              <span className="text-sm text-gray-500">({controlRounds.length})</span>
-            </div>
-          </div>
-
-          {controlRounds.length === 0 ? (
-            <div className="text-center py-12 bg-gray-50 rounded-lg border-2 border-dashed">
-              <Calendar size={48} className="mx-auto text-gray-400 mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">Keine Kontrollgänge</h3>
-              <p className="text-gray-600">
-                Kontrollgänge werden über die Mobile-App gestartet und durchgeführt.
-              </p>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {controlRounds
-                .sort((a, b) => new Date(b.startedAt).getTime() - new Date(a.startedAt).getTime())
-                .map((round) => {
-                  const statusColors = {
-                    IN_PROGRESS: 'bg-blue-100 text-blue-800',
-                    COMPLETED: 'bg-green-100 text-green-800',
-                    INCOMPLETE: 'bg-yellow-100 text-yellow-800',
-                    CANCELLED: 'bg-gray-100 text-gray-800',
-                  }
-                  const statusLabels = {
-                    IN_PROGRESS: 'In Bearbeitung',
-                    COMPLETED: 'Abgeschlossen',
-                    INCOMPLETE: 'Unvollständig',
-                    CANCELLED: 'Abgebrochen',
-                  }
-
-                  return (
-                    <div
-                      key={round.id}
-                      className="bg-white border rounded-lg p-4 hover:shadow-md transition-shadow"
-                    >
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-2">
-                            <span
-                              className={`px-2 py-1 rounded-full text-xs font-medium ${statusColors[round.status]}`}
-                            >
-                              {statusLabels[round.status]}
-                            </span>
-                            <span className="text-sm text-gray-600">
-                              {new Date(round.startedAt).toLocaleString('de-DE')}
-                            </span>
-                          </div>
-                          <div className="space-y-1">
-                            <div className="text-sm text-gray-600">
-                              <strong>Durchgeführt von:</strong>{' '}
-                              {round.performer
-                                ? `${round.performer.firstName} ${round.performer.lastName}`
-                                : 'Unbekannt'}
-                            </div>
-                            <div className="flex items-center gap-4 text-sm">
-                              <span className="text-gray-600">
-                                <strong>Gescannt:</strong> {round.scannedPoints}/{round.totalPoints}
-                              </span>
-                              {round.missedPoints > 0 && (
-                                <span className="text-orange-600">
-                                  <AlertTriangle size={14} className="inline mr-1" />
-                                  {round.missedPoints} verpasst
-                                </span>
-                              )}
-                            </div>
-                            {round.notes && (
-                              <div className="text-sm text-gray-600 mt-2">
-                                <strong>Notizen:</strong> {round.notes}
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                        <div className="flex gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => nav(`/control-rounds/${round.id}`)}
-                          >
-                            <Eye size={14} />
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-                  )
-                })}
-            </div>
-          )}
-        </div>
-      )}
-
       {/* Kalkulationen-Tab */}
       {activeTab === 'calculations' && (
-        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-300">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Calculator size={20} className="text-blue-600" />
-              <h2 className="text-lg font-semibold">Kalkulationen</h2>
-              <span className="text-sm text-gray-500">({calculations.length})</span>
-            </div>
-            <Button onClick={() => nav(`/sites/${id}/calculations/new`)}>
-              <Calculator size={16} className="mr-2" />
-              Neue Kalkulation
-            </Button>
-          </div>
-
-          {calculations.length === 0 ? (
-            <div className="text-center py-12 bg-gray-50 rounded-lg border-2 border-dashed">
-              <Calculator size={48} className="mx-auto text-gray-400 mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">Keine Kalkulationen</h3>
-              <p className="text-gray-600 mb-4">
-                Erstellen Sie eine neue Kalkulation für diesen Auftrag, um Angebote zu erstellen.
-              </p>
-              <Button onClick={() => nav(`/sites/${id}/calculations/new`)}>
-                Erste Kalkulation erstellen
-              </Button>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {calculations
-                .sort((a, b) => b.version - a.version)
-                .map((calc) => {
-                  const statusColors = {
-                    DRAFT: 'bg-gray-100 text-gray-800',
-                    SENT: 'bg-blue-100 text-blue-800',
-                    ACCEPTED: 'bg-green-100 text-green-800',
-                    REJECTED: 'bg-red-100 text-red-800',
-                    ARCHIVED: 'bg-gray-100 text-gray-600',
-                  }
-                  const statusLabels = {
-                    DRAFT: 'Entwurf',
-                    SENT: 'Versendet',
-                    ACCEPTED: 'Angenommen',
-                    REJECTED: 'Abgelehnt',
-                    ARCHIVED: 'Archiviert',
-                  }
-
-                  return (
-                    <div
-                      key={calc.id}
-                      className="bg-white border rounded-lg p-4 hover:shadow-md transition-shadow"
-                    >
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-2">
-                            <span
-                              className={`px-2 py-1 rounded-full text-xs font-medium ${statusColors[calc.status]}`}
-                            >
-                              {statusLabels[calc.status]}
-                            </span>
-                            <span className="text-sm font-medium text-gray-900">
-                              Version {calc.version}
-                            </span>
-                            <span className="text-sm text-gray-500">
-                              {new Date(calc.createdAt).toLocaleDateString('de-DE')}
-                            </span>
-                          </div>
-
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-3">
-                            <div className="space-y-2">
-                              <div className="text-sm">
-                                <span className="text-gray-600">Personalkosten:</span>{' '}
-                                <span className="font-semibold">
-                                  {calc.totalPersonnelCostMonthly.toLocaleString('de-DE', {
-                                    style: 'currency',
-                                    currency: 'EUR',
-                                  })}{' '}
-                                  /Monat
-                                </span>
-                              </div>
-                              <div className="text-sm">
-                                <span className="text-gray-600">Gemeinkosten:</span>{' '}
-                                <span className="font-semibold">
-                                  {calc.totalOverheadMonthly.toLocaleString('de-DE', {
-                                    style: 'currency',
-                                    currency: 'EUR',
-                                  })}
-                                </span>
-                              </div>
-                              <div className="text-sm">
-                                <span className="text-gray-600">Gewinn:</span>{' '}
-                                <span className="font-semibold">
-                                  {calc.totalProfitMonthly.toLocaleString('de-DE', {
-                                    style: 'currency',
-                                    currency: 'EUR',
-                                  })}
-                                </span>
-                              </div>
-                            </div>
-
-                            <div className="flex flex-col justify-center">
-                              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-4 border border-blue-200">
-                                <div className="flex items-center gap-2 mb-1">
-                                  <DollarSign size={18} className="text-blue-600" />
-                                  <span className="text-sm font-medium text-blue-900">
-                                    Gesamtpreis (monatlich)
-                                  </span>
-                                </div>
-                                <div className="text-2xl font-bold text-blue-900">
-                                  {calc.totalPriceMonthly.toLocaleString('de-DE', {
-                                    style: 'currency',
-                                    currency: 'EUR',
-                                  })}
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-
-                          <div className="mt-3 text-sm text-gray-600">
-                            <strong>Stunden/Woche:</strong> Tag: {calc.hoursDay}, Nacht:{' '}
-                            {calc.hoursNight}, Sa: {calc.hoursSaturday}, So: {calc.hoursSunday}
-                            {calc.hoursHoliday > 0 && `, Feiertag: ${calc.hoursHoliday}`}
-                          </div>
-
-                          {calc.calculator && (
-                            <div className="mt-2 text-sm text-gray-500">
-                              Erstellt von: {calc.calculator.firstName} {calc.calculator.lastName}
-                            </div>
-                          )}
-                        </div>
-
-                        <div className="flex flex-col gap-2">
-                          {/* Status-spezifische Actions */}
-                          <div className="flex gap-2">
-                            {calc.status === 'DRAFT' && (
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => sendCalculationMutation.mutate(calc.id)}
-                                disabled={sendCalculationMutation.isPending}
-                                className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-                              >
-                                <Send size={14} className="mr-1" />
-                                Versenden
-                              </Button>
-                            )}
-                            {calc.status === 'SENT' && (
-                              <>
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => acceptCalculationMutation.mutate(calc.id)}
-                                  disabled={acceptCalculationMutation.isPending}
-                                  className="text-green-600 hover:text-green-700 hover:bg-green-50"
-                                >
-                                  <Check size={14} className="mr-1" />
-                                  Annehmen
-                                </Button>
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => setRejectCalculationModal({ calculationId: calc.id, notes: '' })}
-                                  className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                                >
-                                  <X size={14} className="mr-1" />
-                                  Ablehnen
-                                </Button>
-                              </>
-                            )}
-                          </div>
-
-                          {/* Allgemeine Actions */}
-                          <div className="flex gap-2">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => nav(`/sites/${id}/calculations/${calc.id}`)}
-                              className="hover:bg-gray-50"
-                            >
-                              <Eye size={14} className="mr-1" />
-                              Ansehen
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => {
-                                window.open(
-                                  `/api/sites/${id}/calculations/${calc.id}/pdf`,
-                                  '_blank'
-                                )
-                              }}
-                              className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-                            >
-                              <Download size={14} className="mr-1" />
-                              PDF
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() =>
-                                setEmailCalculationModal({
-                                  calculationId: calc.id,
-                                  email: site.customerEmail || '',
-                                })
-                              }
-                              className="text-green-600 hover:text-green-700 hover:bg-green-50"
-                            >
-                              <Mail size={14} className="mr-1" />
-                              E-Mail
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => duplicateCalculationMutation.mutate(calc.id)}
-                              disabled={duplicateCalculationMutation.isPending}
-                              className="hover:bg-gray-50"
-                            >
-                              <Copy size={14} className="mr-1" />
-                              Duplizieren
-                            </Button>
-                            {calc.status !== 'ARCHIVED' && (
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => archiveCalculationMutation.mutate(calc.id)}
-                                disabled={archiveCalculationMutation.isPending}
-                                className="text-gray-600 hover:text-gray-700 hover:bg-gray-50"
-                              >
-                                <Archive size={14} className="mr-1" />
-                                Archivieren
-                              </Button>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  )
-                })}
-            </div>
-          )}
-        </div>
+        <CalculationsTab
+          siteId={id!}
+          site={site}
+          calculations={calculations}
+          onSendCalculation={(calcId) => sendCalculationMutation.mutate(calcId)}
+          onAcceptCalculation={(calcId) => acceptCalculationMutation.mutate(calcId)}
+          onRejectCalculation={(calcId) => setRejectCalculationModal({ calculationId: calcId, notes: '' })}
+          onDuplicateCalculation={(calcId) => duplicateCalculationMutation.mutate(calcId)}
+          onArchiveCalculation={(calcId) => archiveCalculationMutation.mutate(calcId)}
+          onEmailCalculation={(calcId, email) => setEmailCalculationModal({ calculationId: calcId, email })}
+          isPending={{
+            send: sendCalculationMutation.isPending,
+            accept: acceptCalculationMutation.isPending,
+            duplicate: duplicateCalculationMutation.isPending,
+            archive: archiveCalculationMutation.isPending,
+          }}
+        />
       )}
     </div>
   )
