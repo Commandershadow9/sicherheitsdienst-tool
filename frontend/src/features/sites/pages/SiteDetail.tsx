@@ -4,15 +4,11 @@ import { useAuth } from '@/features/auth/AuthProvider'
 import { api } from '@/lib/api'
 import { Button } from '@/components/ui/button'
 import { Select } from '@/components/ui/select'
-import { UserSelect } from '@/components/ui/user-select'
 import { SkeletonDetailPage } from '@/components/ui/skeleton'
 import { Breadcrumbs } from '@/components/ui/breadcrumbs'
 import { cn } from '@/lib/utils'
 import RbacForbidden from '@/components/RbacForbidden'
 import { Modal } from '@/components/ui/modal'
-import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
-import { FormField } from '@/components/ui/form'
 import { SubTabs } from '@/components/ui/sub-tabs'
 import { toast } from 'sonner'
 import { toastSuccess, toastError } from '@/lib/toast-helpers'
@@ -40,6 +36,14 @@ import ImagesTab from '../components/tabs/ImagesTab'
 import DocumentsTab from '../components/tabs/DocumentsTab'
 import IncidentsTab from '../components/tabs/IncidentsTab'
 import SecurityConceptTab from '../components/tabs/SecurityConceptTab'
+import {
+  DeleteConfirmModal,
+  TrainingModal,
+  RevokeModal,
+  CreateClearanceModal,
+  UploadImageModal,
+  UploadDocumentModal,
+} from '../components/modals'
 import type { Site, TabType } from '../types/site'
 import { STATUS_LABELS, STATUS_COLORS, ROLE_LABELS } from '../constants/site'
 import { useSiteModals } from '../hooks/useSiteModals'
@@ -632,209 +636,50 @@ export default function SiteDetail() {
       )}
 
       {/* Training abschließen Modal */}
-      {trainingModal && (
-        <Modal
-          title="Training abschließen"
-          open={!!trainingModal}
-          onClose={() => setTrainingModal(null)}
-        >
-          <div className="space-y-4">
-            <p>
-              Training für <strong>{trainingModal.clearance.user.firstName} {trainingModal.clearance.user.lastName}</strong> abschließen?
-            </p>
-            <FormField label="Anzahl Trainingsstunden">
-              <Input
-                type="number"
-                min="0"
-                value={trainingModal.hours}
-                onChange={(e) => setTrainingModal({ ...trainingModal, hours: parseInt(e.target.value) || 0 })}
-              />
-            </FormField>
-            <div className="flex justify-end gap-2 pt-2">
-              <Button variant="outline" onClick={() => setTrainingModal(null)}>
-                Abbrechen
-              </Button>
-              <Button
-                onClick={() =>
-                  completeTrainingMutation.mutate({ id: trainingModal.clearance.id, hours: trainingModal.hours })
-                }
-                loading={completeTrainingMutation.isPending}
-                loadingText="Wird gespeichert..."
-              >
-                Abschließen
-              </Button>
-            </div>
-          </div>
-        </Modal>
-      )}
+      <TrainingModal
+        clearance={trainingModal?.clearance || null}
+        open={!!trainingModal}
+        onClose={() => setTrainingModal(null)}
+        onComplete={(id, hours) => completeTrainingMutation.mutate({ id, hours })}
+        isPending={completeTrainingMutation.isPending}
+      />
 
       {/* Widerrufen Modal */}
-      {revokeModal && (
-        <Modal
-          title="Clearance widerrufen"
-          open={!!revokeModal}
-          onClose={() => setRevokeModal(null)}
-        >
-          <div className="space-y-4">
-            <p className="text-red-600">
-              Clearance für <strong>{revokeModal.clearance.user.firstName} {revokeModal.clearance.user.lastName}</strong> widerrufen?
-            </p>
-            <FormField label="Grund (optional)">
-              <Textarea
-                value={revokeModal.notes}
-                onChange={(e) => setRevokeModal({ ...revokeModal, notes: e.target.value })}
-                placeholder="Geben Sie einen Grund an..."
-              />
-            </FormField>
-            <div className="flex justify-end gap-2 pt-2">
-              <Button variant="outline" onClick={() => setRevokeModal(null)}>
-                Abbrechen
-              </Button>
-              <Button
-                className="bg-red-600 hover:bg-red-700 text-white"
-                onClick={() =>
-                  revokeMutation.mutate({ id: revokeModal.clearance.id, notes: revokeModal.notes })
-                }
-                loading={revokeMutation.isPending}
-                loadingText="Wird widerrufen..."
-              >
-                Widerrufen
-              </Button>
-            </div>
-          </div>
-        </Modal>
-      )}
+      <RevokeModal
+        clearance={revokeModal?.clearance || null}
+        open={!!revokeModal}
+        onClose={() => setRevokeModal(null)}
+        onRevoke={(id, notes) => revokeMutation.mutate({ id, notes })}
+        isPending={revokeMutation.isPending}
+      />
 
       {/* Bild hochladen Modal */}
-      {uploadModal && (
-        <Modal title="Bild hochladen" open={!!uploadModal} onClose={() => setUploadModal(null)}>
-          <div className="space-y-4">
-            <FormField label="Kategorie">
-              <Select
-                value={uploadModal.category}
-                onChange={(e: any) => setUploadModal({ ...uploadModal, category: e.target.value })}
-              >
-                <option value="ALLGEMEIN">Allgemein</option>
-                <option value="AUSSEN">Außenansicht</option>
-                <option value="INNEN">Innenansicht</option>
-                <option value="ZUGANG">Zugang</option>
-                <option value="NOTAUSGANG">Notausgang</option>
-                <option value="SONSTIGES">Sonstiges</option>
-              </Select>
-            </FormField>
-            <FormField label="Datei auswählen *">
-              <Input
-                type="file"
-                accept="image/*"
-                onChange={(e) => {
-                  const file = e.target.files?.[0] || null
-                  setUploadModal({ ...uploadModal, file })
-                }}
-              />
-            </FormField>
-            <div className="flex justify-end gap-2 pt-2">
-              <Button variant="outline" onClick={() => setUploadModal(null)} disabled={uploadImageMutation.isPending}>
-                Abbrechen
-              </Button>
-              <Button
-                onClick={() => {
-                  if (uploadModal.file) {
-                    uploadImageMutation.mutate({ file: uploadModal.file, category: uploadModal.category })
-                  } else {
-                    toast.error('Bitte wählen Sie eine Datei aus')
-                  }
-                }}
-                disabled={!uploadModal.file}
-                loading={uploadImageMutation.isPending}
-                loadingText="Wird hochgeladen..."
-              >
-                Hochladen
-              </Button>
-            </div>
-          </div>
-        </Modal>
-      )}
+      <UploadImageModal
+        open={!!uploadModal}
+        onClose={() => setUploadModal(null)}
+        onUpload={(file, category) => uploadImageMutation.mutate({ file, category })}
+        isPending={uploadImageMutation.isPending}
+      />
 
       {/* Bild löschen Bestätigung */}
-      {deleteImageId && (
-        <Modal title="Bild löschen" open={!!deleteImageId} onClose={() => setDeleteImageId(null)}>
-          <div className="space-y-4">
-            <p className="text-red-600">Möchten Sie dieses Bild wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.</p>
-            <div className="flex justify-end gap-2 pt-2">
-              <Button variant="outline" onClick={() => setDeleteImageId(null)} disabled={deleteImageMutation.isPending}>
-                Abbrechen
-              </Button>
-              <Button
-                className="bg-red-600 hover:bg-red-700 text-white"
-                onClick={() => deleteImageMutation.mutate(deleteImageId)}
-                loading={deleteImageMutation.isPending}
-                loadingText="Wird gelöscht..."
-              >
-                Löschen
-              </Button>
-            </div>
-          </div>
-        </Modal>
-      )}
+      <DeleteConfirmModal
+        open={!!deleteImageId}
+        onClose={() => setDeleteImageId(null)}
+        onConfirm={() => deleteImageId && deleteImageMutation.mutate(deleteImageId)}
+        title="Bild löschen"
+        description="Möchten Sie dieses Bild wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden."
+        isPending={deleteImageMutation.isPending}
+      />
 
       {/* Neue Clearance anlegen */}
-      {createClearanceModal && (
-        <Modal title="Neue Clearance anlegen" open={!!createClearanceModal} onClose={() => setCreateClearanceModal(null)}>
-          <div className="space-y-4">
-            <FormField label="Mitarbeiter auswählen *">
-              <UserSelect
-                users={usersData?.data || []}
-                value={createClearanceModal.userId}
-                onChange={(userId) => setCreateClearanceModal({ ...createClearanceModal, userId })}
-                placeholder="Suche nach Name oder Email..."
-              />
-            </FormField>
-            <FormField label="Notizen (optional)">
-              <Textarea
-                value={createClearanceModal.notes}
-                onChange={(e) => setCreateClearanceModal({ ...createClearanceModal, notes: e.target.value })}
-                placeholder="Zusätzliche Informationen zur Clearance..."
-                rows={3}
-              />
-            </FormField>
-            <div className="bg-blue-50 border border-blue-200 rounded p-3">
-              <p className="text-sm text-blue-900">
-                💡 <strong>Hinweis:</strong> Die Clearance wird mit Status <strong>TRAINING</strong> angelegt. Nach Abschluss des Trainings kann der Status auf ACTIVE gesetzt werden.
-              </p>
-            </div>
-            <div className="flex justify-end gap-2 pt-2">
-              <Button
-                variant="outline"
-                onClick={() => setCreateClearanceModal(null)}
-                disabled={createClearanceMutation.isPending}
-              >
-                Abbrechen
-              </Button>
-              <Button
-                onClick={() => {
-                  if (!createClearanceModal.userId) {
-                    toast.error('Bitte wählen Sie einen Mitarbeiter aus')
-                    return
-                  }
-                  // Check if clearance already exists
-                  const exists = site.clearances?.some((c) => c.user.id === createClearanceModal.userId)
-                  if (exists) {
-                    toast.error('Dieser Mitarbeiter hat bereits eine Clearance für diesen Auftrag')
-                    return
-                  }
-                  createClearanceMutation.mutate({
-                    userId: createClearanceModal.userId,
-                    notes: createClearanceModal.notes,
-                  })
-                }}
-                disabled={createClearanceMutation.isPending || !createClearanceModal.userId}
-              >
-                {createClearanceMutation.isPending ? 'Wird angelegt...' : 'Clearance anlegen'}
-              </Button>
-            </div>
-          </div>
-        </Modal>
-      )}
+      <CreateClearanceModal
+        open={!!createClearanceModal}
+        onClose={() => setCreateClearanceModal(null)}
+        onCreate={(userId, notes) => createClearanceMutation.mutate({ userId, notes })}
+        users={usersData?.data || []}
+        existingClearances={site.clearances}
+        isPending={createClearanceMutation.isPending}
+      />
 
       {/* Smart Assignment Modal */}
       <SmartAssignmentModal
@@ -870,38 +715,28 @@ export default function SiteDetail() {
       )}
 
       {/* Zuweisung entfernen Bestätigung */}
-      {deleteAssignmentId && (
-        <Modal title="Zuweisung entfernen" open={!!deleteAssignmentId} onClose={() => setDeleteAssignmentId(null)}>
-          <div className="space-y-4">
-            <p className="text-red-600">
-              Möchten Sie diese Zuweisung wirklich entfernen? Der Mitarbeiter verliert damit seine erweiterten Berechtigungen für diesen Auftrag.
-            </p>
-            <div className="flex justify-end gap-2 pt-2">
-              <Button
-                variant="outline"
-                onClick={() => setDeleteAssignmentId(null)}
-                disabled={deleteAssignmentMutation.isPending}
-              >
-                Abbrechen
-              </Button>
-              <Button
-                className="bg-red-600 hover:bg-red-700 text-white"
-                onClick={() => deleteAssignmentMutation.mutate(deleteAssignmentId)}
-                disabled={deleteAssignmentMutation.isPending}
-              >
-                {deleteAssignmentMutation.isPending ? 'Wird entfernt...' : 'Entfernen'}
-              </Button>
-            </div>
-          </div>
-        </Modal>
-      )}
+      <DeleteConfirmModal
+        open={!!deleteAssignmentId}
+        onClose={() => setDeleteAssignmentId(null)}
+        onConfirm={() => deleteAssignmentId && deleteAssignmentMutation.mutate(deleteAssignmentId)}
+        title="Zuweisung entfernen"
+        description="Möchten Sie diese Zuweisung wirklich entfernen? Der Mitarbeiter verliert damit seine erweiterten Berechtigungen für diesen Auftrag."
+        confirmText="Entfernen"
+        isPending={deleteAssignmentMutation.isPending}
+      />
 
       {/* Auftrag löschen Bestätigung */}
-      {deleteSiteConfirm && (
-        <Modal title="Auftrag löschen" open={deleteSiteConfirm} onClose={() => setDeleteSiteConfirm(false)}>
-          <div className="space-y-4">
+      <DeleteConfirmModal
+        open={deleteSiteConfirm}
+        onClose={() => setDeleteSiteConfirm(false)}
+        onConfirm={() => deleteSiteMutation.mutate()}
+        title="Auftrag löschen"
+        description={
+          <div className="space-y-3">
             <div className="bg-red-50 border border-red-200 rounded p-4">
-              <p className="text-red-900 font-semibold mb-2">⚠️ Achtung: Diese Aktion kann nicht rückgängig gemacht werden!</p>
+              <p className="text-red-900 font-semibold mb-2">
+                ⚠️ Achtung: Diese Aktion kann nicht rückgängig gemacht werden!
+              </p>
               <p className="text-red-800 text-sm">
                 Das Löschen des Auftrags "<strong>{site.name}</strong>" führt zu folgenden Konsequenzen:
               </p>
@@ -915,136 +750,36 @@ export default function SiteDetail() {
             <p className="text-gray-700">
               Sind Sie sicher, dass Sie diesen Auftrag endgültig löschen möchten?
             </p>
-            <div className="flex justify-end gap-2 pt-2">
-              <Button
-                variant="outline"
-                onClick={() => setDeleteSiteConfirm(false)}
-                disabled={deleteSiteMutation.isPending}
-              >
-                Abbrechen
-              </Button>
-              <Button
-                className="bg-red-600 hover:bg-red-700 text-white"
-                onClick={() => deleteSiteMutation.mutate()}
-                disabled={deleteSiteMutation.isPending}
-              >
-                {deleteSiteMutation.isPending ? 'Wird gelöscht...' : 'Auftrag endgültig löschen'}
-              </Button>
-            </div>
           </div>
-        </Modal>
-      )}
+        }
+        confirmText="Auftrag endgültig löschen"
+        isPending={deleteSiteMutation.isPending}
+      />
 
       {/* Dokument hochladen Modal */}
-      {uploadDocumentModal && (
-        <Modal
-          title="Dokument hochladen"
-          open={!!uploadDocumentModal}
-          onClose={() => setUploadDocumentModal(null)}
-        >
-          <div className="space-y-4">
-            <FormField label="Titel *">
-              <Input
-                value={uploadDocumentModal.title}
-                onChange={(e) => setUploadDocumentModal({ ...uploadDocumentModal, title: e.target.value })}
-                placeholder="z.B. Dienstanweisung Zutrittskontrolle"
-              />
-            </FormField>
-            <FormField label="Beschreibung">
-              <Textarea
-                value={uploadDocumentModal.description}
-                onChange={(e) => setUploadDocumentModal({ ...uploadDocumentModal, description: e.target.value })}
-                placeholder="Optionale Beschreibung des Dokuments..."
-                rows={3}
-              />
-            </FormField>
-            <FormField label="Kategorie *">
-              <Select
-                value={uploadDocumentModal.category}
-                onChange={(e: any) => setUploadDocumentModal({ ...uploadDocumentModal, category: e.target.value })}
-              >
-                <option value="DIENSTANWEISUNG">Dienstanweisung</option>
-                <option value="NOTFALLPLAN">Notfallplan</option>
-                <option value="VERTRAG">Vertrag</option>
-                <option value="BRANDSCHUTZORDNUNG">Brandschutzordnung</option>
-                <option value="HAUSORDNUNG">Hausordnung</option>
-                <option value="GRUNDRISS">Grundriss</option>
-                <option value="SONSTIGES">Sonstiges</option>
-              </Select>
-            </FormField>
-            <FormField label="Datei *">
-              <Input
-                type="file"
-                accept=".pdf,.doc,.docx,.txt,.md"
-                onChange={(e) => {
-                  const file = e.target.files?.[0] || null
-                  setUploadDocumentModal({ ...uploadDocumentModal, file })
-                }}
-              />
-              <p className="text-xs text-gray-500 mt-1">
-                Unterstützt: PDF, Word, Text, Markdown (max. 10MB)
-              </p>
-            </FormField>
-            <div className="flex justify-end gap-2 pt-2">
-              <Button
-                variant="outline"
-                onClick={() => setUploadDocumentModal(null)}
-                disabled={uploadDocumentMutation.isPending}
-              >
-                Abbrechen
-              </Button>
-              <Button
-                onClick={() => {
-                  if (!uploadDocumentModal.title || !uploadDocumentModal.file) {
-                    toast.error('Bitte Titel und Datei auswählen')
-                    return
-                  }
-                  uploadDocumentMutation.mutate({
-                    title: uploadDocumentModal.title,
-                    description: uploadDocumentModal.description,
-                    category: uploadDocumentModal.category,
-                    file: uploadDocumentModal.file,
-                  })
-                }}
-                loading={uploadDocumentMutation.isPending}
-                loadingText="Wird hochgeladen..."
-              >
-                Hochladen
-              </Button>
-            </div>
-          </div>
-        </Modal>
-      )}
+      <UploadDocumentModal
+        open={!!uploadDocumentModal}
+        onClose={() => setUploadDocumentModal(null)}
+        onUpload={(data) => uploadDocumentMutation.mutate(data)}
+        isPending={uploadDocumentMutation.isPending}
+      />
 
       {/* Dokument löschen Bestätigung */}
-      {deleteDocumentId && (
-        <Modal title="Dokument löschen" open={!!deleteDocumentId} onClose={() => setDeleteDocumentId(null)}>
-          <div className="space-y-4">
-            <p className="text-red-600">
-              Möchten Sie dieses Dokument wirklich löschen?
-            </p>
-            <p className="text-sm text-gray-600">
+      <DeleteConfirmModal
+        open={!!deleteDocumentId}
+        onClose={() => setDeleteDocumentId(null)}
+        onConfirm={() => deleteDocumentId && deleteDocumentMutation.mutate(deleteDocumentId)}
+        title="Dokument löschen"
+        description={
+          <>
+            <p>Möchten Sie dieses Dokument wirklich löschen?</p>
+            <p className="text-sm text-gray-600 mt-2">
               Hinweis: Falls eine ältere Version existiert, wird diese automatisch als "aktuell" markiert.
             </p>
-            <div className="flex justify-end gap-2 pt-2">
-              <Button
-                variant="outline"
-                onClick={() => setDeleteDocumentId(null)}
-                disabled={deleteDocumentMutation.isPending}
-              >
-                Abbrechen
-              </Button>
-              <Button
-                className="bg-red-600 hover:bg-red-700 text-white"
-                onClick={() => deleteDocumentMutation.mutate(deleteDocumentId)}
-                disabled={deleteDocumentMutation.isPending}
-              >
-                {deleteDocumentMutation.isPending ? 'Wird gelöscht...' : 'Löschen'}
-              </Button>
-            </div>
-          </div>
-        </Modal>
-      )}
+          </>
+        }
+        isPending={deleteDocumentMutation.isPending}
+      />
 
       {/* Vorfälle/Wachbuch Tab */}
       {activeTab === 'incidents' && <IncidentsTab site={site} siteId={id!} />}
