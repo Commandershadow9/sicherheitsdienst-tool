@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Calculator, DollarSign, Send, Check, X, Eye, Download, Mail, Copy, Archive } from 'lucide-react'
+import { getCalculationStatusLabel, getCalculationStatusColor, formatEuro } from '@/lib'
 import type { SiteCalculation } from '../../calculationApi'
 import type { Site } from '../../types/site'
 
@@ -20,22 +21,6 @@ interface CalculationsTabProps {
     duplicate?: boolean
     archive?: boolean
   }
-}
-
-const STATUS_COLORS = {
-  DRAFT: 'bg-gray-100 text-gray-800',
-  SENT: 'bg-blue-100 text-blue-800',
-  ACCEPTED: 'bg-green-100 text-green-800',
-  REJECTED: 'bg-red-100 text-red-800',
-  ARCHIVED: 'bg-gray-100 text-gray-600',
-}
-
-const STATUS_LABELS = {
-  DRAFT: 'Entwurf',
-  SENT: 'Versendet',
-  ACCEPTED: 'Angenommen',
-  REJECTED: 'Abgelehnt',
-  ARCHIVED: 'Archiviert',
 }
 
 export default function CalculationsTab({
@@ -91,10 +76,10 @@ export default function CalculationsTab({
                     <div className="flex items-center gap-2 mb-2">
                       <span
                         className={`px-2 py-1 rounded-full text-xs font-medium ${
-                          STATUS_COLORS[calc.status]
+                          getCalculationStatusColor(calc.status)
                         }`}
                       >
-                        {STATUS_LABELS[calc.status]}
+                        {getCalculationStatusLabel(calc.status)}
                       </span>
                       <span className="text-sm font-medium text-gray-900">
                         Version {calc.version}

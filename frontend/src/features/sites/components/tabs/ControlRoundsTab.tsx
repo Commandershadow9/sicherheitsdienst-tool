@@ -1,25 +1,12 @@
 import { useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Calendar, Eye, AlertTriangle } from 'lucide-react'
+import { getControlRoundStatusLabel, getControlRoundStatusColor, formatDateTime } from '@/lib'
 import type { ControlRound } from '../../controlApi'
 
 interface ControlRoundsTabProps {
   siteId: string
   controlRounds: ControlRound[]
-}
-
-const STATUS_COLORS = {
-  IN_PROGRESS: 'bg-blue-100 text-blue-800',
-  COMPLETED: 'bg-green-100 text-green-800',
-  INCOMPLETE: 'bg-yellow-100 text-yellow-800',
-  CANCELLED: 'bg-gray-100 text-gray-800',
-}
-
-const STATUS_LABELS = {
-  IN_PROGRESS: 'In Bearbeitung',
-  COMPLETED: 'Abgeschlossen',
-  INCOMPLETE: 'Unvollständig',
-  CANCELLED: 'Abgebrochen',
 }
 
 export function ControlRoundsTab({
@@ -59,12 +46,12 @@ export function ControlRoundsTab({
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-2">
                       <span
-                        className={`px-2 py-1 rounded-full text-xs font-medium ${STATUS_COLORS[round.status]}`}
+                        className={`px-2 py-1 rounded-full text-xs font-medium ${getControlRoundStatusColor(round.status)}`}
                       >
-                        {STATUS_LABELS[round.status]}
+                        {getControlRoundStatusLabel(round.status)}
                       </span>
                       <span className="text-sm text-gray-600">
-                        {new Date(round.startedAt).toLocaleString('de-DE')}
+                        {formatDateTime(round.startedAt)}
                       </span>
                     </div>
                     <div className="space-y-1">
