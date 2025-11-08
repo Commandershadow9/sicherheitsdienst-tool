@@ -26,7 +26,7 @@ import {
   sendCalculationEmailAPI,
   type SiteCalculation
 } from '../calculationApi'
-import { Building2, Phone, Shield, Calendar, Image as ImageIcon, UserCheck, FileText, Upload, Download, Trash2, Eye, AlertTriangle, Plus, X, Pencil, CheckCircle, Clock, MapPin, QrCode, Smartphone, Calculator, DollarSign, Send, Check, Copy, Archive, Mail, Lightbulb, Route } from 'lucide-react'
+import { Building2, Phone, Shield, Calendar, Image as ImageIcon, UserCheck, FileText, Upload, Download, Trash2, Eye, AlertTriangle, Plus, X, Pencil, CheckCircle, Clock, MapPin, QrCode, Smartphone, Calculator, DollarSign, Send, Check, Copy, Archive, Mail, Lightbulb, Route, Sparkles } from 'lucide-react'
 import DocumentViewerModal from '../components/DocumentViewerModal'
 import CoverageStats from '../components/CoverageStats'
 import ShiftOverviewCard from '../components/ShiftOverviewCard'
@@ -426,8 +426,14 @@ export default function SiteDetail() {
                   <UserCheck size={20} className="text-purple-600" />
                   Zuweisungen ({site.assignments?.length || 0})
                 </h3>
-                <Button size="sm" onClick={() => setSmartAssignmentModal(true)}>
-                  Neue Zuweisung
+                <Button
+                  size="sm"
+                  onClick={() => setSmartAssignmentModal(true)}
+                  className="gap-2 bg-purple-600 hover:bg-purple-700 text-white"
+                  title="Intelligente Mitarbeiterzuweisung basierend auf Qualifikationen, Auslastung und Compliance"
+                >
+                  <Sparkles size={14} />
+                  Mitarbeiter zuweisen
                 </Button>
               </div>
               {!site.assignments || site.assignments.length === 0 ? (
@@ -689,67 +695,6 @@ export default function SiteDetail() {
                 disabled={createClearanceMutation.isPending || !createClearanceModal.userId}
               >
                 {createClearanceMutation.isPending ? 'Wird angelegt...' : 'Clearance anlegen'}
-              </Button>
-            </div>
-          </div>
-        </Modal>
-      )}
-
-      {/* Neue Zuweisung anlegen */}
-      {createAssignmentModal && (
-        <Modal title="Neue Zuweisung erstellen" open={!!createAssignmentModal} onClose={() => setCreateAssignmentModal(null)}>
-          <div className="space-y-4">
-            <FormField label="Mitarbeiter auswählen *">
-              <UserSelect
-                users={usersData?.data || []}
-                value={createAssignmentModal.userId}
-                onChange={(userId) => setCreateAssignmentModal({ ...createAssignmentModal, userId })}
-                placeholder="Suche nach Name oder Email..."
-              />
-            </FormField>
-            <FormField label="Rolle *">
-              <Select
-                value={createAssignmentModal.role}
-                onChange={(e: any) => setCreateAssignmentModal({ ...createAssignmentModal, role: e.target.value })}
-              >
-                <option value="OBJEKTLEITER">Objektleiter</option>
-                <option value="SCHICHTLEITER">Schichtleiter</option>
-                <option value="MITARBEITER">Mitarbeiter</option>
-              </Select>
-            </FormField>
-            <div className="bg-blue-50 border border-blue-200 rounded p-3">
-              <p className="text-sm text-blue-900">
-                💡 <strong>Hinweis:</strong> Objektleiter und Schichtleiter haben erweiterte Berechtigungen für diesen Auftrag.
-              </p>
-            </div>
-            <div className="flex justify-end gap-2 pt-2">
-              <Button
-                variant="outline"
-                onClick={() => setCreateAssignmentModal(null)}
-                disabled={createAssignmentMutation.isPending}
-              >
-                Abbrechen
-              </Button>
-              <Button
-                onClick={() => {
-                  if (!createAssignmentModal.userId || !createAssignmentModal.role) {
-                    toast.error('Bitte füllen Sie alle Felder aus')
-                    return
-                  }
-                  // Check if assignment already exists
-                  const exists = site.assignments?.some((a) => a.user.id === createAssignmentModal.userId)
-                  if (exists) {
-                    toast.error('Dieser Mitarbeiter ist bereits diesem Auftrag zugewiesen')
-                    return
-                  }
-                  createAssignmentMutation.mutate({
-                    userId: createAssignmentModal.userId,
-                    role: createAssignmentModal.role,
-                  })
-                }}
-                disabled={createAssignmentMutation.isPending || !createAssignmentModal.userId}
-              >
-                {createAssignmentMutation.isPending ? 'Wird erstellt...' : 'Zuweisung erstellen'}
               </Button>
             </div>
           </div>

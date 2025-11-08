@@ -1,4 +1,4 @@
-import { keepPreviousData, useQuery } from '@tanstack/react-query'
+import { keepPreviousData, useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '@/lib/api'
 import { useListParams } from '@/features/common/useQueryParams'
 import { toSearchParams } from '@/features/common/listParams'
@@ -13,6 +13,7 @@ import { exportFile } from '@/features/common/export'
 import { toast } from 'sonner'
 import { Link, useNavigate } from 'react-router-dom'
 import RbacForbidden from '@/components/RbacForbidden'
+import { Plus } from 'lucide-react'
 
 type Site = {
   id: string
@@ -48,6 +49,7 @@ const STATUS_COLORS: Record<string, string> = {
 export default function SitesList() {
   const { params, update } = useListParams({ page: 1, pageSize: 25, sortBy: 'name', sortDir: 'asc' })
   const nav = useNavigate()
+  const queryClient = useQueryClient()
   const [downloading, setDownloading] = React.useState<null | { type: 'csv'|'xlsx'; progress?: number }>(null)
   const qk = ['sites', params]
   const { data, isLoading, isError, error } = useQuery<ListResp>({
@@ -58,6 +60,19 @@ export default function SitesList() {
       return res.data
     },
     placeholderData: keepPreviousData,
+  })
+
+  const updateStatusMutation = useMutation({
+    mutationFn: async ({ id, status }: { id: string; status: string }) => {
+      await api.put(`/sites/${id}`, { status })
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['sites'] })
+      toast.success('Status erfolgreich aktualisiert')
+    },
+    onError: (error: any) => {
+      toast.error(error?.response?.data?.message || 'Fehler beim Aktualisieren des Status')
+    },
   })
 
   const currentExportParams = React.useMemo(() => {
@@ -88,7 +103,19 @@ export default function SitesList() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold">Aufträge</h1>
-        <Button onClick={() => nav('/sites/new')}>Neuer Auftrag</Button>
+        <div className="flex gap-2">
+          <Button onClick={() => nav('/sites/wizard/new')} className="gap-2">
+            <Plus size={16} />
+            Neuer Auftrag (Assistent)
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => nav('/sites/new')}
+            className="text-gray-600"
+          >
+            Schnellerstellung
+          </Button>
+        </div>
       </div>
 
       <div className="flex gap-2 items-end flex-wrap">
@@ -181,7 +208,25 @@ export default function SitesList() {
             key: 'actions',
             header: 'Aktionen',
             render: (r: Site) => (
-              <div className="flex gap-2">
+              <div className="flex gap-2 items-center">
+                <Select
+                  value={r.status || ''}
+                  onChange={(e) => {
+                    const newStatus = e.target.value
+                    if (newStatus && newStatus !== r.status) {
+                      updateStatusMutation.mutate({ id: r.id, status: newStatus })
+                    }
+                  }}
+                  className="text-xs py-1"
+                >
+                  <option value="INQUIRY">Anfrage</option>
+                  <option value="IN_REVIEW">In Prüfung</option>
+                  <option value="CALCULATING">Kalkulation</option>
+                  <option value="OFFER_SENT">Angebot versendet</option>
+                  <option value="ACTIVE">Aktiv</option>
+                  <option value="INACTIVE">Inaktiv</option>
+                  <option value="LOST">Verloren</option>
+                </Select>
                 <Link className="underline text-blue-600 hover:text-blue-800" to={`/sites/${r.id}`}>
                   Details
                 </Link>
