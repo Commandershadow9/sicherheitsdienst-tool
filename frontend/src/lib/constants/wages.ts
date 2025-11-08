@@ -6,36 +6,96 @@
 
 /**
  * Wage Groups (Lohngruppen)
- * Based on German security industry standards
+ * Based on BSDW Tarifvertrag für Sicherheitsdienste 2024
  */
 export const WAGE_GROUPS = {
-  GRUPPE_1: 'GRUPPE_1', // Basis Sicherheitsmitarbeiter
-  GRUPPE_2: 'GRUPPE_2', // Geprüfte Sicherheitsfachkraft (§34a)
-  GRUPPE_3: 'GRUPPE_3', // Schichtleiter
-  GRUPPE_4: 'GRUPPE_4', // Objektleiter
-  GRUPPE_5: 'GRUPPE_5', // Sicherheitsmeister
+  GRUPPE_1: 'GRUPPE_1', // Einfache Tätigkeiten
+  GRUPPE_2: 'GRUPPE_2', // Mit IHK-Zertifikat
+  GRUPPE_3: 'GRUPPE_3', // §34a GewO Sachkundeprüfung
+  GRUPPE_4: 'GRUPPE_4', // Qualifizierte Fachkraft
+  GRUPPE_5: 'GRUPPE_5', // Schichtführer
+  GRUPPE_6: 'GRUPPE_6', // Objektleiter
+  GRUPPE_7: 'GRUPPE_7', // Sicherheitsmeister
 } as const
 
 export type WageGroup = typeof WAGE_GROUPS[keyof typeof WAGE_GROUPS]
 
 export const WAGE_GROUP_LABELS: Record<WageGroup, string> = {
-  GRUPPE_1: 'Gruppe 1 - Basis Sicherheitsmitarbeiter',
-  GRUPPE_2: 'Gruppe 2 - Geprüfte Sicherheitsfachkraft',
-  GRUPPE_3: 'Gruppe 3 - Schichtleiter',
-  GRUPPE_4: 'Gruppe 4 - Objektleiter',
-  GRUPPE_5: 'Gruppe 5 - Sicherheitsmeister',
+  GRUPPE_1: 'Lohngruppe 1 - Einfache Tätigkeiten',
+  GRUPPE_2: 'Lohngruppe 2 - Mit IHK-Zertifikat',
+  GRUPPE_3: 'Lohngruppe 3 - §34a GewO Sachkundeprüfung',
+  GRUPPE_4: 'Lohngruppe 4 - Qualifizierte Fachkraft',
+  GRUPPE_5: 'Lohngruppe 5 - Schichtführer',
+  GRUPPE_6: 'Lohngruppe 6 - Objektleiter',
+  GRUPPE_7: 'Lohngruppe 7 - Geprüfter Meister für Schutz und Sicherheit',
 }
 
 /**
- * Base hourly wages by group (in EUR)
- * NOTE: These are example values - adjust according to your collective agreement
+ * Base hourly wages by BSDW Tarifvertrag 2024 (in EUR)
+ * NOTE: Values based on BSDW (Bundesverband der Sicherheitswirtschaft)
+ * May vary by region (Bundesland) - these are average values
  */
 export const BASE_HOURLY_WAGES: Record<WageGroup, number> = {
-  GRUPPE_1: 13.50,
-  GRUPPE_2: 15.00,
-  GRUPPE_3: 17.50,
-  GRUPPE_4: 20.00,
-  GRUPPE_5: 23.00,
+  GRUPPE_1: 13.00,  // Mindestlohn Sicherheit
+  GRUPPE_2: 14.00,  // Mit IHK-Zertifikat
+  GRUPPE_3: 15.50,  // §34a Sachkundeprüfung
+  GRUPPE_4: 16.50,  // Qualifizierte Fachkraft
+  GRUPPE_5: 17.50,  // Schichtführer
+  GRUPPE_6: 19.00,  // Objektleiter
+  GRUPPE_7: 22.00,  // Sicherheitsmeister
+}
+
+/**
+ * Activity Types (Tätigkeitsarten)
+ * Different security activities may have different wage rates
+ */
+export const ACTIVITY_TYPES = {
+  OBJEKTSCHUTZ: 'OBJEKTSCHUTZ',               // Standard object security
+  VERANSTALTUNG: 'VERANSTALTUNG',             // Event security
+  BEWACHUNG: 'BEWACHUNG',                     // Surveillance/guarding
+  REVIER: 'REVIER',                           // Patrol service
+  EMPFANG: 'EMPFANG',                         // Reception/concierge
+  NSL: 'NSL',                                 // Control center
+  INTERVENTION: 'INTERVENTION',               // Intervention service
+  WERTTRANSPORT: 'WERTTRANSPORT',             // Cash/valuables transport
+  PERSONENSCHUTZ: 'PERSONENSCHUTZ',           // Personal protection
+  BEWAFFNET: 'BEWAFFNET',                     // Armed security
+  WERKSCHUTZ: 'WERKSCHUTZ',                   // Factory security
+  CITYSTREIFE: 'CITYSTREIFE',                 // City patrol
+  VERKEHRSDIENST: 'VERKEHRSDIENST',           // Traffic service
+  FLUGHAFEN: 'FLUGHAFEN',                     // Airport security
+} as const
+
+export type ActivityType = typeof ACTIVITY_TYPES[keyof typeof ACTIVITY_TYPES]
+
+export const ACTIVITY_TYPE_LABELS: Record<ActivityType, string> = {
+  OBJEKTSCHUTZ: 'Objektschutz',
+  VERANSTALTUNG: 'Veranstaltungssicherheit',
+  BEWACHUNG: 'Bewachung',
+  REVIER: 'Revierdienst',
+  EMPFANG: 'Empfangsdienst',
+  NSL: 'NSL (Notruf- und Serviceleitstelle)',
+  INTERVENTION: 'Interventionsdienst',
+  WERTTRANSPORT: 'Geld- und Werttransport',
+  PERSONENSCHUTZ: 'Personenschutz',
+  BEWAFFNET: 'Bewaffneter Sicherheitsdienst',
+  WERKSCHUTZ: 'Werkschutz',
+  CITYSTREIFE: 'City-Streife',
+  VERKEHRSDIENST: 'Verkehrsdienst',
+  FLUGHAFEN: 'Flughafensicherheit',
+}
+
+/**
+ * Default wage adjustments for specific activities (optional)
+ * These can be overridden at employee or site level
+ */
+export const ACTIVITY_WAGE_ADJUSTMENTS: Partial<Record<ActivityType, number>> = {
+  VERANSTALTUNG: 1.00,      // +1€ für Veranstaltungen
+  BEWAFFNET: 5.00,          // +5€ für bewaffneten Dienst
+  PERSONENSCHUTZ: 7.00,     // +7€ für Personenschutz
+  WERTTRANSPORT: 4.00,      // +4€ für Werttransport
+  FLUGHAFEN: 2.00,          // +2€ für Flughafensicherheit
+  NSL: 1.50,                // +1,50€ für NSL
 }
 
 /**
@@ -115,6 +175,13 @@ export function getWageGroupLabel(group: string): string {
 }
 
 /**
+ * Helper function to get activity type label
+ */
+export function getActivityTypeLabel(type: string): string {
+  return ACTIVITY_TYPE_LABELS[type as ActivityType] ?? type
+}
+
+/**
  * Helper function to get surcharge label
  */
 export function getSurchargeLabel(type: string): string {
@@ -125,7 +192,14 @@ export function getSurchargeLabel(type: string): string {
  * Helper function to get base hourly wage for a group
  */
 export function getBaseHourlyWage(group: WageGroup): number {
-  return BASE_HOURLY_WAGES[group] ?? 13.50
+  return BASE_HOURLY_WAGES[group] ?? 13.00
+}
+
+/**
+ * Helper function to get activity wage adjustment
+ */
+export function getActivityWageAdjustment(activityType: ActivityType): number {
+  return ACTIVITY_WAGE_ADJUSTMENTS[activityType] ?? 0
 }
 
 /**

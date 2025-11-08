@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button'
 import { SkeletonDetailPage } from '@/components/ui/skeleton'
 import { Breadcrumbs } from '@/components/ui/breadcrumbs'
 import { fetchControlRound } from '../controlApi'
+import { getControlRoundStatusLabel, getControlRoundStatusColor, formatDateTime } from '@/lib'
 import {
   ArrowLeft,
   Calendar,
@@ -19,20 +20,6 @@ import {
   Briefcase,
   Shield,
 } from 'lucide-react'
-
-const STATUS_COLORS = {
-  IN_PROGRESS: 'bg-blue-100 text-blue-800',
-  COMPLETED: 'bg-green-100 text-green-800',
-  INCOMPLETE: 'bg-yellow-100 text-yellow-800',
-  CANCELLED: 'bg-gray-100 text-gray-800',
-}
-
-const STATUS_LABELS = {
-  IN_PROGRESS: 'In Bearbeitung',
-  COMPLETED: 'Abgeschlossen',
-  INCOMPLETE: 'Unvollständig',
-  CANCELLED: 'Abgebrochen',
-}
 
 const SCAN_METHOD_LABELS = {
   NFC: 'NFC',
@@ -95,12 +82,12 @@ export default function ControlRoundDetail() {
           <div>
             <h1 className="text-2xl font-bold">Kontrollgang-Details</h1>
             <p className="text-gray-600">
-              {round.site?.name} • {new Date(round.startedAt).toLocaleString('de-DE')}
+              {round.site?.name} • {formatDateTime(round.startedAt)}
             </p>
           </div>
         </div>
-        <span className={`px-4 py-2 rounded-full text-sm font-medium ${STATUS_COLORS[round.status]}`}>
-          {STATUS_LABELS[round.status]}
+        <span className={`px-4 py-2 rounded-full text-sm font-medium ${getControlRoundStatusColor(round.status)}`}>
+          {getControlRoundStatusLabel(round.status)}
         </span>
       </div>
 
