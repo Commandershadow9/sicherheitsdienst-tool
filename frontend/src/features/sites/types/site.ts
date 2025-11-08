@@ -95,4 +95,8 @@ export type Site = {
   }>
 }
 
-export type TabType = 'overview' | 'clearances' | 'shifts' | 'images' | 'documents' | 'incidents' | 'control-points' | 'control-rounds' | 'calculations' | 'security-concept'
+export type TabType = 'overview' | 'planning' | 'controls' | 'calculations' | 'media'
+export type PlanningSubTab = 'security-concept' | 'shifts' | 'clearances'
+export type ControlsSubTab = 'control-points' | 'control-rounds' | 'incidents'
+export type MediaSubTab = 'images' | 'documents'
+
