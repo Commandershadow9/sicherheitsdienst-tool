@@ -30,6 +30,11 @@ model User {
   pushOptIn      Boolean   @default(true)
   emailOptIn     Boolean   @default(true)
 
+  // Lohn-Konfiguration (Flexibles Lohnsystem)
+  wageGroup         String?  // BSDW Lohngruppe (GRUPPE_1 bis GRUPPE_7)
+  baseWageOverride  Decimal? @db.Decimal(6, 2) // Individueller Stundenlohn (übersteuert Tarif)
+  activityWages     Json?    // Tätigkeits-spezifische Löhne: { "VERANSTALTUNG": 17.00, "BEWAFFNET": 22.00 }
+
   // Zeitstempel
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -146,6 +151,9 @@ model Site {
   // Anforderungen
   requiredStaff          Int      @default(1)
   requiredQualifications String[] @default([])
+
+  // Lohn-Konfiguration (Flexibles Lohnsystem)
+  siteWageOverride Decimal? @db.Decimal(6, 2) // Objekt-spezifischer Stundenlohn (höchste Priorität)
 
   // Sicherheitskonzept (NEU für Wizard)
   // JSON: { tasks: [], intervals: [], shiftModel: "", hoursPerWeek: 168 }
