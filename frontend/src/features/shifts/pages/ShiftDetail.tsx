@@ -22,22 +22,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Modal } from '@/components/ui/modal';
-
-const STATUS_LABELS: Record<string, string> = {
-  PLANNED: 'Geplant',
-  CONFIRMED: 'Bestätigt',
-  IN_PROGRESS: 'Läuft',
-  COMPLETED: 'Abgeschlossen',
-  CANCELLED: 'Abgesagt',
-};
-
-const STATUS_COLORS: Record<string, string> = {
-  PLANNED: 'bg-gray-100 text-gray-800',
-  CONFIRMED: 'bg-green-100 text-green-800',
-  IN_PROGRESS: 'bg-blue-100 text-blue-800',
-  COMPLETED: 'bg-gray-200 text-gray-600',
-  CANCELLED: 'bg-red-100 text-red-800',
-};
+import { getShiftStatusLabel, getShiftStatusColor } from '@/lib';
 
 export default function ShiftDetail() {
   const { id } = useParams<{ id: string }>();
@@ -134,8 +119,8 @@ export default function ShiftDetail() {
           <div>
             <h1 className="text-3xl font-bold text-gray-900 mb-2">{shift.title}</h1>
             <div className="flex items-center gap-3">
-              <span className={cn('px-3 py-1 rounded-full text-sm font-medium', STATUS_COLORS[shift.status])}>
-                {STATUS_LABELS[shift.status]}
+              <span className={cn('px-3 py-1 rounded-full text-sm font-medium', getShiftStatusColor(shift.status))}>
+                {getShiftStatusLabel(shift.status)}
               </span>
               {isToday && (
                 <span className="px-3 py-1 rounded-full text-sm font-medium bg-blue-500 text-white">Heute</span>
@@ -358,7 +343,7 @@ export default function ShiftDetail() {
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <span className="text-sm text-gray-600">Status</span>
-                <span className="font-medium">{STATUS_LABELS[shift.status]}</span>
+                <span className="font-medium">{getShiftStatusLabel(shift.status)}</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-sm text-gray-600">Dauer</span>

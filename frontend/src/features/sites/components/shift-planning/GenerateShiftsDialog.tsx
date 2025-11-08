@@ -13,6 +13,7 @@ import { Modal } from '@/components/ui/modal'
 import { toast } from 'sonner'
 import { Calendar, Clock, UserCheck, AlertCircle, CheckCircle, Play } from 'lucide-react'
 import { generateShiftsFromRules } from '../../api/shiftRuleApi'
+import { formatTime } from '@/lib'
 import type { GenerateShiftsInput, GenerateShiftsResponse } from '../../types/shiftRule'
 
 type GenerateShiftsDialogProps = {
@@ -118,21 +119,13 @@ export default function GenerateShiftsDialog({
     onClose()
   }
 
-  // Format date for display
+  // Format date for display (with weekday)
   const formatDate = (dateStr: string) => {
     return new Date(dateStr).toLocaleDateString('de-DE', {
       weekday: 'short',
       day: '2-digit',
       month: '2-digit',
       year: 'numeric',
-    })
-  }
-
-  // Format time for display
-  const formatTime = (isoStr: string) => {
-    return new Date(isoStr).toLocaleTimeString('de-DE', {
-      hour: '2-digit',
-      minute: '2-digit',
     })
   }
 

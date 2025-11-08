@@ -3,6 +3,7 @@ import { Loader2, User, Briefcase, Calendar } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { api } from '@/lib/api'
 import { Link } from 'react-router-dom'
+import { formatDate } from '@/lib'
 
 type EmployeeListModalProps = {
   open: boolean
@@ -82,12 +83,9 @@ export function EmployeeListModal({ open, onClose, filter, title }: EmployeeList
                 </div>
                 <ul className="space-y-2">
                   {data.map((employee) => {
-                    const absenceStart = employee.absenceStart ? new Date(employee.absenceStart) : null
-                    const absenceEnd = employee.absenceEnd ? new Date(employee.absenceEnd) : null
+                    const absenceStart = employee.absenceStart ? employee.absenceStart : null
+                    const absenceEnd = employee.absenceEnd ? employee.absenceEnd : null
                     const hasAbsencePeriod = Boolean(absenceStart && absenceEnd)
-                    const formatDate = (date: Date) => {
-                      return date.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: '2-digit' })
-                    }
 
                     return (
                       <li key={employee.id}>

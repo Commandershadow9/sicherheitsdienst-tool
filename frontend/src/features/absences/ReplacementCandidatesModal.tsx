@@ -4,6 +4,7 @@ import type { ReplacementCandidate } from './types'
 import { useState } from 'react'
 import { toast } from 'sonner'
 import { api } from '@/lib/api'
+import { formatDate } from '@/lib'
 
 type ReplacementCandidatesModalProps = {
   open: boolean
@@ -23,15 +24,6 @@ export function ReplacementCandidatesModal({
   onAssignSuccess,
 }: ReplacementCandidatesModalProps) {
   const [assigning, setAssigning] = useState(false)
-
-  function formatDate(isoString: string): string {
-    const date = new Date(isoString)
-    return new Intl.DateTimeFormat('de-DE', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-    }).format(date)
-  }
 
   async function handleAssign(candidate: ReplacementCandidate) {
     const confirmed = window.confirm(

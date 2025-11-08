@@ -8,32 +8,12 @@ import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
 import { useQueryClient } from '@tanstack/react-query'
 import { useReplacementCandidates } from './hooks/useReplacementCandidates'
+import { formatDate, formatDateTime } from '@/lib'
 
 type AbsenceDetailModalProps = {
   absence: Absence | null
   open: boolean
   onClose: () => void
-}
-
-function formatDate(isoString: string): string {
-  const date = new Date(isoString)
-  return new Intl.DateTimeFormat('de-DE', {
-    weekday: 'long',
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  }).format(date)
-}
-
-function formatDateTime(isoString: string): string {
-  const date = new Date(isoString)
-  return new Intl.DateTimeFormat('de-DE', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-  }).format(date)
 }
 
 function getClearanceStatusLabel(status: ClearanceStatus): string {
@@ -143,7 +123,7 @@ export function AbsenceDetailModal({ absence, open, onClose }: AbsenceDetailModa
             <h3 className="text-sm font-semibold text-gray-700 mb-2">Zeitraum</h3>
             <p className="text-base">{formatPeriod(currentAbsence.startsAt, currentAbsence.endsAt)}</p>
             <p className="text-sm text-gray-600">
-              {formatDate(currentAbsence.startsAt)} bis {formatDate(currentAbsence.endsAt)}
+              {formatDate(currentAbsence.startsAt, 'full')} bis {formatDate(currentAbsence.endsAt, 'full')}
             </p>
           </div>
 
@@ -232,9 +212,9 @@ export function AbsenceDetailModal({ absence, open, onClose }: AbsenceDetailModa
                         </div>
                         <p className="text-xs text-gray-600 mt-1">{clearance.site.address}</p>
                         <p className="text-xs text-gray-500 mt-1">
-                          Eingewiesen: {formatDate(clearance.trainedAt)}
+                          Eingewiesen: {formatDate(clearance.trainedAt, 'full')}
                           {clearance.validUntil && (
-                            <> · Gültig bis: {formatDate(clearance.validUntil)}</>
+                            <> · Gültig bis: {formatDate(clearance.validUntil, 'full')}</>
                           )}
                         </p>
                       </div>

@@ -13,6 +13,7 @@ import { useProfileQueries } from './hooks/useProfileQueries'
 import { useProfileMutations } from './hooks/useProfileMutations'
 import type { Absence, AbsenceType } from '@/features/absences/types'
 import { ABSENCE_TYPES, getAbsenceStatusLabel, getAbsenceTypeLabel, formatPeriod } from '@/features/absences/utils'
+import { formatDate } from '@/lib'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -118,23 +119,18 @@ const QUALIFICATION_TEMPLATES: Array<{ title: string; description?: string }> = 
   { title: 'Ersthelfer im Betrieb (BG)', description: 'Auffrischung alle 24 Monate' },
 ]
 
-function formatDate(value?: string | null) {
-  if (!value) return '–'
-  return new Date(value).toLocaleDateString()
-}
-
 function formatHours(value: number | null | undefined) {
   if (!value) return '0.00 h'
   return `${value.toFixed(2)} h`
 }
 
 function formatDocumentPeriod(issuedAt?: string | null, expiresAt?: string | null) {
-  const issued = formatDate(issuedAt)
   if (!issuedAt && !expiresAt) return 'Keine Angaben'
+  const issued = issuedAt ? formatDate(issuedAt) : 'Ausstellungsdatum unbekannt'
   if (!expiresAt) {
-    return `${issued !== '–' ? issued : 'Ausstellungsdatum unbekannt'} – Kein Ablauf`
+    return `${issued} – Kein Ablauf`
   }
-  return `${issued !== '–' ? issued : 'Ausstellungsdatum unbekannt'} – ${formatDate(expiresAt)}`
+  return `${issued} – ${formatDate(expiresAt)}`
 }
 
 export default function UserProfile() {

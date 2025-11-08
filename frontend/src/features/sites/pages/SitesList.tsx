@@ -14,6 +14,7 @@ import { toast } from 'sonner'
 import { Link, useNavigate } from 'react-router-dom'
 import RbacForbidden from '@/components/RbacForbidden'
 import { Plus } from 'lucide-react'
+import { getSiteStatusLabel, getSiteStatusColor } from '@/lib'
 
 type Site = {
   id: string
@@ -25,26 +26,6 @@ type Site = {
   customerCompany?: string
 }
 type ListResp = { data: Site[]; pagination: { page: number; pageSize: number; total: number; totalPages: number } }
-
-const STATUS_LABELS: Record<string, string> = {
-  INQUIRY: 'Anfrage',
-  IN_REVIEW: 'In Prüfung',
-  CALCULATING: 'Kalkulation',
-  OFFER_SENT: 'Angebot versendet',
-  ACTIVE: 'Aktiv',
-  INACTIVE: 'Inaktiv',
-  LOST: 'Verloren',
-}
-
-const STATUS_COLORS: Record<string, string> = {
-  INQUIRY: 'bg-blue-100 text-blue-800',
-  IN_REVIEW: 'bg-yellow-100 text-yellow-800',
-  CALCULATING: 'bg-orange-100 text-orange-800',
-  OFFER_SENT: 'bg-purple-100 text-purple-800',
-  ACTIVE: 'bg-green-100 text-green-800',
-  INACTIVE: 'bg-gray-100 text-gray-800',
-  LOST: 'bg-red-100 text-red-800',
-}
 
 export default function SitesList() {
   const { params, update } = useListParams({ page: 1, pageSize: 25, sortBy: 'name', sortDir: 'asc' })
@@ -300,8 +281,8 @@ export default function SitesList() {
             render: (r: Site) => {
               if (!r.status) return <span className="text-gray-400">—</span>
               return (
-                <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${STATUS_COLORS[r.status]}`}>
-                  {STATUS_LABELS[r.status]}
+                <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getSiteStatusColor(r.status)}`}>
+                  {getSiteStatusLabel(r.status)}
                 </span>
               )
             },
