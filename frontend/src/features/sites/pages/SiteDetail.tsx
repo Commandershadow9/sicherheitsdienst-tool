@@ -34,7 +34,6 @@ import SmartAssignmentModal from '../components/SmartAssignmentModal'
 import ControlRoundSuggestionsModal from '../components/ControlRoundSuggestionsModal'
 import ClearancesTab from '../components/tabs/ClearancesTab'
 import ShiftsTab from '../components/tabs/ShiftsTab'
-import ShiftPlanningTab from '../components/tabs/ShiftPlanningTab'
 import ImagesTab from '../components/tabs/ImagesTab'
 import DocumentsTab from '../components/tabs/DocumentsTab'
 import IncidentsTab from '../components/tabs/IncidentsTab'
@@ -159,15 +158,14 @@ export default function SiteDetail() {
   }
 
   if (isError || !site) {
-    return <div className="p-4 text-red-600">Objekt nicht gefunden</div>
+    return <div className="p-4 text-red-600">Auftrag nicht gefunden</div>
   }
 
   const tabs = [
     { key: 'overview', label: 'Übersicht' },
     { key: 'security-concept', label: 'Sicherheitskonzept' },
     { key: 'clearances', label: `Clearances (${site.clearances?.length || 0})` },
-    { key: 'shifts', label: 'Schichten' },
-    { key: 'shift-planning', label: 'Schichtplanung' },
+    { key: 'shifts', label: 'Schichtplanung' },
     { key: 'control-points', label: `Kontrollpunkte (${controlPoints.length})` },
     { key: 'control-rounds', label: `Kontrollgänge (${controlRounds.length})` },
     { key: 'calculations', label: `Kalkulationen (${calculations.length})` },
@@ -486,8 +484,6 @@ export default function SiteDetail() {
         {activeTab === 'clearances' && <ClearancesTab site={site} siteId={id!} />}
 
         {activeTab === 'shifts' && <ShiftsTab site={site} siteId={id!} />}
-
-        {activeTab === 'shift-planning' && <ShiftPlanningTab siteId={id!} />}
 
         {activeTab === 'images' && <ImagesTab site={site} siteId={id!} />}
 
