@@ -2,8 +2,9 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useCustomer, useCreateCustomer, useUpdateCustomer } from '../api';
 import { CreateCustomerInput, CustomerContact } from '../../../types/customer';
-import { Building2, Plus, X, ArrowLeft } from 'lucide-react';
+import { Building2, Plus, X, ArrowLeft, FileEdit } from 'lucide-react';
 import { toast } from '@/lib/utils';
+import { Breadcrumbs } from '@/components/ui/breadcrumbs';
 
 export default function CustomerForm() {
   const navigate = useNavigate();
@@ -125,20 +126,24 @@ export default function CustomerForm() {
     );
   }
 
+  const breadcrumbItems = isEdit
+    ? [
+        { label: 'Kunden', href: '/customers', icon: Building2 },
+        { label: customer?.companyName || 'Kunde', href: `/customers/${id}` },
+        { label: 'Bearbeiten', icon: FileEdit },
+      ]
+    : [
+        { label: 'Kunden', href: '/customers', icon: Building2 },
+        { label: 'Neuer Kunde', icon: FileEdit },
+      ]
+
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-4xl mx-auto">
         {/* Header */}
-        <div className="mb-6">
-          <button
-            onClick={() => navigate('/customers')}
-            className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-4"
-          >
-            <ArrowLeft className="w-5 h-5" />
-            Zurück zur Übersicht
-          </button>
-          <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-2">
-            <Building2 className="w-8 h-8 text-indigo-600" />
+        <div className="mb-6 space-y-4">
+          <Breadcrumbs items={breadcrumbItems} />
+          <h1 className="text-3xl font-bold text-gray-900">
             {isEdit ? 'Kunde bearbeiten' : 'Neuer Kunde'}
           </h1>
         </div>

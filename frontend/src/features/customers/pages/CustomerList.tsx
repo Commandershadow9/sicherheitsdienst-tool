@@ -1,16 +1,40 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useCustomers, useDeleteCustomer } from '../api';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { api } from '@/lib/api';
+import { toast } from '@/lib/utils';
 import { Customer } from '../../../types/customer';
 import { Building2, Search, Plus, Pencil, Trash2, MapPin, Users } from 'lucide-react';
 
 export default function CustomerList() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState('');
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
   const { data, isLoading } = useCustomers({ search: searchTerm || undefined });
   const deleteMutation = useDeleteCustomer();
+
+  const allIds = useMemo(() => data?.customers?.map((c) => c.id) || [], [data]);
+  const isAllSelected = selectedIds.length > 0 && selectedIds.length === allIds.length;
+  const isSomeSelected = selectedIds.length > 0 && selectedIds.length < allIds.length;
+
+  // Bulk delete mutation
+  const bulkDeleteMutation = useMutation({
+    mutationFn: async (ids: string[]) => {
+      await Promise.all(ids.map((id) => api.delete(`/customers/${id}`)))
+    },
+    onSuccess: (_, ids) => {
+      queryClient.invalidateQueries({ queryKey: ['customers'] })
+      toast.success(`${ids.length} Kunde(n) erfolgreich gelöscht`)
+      setSelectedIds([])
+    },
+    onError: (error: any) => {
+      toast.error(error?.response?.data?.message || 'Fehler beim Löschen der Kunden')
+    },
+  })
 
   const handleDelete = (id: string) => {
     deleteMutation.mutate(id, {
@@ -19,6 +43,20 @@ export default function CustomerList() {
       },
     });
   };
+
+  const toggleSelectAll = () => {
+    if (isAllSelected) {
+      setSelectedIds([])
+    } else {
+      setSelectedIds(allIds)
+    }
+  }
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds((prev) =>
+      prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]
+    )
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
@@ -57,6 +95,33 @@ export default function CustomerList() {
           </div>
         </div>
 
+        {/* Bulk Actions Bar */}
+        {selectedIds.length > 0 && (
+          <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-4 mb-6 flex items-center justify-between animate-in slide-in-from-top-2">
+            <div className="flex items-center gap-3">
+              <span className="font-semibold text-indigo-900">{selectedIds.length} ausgewählt</span>
+              <div className="h-6 w-px bg-indigo-300" />
+              <button
+                onClick={() => {
+                  if (confirm(`Wirklich ${selectedIds.length} Kunde(n) löschen?`)) {
+                    bulkDeleteMutation.mutate(selectedIds)
+                  }
+                }}
+                className="px-3 py-1.5 text-sm text-red-700 hover:text-red-800 bg-red-100 hover:bg-red-200 rounded-lg transition-colors flex items-center gap-2"
+              >
+                <Trash2 size={16} />
+                Löschen
+              </button>
+            </div>
+            <button
+              onClick={() => setSelectedIds([])}
+              className="text-sm text-indigo-700 hover:text-indigo-800"
+            >
+              Auswahl aufheben
+            </button>
+          </div>
+        )}
+
         {/* Loading State */}
         {isLoading && (
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 text-center">
@@ -87,6 +152,15 @@ export default function CustomerList() {
                   <table className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-gray-50">
                       <tr>
+                        <th className="px-4 py-3 text-left">
+                          <input
+                            type="checkbox"
+                            checked={isAllSelected}
+                            ref={(el) => el && (el.indeterminate = isSomeSelected && !isAllSelected)}
+                            onChange={toggleSelectAll}
+                            className="w-4 h-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+                          />
+                        </th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                           Firma
                         </th>
@@ -111,6 +185,15 @@ export default function CustomerList() {
                           className="hover:bg-gray-50 transition-colors duration-150 cursor-pointer"
                           onClick={() => navigate(`/customers/${customer.id}`)}
                         >
+                          <td className="px-4 py-4">
+                            <input
+                              type="checkbox"
+                              checked={selectedIds.includes(customer.id)}
+                              onChange={() => toggleSelect(customer.id)}
+                              onClick={(e) => e.stopPropagation()}
+                              className="w-4 h-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+                            />
+                          </td>
                           <td className="px-6 py-4">
                             <div>
                               <div className="font-medium text-gray-900">
