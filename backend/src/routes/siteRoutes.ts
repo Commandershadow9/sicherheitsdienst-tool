@@ -364,6 +364,14 @@ router.delete(
   asyncHandler(shiftRuleController.deleteShiftRule),
 );
 
+// POST /api/sites/:siteId/shift-rules/check-conflicts - Konflikte prüfen
+router.post(
+  '/:siteId/shift-rules/check-conflicts',
+  authenticate,
+  authorize('ADMIN', 'MANAGER', 'DISPATCHER'),
+  asyncHandler(shiftRuleController.checkRuleConflicts),
+);
+
 // POST /api/sites/:siteId/shift-rules/generate-shifts - Schichten aus Regeln generieren
 router.post(
   '/:siteId/shift-rules/generate-shifts',
@@ -400,6 +408,7 @@ router.all('/:siteId/security-concept/:id/approve', authenticate, methodNotAllow
 router.all('/:siteId/security-concept/:id/upload-attachment', authenticate, methodNotAllowed(['POST']));
 router.all('/:siteId/shift-rules', authenticate, methodNotAllowed(['GET', 'POST']));
 router.all('/:siteId/shift-rules/:ruleId', authenticate, methodNotAllowed(['GET', 'PUT', 'DELETE']));
+router.all('/:siteId/shift-rules/check-conflicts', authenticate, methodNotAllowed(['POST']));
 router.all('/:siteId/shift-rules/generate-shifts', authenticate, methodNotAllowed(['POST']));
 
 export default router;

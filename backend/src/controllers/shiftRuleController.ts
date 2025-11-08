@@ -216,6 +216,108 @@ export const deleteShiftRule = async (req: Request, res: Response, next: NextFun
   }
 };
 
+// POST /api/sites/:siteId/shift-rules/check-conflicts - Konflikte mit anderen Regeln prüfen
+/**
+ * Prüft ob eine Regel mit existierenden Regeln in Konflikt steht
+ * Konflikte = Regeln mit gleicher Priorität, die am selben Tag aktiv sind
+ */
+export const checkRuleConflicts = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const { siteId } = req.params;
+    const ruleData = req.body;
+    const excludeRuleId = req.query.excludeRuleId as string | undefined;
+
+    // Hole alle aktiven Regeln für diese Site (außer die zu bearbeitende)
+    const existingRules = await prisma.shiftRule.findMany({
+      where: {
+        siteId,
+        isActive: true,
+        ...(excludeRuleId ? { id: { not: excludeRuleId } } : {}),
+      },
+      orderBy: { priority: 'desc' },
+    });
+
+    // Prüfe auf Konflikte
+    const conflicts: Array<{
+      ruleId: string;
+      ruleName: string;
+      reason: string;
+      severity: 'warning' | 'info';
+    }> = [];
+
+    for (const existingRule of existingRules) {
+      // Nur Konflikte mit gleicher Priorität sind problematisch
+      if (existingRule.priority !== ruleData.priority) {
+        continue;
+      }
+
+      // Prüfe Zeitraumüberschneidung
+      const newValidFrom = new Date(ruleData.validFrom);
+      const newValidUntil = ruleData.validUntil ? new Date(ruleData.validUntil) : null;
+      const existValidFrom = new Date(existingRule.validFrom);
+      const existValidUntil = existingRule.validUntil ? new Date(existingRule.validUntil) : null;
+
+      // Zeiträume überschneiden sich?
+      const timesOverlap =
+        (!newValidUntil || !existValidUntil || newValidFrom <= existValidUntil) &&
+        (!existValidUntil || !newValidUntil || existValidFrom <= newValidUntil);
+
+      if (!timesOverlap) {
+        continue;
+      }
+
+      // Pattern-spezifische Konfliktprüfung
+      let hasPatternConflict = false;
+
+      if (ruleData.pattern === 'DAILY' || ruleData.pattern === 'DATE_RANGE') {
+        // DAILY/DATE_RANGE kollidiert mit allem
+        hasPatternConflict = true;
+      } else if (ruleData.pattern === 'WEEKLY' && existingRule.pattern === 'WEEKLY') {
+        // Prüfe ob Wochentage überschneiden
+        const newDays = new Set(ruleData.daysOfWeek);
+        const overlap = existingRule.daysOfWeek.some((day) => newDays.has(day));
+        hasPatternConflict = overlap;
+      } else if (ruleData.pattern === 'SPECIFIC_DATES' && existingRule.pattern === 'SPECIFIC_DATES') {
+        // Prüfe ob spezifische Daten überschneiden
+        const newDates = new Set(ruleData.specificDates.map((d: string) => d.split('T')[0]));
+        const overlap = existingRule.specificDates.some((date) => {
+          const dateStr = new Date(date).toISOString().split('T')[0];
+          return newDates.has(dateStr);
+        });
+        hasPatternConflict = overlap;
+      } else if (
+        (ruleData.pattern === 'WEEKLY' && existingRule.pattern === 'DAILY') ||
+        (ruleData.pattern === 'DAILY' && existingRule.pattern === 'WEEKLY')
+      ) {
+        hasPatternConflict = true;
+      }
+
+      if (hasPatternConflict) {
+        conflicts.push({
+          ruleId: existingRule.id,
+          ruleName: existingRule.name,
+          reason: `Gleiche Priorität (${existingRule.priority}) und überschneidende Tage`,
+          severity: 'warning',
+        });
+      }
+    }
+
+    res.json({
+      success: true,
+      data: {
+        hasConflicts: conflicts.length > 0,
+        conflicts,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 // POST /api/sites/:siteId/shift-rules/generate-shifts - Schichten aus Regeln generieren
 export const generateShiftsFromRules = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {

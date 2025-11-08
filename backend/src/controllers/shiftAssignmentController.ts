@@ -18,6 +18,95 @@ function isEmailNotifyEnabled(): boolean {
   return process.env[EMAIL_FLAG] === 'true';
 }
 
+/**
+ * Prüft ob ein User für eine Schicht qualifiziert ist
+ * - Qualifikations-Check: User muss alle requiredQualifications haben
+ * - Clearance-Check: User muss aktive Clearance für Site haben (wenn Site gesetzt)
+ */
+async function validateUserForShift(userId: string, shiftId: string): Promise<{
+  valid: boolean;
+  reason?: string;
+  details?: string;
+}> {
+  // Load shift with site
+  const shift = await prisma.shift.findUnique({
+    where: { id: shiftId },
+    include: { site: true },
+  });
+
+  if (!shift) {
+    return { valid: false, reason: 'SHIFT_NOT_FOUND', details: 'Schicht nicht gefunden' };
+  }
+
+  // Load user with qualifications and clearances
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    include: {
+      objectClearances: {
+        where: shift.siteId ? { siteId: shift.siteId } : undefined,
+      },
+    },
+  });
+
+  if (!user) {
+    return { valid: false, reason: 'USER_NOT_FOUND', details: 'Mitarbeiter nicht gefunden' };
+  }
+
+  // 1. Qualifikations-Check
+  if (shift.requiredQualifications && shift.requiredQualifications.length > 0) {
+    const userQualifications = user.qualifications || [];
+    const missingQualifications = shift.requiredQualifications.filter(
+      (req) => !userQualifications.includes(req)
+    );
+
+    if (missingQualifications.length > 0) {
+      return {
+        valid: false,
+        reason: 'MISSING_QUALIFICATIONS',
+        details: `Fehlende Qualifikationen: ${missingQualifications.join(', ')}`,
+      };
+    }
+  }
+
+  // 2. Clearance-Check (nur wenn Schicht eine Site hat)
+  if (shift.siteId) {
+    const clearance = user.objectClearances.find((c) => c.siteId === shift.siteId);
+
+    if (!clearance) {
+      return {
+        valid: false,
+        reason: 'NO_CLEARANCE',
+        details: `Keine Clearance für ${shift.site?.name || 'dieses Objekt'}`,
+      };
+    }
+
+    // Check clearance status
+    if (clearance.status !== 'ACTIVE') {
+      const statusLabels = {
+        TRAINING: 'in Einarbeitung',
+        EXPIRED: 'abgelaufen',
+        REVOKED: 'widerrufen',
+      };
+      return {
+        valid: false,
+        reason: 'INACTIVE_CLEARANCE',
+        details: `Clearance ist ${statusLabels[clearance.status as keyof typeof statusLabels] || clearance.status}`,
+      };
+    }
+
+    // Check if clearance is still valid (validUntil)
+    if (clearance.validUntil && new Date(clearance.validUntil) < new Date()) {
+      return {
+        valid: false,
+        reason: 'CLEARANCE_EXPIRED',
+        details: 'Clearance ist abgelaufen',
+      };
+    }
+  }
+
+  return { valid: true };
+}
+
 // GET /api/shifts/:id/replacement-candidates
 export const getShiftReplacementCandidates = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -208,6 +297,24 @@ export const assignUserToShift = async (req: Request, res: Response, next: NextF
       return;
     }
 
+    // Validierung: Qualifikationen und Clearance prüfen
+    const validation = await validateUserForShift(userId, shiftId);
+    if (!validation.valid) {
+      await submitAuditEvent(req, {
+        action: 'SHIFT.ASSIGN',
+        resourceType: 'SHIFT',
+        resourceId: shiftId,
+        outcome: 'DENIED',
+        data: { reason: validation.reason, userId, details: validation.details },
+      });
+      res.status(403).json({
+        success: false,
+        message: validation.details || 'Mitarbeiter ist nicht für diese Schicht qualifiziert',
+        reason: validation.reason,
+      });
+      return;
+    }
+
     // Prüfen ob bereits zugewiesen
     const existingAssignment = await prisma.shiftAssignment.findUnique({
       where: {
@@ -369,9 +476,9 @@ export const bulkAssignUserToShifts = async (req: Request, res: Response, next: 
     });
 
     const existingShiftIds = new Set(existingAssignments.map((a) => a.shiftId));
-    const shiftsToAssign = shifts.filter((s) => !existingShiftIds.has(s.id));
+    const shiftsToCheck = shifts.filter((s) => !existingShiftIds.has(s.id));
 
-    if (shiftsToAssign.length === 0) {
+    if (shiftsToCheck.length === 0) {
       res.status(400).json({
         success: false,
         message: 'Benutzer ist bereits allen ausgewählten Schichten zugewiesen',
@@ -379,10 +486,34 @@ export const bulkAssignUserToShifts = async (req: Request, res: Response, next: 
       return;
     }
 
-    // Create assignments
-    const assignmentsData = shiftsToAssign.map((shift) => ({
+    // Validate each shift (qualifications + clearance)
+    const validationResults = await Promise.all(
+      shiftsToCheck.map(async (shift) => ({
+        shiftId: shift.id,
+        validation: await validateUserForShift(userId, shift.id),
+      }))
+    );
+
+    const shiftsToAssign = validationResults.filter((r) => r.validation.valid);
+    const failedShifts = validationResults.filter((r) => !r.validation.valid);
+
+    if (shiftsToAssign.length === 0) {
+      res.status(403).json({
+        success: false,
+        message: 'Benutzer ist für keine der ausgewählten Schichten qualifiziert',
+        failures: failedShifts.map((f) => ({
+          shiftId: f.shiftId,
+          reason: f.validation.reason,
+          details: f.validation.details,
+        })),
+      });
+      return;
+    }
+
+    // Create assignments (only for valid shifts)
+    const assignmentsData = shiftsToAssign.map((result) => ({
       userId,
-      shiftId: shift.id,
+      shiftId: result.shiftId,
       status: 'ASSIGNED' as const,
       assignedAt: new Date(),
     }));
@@ -392,15 +523,19 @@ export const bulkAssignUserToShifts = async (req: Request, res: Response, next: 
       skipDuplicates: true,
     });
 
+    // Get shift details for assigned shifts
+    const assignedShiftIds = shiftsToAssign.map((r) => r.shiftId);
+    const assignedShiftDetails = shifts.filter((s) => assignedShiftIds.includes(s.id));
+
     // Submit audit events
     await Promise.all(
-      shiftsToAssign.map((shift) =>
+      shiftsToAssign.map((result) =>
         submitAuditEvent(req, {
           action: 'SHIFT.BULK_ASSIGN',
           resourceType: 'SHIFT',
-          resourceId: shift.id,
+          resourceId: result.shiftId,
           outcome: 'SUCCESS',
-          data: { userId, shiftId: shift.id },
+          data: { userId, shiftId: result.shiftId },
         }),
       ),
     );
@@ -408,7 +543,7 @@ export const bulkAssignUserToShifts = async (req: Request, res: Response, next: 
     // Send notification emails if enabled
     if (isEmailNotifyEnabled()) {
       try {
-        const assignedShifts = shiftsToAssign.map((s) => s.title).join(', ');
+        const assignedShifts = assignedShiftDetails.map((s) => s.title).join(', ');
         await sendShiftChangedEmail(
           user.email,
           `${result.count} Schichten`,
@@ -421,16 +556,22 @@ export const bulkAssignUserToShifts = async (req: Request, res: Response, next: 
 
     res.status(201).json({
       success: true,
-      message: `${result.count} Schichten erfolgreich zugewiesen`,
+      message: `${result.count} Schichten erfolgreich zugewiesen${failedShifts.length > 0 ? `, ${failedShifts.length} fehlgeschlagen` : ''}`,
       data: {
         assigned: result.count,
         skipped: existingShiftIds.size,
+        failed: failedShifts.length,
         total: shiftIds.length,
-        shifts: shiftsToAssign.map((s) => ({
+        shifts: assignedShiftDetails.map((s) => ({
           id: s.id,
           title: s.title,
           startTime: s.startTime,
         })),
+        failures: failedShifts.length > 0 ? failedShifts.map((f) => ({
+          shiftId: f.shiftId,
+          reason: f.validation.reason,
+          details: f.validation.details,
+        })) : undefined,
       },
     });
   } catch (error) {

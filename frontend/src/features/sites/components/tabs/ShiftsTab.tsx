@@ -1,10 +1,12 @@
+import { useState } from 'react'
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
-import { Calendar, Clock, UserCheck } from 'lucide-react'
+import { Calendar, Clock, UserCheck, CalendarDays, List } from 'lucide-react'
 import { toast } from 'sonner'
 import { fetchSiteShifts, generateShiftsForSite, type Shift, type GenerateShiftsPayload } from '../../api'
+import ShiftCalendar from '../shifts/ShiftCalendar'
 
 type Site = {
   id: string
@@ -27,6 +29,7 @@ type ShiftsTabProps = {
 export default function ShiftsTab({ site, siteId }: ShiftsTabProps) {
   const nav = useNavigate()
   const queryClient = useQueryClient()
+  const [view, setView] = useState<'list' | 'calendar'>('list')
 
   // Prüfe ob Sicherheitskonzept mit Schichtmodell vorhanden ist
   // Unterstützt sowohl altes Format (site.securityConcept) als auch neues (site.securityConcepts[])
@@ -62,6 +65,34 @@ export default function ShiftsTab({ site, siteId }: ShiftsTabProps) {
           Schichten ({shifts.length})
         </h3>
         <div className="flex gap-2">
+          {/* View Toggle */}
+          <div className="flex border border-gray-300 rounded-lg overflow-hidden">
+            <button
+              onClick={() => setView('list')}
+              className={cn(
+                'px-3 py-1.5 text-sm font-medium transition-colors flex items-center gap-1.5',
+                view === 'list'
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-white text-gray-700 hover:bg-gray-50'
+              )}
+            >
+              <List size={16} />
+              Liste
+            </button>
+            <button
+              onClick={() => setView('calendar')}
+              className={cn(
+                'px-3 py-1.5 text-sm font-medium transition-colors flex items-center gap-1.5 border-l border-gray-300',
+                view === 'calendar'
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-white text-gray-700 hover:bg-gray-50'
+              )}
+            >
+              <CalendarDays size={16} />
+              Kalender
+            </button>
+          </div>
+
           <Button
             size="sm"
             variant="outline"
@@ -101,6 +132,11 @@ export default function ShiftsTab({ site, siteId }: ShiftsTabProps) {
             Klicken Sie auf "Schichten generieren", um automatisch Schichten basierend auf dem Sicherheitskonzept zu erstellen.
           </p>
         </div>
+      ) : view === 'calendar' ? (
+        <ShiftCalendar
+          shifts={shifts}
+          onShiftClick={(shift) => nav(`/shifts/${shift.id}`)}
+        />
       ) : (
         <div className="space-y-3">
           {shifts.slice(0, 10).map((shift) => {

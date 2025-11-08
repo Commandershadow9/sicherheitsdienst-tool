@@ -122,3 +122,52 @@ export async function generateShiftsFromRules(
   )
   return res.data
 }
+
+/**
+ * Check for conflicts with existing rules
+ * Conflicts occur when two rules with the same priority apply to the same day
+ *
+ * @param siteId - The site ID
+ * @param ruleData - The rule data to check
+ * @param excludeRuleId - Optional rule ID to exclude from conflict check (when editing)
+ * @returns Promise with conflict information
+ *
+ * @example
+ * const conflicts = await checkRuleConflicts(siteId, {
+ *   pattern: 'WEEKLY',
+ *   daysOfWeek: [1, 2, 3],
+ *   priority: 0,
+ *   validFrom: '2024-01-01'
+ * })
+ * if (conflicts.hasConflicts) {
+ *   console.warn('Conflicts detected:', conflicts.conflicts)
+ * }
+ */
+export async function checkRuleConflicts(
+  siteId: string,
+  ruleData: Partial<CreateShiftRuleInput>,
+  excludeRuleId?: string
+): Promise<{
+  hasConflicts: boolean
+  conflicts: Array<{
+    ruleId: string
+    ruleName: string
+    reason: string
+    severity: 'warning' | 'info'
+  }>
+}> {
+  const params = excludeRuleId ? `?excludeRuleId=${excludeRuleId}` : ''
+  const res = await api.post<{
+    success: boolean
+    data: {
+      hasConflicts: boolean
+      conflicts: Array<{
+        ruleId: string
+        ruleName: string
+        reason: string
+        severity: 'warning' | 'info'
+      }>
+    }
+  }>(`/sites/${siteId}/shift-rules/check-conflicts${params}`, ruleData)
+  return res.data.data
+}
