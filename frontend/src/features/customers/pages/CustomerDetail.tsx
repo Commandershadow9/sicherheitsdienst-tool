@@ -1,5 +1,6 @@
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useCustomer } from '../api';
+import { Breadcrumbs } from '@/components/ui/breadcrumbs';
 import {
   Building2,
   MapPin,
@@ -7,7 +8,6 @@ import {
   Phone,
   FileText,
   Pencil,
-  ArrowLeft,
   Users,
   Calendar,
   CreditCard,
@@ -51,26 +51,26 @@ export default function CustomerDetail() {
     );
   }
 
+  const breadcrumbItems = [
+    { label: 'Kunden', href: '/customers', icon: Building2 },
+    { label: customer.companyName },
+  ]
+
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-7xl mx-auto space-y-6">
+        {/* Breadcrumbs */}
+        <Breadcrumbs items={breadcrumbItems} />
+
         {/* Header */}
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <button
-              onClick={() => navigate('/customers')}
-              className="p-2 hover:bg-white rounded-lg transition-colors duration-200"
-            >
-              <ArrowLeft className="w-5 h-5 text-gray-600" />
-            </button>
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-2">
-                {customer.companyName}
-              </h1>
-              {customer.industry && (
-                <p className="text-gray-600 mt-1">{customer.industry}</p>
-              )}
-            </div>
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">
+              {customer.companyName}
+            </h1>
+            {customer.industry && (
+              <p className="text-gray-600 mt-1">{customer.industry}</p>
+            )}
           </div>
           <Link
             to={`/customers/${customer.id}/edit`}

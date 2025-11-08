@@ -3,6 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { SkeletonDetailPage } from '@/components/ui/skeleton';
+import { Breadcrumbs } from '@/components/ui/breadcrumbs';
 import { fetchShift, fetchAssignmentCandidates, assignUserToShift, removeShiftAssignment, type Shift } from '../api';
 import { toast } from 'sonner';
 import {
@@ -17,6 +18,7 @@ import {
   XCircle,
   Trash2,
   UserPlus,
+  CalendarClock,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Modal } from '@/components/ui/modal';
@@ -114,18 +116,20 @@ export default function ShiftDetail() {
   const coveragePercent = requiredCount > 0 ? Math.round((assignedCount / requiredCount) * 100) : 0;
   const isFull = assignedCount >= requiredCount;
 
+  const breadcrumbItems = [
+    { label: 'Schichten', href: '/shifts', icon: CalendarClock },
+    { label: shift.title },
+  ]
+
   return (
     <div className="p-6 max-w-7xl mx-auto">
+      {/* Breadcrumbs */}
+      <div className="mb-6">
+        <Breadcrumbs items={breadcrumbItems} />
+      </div>
+
       {/* Header */}
       <div className="mb-6">
-        <div className="flex items-center gap-2 text-sm text-gray-500 mb-2">
-          <Link to="/shifts" className="hover:text-gray-700">
-            Schichten
-          </Link>
-          <span>/</span>
-          <span className="text-gray-900">{shift.title}</span>
-        </div>
-
         <div className="flex items-start justify-between">
           <div>
             <h1 className="text-3xl font-bold text-gray-900 mb-2">{shift.title}</h1>
