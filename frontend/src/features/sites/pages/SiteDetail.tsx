@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Select } from '@/components/ui/select'
 import { UserSelect } from '@/components/ui/user-select'
 import { SkeletonDetailPage } from '@/components/ui/skeleton'
+import { Breadcrumbs } from '@/components/ui/breadcrumbs'
 import { cn } from '@/lib/utils'
 import RbacForbidden from '@/components/RbacForbidden'
 import { Modal } from '@/components/ui/modal'
@@ -27,7 +28,7 @@ import {
   sendCalculationEmailAPI,
   type SiteCalculation
 } from '../calculationApi'
-import { Building2, Phone, Shield, Calendar, Image as ImageIcon, UserCheck, FileText, Upload, Download, Trash2, Eye, AlertTriangle, Plus, X, Pencil, CheckCircle, Clock, MapPin, QrCode, Smartphone, Calculator, DollarSign, Send, Check, Copy, Archive, Mail, Lightbulb, Route, Sparkles } from 'lucide-react'
+import { Building2, Phone, Shield, Calendar, Image as ImageIcon, UserCheck, FileText, Upload, Download, Trash2, Eye, AlertTriangle, Plus, X, Pencil, CheckCircle, Clock, MapPin, QrCode, Smartphone, Calculator, DollarSign, Send, Check, Copy, Archive, Mail, Lightbulb, Route, Sparkles, Briefcase } from 'lucide-react'
 import DocumentViewerModal from '../components/DocumentViewerModal'
 import CoverageStats from '../components/CoverageStats'
 import ShiftOverviewCard from '../components/ShiftOverviewCard'
@@ -170,17 +171,20 @@ export default function SiteDetail() {
     { key: 'media' as const, label: 'Dokumente & Medien', icon: FileText, badge: (site.images?.length || 0) + (site.documents?.length || 0) },
   ]
 
+  const breadcrumbItems = [
+    { label: 'Aufträge', href: '/sites', icon: Briefcase },
+    { label: site.name },
+  ]
+
   return (
     <div className="space-y-6">
+      {/* Breadcrumbs */}
+      <Breadcrumbs items={breadcrumbItems} />
+
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2">
-            <Button variant="link" onClick={() => nav('/sites')} className="px-0">
-              ← Zurück zur Liste
-            </Button>
-          </div>
-          <h1 className="text-2xl font-bold mt-2">{site.name}</h1>
+          <h1 className="text-2xl font-bold">{site.name}</h1>
           <p className="text-gray-600">
             {site.address}, {site.postalCode} {site.city}
           </p>
