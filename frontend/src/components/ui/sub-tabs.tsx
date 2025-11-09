@@ -11,11 +11,24 @@ export interface SubTab {
 interface SubTabsProps {
   tabs: SubTab[]
   defaultTab?: string
+  activeTab?: string
+  onTabChange?: (key: string) => void
   className?: string
 }
 
-export function SubTabs({ tabs, defaultTab, className }: SubTabsProps) {
-  const [activeTab, setActiveTab] = useState(defaultTab || tabs[0]?.key)
+export function SubTabs({ tabs, defaultTab, activeTab: controlledActiveTab, onTabChange, className }: SubTabsProps) {
+  const [internalActiveTab, setInternalActiveTab] = useState(defaultTab || tabs[0]?.key)
+
+  // Use controlled state if provided, otherwise use internal state
+  const activeTab = controlledActiveTab ?? internalActiveTab
+
+  const handleTabChange = (key: string) => {
+    if (onTabChange) {
+      onTabChange(key)
+    } else {
+      setInternalActiveTab(key)
+    }
+  }
 
   const activeTabContent = tabs.find((tab) => tab.key === activeTab)?.content
 
@@ -27,7 +40,7 @@ export function SubTabs({ tabs, defaultTab, className }: SubTabsProps) {
           {tabs.map((tab) => (
             <button
               key={tab.key}
-              onClick={() => setActiveTab(tab.key)}
+              onClick={() => handleTabChange(tab.key)}
               className={cn(
                 'px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap',
                 activeTab === tab.key

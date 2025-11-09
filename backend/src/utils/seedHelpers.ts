@@ -40,10 +40,13 @@ export async function resetSeedData(prisma: PrismaClient) {
   }
 }
 
-type CreateUserInput = Omit<User, 'id' | 'createdAt' | 'updatedAt' | 'password' | 'pushOptIn' | 'emailOptIn'> & {
+type CreateUserInput = Omit<User, 'id' | 'createdAt' | 'updatedAt' | 'password' | 'pushOptIn' | 'emailOptIn' | 'wageGroup' | 'baseWageOverride' | 'activityWages'> & {
   password?: string;
   pushOptIn?: boolean;
   emailOptIn?: boolean;
+  wageGroup?: string | null;
+  baseWageOverride?: number | null;
+  activityWages?: any | null;
 };
 
 export async function createUserWithPassword(
@@ -52,12 +55,16 @@ export async function createUserWithPassword(
   saltRounds = 12,
 ) {
   const passwordHash = await bcrypt.hash(input.password ?? 'password123', saltRounds);
+  const { wageGroup, baseWageOverride, activityWages, ...restInput } = input;
   return prisma.user.create({
     data: {
-      ...input,
+      ...restInput,
       password: passwordHash,
       pushOptIn: input.pushOptIn ?? true,
       emailOptIn: input.emailOptIn ?? true,
+      ...(wageGroup !== undefined && { wageGroup }),
+      ...(baseWageOverride !== undefined && { baseWageOverride }),
+      ...(activityWages !== undefined && { activityWages }),
     },
   });
 }

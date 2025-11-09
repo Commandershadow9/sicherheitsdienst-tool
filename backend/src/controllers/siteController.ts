@@ -43,7 +43,57 @@ export const getAllSites = async (req: Request, res: Response, next: NextFunctio
     const total = await prisma.site.count({ where });
     const totalPages = Math.max(Math.ceil(total / pageSize), 1);
     const skip = (page - 1) * pageSize;
-    const data = await prisma.site.findMany({ where, orderBy: { [sortBy]: sortDir as any }, skip, take: pageSize });
+    const sites = await prisma.site.findMany({
+      where,
+      orderBy: { [sortBy]: sortDir as any },
+      skip,
+      take: pageSize,
+      include: {
+        securityConcepts: {
+          where: { status: { in: ['ACTIVE', 'APPROVED'] } },
+          orderBy: { createdAt: 'desc' },
+          take: 1,
+        },
+      },
+    });
+
+    // Erweitere Sites mit benötigten MA und Objektleiter-Info
+    const data = sites.map((site) => {
+      const securityConcept = site.securityConcepts?.[0];
+      let requiredStaff = null;
+      let requiresLeader = false;
+
+      // Extrahiere requiredStaff aus shiftModel
+      if (securityConcept?.shiftModel) {
+        const shiftModel = securityConcept.shiftModel as any;
+        if (shiftModel.shifts && Array.isArray(shiftModel.shifts)) {
+          // Summiere requiredStaff aus allen Schichten
+          requiredStaff = shiftModel.shifts.reduce((sum: number, shift: any) => {
+            return sum + (shift.requiredStaff || 0);
+          }, 0);
+        }
+      }
+
+      // Prüfe ob Objektleiter/Schichtleiter erforderlich
+      if (securityConcept?.staffRequirements) {
+        const staffReq = securityConcept.staffRequirements as any;
+        if (staffReq.qualifications && Array.isArray(staffReq.qualifications)) {
+          requiresLeader = staffReq.qualifications.some(
+            (qual: string) =>
+              qual.includes('Objektleiter') ||
+              qual.includes('Schichtleiter') ||
+              qual.includes('Schichtführer')
+          );
+        }
+      }
+
+      const { securityConcepts: _, ...siteData } = site;
+      return {
+        ...siteData,
+        requiredStaff,
+        requiresLeader,
+      };
+    });
 
     const accept = (req.headers['accept'] as string) || '';
     if (accept.includes('text/csv')) {

@@ -2,7 +2,8 @@ import * as React from 'react'
 import { cn } from '@/lib/utils'
 
 type ModalProps = {
-  open: boolean
+  open?: boolean
+  isOpen?: boolean
   onClose: () => void
   title?: string | React.ReactNode
   children?: React.ReactNode
@@ -17,8 +18,9 @@ const sizeClasses = {
   fullscreen: 'max-w-full h-screen m-0 rounded-none',
 }
 
-export function Modal({ open, onClose, title, children, size = 'lg' }: ModalProps) {
-  if (!open) return null
+export function Modal({ open, isOpen, onClose, title, children, size = 'lg' }: ModalProps) {
+  const isVisible = open ?? isOpen ?? false
+  if (!isVisible) return null
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center animate-in fade-in duration-200">
       <div

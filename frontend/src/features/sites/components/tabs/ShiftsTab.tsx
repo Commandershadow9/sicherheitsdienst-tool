@@ -14,15 +14,16 @@ import { useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Modal } from '@/components/ui/modal'
 import { cn } from '@/lib/utils'
-import { Calendar, Clock, UserCheck, CalendarDays, List, Plus, Settings, Play, Lightbulb, AlertCircle } from 'lucide-react'
+import { Calendar, Clock, UserCheck, CalendarDays, List, Plus, Settings, Play, Lightbulb, AlertCircle, Edit, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { fetchSiteShifts, generateShiftsForSite, type Shift, type GenerateShiftsPayload } from '../../api'
 import {
   getShiftRules,
   createShiftRule,
+  updateShiftRule,
   deleteShiftRule,
 } from '../../api/shiftRuleApi'
-import type { ShiftRule, CreateShiftRuleInput } from '../../types/shiftRule'
+import type { ShiftRule, CreateShiftRuleInput, UpdateShiftRuleInput } from '../../types/shiftRule'
 import ShiftCalendar from '../shifts/ShiftCalendar'
 import ShiftRuleForm from '../shift-planning/ShiftRuleForm'
 import GenerateShiftsDialog from '../shift-planning/GenerateShiftsDialog'
@@ -56,6 +57,8 @@ export default function ShiftsTab({ site, siteId }: ShiftsTabProps) {
   const [view, setView] = useState<'list' | 'calendar'>('list')
   const [showRulesManager, setShowRulesManager] = useState(false)
   const [showCreateRuleModal, setShowCreateRuleModal] = useState(false)
+  const [showEditRuleModal, setShowEditRuleModal] = useState(false)
+  const [editingRule, setEditingRule] = useState<ShiftRule | null>(null)
   const [showTemplateSelector, setShowTemplateSelector] = useState(false)
   const [showGenerateDialog, setShowGenerateDialog] = useState(false)
 
@@ -100,6 +103,33 @@ export default function ShiftsTab({ site, siteId }: ShiftsTabProps) {
     },
     onError: (error: any) => {
       toast.error(error?.response?.data?.message || 'Fehler beim Erstellen der Regel')
+    },
+  })
+
+  // Update rule mutation
+  const updateRuleMutation = useMutation({
+    mutationFn: ({ ruleId, input }: { ruleId: string; input: UpdateShiftRuleInput }) =>
+      updateShiftRule(siteId, ruleId, input),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['shift-rules', siteId] })
+      setShowEditRuleModal(false)
+      setEditingRule(null)
+      toast.success('Schichtregel erfolgreich aktualisiert')
+    },
+    onError: (error: any) => {
+      toast.error(error?.response?.data?.message || 'Fehler beim Aktualisieren der Regel')
+    },
+  })
+
+  // Delete rule mutation
+  const deleteRuleMutation = useMutation({
+    mutationFn: (ruleId: string) => deleteShiftRule(siteId, ruleId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['shift-rules', siteId] })
+      toast.success('Schichtregel erfolgreich gelöscht')
+    },
+    onError: (error: any) => {
+      toast.error(error?.response?.data?.message || 'Fehler beim Löschen der Regel')
     },
   })
 
@@ -275,13 +305,31 @@ export default function ShiftsTab({ site, siteId }: ShiftsTabProps) {
                           <p className="text-sm text-gray-500 mt-2">{rule.description}</p>
                         )}
                       </div>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => nav(`/sites/${siteId}?tab=shifts&rule=${rule.id}`)}
-                      >
-                        Bearbeiten →
-                      </Button>
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => {
+                            setEditingRule(rule)
+                            setShowEditRuleModal(true)
+                          }}
+                        >
+                          <Edit size={14} className="mr-1" />
+                          Bearbeiten
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => {
+                            if (confirm(`Schichtregel "${rule.name}" wirklich löschen?`)) {
+                              deleteRuleMutation.mutate(rule.id)
+                            }
+                          }}
+                          className="text-red-600 hover:text-red-700"
+                        >
+                          <Trash2 size={14} />
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -414,6 +462,29 @@ export default function ShiftsTab({ site, siteId }: ShiftsTabProps) {
             onSubmit={(input) => createRuleMutation.mutate(input)}
             onCancel={() => setShowCreateRuleModal(false)}
             isSubmitting={createRuleMutation.isPending}
+          />
+        </Modal>
+      )}
+
+      {showEditRuleModal && editingRule && (
+        <Modal
+          isOpen={showEditRuleModal}
+          onClose={() => {
+            setShowEditRuleModal(false)
+            setEditingRule(null)
+          }}
+          title="Schichtregel bearbeiten"
+          size="lg"
+        >
+          <ShiftRuleForm
+            siteId={siteId}
+            initialData={editingRule}
+            onSubmit={(input) => updateRuleMutation.mutate({ ruleId: editingRule.id, input })}
+            onCancel={() => {
+              setShowEditRuleModal(false)
+              setEditingRule(null)
+            }}
+            isSubmitting={updateRuleMutation.isPending}
           />
         </Modal>
       )}

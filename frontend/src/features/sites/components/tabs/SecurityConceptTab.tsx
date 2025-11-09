@@ -50,6 +50,7 @@ type Site = {
 type SecurityConceptTabProps = {
   site: Site
   siteId: string
+  onNavigateToShiftPlanning?: () => void
 }
 
 const fetchSecurityConcept = async (siteId: string): Promise<SecurityConcept | null> => {
@@ -79,7 +80,7 @@ const approveSecurityConcept = async (siteId: string, conceptId: string): Promis
   return res.data.data
 }
 
-export default function SecurityConceptTab({ site, siteId }: SecurityConceptTabProps) {
+export default function SecurityConceptTab({ site, siteId, onNavigateToShiftPlanning }: SecurityConceptTabProps) {
   const queryClient = useQueryClient()
   const [createMode, setCreateMode] = useState(false)
 
@@ -255,10 +256,8 @@ export default function SecurityConceptTab({ site, siteId }: SecurityConceptTabP
                       size="sm"
                       variant="outline"
                       onClick={() => {
-                        const tabs = document.querySelectorAll('[role="tab"]')
-                        const shiftsTab = Array.from(tabs).find((tab) => tab.textContent?.includes('Schichtplanung'))
-                        if (shiftsTab instanceof HTMLElement) {
-                          shiftsTab.click()
+                        if (onNavigateToShiftPlanning) {
+                          onNavigateToShiftPlanning()
                         }
                       }}
                       className="bg-blue-600 text-white hover:bg-blue-700 border-blue-600"

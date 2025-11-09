@@ -55,6 +55,7 @@ export default function SiteDetail() {
   const nav = useNavigate()
   const { user } = useAuth()
   const [activeTab, setActiveTab] = useState<TabType>('overview')
+  const [planningSubTab, setPlanningSubTab] = useState<string>('security-concept')
   const [incidentFilters, setIncidentFilters] = useState<{
     status: string
     severity: string
@@ -512,7 +513,7 @@ export default function SiteDetail() {
                 {
                   key: 'security-concept',
                   label: 'Sicherheitskonzept',
-                  content: <SecurityConceptTab site={site} siteId={id!} />,
+                  content: <SecurityConceptTab site={site} siteId={id!} onNavigateToShiftPlanning={() => setPlanningSubTab('shifts')} />,
                 },
                 {
                   key: 'shifts',
@@ -527,6 +528,8 @@ export default function SiteDetail() {
                   content: <ClearancesTab site={site} siteId={id!} />,
                 },
               ]}
+              activeTab={planningSubTab}
+              onTabChange={setPlanningSubTab}
               defaultTab="security-concept"
             />
           </div>

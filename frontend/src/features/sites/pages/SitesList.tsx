@@ -24,6 +24,8 @@ type Site = {
   status?: 'INQUIRY' | 'IN_REVIEW' | 'CALCULATING' | 'OFFER_SENT' | 'ACTIVE' | 'INACTIVE' | 'LOST'
   customerName?: string
   customerCompany?: string
+  requiredStaff?: number | null
+  requiresLeader?: boolean
 }
 type ListResp = { data: Site[]; pagination: { page: number; pageSize: number; total: number; totalPages: number } }
 
@@ -34,9 +36,6 @@ export default function SitesList() {
   const [downloading, setDownloading] = React.useState<null | { type: 'csv'|'xlsx'; progress?: number }>(null)
   const [selectedIds, setSelectedIds] = React.useState<string[]>([])
 
-  const allIds = React.useMemo(() => data?.data?.map((s) => s.id) || [], [data])
-  const isAllSelected = selectedIds.length > 0 && selectedIds.length === allIds.length
-  const isSomeSelected = selectedIds.length > 0 && selectedIds.length < allIds.length
   const qk = ['sites', params]
   const { data, isLoading, isError, error } = useQuery<ListResp>({
     queryKey: qk,
@@ -47,6 +46,10 @@ export default function SitesList() {
     },
     placeholderData: keepPreviousData,
   })
+
+  const allIds = React.useMemo(() => data?.data?.map((s) => s.id) || [], [data])
+  const isAllSelected = selectedIds.length > 0 && selectedIds.length === allIds.length
+  const isSomeSelected = selectedIds.length > 0 && selectedIds.length < allIds.length
 
   const updateStatusMutation = useMutation({
     mutationFn: async ({ id, status }: { id: string; status: string }) => {
@@ -294,6 +297,34 @@ export default function SitesList() {
               if (r.customerCompany) return r.customerCompany
               if (r.customerName) return r.customerName
               return <span className="text-gray-400">—</span>
+            },
+          },
+          {
+            key: 'requiredStaff',
+            header: 'Benötigte MA',
+            render: (r: Site) => {
+              if (r.requiredStaff === null || r.requiredStaff === undefined) {
+                return <span className="text-gray-400">—</span>
+              }
+              return (
+                <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-blue-50 text-blue-700">
+                  {r.requiredStaff} MA
+                </span>
+              )
+            },
+          },
+          {
+            key: 'requiresLeader',
+            header: 'Objektleiter',
+            render: (r: Site) => {
+              if (r.requiresLeader) {
+                return (
+                  <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-purple-50 text-purple-700">
+                    ✓ Erforderlich
+                  </span>
+                )
+              }
+              return <span className="text-gray-400 text-xs">—</span>
             },
           },
           {
