@@ -61,6 +61,7 @@ model User {
   controlScans          ControlScan[]         @relation("ControlScanScanner")
   calculationsCalculated SiteCalculation[]    @relation("CalculationCalculator")
   preferences           EmployeePreferences?
+  shiftPreferences      EmployeeShiftPreference[]
   workload              EmployeeWorkload[]
   complianceViolations  ComplianceViolation[]
 
@@ -163,6 +164,21 @@ model Site {
   wizardCompleted Boolean @default(false)
   wizardStep      Int     @default(0)
 
+  // ===== SCHICHTPLANUNG ERWEITERUNGEN (v2.0) =====
+  // Standard-Schichtmodell für dieses Objekt
+  defaultShiftTemplateId String?        @map("default_shift_template_id")
+  defaultShiftTemplate   ShiftTemplate? @relation(fields: [defaultShiftTemplateId], references: [id], onDelete: SetNull)
+
+  // Mindestbesetzung (überschreibt Template-Wert)
+  minStaffRequirement Int  @default(1) @map("min_staff_requirement")
+  maxStaffCapacity    Int? @map("max_staff_capacity") // Optional: Maximale Kapazität
+
+  // Kritische Zeiten (JSON: ["22:00-06:00", "weekends"])
+  criticalHours Json? @map("critical_hours")
+
+  // Automatische Schicht-Generierung aktiviert?
+  autoGenerateShifts Boolean @default(false) @map("auto_generate_shifts")
+
   // Beschreibung & Notizen
   description String? @db.Text
   notes       String? @db.Text
@@ -171,18 +187,19 @@ model Site {
   updatedAt DateTime @updatedAt
 
   // Beziehungen
-  shifts           Shift[]
-  shiftRules       ShiftRule[]
-  events           Event[]
-  clearances       ObjectClearance[]
-  images           SiteImage[]
-  assignments      SiteAssignment[]
-  documents        SiteDocument[]
-  incidents        SiteIncident[]
-  controlPoints    ControlPoint[]
-  controlRounds    ControlRound[]
-  calculations     SiteCalculation[]
-  securityConcepts SecurityConcept[]
+  shifts                Shift[]
+  shiftRules            ShiftRule[]
+  events                Event[]
+  clearances            ObjectClearance[]
+  images                SiteImage[]
+  assignments           SiteAssignment[]
+  documents             SiteDocument[]
+  incidents             SiteIncident[]
+  controlPoints         ControlPoint[]
+  controlRounds         ControlRound[]
+  calculations          SiteCalculation[]
+  securityConcepts      SecurityConcept[]
+  employeePreferences   EmployeeShiftPreference[]
 
   @@unique([name, address], name: "sites_name_address_key")
   @@index([name], name: "sites_name_idx")
@@ -226,6 +243,68 @@ model SiteTemplate {
   updatedAt DateTime @updatedAt
 
   @@map("site_templates")
+}
+
+// ===== SCHICHTPLANUNG v2.0: WIEDERVERWENDBARE SCHICHTMUSTER =====
+
+// Schichtvorlagen (Wiederverwendbare Muster für Schichten)
+model ShiftTemplate {
+  id          String  @id @default(cuid())
+  name        String // z.B. "Frühschicht Standard", "24h Wochenende"
+  description String? @db.Text
+
+  // Schicht-Konfiguration
+  shiftType ShiftType @default(REGULAR) @map("shift_type") // REGULAR, NIGHT, WEEKEND, HOLIDAY
+
+  // Zeitdefinition
+  startTime String // "06:00" (HH:mm Format)
+  endTime   String // "14:00"
+  duration  Int? // Dauer in Stunden (berechnet oder manuell)
+
+  // Personal-Anforderungen
+  requiredStaff          Int      @default(1) @map("required_staff")
+  requiredQualifications String[] @default([]) @map("required_qualifications")
+
+  // Schichtmodell-Zuordnung
+  shiftModelType String? @map("shift_model_type") // "2-SHIFT", "3-SHIFT", "24/7", "ROTATING"
+
+  // Zuschläge & Besonderheiten
+  nightShift    Boolean @default(false) @map("night_shift") // 22-6 Uhr
+  weekendShift  Boolean @default(false) @map("weekend_shift")
+  holidayShift  Boolean @default(false) @map("holiday_shift")
+  wageMultiplier Decimal? @default(1.0) @db.Decimal(4, 2) @map("wage_multiplier") // z.B. 1.25 für 25% Zuschlag
+
+  // Farbe für UI (Hex-Code)
+  color String? @default("#3B82F6") // Blau als Default
+
+  // Anwendbarkeit
+  applicableDays Int[] @default([1, 2, 3, 4, 5]) @map("applicable_days") // 0=So, 1=Mo, ..., 6=Sa
+
+  // Status
+  isActive Boolean @default(true) @map("is_active")
+
+  // Kategorisierung
+  category String? // "STANDARD", "SPECIAL", "EMERGENCY"
+
+  // Metadaten
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Beziehungen
+  sites Site[] // Sites die dieses Template als Default nutzen
+
+  @@index([shiftType], name: "shift_templates_type_idx")
+  @@index([isActive], name: "shift_templates_active_idx")
+  @@map("shift_templates")
+}
+
+enum ShiftType {
+  REGULAR // Reguläre Schicht (Mo-Fr, Tag)
+  NIGHT // Nachtschicht
+  WEEKEND // Wochenende
+  HOLIDAY // Feiertag
+  EMERGENCY // Notfall/Sonderfall
+  SPECIAL // Sonderveranstaltung
 }
 
 // Benutzerrollen
@@ -530,6 +609,62 @@ model EmployeePreferences {
 
   @@index([userId], name: "employee_preferences_user_idx")
   @@map("employee_preferences")
+}
+
+// ===== SCHICHTPLANUNG v2.0: ERWEITERTE SCHICHT-PRÄFERENZEN =====
+
+// Mitarbeiter-Schicht-Präferenzen (Granulare Kontrolle pro Site/Schicht)
+model EmployeeShiftPreference {
+  id     String @id @default(cuid())
+  userId String @map("user_id")
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Site-spezifische Präferenzen (optional)
+  siteId String? @map("site_id")
+  site   Site?   @relation(fields: [siteId], references: [id], onDelete: Cascade)
+
+  // Schicht-Typ Präferenzen (JSON: { "MORNING": 10, "NIGHT": 2, "WEEKEND": 5 })
+  // Werte: 1-10 (1=ungern, 10=bevorzugt)
+  shiftTypePreferences Json? @default("{}") @map("shift_type_preferences")
+
+  // Zeit-Präferenzen (JSON: { "06:00-14:00": 10, "14:00-22:00": 7, "22:00-06:00": 3 })
+  timeSlotPreferences Json? @default("{}") @map("time_slot_preferences")
+
+  // Wochentag-Präferenzen (JSON: { "0": 5, "1": 10, "2": 10, ..., "6": 7 })
+  // 0=Sonntag, 1=Montag, ..., 6=Samstag
+  weekdayPreferences Json? @default("{}") @map("weekday_preferences")
+
+  // Blackout-Zeiten (Zeiten zu denen MA NICHT arbeiten will)
+  // JSON: [{ "start": "2025-12-24T00:00:00Z", "end": "2025-12-26T23:59:59Z", "reason": "Weihnachten" }]
+  blackoutPeriods Json? @default("[]") @map("blackout_periods")
+
+  // Bevorzugte maximale Schichtlänge (in Stunden)
+  maxPreferredShiftLength Int? @default(8) @map("max_preferred_shift_length")
+  minPreferredShiftLength Int? @default(6) @map("min_preferred_shift_length")
+
+  // Bevorzugte Arbeitsrhythmus
+  preferredConsecutiveDays Int? @default(5) @map("preferred_consecutive_days") // 5 Tage am Stück
+  preferredRestDays        Int? @default(2) @map("preferred_rest_days") // 2 Tage Pause
+
+  // Bereitschaft für Vertretungen
+  availableForReplacement Boolean @default(true) @map("available_for_replacement")
+  replacementPriority     Int     @default(5) @map("replacement_priority") // 1-10 (10=sehr bereit)
+
+  // Flexibilität-Score (automatisch berechnet basierend auf Präferenzen)
+  flexibilityScore Int? @default(50) @map("flexibility_score") // 0-100
+
+  // Notizen
+  notes String? @db.Text
+
+  // Metadaten
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([userId, siteId], name: "employee_shift_preferences_user_site_key")
+  @@index([userId], name: "employee_shift_preferences_user_idx")
+  @@index([siteId], name: "employee_shift_preferences_site_idx")
+  @@index([availableForReplacement], name: "employee_shift_preferences_replacement_idx")
+  @@map("employee_shift_preferences")
 }
 
 // Workload-Tracking (Performance-optimiert für Scoring-Engine)

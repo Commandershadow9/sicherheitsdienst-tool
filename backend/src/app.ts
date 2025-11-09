@@ -35,6 +35,7 @@ import dashboardRoutes from './routes/dashboardRoutes';
 import statsRoutes from './routes/statsRoutes';
 import controlRoutes from './routes/controlRoutes';
 import calculationRoutes from './routes/calculationRoutes';
+import shiftPlanningRoutes from './routes/shiftPlanningRoutes'; // Shift Planning v2.0
 
 const app = express();
 // Port-Konstante wird hier nicht benötigt (Server-Start in server.ts)
@@ -140,6 +141,7 @@ app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/stats', statsRoutes);
 app.use('/api', controlRoutes); // Control Points & Rounds (Phase 4)
 app.use('/api', calculationRoutes); // Price Models & Calculations (Phase 5)
+app.use('/api/shift-planning', shiftPlanningRoutes); // Shift Planning v2.0 (Templates, Conflicts, Auto-Fill)
 
 // API v1 Alias (OpenAPI servers: /api/v1)
 app.use('/api/v1', systemRoutes);
