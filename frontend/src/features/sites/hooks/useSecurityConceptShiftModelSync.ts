@@ -7,7 +7,7 @@
  *
  * Flow:
  * 1. ShiftModel existiert, aber keine Rules → Auto-Create Rules
- * 2. ShiftRules ändern sich → Update ShiftModel
+ * 2. ShiftRules ändern sich → Update ShiftModel (REVERSE-SYNC)
  * 3. ShiftModel ändert sich → Update/Sync Rules
  */
 
@@ -15,19 +15,27 @@ import { useEffect, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { createShiftRule } from '../api/shiftRuleApi';
+import { api } from '@/lib/api';
 import type { ShiftModel, ShiftDefinition } from '@/types/securityConcept';
 import type { CreateShiftRuleInput, ShiftRule } from '../types/shiftRule';
 
 // Map ShiftDefinition weekdays to ShiftRule daysOfWeek
 const mapWeekdaysToDaysOfWeek = (weekdays: string[]): number[] => {
   const mapping: Record<string, number> = {
-    So: 0, Sonntag: 0,
-    Mo: 1, Montag: 1,
-    Di: 2, Dienstag: 2,
-    Mi: 3, Mittwoch: 3,
-    Do: 4, Donnerstag: 4,
-    Fr: 5, Freitag: 5,
-    Sa: 6, Samstag: 6,
+    So: 0,
+    Sonntag: 0,
+    Mo: 1,
+    Montag: 1,
+    Di: 2,
+    Dienstag: 2,
+    Mi: 3,
+    Mittwoch: 3,
+    Do: 4,
+    Donnerstag: 4,
+    Fr: 5,
+    Freitag: 5,
+    Sa: 6,
+    Samstag: 6,
   };
 
   return weekdays
@@ -36,7 +44,22 @@ const mapWeekdaysToDaysOfWeek = (weekdays: string[]): number[] => {
     .sort();
 };
 
-// Convert ShiftModel to ShiftRules
+// Reverse Map: daysOfWeek to weekdays
+const mapDaysOfWeekToWeekdays = (daysOfWeek: number[]): string[] => {
+  const mapping: Record<number, string> = {
+    0: 'So',
+    1: 'Mo',
+    2: 'Di',
+    3: 'Mi',
+    4: 'Do',
+    5: 'Fr',
+    6: 'Sa',
+  };
+
+  return daysOfWeek.map((day) => mapping[day]).filter((day) => day !== undefined);
+};
+
+// Convert ShiftModel to ShiftRules (Forward Sync)
 const convertShiftModelToRules = (
   shiftModel: ShiftModel,
   siteId: string
@@ -60,11 +83,64 @@ const convertShiftModelToRules = (
   }));
 };
 
+// Convert ShiftRules to ShiftModel (Reverse Sync)
+const convertRulesToShiftModel = (
+  rules: ShiftRule[],
+  currentShiftModel: ShiftModel | null
+): ShiftModel => {
+  // Filter nur aktive WEEKLY Rules (das sind die aus dem ShiftModel)
+  const relevantRules = rules.filter(
+    (r) => r.isActive && r.pattern === 'WEEKLY' && r.description?.includes('synchronisiert')
+  );
+
+  const shifts: ShiftDefinition[] = relevantRules.map((rule) => ({
+    name: rule.name,
+    from: rule.startTime,
+    to: rule.endTime,
+    duration: calculateDuration(rule.startTime, rule.endTime),
+    requiredStaff: rule.requiredStaff,
+    weekdays: mapDaysOfWeekToWeekdays(rule.daysOfWeek),
+  }));
+
+  // Berechne totalHoursPerWeek
+  const totalHoursPerWeek = shifts.reduce((sum, shift) => {
+    return sum + shift.duration * shift.weekdays.length;
+  }, 0);
+
+  // Schätze requiredFulltimeStaff (vereinfacht)
+  const requiredFulltimeStaff = Math.ceil(totalHoursPerWeek / 40);
+
+  return {
+    type: currentShiftModel?.type || 'CUSTOM',
+    shifts,
+    totalHoursPerWeek,
+    requiredFulltimeStaff,
+    notes: currentShiftModel?.notes,
+  };
+};
+
+// Helper: Calculate duration in hours
+const calculateDuration = (startTime: string, endTime: string): number => {
+  const [startHour, startMin] = startTime.split(':').map(Number);
+  const [endHour, endMin] = endTime.split(':').map(Number);
+
+  let hours = endHour - startHour;
+  let minutes = endMin - startMin;
+
+  if (hours < 0) {
+    // Overnight shift
+    hours += 24;
+  }
+
+  return hours + minutes / 60;
+};
+
 interface UseSecurityConceptShiftModelSyncOptions {
   siteId: string;
   shiftModel: ShiftModel | null;
   existingRules: ShiftRule[];
   enabled?: boolean;
+  securityConceptId?: string; // For Reverse-Sync
 }
 
 export function useSecurityConceptShiftModelSync({
@@ -72,40 +148,51 @@ export function useSecurityConceptShiftModelSync({
   shiftModel,
   existingRules,
   enabled = true,
+  securityConceptId,
 }: UseSecurityConceptShiftModelSyncOptions) {
   const queryClient = useQueryClient();
   const syncedRef = useRef(false);
   const lastShiftModelRef = useRef<string | null>(null);
+  const lastRulesRef = useRef<string | null>(null);
 
   useEffect(() => {
-    if (!enabled || !shiftModel) {
+    if (!enabled) {
       return;
     }
 
     const shiftModelHash = JSON.stringify(shiftModel);
+    const rulesHash = JSON.stringify(existingRules);
 
     // Auto-Create: ShiftModel existiert, aber keine Rules
-    const shouldAutoCreate = existingRules.length === 0 && !syncedRef.current;
+    const shouldAutoCreate = shiftModel && existingRules.length === 0 && !syncedRef.current;
 
-    // Auto-Update: ShiftModel hat sich geändert
+    // Forward-Sync: ShiftModel hat sich geändert
     const shiftModelChanged =
-      lastShiftModelRef.current !== null &&
-      lastShiftModelRef.current !== shiftModelHash;
+      lastShiftModelRef.current !== null && lastShiftModelRef.current !== shiftModelHash;
+
+    // Reverse-Sync: ShiftRules haben sich geändert
+    const rulesChanged = lastRulesRef.current !== null && lastRulesRef.current !== rulesHash;
 
     if (shouldAutoCreate) {
       // Initial Auto-Create
       autoCreateRulesFromShiftModel();
       syncedRef.current = true;
       lastShiftModelRef.current = shiftModelHash;
-    } else if (shiftModelChanged) {
-      // ShiftModel wurde geändert → Sync Rules
+      lastRulesRef.current = rulesHash;
+    } else if (shiftModelChanged && !rulesChanged) {
+      // Forward-Sync: ShiftModel → Rules
       autoSyncRulesWithShiftModel();
       lastShiftModelRef.current = shiftModelHash;
+    } else if (rulesChanged && !shiftModelChanged && existingRules.length > 0) {
+      // Reverse-Sync: Rules → ShiftModel
+      autoSyncShiftModelWithRules();
+      lastRulesRef.current = rulesHash;
     } else {
-      // Update reference
+      // Update references
       lastShiftModelRef.current = shiftModelHash;
+      lastRulesRef.current = rulesHash;
     }
-  }, [shiftModel, existingRules, enabled, siteId]);
+  }, [shiftModel, existingRules, enabled, siteId, securityConceptId]);
 
   const autoCreateRulesFromShiftModel = async () => {
     if (!shiftModel) return;
@@ -119,7 +206,6 @@ export function useSecurityConceptShiftModelSync({
         successCount++;
       }
 
-      // Invalidate queries to refetch
       queryClient.invalidateQueries({ queryKey: ['shift-rules', siteId] });
 
       toast.success(
@@ -128,14 +214,13 @@ export function useSecurityConceptShiftModelSync({
       );
     } catch (error: any) {
       console.error('Auto-Sync Fehler:', error);
-      toast.error('Fehler bei automatischer Regel-Erstellung. Bitte manuell prüfen.');
+      toast.error('Fehler bei automatischer Regel-Erstellung');
     }
   };
 
   const autoSyncRulesWithShiftModel = async () => {
     if (!shiftModel) return;
 
-    // Find rules that need to be updated/created
     const targetRules = convertShiftModelToRules(shiftModel, siteId);
     const rulesToCreate: CreateShiftRuleInput[] = [];
 
@@ -144,7 +229,6 @@ export function useSecurityConceptShiftModelSync({
       if (!existing) {
         rulesToCreate.push(targetRule);
       }
-      // TODO: Update existing rules if times/staff changed
     }
 
     if (rulesToCreate.length > 0) {
@@ -155,14 +239,39 @@ export function useSecurityConceptShiftModelSync({
 
         queryClient.invalidateQueries({ queryKey: ['shift-rules', siteId] });
 
-        toast.success(
-          `✓ ${rulesToCreate.length} neue Schicht-Regeln synchronisiert`,
-          { duration: 4000 }
-        );
+        toast.success(`✓ ${rulesToCreate.length} neue Schicht-Regeln synchronisiert`, {
+          duration: 4000,
+        });
       } catch (error: any) {
-        console.error('Auto-Sync Update Fehler:', error);
+        console.error('Forward-Sync Fehler:', error);
         toast.error('Fehler bei Regel-Synchronisation');
       }
+    }
+  };
+
+  const autoSyncShiftModelWithRules = async () => {
+    if (!securityConceptId || existingRules.length === 0) {
+      return; // Kein SecurityConcept oder keine Rules
+    }
+
+    try {
+      const updatedShiftModel = convertRulesToShiftModel(existingRules, shiftModel);
+
+      // Update ShiftModel via Backend API
+      await api.patch(`/sites/${siteId}/security-concept/${securityConceptId}/shift-model`, {
+        shiftModel: updatedShiftModel,
+      });
+
+      // Invalidate SecurityConcept query
+      queryClient.invalidateQueries({ queryKey: ['site', siteId] });
+      queryClient.invalidateQueries({ queryKey: ['security-concept', siteId] });
+
+      toast.success('✓ Sicherheitskonzept automatisch mit Schichtplanung synchronisiert', {
+        duration: 4000,
+      });
+    } catch (error: any) {
+      console.error('Reverse-Sync Fehler:', error);
+      // Silent fail - Reverse-Sync ist optional
     }
   };
 

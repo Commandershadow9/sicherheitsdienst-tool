@@ -61,7 +61,8 @@ type Site = {
   id: string;
   name: string;
   securityConcept?: {
-    shiftModel?: string;
+    id: string;
+    shiftModel?: any;
   };
   securityConcepts?: Array<{
     id: string;
@@ -152,12 +153,24 @@ export default function ShiftsTab({ site, siteId }: ShiftsTabProps) {
     return null;
   }, [site]);
 
-  // Auto-Sync: ShiftModel ↔ ShiftRules (automatisch, kein manueller Import)
+  // Extract SecurityConcept ID (für Reverse-Sync)
+  const securityConceptId = useMemo(() => {
+    if (site.securityConcept?.id) {
+      return site.securityConcept.id;
+    }
+    if (site.securityConcepts && site.securityConcepts.length > 0) {
+      return site.securityConcepts[0].id;
+    }
+    return undefined;
+  }, [site]);
+
+  // Auto-Sync: ShiftModel ↔ ShiftRules (automatisch, bidirektional)
   useSecurityConceptShiftModelSync({
     siteId,
     shiftModel,
     existingRules: rules,
     enabled: true,
+    securityConceptId, // Für Reverse-Sync: ShiftRules → ShiftModel
   });
 
   // Create Rule Mutation

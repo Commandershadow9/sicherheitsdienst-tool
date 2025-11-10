@@ -367,6 +367,55 @@ export const deleteSecurityConcept = async (req: Request, res: Response, next: N
   }
 };
 
+// PATCH /api/sites/:siteId/security-concept/:id/shift-model - ShiftModel Auto-Sync Update
+export const updateShiftModel = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { siteId, id } = req.params;
+    const { shiftModel } = req.body;
+
+    if (!shiftModel) {
+      res.status(400).json({ success: false, message: 'ShiftModel fehlt' });
+      return;
+    }
+
+    // Hole aktives Konzept (oder neuestes DRAFT)
+    const concept = await prisma.securityConcept.findFirst({
+      where: {
+        siteId,
+        OR: [
+          { id }, // Spezifische ID wenn angegeben
+          { status: 'ACTIVE' }, // Oder aktives Konzept
+          { status: 'DRAFT' }, // Oder Draft
+        ],
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    if (!concept) {
+      res.status(404).json({ success: false, message: 'Kein Sicherheitskonzept gefunden' });
+      return;
+    }
+
+    // Update nur ShiftModel (nicht das gesamte Konzept)
+    const updated = await prisma.securityConcept.update({
+      where: { id: concept.id },
+      data: {
+        shiftModel,
+        updatedAt: new Date(),
+      },
+    });
+
+    res.json({
+      success: true,
+      message: 'ShiftModel automatisch synchronisiert',
+      data: updated,
+    });
+  } catch (error: any) {
+    console.error('ShiftModel Auto-Sync Error:', error);
+    next(error);
+  }
+};
+
 // POST /api/sites/:siteId/security-concept/:id/upload-attachment - Anhang hochladen
 export const uploadAttachment = async (req: Request, res: Response, next: NextFunction) => {
   try {
