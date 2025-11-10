@@ -11,9 +11,11 @@ import { LayoutGrid, BarChart3, Calendar, ChevronLeft, ChevronRight } from 'luci
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { fetchShifts } from '../../shifts/api';
-import ShiftMatrix from '../components/ShiftMatrix';
+import ShiftMatrixDnD from '../components/ShiftMatrixDnD';
 import ShiftTimeline from '../components/ShiftTimeline';
 import PlanningDashboard from '../components/PlanningDashboard';
+import ShiftDetailModal from '../components/ShiftDetailModal';
+import AutoFillModal from '../components/AutoFillModal';
 import type { Shift } from '../../shifts/api';
 
 type ViewMode = 'dashboard' | 'matrix' | 'timeline';
@@ -21,6 +23,10 @@ type ViewMode = 'dashboard' | 'matrix' | 'timeline';
 export default function ShiftPlanningPage() {
   const [viewMode, setViewMode] = useState<ViewMode>('dashboard');
   const [weekOffset, setWeekOffset] = useState(0); // 0 = aktuelle Woche
+
+  // Modal States
+  const [selectedShift, setSelectedShift] = useState<Shift | null>(null);
+  const [showAutoFill, setShowAutoFill] = useState(false);
 
   // Berechne Datumbereich
   const dateRange = useMemo(() => {
@@ -131,29 +137,19 @@ export default function ShiftPlanningPage() {
               <PlanningDashboard
                 weekOffset={weekOffset}
                 onViewConflict={(conflict) => {
+                  // TODO: Konflikt-Modal öffnen
                   console.log('View conflict:', conflict);
-                  // TODO: Modal öffnen
                 }}
-                onAutoFill={() => {
-                  console.log('Auto-Fill triggered');
-                  // TODO: Auto-Fill Dialog öffnen
-                }}
+                onAutoFill={() => setShowAutoFill(true)}
               />
             )}
 
-            {/* Matrix */}
+            {/* Matrix mit Drag & Drop */}
             {viewMode === 'matrix' && (
-              <ShiftMatrix
+              <ShiftMatrixDnD
                 shifts={shifts}
                 initialDate={dateRange.start}
-                onShiftClick={(shift) => {
-                  console.log('Shift clicked:', shift);
-                  // TODO: Shift-Detail Modal öffnen
-                }}
-                onEmployeeClick={(userId) => {
-                  console.log('Employee clicked:', userId);
-                  // TODO: Employee-Detail Modal öffnen
-                }}
+                onShiftClick={(shift) => setSelectedShift(shift)}
               />
             )}
 
@@ -163,15 +159,30 @@ export default function ShiftPlanningPage() {
                 shifts={shifts}
                 startDate={dateRange.start}
                 endDate={dateRange.end}
-                onShiftClick={(shift) => {
-                  console.log('Shift clicked:', shift);
-                  // TODO: Shift-Detail Modal öffnen
-                }}
+                onShiftClick={(shift) => setSelectedShift(shift)}
               />
             )}
           </>
         )}
       </div>
+
+      {/* Modals */}
+      {selectedShift && (
+        <ShiftDetailModal
+          shift={selectedShift}
+          isOpen={!!selectedShift}
+          onClose={() => setSelectedShift(null)}
+        />
+      )}
+
+      {showAutoFill && (
+        <AutoFillModal
+          isOpen={showAutoFill}
+          onClose={() => setShowAutoFill(false)}
+          startDate={dateRange.start}
+          endDate={dateRange.end}
+        />
+      )}
     </div>
   );
 }
