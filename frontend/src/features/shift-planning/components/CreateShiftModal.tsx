@@ -4,7 +4,7 @@
  */
 
 import { useState, useEffect } from 'react';
-import { useMutation, useQueryClient } from '@tantml:react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Modal } from '@/components/ui/modal';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -14,6 +14,7 @@ import { toast } from 'sonner';
 import { Calendar, Clock, Users, Tag, AlertCircle } from 'lucide-react';
 import { api } from '@/lib/api';
 import { format } from 'date-fns';
+import { cn } from '@/lib/utils';
 
 interface CreateShiftModalProps {
   isOpen: boolean;
@@ -191,50 +192,54 @@ export default function CreateShiftModal({
       isOpen={isOpen}
       onClose={onClose}
       title={`Neue Schicht erstellen${siteName ? ` - ${siteName}` : ''}`}
-      maxWidth="2xl"
+      size="xl"
     >
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Titel */}
-        <FormField label="Titel" required error={errors.title}>
+        <FormField label="Titel *">
           <Input
             value={formData.title}
             onChange={(e) => setFormData((prev) => ({ ...prev, title: e.target.value }))}
             placeholder="z.B. Nachtwache, Event-Security, Sonderschicht"
             autoFocus
           />
+          {errors.title && <p className="text-xs text-red-600 mt-1">{errors.title}</p>}
         </FormField>
 
         {/* Beschreibung */}
-        <FormField label="Beschreibung" error={errors.description}>
+        <FormField label="Beschreibung">
           <Textarea
             value={formData.description}
             onChange={(e) => setFormData((prev) => ({ ...prev, description: e.target.value }))}
             placeholder="Zusätzliche Informationen zur Schicht..."
             rows={3}
           />
+          {errors.description && <p className="text-xs text-red-600 mt-1">{errors.description}</p>}
         </FormField>
 
         {/* Datum & Zeit */}
         <div className="grid grid-cols-2 gap-4">
-          <FormField label="Startzeit" required error={errors.startTime} icon={<Clock size={16} />}>
+          <FormField label="Startzeit *">
             <Input
               type="datetime-local"
               value={formData.startTime}
               onChange={(e) => setFormData((prev) => ({ ...prev, startTime: e.target.value }))}
             />
+            {errors.startTime && <p className="text-xs text-red-600 mt-1">{errors.startTime}</p>}
           </FormField>
 
-          <FormField label="Endzeit" required error={errors.endTime} icon={<Clock size={16} />}>
+          <FormField label="Endzeit *">
             <Input
               type="datetime-local"
               value={formData.endTime}
               onChange={(e) => setFormData((prev) => ({ ...prev, endTime: e.target.value }))}
             />
+            {errors.endTime && <p className="text-xs text-red-600 mt-1">{errors.endTime}</p>}
           </FormField>
         </div>
 
         {/* Schichttyp */}
-        <FormField label="Schichttyp" icon={<Tag size={16} />}>
+        <FormField label="Schichttyp">
           <div className="flex flex-wrap gap-2">
             {shiftTypes.map((type) => (
               <button
@@ -255,12 +260,7 @@ export default function CreateShiftModal({
         </FormField>
 
         {/* Erforderliche Mitarbeiter */}
-        <FormField
-          label="Erforderliche Mitarbeiter"
-          required
-          error={errors.requiredEmployees}
-          icon={<Users size={16} />}
-        >
+        <FormField label="Erforderliche Mitarbeiter *">
           <Input
             type="number"
             min={1}
@@ -269,10 +269,11 @@ export default function CreateShiftModal({
               setFormData((prev) => ({ ...prev, requiredEmployees: parseInt(e.target.value) || 1 }))
             }
           />
+          {errors.requiredEmployees && <p className="text-xs text-red-600 mt-1">{errors.requiredEmployees}</p>}
         </FormField>
 
         {/* Qualifikationen */}
-        <FormField label="Erforderliche Qualifikationen" icon={<AlertCircle size={16} />}>
+        <FormField label="Erforderliche Qualifikationen">
           <div className="space-y-2">
             <div className="flex gap-2">
               <Input

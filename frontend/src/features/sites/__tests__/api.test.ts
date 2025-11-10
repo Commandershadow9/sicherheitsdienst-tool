@@ -46,13 +46,19 @@ describe('Sites API', () => {
         customer: {
           id: 'c1',
           companyName: 'Test GmbH',
+          address: 'Teststraße 1',
           city: 'Berlin',
           postalCode: '10115',
+          country: 'DE',
+          paymentTerms: 'NET30',
+          contacts: [],
           primaryContact: {
             name: 'Max Mustermann',
             email: 'max@test.de',
             phone: '+49123456789',
           },
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
         },
       };
 
@@ -70,7 +76,7 @@ describe('Sites API', () => {
         address: 'Teststraße 1',
         city: 'Berlin',
         postalCode: '10115',
-        buildingType: 'Bürogebäude',
+        buildingType: 'OFFICE',
         floorCount: 5,
         squareMeters: 2000,
       };
@@ -194,7 +200,7 @@ describe('Sites API', () => {
         address: 'Teststraße 1',
         city: 'Berlin',
         postalCode: '10115',
-        buildingType: 'Bürogebäude',
+        buildingType: 'OFFICE',
         floorCount: 10,
         squareMeters: 5000,
         description: 'Premium Bürogebäude',

@@ -26,7 +26,6 @@ export const SHIFT_RULE_TEMPLATES: ShiftRuleTemplate[] = [
     icon: '☀️',
     rules: [
       {
-        siteId: '', // Will be filled in
         name: 'Tagschicht Mo-Fr',
         description: 'Reguläre Tagschicht an Werktagen',
         startTime: '08:00',
@@ -36,7 +35,6 @@ export const SHIFT_RULE_TEMPLATES: ShiftRuleTemplate[] = [
         pattern: 'WEEKLY',
         daysOfWeek: [1, 2, 3, 4, 5], // Mo-Fr
         specificDates: [],
-        validFrom: '', // Will be filled in
         priority: 0,
         isActive: true,
       },
@@ -50,7 +48,6 @@ export const SHIFT_RULE_TEMPLATES: ShiftRuleTemplate[] = [
     icon: '🌓',
     rules: [
       {
-        siteId: '',
         name: 'Tagschicht Mo-Fr',
         description: 'Tagschicht an Werktagen',
         startTime: '08:00',
@@ -60,12 +57,10 @@ export const SHIFT_RULE_TEMPLATES: ShiftRuleTemplate[] = [
         pattern: 'WEEKLY',
         daysOfWeek: [1, 2, 3, 4, 5],
         specificDates: [],
-        validFrom: '',
         priority: 0,
         isActive: true,
       },
       {
-        siteId: '',
         name: 'Spätschicht Mo-Fr',
         description: 'Spätschicht an Werktagen',
         startTime: '16:00',
@@ -75,7 +70,6 @@ export const SHIFT_RULE_TEMPLATES: ShiftRuleTemplate[] = [
         pattern: 'WEEKLY',
         daysOfWeek: [1, 2, 3, 4, 5],
         specificDates: [],
-        validFrom: '',
         priority: 0,
         isActive: true,
       },
@@ -89,7 +83,6 @@ export const SHIFT_RULE_TEMPLATES: ShiftRuleTemplate[] = [
     icon: '⏰',
     rules: [
       {
-        siteId: '',
         name: 'Frühschicht Mo-Fr',
         description: 'Frühschicht an Werktagen',
         startTime: '06:00',
@@ -99,12 +92,10 @@ export const SHIFT_RULE_TEMPLATES: ShiftRuleTemplate[] = [
         pattern: 'WEEKLY',
         daysOfWeek: [1, 2, 3, 4, 5],
         specificDates: [],
-        validFrom: '',
         priority: 0,
         isActive: true,
       },
       {
-        siteId: '',
         name: 'Spätschicht Mo-Fr',
         description: 'Spätschicht an Werktagen',
         startTime: '14:00',
@@ -114,12 +105,10 @@ export const SHIFT_RULE_TEMPLATES: ShiftRuleTemplate[] = [
         pattern: 'WEEKLY',
         daysOfWeek: [1, 2, 3, 4, 5],
         specificDates: [],
-        validFrom: '',
         priority: 0,
         isActive: true,
       },
       {
-        siteId: '',
         name: 'Nachtschicht Mo-Fr',
         description: 'Nachtschicht an Werktagen',
         startTime: '22:00',
@@ -129,7 +118,6 @@ export const SHIFT_RULE_TEMPLATES: ShiftRuleTemplate[] = [
         pattern: 'WEEKLY',
         daysOfWeek: [1, 2, 3, 4, 5],
         specificDates: [],
-        validFrom: '',
         priority: 0,
         isActive: true,
       },
@@ -143,7 +131,6 @@ export const SHIFT_RULE_TEMPLATES: ShiftRuleTemplate[] = [
     icon: '🔄',
     rules: [
       {
-        siteId: '',
         name: 'Nachtschicht 24/7',
         description: 'Nachtschicht täglich',
         startTime: '00:00',
@@ -153,12 +140,10 @@ export const SHIFT_RULE_TEMPLATES: ShiftRuleTemplate[] = [
         pattern: 'DAILY',
         daysOfWeek: [],
         specificDates: [],
-        validFrom: '',
         priority: 0,
         isActive: true,
       },
       {
-        siteId: '',
         name: 'Frühschicht 24/7',
         description: 'Frühschicht täglich',
         startTime: '08:00',
@@ -168,12 +153,10 @@ export const SHIFT_RULE_TEMPLATES: ShiftRuleTemplate[] = [
         pattern: 'DAILY',
         daysOfWeek: [],
         specificDates: [],
-        validFrom: '',
         priority: 0,
         isActive: true,
       },
       {
-        siteId: '',
         name: 'Spätschicht 24/7',
         description: 'Spätschicht täglich',
         startTime: '16:00',
@@ -183,7 +166,6 @@ export const SHIFT_RULE_TEMPLATES: ShiftRuleTemplate[] = [
         pattern: 'DAILY',
         daysOfWeek: [],
         specificDates: [],
-        validFrom: '',
         priority: 0,
         isActive: true,
       },
@@ -197,7 +179,6 @@ export const SHIFT_RULE_TEMPLATES: ShiftRuleTemplate[] = [
     icon: '🎉',
     rules: [
       {
-        siteId: '',
         name: 'Wochenend-Schicht',
         description: 'Schicht nur am Wochenende',
         startTime: '08:00',
@@ -207,7 +188,6 @@ export const SHIFT_RULE_TEMPLATES: ShiftRuleTemplate[] = [
         pattern: 'WEEKLY',
         daysOfWeek: [0, 6], // Sa-So
         specificDates: [],
-        validFrom: '',
         priority: 0,
         isActive: true,
       },
@@ -221,7 +201,6 @@ export const SHIFT_RULE_TEMPLATES: ShiftRuleTemplate[] = [
     icon: '🌙',
     rules: [
       {
-        siteId: '',
         name: 'Nachtschicht täglich',
         description: 'Nachtschicht jeden Tag',
         startTime: '20:00',
@@ -231,7 +210,6 @@ export const SHIFT_RULE_TEMPLATES: ShiftRuleTemplate[] = [
         pattern: 'DAILY',
         daysOfWeek: [],
         specificDates: [],
-        validFrom: '',
         priority: 0,
         isActive: true,
       },
@@ -245,7 +223,6 @@ export const SHIFT_RULE_TEMPLATES: ShiftRuleTemplate[] = [
     icon: '⚡',
     rules: [
       {
-        siteId: '',
         name: 'Tagschicht 12h',
         description: '12-Stunden-Tagschicht',
         startTime: '06:00',
@@ -255,12 +232,10 @@ export const SHIFT_RULE_TEMPLATES: ShiftRuleTemplate[] = [
         pattern: 'DAILY',
         daysOfWeek: [],
         specificDates: [],
-        validFrom: '',
         priority: 0,
         isActive: true,
       },
       {
-        siteId: '',
         name: 'Nachtschicht 12h',
         description: '12-Stunden-Nachtschicht',
         startTime: '18:00',
@@ -270,7 +245,6 @@ export const SHIFT_RULE_TEMPLATES: ShiftRuleTemplate[] = [
         pattern: 'DAILY',
         daysOfWeek: [],
         specificDates: [],
-        validFrom: '',
         priority: 0,
         isActive: true,
       },

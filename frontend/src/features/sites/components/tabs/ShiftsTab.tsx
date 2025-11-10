@@ -488,12 +488,13 @@ export default function ShiftsTab({ site, siteId }: ShiftsTabProps) {
         isOpen={showCreateRule}
         onClose={() => setShowCreateRule(false)}
         title="Neue Schicht-Regel erstellen"
-        maxWidth="3xl"
+        size="xl"
       >
         <ShiftRuleForm
-          onSubmit={(data) => createRuleMutation.mutate(data)}
+          siteId={siteId}
+          onSubmit={(data) => createRuleMutation.mutate(data as CreateShiftRuleInput)}
           onCancel={() => setShowCreateRule(false)}
-          isLoading={createRuleMutation.isPending}
+          isSubmitting={createRuleMutation.isPending}
         />
       </Modal>
 
@@ -504,17 +505,18 @@ export default function ShiftsTab({ site, siteId }: ShiftsTabProps) {
           setEditingRule(null);
         }}
         title="Schicht-Regel bearbeiten"
-        maxWidth="3xl"
+        size="xl"
       >
         {editingRule && (
           <ShiftRuleForm
+            siteId={siteId}
             initialData={editingRule}
             onSubmit={(data) => updateRuleMutation.mutate({ id: editingRule.id, data })}
             onCancel={() => {
               setShowEditRule(false);
               setEditingRule(null);
             }}
-            isLoading={updateRuleMutation.isPending}
+            isSubmitting={updateRuleMutation.isPending}
           />
         )}
       </Modal>
@@ -522,7 +524,7 @@ export default function ShiftsTab({ site, siteId }: ShiftsTabProps) {
       <TemplateSelector
         isOpen={showTemplateSelector}
         onClose={() => setShowTemplateSelector(false)}
-        onSelect={(template) => {
+        onSelectTemplate={(template) => {
           setShowTemplateSelector(false);
           // TODO: Pre-fill create form with template
           setShowCreateRule(true);

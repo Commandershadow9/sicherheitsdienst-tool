@@ -21,13 +21,19 @@ describe('useWizardValidation', () => {
         customer: {
           id: 'c1',
           companyName: 'Test GmbH',
+          address: 'Teststraße 1',
           city: 'Berlin',
           postalCode: '10115',
+          country: 'DE',
+          paymentTerms: 'NET30',
+          contacts: [],
           primaryContact: {
             name: 'Test User',
             email: 'test@example.com',
             phone: '+49123456789',
           },
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
         },
       };
 
@@ -54,7 +60,7 @@ describe('useWizardValidation', () => {
         address: 'Teststraße 1',
         city: 'Berlin',
         postalCode: '10115',
-        buildingType: 'Bürogebäude',
+        buildingType: 'OFFICE',
       };
 
       const result = validateWizardStep(2, data);
@@ -68,7 +74,7 @@ describe('useWizardValidation', () => {
         address: 'Teststraße 1',
         city: 'Berlin',
         postalCode: '10115',
-        buildingType: 'Bürogebäude',
+        buildingType: 'OFFICE',
       };
 
       const result = validateWizardStep(2, data);
@@ -82,7 +88,7 @@ describe('useWizardValidation', () => {
         siteName: 'Test Objekt',
         city: 'Berlin',
         postalCode: '10115',
-        buildingType: 'Bürogebäude',
+        buildingType: 'OFFICE',
       };
 
       const result = validateWizardStep(2, data);
@@ -251,7 +257,7 @@ describe('useWizardValidation', () => {
         address: 'Teststraße 1',
         city: 'Berlin',
         postalCode: '10115',
-        buildingType: 'Bürogebäude',
+        buildingType: 'OFFICE',
         securityConcept: {
           tasks: ['Türdienst'],
           shiftModel: '3-Schicht-System',
@@ -291,7 +297,7 @@ describe('useWizardValidation', () => {
         address: 'Teststraße 1',
         city: 'Berlin',
         postalCode: '10115',
-        buildingType: 'Bürogebäude',
+        buildingType: 'OFFICE',
         securityConcept: {
           tasks: ['Türdienst'],
           shiftModel: '3-Schicht-System',
