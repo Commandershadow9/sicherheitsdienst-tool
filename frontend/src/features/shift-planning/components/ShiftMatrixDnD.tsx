@@ -240,6 +240,8 @@ interface ShiftMatrixDnDProps {
   shifts: Shift[];
   onShiftClick?: (shift: Shift) => void;
   initialDate?: Date;
+  siteId?: string; // Optional: Filter auf spezifischen Site
+  siteName?: string; // Optional: Name für Anzeige
 }
 
 interface MatrixCell {
@@ -252,9 +254,17 @@ export default function ShiftMatrixDnD({
   shifts,
   onShiftClick,
   initialDate = new Date(),
+  siteId,
+  siteName,
 }: ShiftMatrixDnDProps) {
   const queryClient = useQueryClient();
   const [currentWeek, setCurrentWeek] = useState(startOfWeek(initialDate, { weekStartsOn: 1 }));
+
+  // Filter Shifts nach siteId (falls angegeben)
+  const filteredShifts = useMemo(() => {
+    if (!siteId) return shifts;
+    return shifts.filter((shift) => shift.siteId === siteId);
+  }, [shifts, siteId]);
 
   // Assign Mutation
   const assignMutation = useMutation({
@@ -279,7 +289,7 @@ export default function ShiftMatrixDnD({
       const dayName = format(date, 'EEE', { locale: de });
       const dateStr = format(date, 'yyyy-MM-dd');
 
-      const dayShifts = shifts.filter((shift) => {
+      const dayShifts = filteredShifts.filter((shift) => {
         const shiftDate = format(new Date(shift.startTime), 'yyyy-MM-dd');
         return shiftDate === dateStr;
       });
@@ -294,7 +304,7 @@ export default function ShiftMatrixDnD({
     }
 
     return matrix;
-  }, [shifts, currentWeek]);
+  }, [filteredShifts, currentWeek]);
 
   // Navigation (memoized)
   const goToPreviousWeek = useCallback(() => setCurrentWeek((prev) => addDays(prev, -7)), []);
@@ -318,7 +328,9 @@ export default function ShiftMatrixDnD({
         {/* Header mit Navigation */}
         <div className="flex items-center justify-between">
           <div className="space-y-1">
-            <h2 className="text-2xl font-semibold">Schichtplanung</h2>
+            <h2 className="text-2xl font-semibold">
+              {siteName ? `Schichtplanung - ${siteName}` : 'Schichtplanung'}
+            </h2>
             <p className="text-sm text-gray-600">
               {format(currentWeek, 'd. MMM', { locale: de })} -{' '}
               {format(endOfWeek(currentWeek, { weekStartsOn: 1 }), 'd. MMM yyyy', { locale: de })}

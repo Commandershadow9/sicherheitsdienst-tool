@@ -1,509 +1,522 @@
 /**
- * ShiftsTab - Konsolidierte Schichtplanung & Schicht-Verwaltung
+ * ShiftsTab V2 - Vollständig integrierte Schichtplanung
  *
- * Enthält:
- * - Schicht-Regeln verwalten (Templates, CRUD)
- * - Generierte Schichten anzeigen
- * - Kalender & Listen-Ansicht
- * - Direkte Integration mit Sicherheitskonzept
+ * Features:
+ * - Shift Rules Verwaltung (Templates)
+ * - v2.0 Matrix mit Drag & Drop
+ * - Dashboard mit Konflikt-Analyse
+ * - Timeline-Ansicht
+ * - Manuelle Schicht-Erstellung
+ * - Integration mit Sicherheitskonzept
  */
 
-import { useState } from 'react'
-import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query'
-import { useNavigate } from 'react-router-dom'
-import { Button } from '@/components/ui/button'
-import { Modal } from '@/components/ui/modal'
-import { cn } from '@/lib/utils'
-import { Calendar, Clock, UserCheck, CalendarDays, List, Plus, Settings, Play, Lightbulb, AlertCircle, Edit, Trash2 } from 'lucide-react'
-import { toast } from 'sonner'
-import { fetchSiteShifts, generateShiftsForSite, type Shift, type GenerateShiftsPayload } from '../../api'
+import { useState, useMemo } from 'react';
+import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
+import { Button } from '@/components/ui/button';
+import { Modal } from '@/components/ui/modal';
+import { cn } from '@/lib/utils';
+import {
+  Calendar,
+  Clock,
+  Users,
+  Settings,
+  Plus,
+  LayoutGrid,
+  BarChart3,
+  GanttChart,
+  Zap,
+  FileText,
+} from 'lucide-react';
+import { toast } from 'sonner';
+import { fetchShifts } from '@/features/shifts/api';
+import { startOfWeek, endOfWeek, format } from 'date-fns';
+import { de } from 'date-fns/locale';
+
+// v2.0 Components
+import ShiftMatrixDnD from '@/features/shift-planning/components/ShiftMatrixDnD';
+import PlanningDashboard from '@/features/shift-planning/components/PlanningDashboard';
+import ShiftTimeline from '@/features/shift-planning/components/ShiftTimeline';
+import CreateShiftModal from '@/features/shift-planning/components/CreateShiftModal';
+import ShiftDetailModal from '@/features/shift-planning/components/ShiftDetailModal';
+import AutoFillModal from '@/features/shift-planning/components/AutoFillModal';
+
+// Alte Components (ShiftRules)
+import ShiftRuleForm from '../shift-planning/ShiftRuleForm';
+import GenerateShiftsDialog from '../shift-planning/GenerateShiftsDialog';
+import TemplateSelector from '../shift-planning/TemplateSelector';
+import SecurityConceptShiftModelSync from '../shift-planning/SecurityConceptShiftModelSync';
 import {
   getShiftRules,
   createShiftRule,
   updateShiftRule,
   deleteShiftRule,
-} from '../../api/shiftRuleApi'
-import type { ShiftRule, CreateShiftRuleInput, UpdateShiftRuleInput } from '../../types/shiftRule'
-import ShiftCalendar from '../shifts/ShiftCalendar'
-import ShiftRuleForm from '../shift-planning/ShiftRuleForm'
-import GenerateShiftsDialog from '../shift-planning/GenerateShiftsDialog'
-import TemplateSelector from '../shift-planning/TemplateSelector'
-import type { ShiftRuleTemplate } from '../../types/shiftRuleTemplates'
-import { RULE_PATTERN_LABELS, WEEKDAY_LABELS } from '../../types/shiftRule'
+} from '../../api/shiftRuleApi';
+import type { ShiftRule, CreateShiftRuleInput, UpdateShiftRuleInput } from '../../types/shiftRule';
+import type { Shift } from '@/features/shifts/api';
+import type { ShiftModel } from '@/types/securityConcept';
 
 type Site = {
-  id: string
-  name: string
+  id: string;
+  name: string;
   securityConcept?: {
-    shiftModel?: string
-  }
+    shiftModel?: string;
+  };
   securityConcepts?: Array<{
-    id: string
-    status: string
-    shiftModel?: any
-  }>
-}
+    id: string;
+    status: string;
+    shiftModel?: any;
+  }>;
+};
 
 type ShiftsTabProps = {
-  site: Site
-  siteId: string
-}
+  site: Site;
+  siteId: string;
+};
+
+type ViewMode = 'dashboard' | 'matrix' | 'timeline' | 'rules';
 
 export default function ShiftsTab({ site, siteId }: ShiftsTabProps) {
-  const nav = useNavigate()
-  const queryClient = useQueryClient()
+  const queryClient = useQueryClient();
 
-  // View states
-  const [view, setView] = useState<'list' | 'calendar'>('list')
-  const [showRulesManager, setShowRulesManager] = useState(false)
-  const [showCreateRuleModal, setShowCreateRuleModal] = useState(false)
-  const [showEditRuleModal, setShowEditRuleModal] = useState(false)
-  const [editingRule, setEditingRule] = useState<ShiftRule | null>(null)
-  const [showTemplateSelector, setShowTemplateSelector] = useState(false)
-  const [showGenerateDialog, setShowGenerateDialog] = useState(false)
+  // View State
+  const [viewMode, setViewMode] = useState<ViewMode>('dashboard');
+  const [weekOffset, setWeekOffset] = useState(0);
 
-  // Prüfe ob Sicherheitskonzept mit Schichtmodell vorhanden ist
-  const hasShiftModel = !!(
-    site.securityConcept?.shiftModel ||
-    (site.securityConcepts && site.securityConcepts.length > 0 && site.securityConcepts[0].shiftModel)
-  )
+  // Modal States
+  const [showCreateShift, setShowCreateShift] = useState(false);
+  const [selectedShift, setSelectedShift] = useState<Shift | null>(null);
+  const [showAutoFill, setShowAutoFill] = useState(false);
+  const [showRulesManager, setShowRulesManager] = useState(false);
+  const [showCreateRule, setShowCreateRule] = useState(false);
+  const [showEditRule, setShowEditRule] = useState(false);
+  const [editingRule, setEditingRule] = useState<ShiftRule | null>(null);
+  const [showTemplateSelector, setShowTemplateSelector] = useState(false);
+  const [showGenerateDialog, setShowGenerateDialog] = useState(false);
 
-  // Fetch shifts
-  const { data: shifts = [], isLoading: shiftsLoading } = useQuery({
-    queryKey: ['shifts', siteId],
-    queryFn: () => fetchSiteShifts(siteId),
-    enabled: true,
-  })
+  // Berechne aktuelle Woche
+  const currentWeek = useMemo(() => {
+    const today = new Date();
+    const weekStart = startOfWeek(today, { weekStartsOn: 1 });
+    return weekStart;
+  }, []);
 
-  // Fetch shift rules
+  const dateRange = useMemo(() => {
+    return {
+      start: format(currentWeek, 'yyyy-MM-dd'),
+      end: format(endOfWeek(currentWeek, { weekStartsOn: 1 }), 'yyyy-MM-dd'),
+    };
+  }, [currentWeek]);
+
+  // Fetch Shifts für dieses Objekt
+  const {
+    data: allShifts = [],
+    isLoading: shiftsLoading,
+    refetch: refetchShifts,
+  } = useQuery({
+    queryKey: ['shifts', dateRange.start, dateRange.end],
+    queryFn: () =>
+      fetchShifts({
+        startDate: dateRange.start,
+        endDate: dateRange.end,
+      }),
+  });
+
+  // Filter auf diesen Site
+  const siteShifts = useMemo(() => {
+    return allShifts.filter((shift) => shift.siteId === siteId);
+  }, [allShifts, siteId]);
+
+  // Fetch Shift Rules
   const { data: rules = [], isLoading: rulesLoading } = useQuery({
     queryKey: ['shift-rules', siteId],
     queryFn: () => getShiftRules(siteId),
-  })
+  });
 
-  // Generate Shifts Mutation
-  const generateShiftsMutation = useMutation({
-    mutationFn: (payload: GenerateShiftsPayload) => generateShiftsForSite(siteId, payload),
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ['shifts', siteId] })
-      toast.success(data.message)
-    },
-    onError: (error: any) => {
-      toast.error(error?.response?.data?.message || 'Fehler beim Generieren der Schichten')
-    },
-  })
+  // Prüfe Sicherheitskonzept
+  const hasShiftModel = !!(
+    site.securityConcept?.shiftModel ||
+    (site.securityConcepts && site.securityConcepts.length > 0 && site.securityConcepts[0].shiftModel)
+  );
 
-  // Create rule mutation
+  // Extract ShiftModel from SecurityConcept
+  const shiftModel: ShiftModel | null = useMemo(() => {
+    if (site.securityConcept?.shiftModel) {
+      return site.securityConcept.shiftModel as ShiftModel;
+    }
+    if (site.securityConcepts && site.securityConcepts.length > 0) {
+      return site.securityConcepts[0].shiftModel as ShiftModel;
+    }
+    return null;
+  }, [site]);
+
+  // Create Rule Mutation
   const createRuleMutation = useMutation({
     mutationFn: (input: CreateShiftRuleInput) => createShiftRule(siteId, input),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['shift-rules', siteId] })
-      setShowCreateRuleModal(false)
-      toast.success('Schichtregel erfolgreich erstellt')
+      queryClient.invalidateQueries({ queryKey: ['shift-rules', siteId] });
+      toast.success('Regel erstellt');
+      setShowCreateRule(false);
     },
     onError: (error: any) => {
-      toast.error(error?.response?.data?.message || 'Fehler beim Erstellen der Regel')
+      toast.error(error?.response?.data?.message || 'Fehler beim Erstellen');
     },
-  })
+  });
 
-  // Update rule mutation
+  // Update Rule Mutation
   const updateRuleMutation = useMutation({
-    mutationFn: ({ ruleId, input }: { ruleId: string; input: UpdateShiftRuleInput }) =>
-      updateShiftRule(siteId, ruleId, input),
+    mutationFn: ({ id, data }: { id: string; data: UpdateShiftRuleInput }) =>
+      updateShiftRule(siteId, id, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['shift-rules', siteId] })
-      setShowEditRuleModal(false)
-      setEditingRule(null)
-      toast.success('Schichtregel erfolgreich aktualisiert')
+      queryClient.invalidateQueries({ queryKey: ['shift-rules', siteId] });
+      toast.success('Regel aktualisiert');
+      setShowEditRule(false);
+      setEditingRule(null);
     },
     onError: (error: any) => {
-      toast.error(error?.response?.data?.message || 'Fehler beim Aktualisieren der Regel')
+      toast.error(error?.response?.data?.message || 'Fehler beim Aktualisieren');
     },
-  })
+  });
 
-  // Delete rule mutation
+  // Delete Rule Mutation
   const deleteRuleMutation = useMutation({
-    mutationFn: (ruleId: string) => deleteShiftRule(siteId, ruleId),
+    mutationFn: (id: string) => deleteShiftRule(siteId, id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['shift-rules', siteId] })
-      toast.success('Schichtregel erfolgreich gelöscht')
+      queryClient.invalidateQueries({ queryKey: ['shift-rules', siteId] });
+      toast.success('Regel gelöscht');
     },
     onError: (error: any) => {
-      toast.error(error?.response?.data?.message || 'Fehler beim Löschen der Regel')
+      toast.error(error?.response?.data?.message || 'Fehler beim Löschen');
     },
-  })
+  });
 
-  // Handle template selection
-  const handleTemplateSelect = async (template: ShiftRuleTemplate) => {
-    try {
-      const today = new Date().toISOString().split('T')[0]
-      let created = 0
-      for (const ruleTemplate of template.rules) {
-        const input: CreateShiftRuleInput = {
-          ...ruleTemplate,
-          siteId,
-          validFrom: today,
-        }
-        await createShiftRule(siteId, input)
-        created++
-      }
-      queryClient.invalidateQueries({ queryKey: ['shift-rules', siteId] })
-      toast.success(`${created} Regel${created !== 1 ? 'n' : ''} aus Vorlage "${template.name}" erstellt`)
-      setShowRulesManager(true) // Öffne Regel-Manager um die erstellten Regeln zu sehen
-    } catch (error: any) {
-      toast.error(error?.response?.data?.message || 'Fehler beim Erstellen der Regeln aus Vorlage')
+  const handleEditRule = (rule: ShiftRule) => {
+    setEditingRule(rule);
+    setShowEditRule(true);
+  };
+
+  const handleDeleteRule = (id: string) => {
+    if (confirm('Regel wirklich löschen?')) {
+      deleteRuleMutation.mutate(id);
     }
-  }
+  };
+
+  // Bulk import from SecurityConcept ShiftModel
+  const handleBulkImport = async (rulesToImport: CreateShiftRuleInput[]) => {
+    try {
+      let successCount = 0;
+      for (const ruleInput of rulesToImport) {
+        await createShiftRule(siteId, { ...ruleInput, siteId });
+        successCount++;
+      }
+      queryClient.invalidateQueries({ queryKey: ['shift-rules', siteId] });
+      toast.success(`${successCount} Schicht-Regeln aus Sicherheitskonzept importiert`);
+    } catch (error: any) {
+      toast.error(error?.response?.data?.message || 'Fehler beim Importieren');
+    }
+  };
+
+  const viewTabs = [
+    { id: 'dashboard' as ViewMode, label: 'Dashboard', icon: BarChart3 },
+    { id: 'matrix' as ViewMode, label: 'Matrix', icon: LayoutGrid },
+    { id: 'timeline' as ViewMode, label: 'Timeline', icon: GanttChart },
+    { id: 'rules' as ViewMode, label: 'Regeln & Templates', icon: Settings },
+  ];
 
   return (
-    <div className="animate-in fade-in slide-in-from-bottom-4 duration-300">
+    <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold flex items-center gap-2">
-          <Calendar size={20} className="text-blue-600" />
-          Schichtplanung ({shifts.length} Schichten, {rules.length} Regeln)
-        </h3>
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-semibold">Schichtplanung</h2>
+          <p className="text-sm text-gray-600 mt-1">{site.name}</p>
+        </div>
+
         <div className="flex gap-2">
-          {/* Rules Manager Toggle */}
           <Button
+            variant="outline"
             size="sm"
-            variant={showRulesManager ? 'default' : 'outline'}
-            onClick={() => setShowRulesManager(!showRulesManager)}
+            onClick={() => setShowCreateShift(true)}
+            className="gap-2"
           >
-            <Settings size={16} className="mr-1" />
-            {showRulesManager ? 'Schichten anzeigen' : 'Regeln verwalten'}
+            <Plus size={16} />
+            Schicht hinzufügen
           </Button>
 
-          {/* View Toggle (nur bei Schichten-Ansicht) */}
-          {!showRulesManager && (
-            <div className="flex border border-gray-300 rounded-lg overflow-hidden">
-              <button
-                onClick={() => setView('list')}
-                className={cn(
-                  'px-3 py-1.5 text-sm font-medium transition-colors flex items-center gap-1.5',
-                  view === 'list'
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-white text-gray-700 hover:bg-gray-50'
-                )}
-              >
-                <List size={16} />
-                Liste
-              </button>
-              <button
-                onClick={() => setView('calendar')}
-                className={cn(
-                  'px-3 py-1.5 text-sm font-medium transition-colors flex items-center gap-1.5 border-l border-gray-300',
-                  view === 'calendar'
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-white text-gray-700 hover:bg-gray-50'
-                )}
-              >
-                <CalendarDays size={16} />
-                Kalender
-              </button>
-            </div>
+          {viewMode !== 'rules' && (
+            <Button size="sm" onClick={() => setShowAutoFill(true)} className="gap-2">
+              <Zap size={16} />
+              Auto-Fill
+            </Button>
           )}
         </div>
       </div>
 
-      {/* Rules Manager View */}
-      {showRulesManager && (
-        <div className="space-y-4">
-          {/* Rules Actions */}
-          <div className="flex gap-2">
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => setShowGenerateDialog(true)}
-              disabled={rules.length === 0}
-            >
-              <Play size={16} className="mr-1" />
-              Schichten generieren
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => setShowTemplateSelector(true)}
-            >
-              <Lightbulb size={16} className="mr-1" />
-              Aus Vorlage
-            </Button>
-            <Button size="sm" onClick={() => setShowCreateRuleModal(true)}>
-              <Plus size={16} className="mr-1" />
-              Neue Regel
-            </Button>
+      {/* Sicherheitskonzept Info */}
+      {!hasShiftModel && (
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 flex items-start gap-3">
+          <FileText size={20} className="text-yellow-600 flex-shrink-0 mt-0.5" />
+          <div>
+            <p className="text-sm font-medium text-yellow-900">Kein Schichtmodell definiert</p>
+            <p className="text-sm text-yellow-700 mt-1">
+              Im Sicherheitskonzept wurde noch kein Schichtmodell hinterlegt. Templates können Sie unter
+              "Regeln & Templates" verwalten.
+            </p>
           </div>
+        </div>
+      )}
 
-          {/* Info Banner wenn keine Regeln */}
-          {rules.length === 0 && (
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 text-center">
-              <Calendar size={48} className="text-blue-400 mx-auto mb-3" />
-              <p className="text-gray-700 font-medium mb-2">
-                Noch keine Schichtregeln definiert
-              </p>
-              <p className="text-sm text-gray-600 mb-4">
-                Erstellen Sie Regeln für wiederkehrende Schichten (z.B. "Frühschicht Mo-Fr"). Das System generiert dann automatisch die entsprechenden Schichten.
-              </p>
-              <div className="flex gap-2 justify-center">
-                <Button onClick={() => setShowTemplateSelector(true)}>
-                  <Lightbulb size={16} className="mr-1" />
-                  Vorlage wählen
+      {/* View Tabs */}
+      <div className="border-b border-gray-200">
+        <div className="flex gap-1">
+          {viewTabs.map((tab) => {
+            const Icon = tab.icon;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setViewMode(tab.id)}
+                className={cn(
+                  'flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors',
+                  viewMode === tab.id
+                    ? 'border-blue-600 text-blue-600'
+                    : 'border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-300'
+                )}
+              >
+                <Icon size={16} />
+                {tab.label}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Content */}
+      <div className="mt-6">
+        {viewMode === 'dashboard' && (
+          <PlanningDashboard
+            siteId={siteId}
+            siteName={site.name}
+            weekOffset={weekOffset}
+            onViewConflict={(conflict) => {
+              // TODO: Highlight in Matrix
+              setViewMode('matrix');
+            }}
+            onAutoFill={() => setShowAutoFill(true)}
+          />
+        )}
+
+        {viewMode === 'matrix' && (
+          <ShiftMatrixDnD
+            shifts={allShifts}
+            siteId={siteId}
+            siteName={site.name}
+            initialDate={currentWeek}
+            onShiftClick={(shift) => setSelectedShift(shift)}
+          />
+        )}
+
+        {viewMode === 'timeline' && (
+          <ShiftTimeline
+            shifts={allShifts}
+            siteId={siteId}
+            siteName={site.name}
+            startDate={currentWeek}
+            endDate={endOfWeek(currentWeek, { weekStartsOn: 1 })}
+            onShiftClick={(shift) => setSelectedShift(shift)}
+          />
+        )}
+
+        {viewMode === 'rules' && (
+          <div className="space-y-6">
+            {/* Rules Manager Header */}
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-semibold">Schicht-Regeln & Templates</h3>
+                <p className="text-sm text-gray-600 mt-1">
+                  Verwalten Sie wiederverwendbare Schichtmuster für dieses Objekt
+                </p>
+              </div>
+
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" onClick={() => setShowTemplateSelector(true)}>
+                  Aus Template
                 </Button>
-                <Button variant="outline" onClick={() => setShowCreateRuleModal(true)}>
-                  Manuell erstellen
+                <Button size="sm" onClick={() => setShowCreateRule(true)}>
+                  <Plus size={16} className="mr-2" />
+                  Neue Regel
                 </Button>
               </div>
             </div>
-          )}
 
-          {/* Rules List */}
-          {rules.length > 0 && (
-            <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
-              <div className="p-4 bg-gray-50 border-b border-gray-200">
-                <p className="text-sm text-gray-600">
-                  {rules.length} Regel{rules.length !== 1 ? 'n' : ''} definiert. Diese Regeln werden zur automatischen Generierung von Schichten verwendet.
+            {/* SecurityConcept ShiftModel Sync */}
+            {shiftModel && (
+              <SecurityConceptShiftModelSync
+                shiftModel={shiftModel}
+                existingRules={rules}
+                onImport={handleBulkImport}
+              />
+            )}
+
+            {/* Rules List */}
+            {rulesLoading ? (
+              <div className="text-center py-12 text-gray-500">Lade Regeln...</div>
+            ) : rules.length === 0 ? (
+              <div className="bg-gray-50 border border-gray-200 rounded-lg p-12 text-center">
+                <Settings size={48} className="mx-auto text-gray-400 mb-4" />
+                <h3 className="text-lg font-medium text-gray-900 mb-2">Keine Regeln vorhanden</h3>
+                <p className="text-gray-600 mb-6">
+                  Erstellen Sie Regeln für wiederkehrende Schichtmuster
                 </p>
+                <Button onClick={() => setShowCreateRule(true)}>
+                  <Plus size={16} className="mr-2" />
+                  Erste Regel erstellen
+                </Button>
               </div>
-              <div className="divide-y divide-gray-200">
+            ) : (
+              <div className="grid gap-4">
                 {rules.map((rule) => (
-                  <div key={rule.id} className="p-4 hover:bg-gray-50">
+                  <div
+                    key={rule.id}
+                    className="bg-white border border-gray-200 rounded-lg p-4 hover:border-gray-300 transition-colors"
+                  >
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1">
-                          <h4 className="font-semibold text-gray-900">{rule.name}</h4>
-                          <span className={cn(
-                            'inline-flex items-center px-2 py-0.5 rounded text-xs font-medium',
-                            rule.isActive
-                              ? 'bg-green-100 text-green-800'
-                              : 'bg-gray-100 text-gray-600'
-                          )}>
-                            {rule.isActive ? 'Aktiv' : 'Inaktiv'}
-                          </span>
-                          <span className="text-xs text-gray-500">
-                            Priorität: {rule.priority}
-                          </span>
-                        </div>
-                        <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm text-gray-600 mt-2">
-                          <div className="flex items-center gap-1">
-                            <Clock size={14} />
-                            <span>{rule.startTime} - {rule.endTime}</span>
-                          </div>
-                          <div>
-                            <span className="font-medium">{RULE_PATTERN_LABELS[rule.pattern]}</span>
-                            {rule.pattern === 'WEEKLY' && (
-                              <span className="ml-2 text-xs">
-                                ({rule.daysOfWeek.map(d => WEEKDAY_LABELS[d]).join(', ')})
-                              </span>
-                            )}
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <UserCheck size={14} />
-                            <span>{rule.requiredStaff} MA</span>
-                          </div>
-                        </div>
+                        <h4 className="font-medium text-gray-900">{rule.name}</h4>
                         {rule.description && (
-                          <p className="text-sm text-gray-500 mt-2">{rule.description}</p>
+                          <p className="text-sm text-gray-600 mt-1">{rule.description}</p>
                         )}
+                        <div className="flex items-center gap-4 mt-3 text-sm text-gray-600">
+                          <span className="flex items-center gap-1">
+                            <Clock size={14} />
+                            {rule.startTime} - {rule.endTime}
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <Users size={14} />
+                            {rule.requiredStaff} Mitarbeiter
+                          </span>
+                          {rule.daysOfWeek && rule.daysOfWeek.length > 0 && (
+                            <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
+                              {rule.daysOfWeek.length} Tage/Woche
+                            </span>
+                          )}
+                        </div>
                       </div>
-                      <div className="flex gap-2">
+
+                      <div className="flex gap-2 ml-4">
                         <Button
+                          variant="outline"
                           size="sm"
-                          variant="ghost"
-                          onClick={() => {
-                            setEditingRule(rule)
-                            setShowEditRuleModal(true)
-                          }}
+                          onClick={() => handleEditRule(rule)}
                         >
-                          <Edit size={14} className="mr-1" />
                           Bearbeiten
                         </Button>
                         <Button
+                          variant="outline"
                           size="sm"
-                          variant="ghost"
-                          onClick={() => {
-                            if (confirm(`Schichtregel "${rule.name}" wirklich löschen?`)) {
-                              deleteRuleMutation.mutate(rule.id)
-                            }
-                          }}
+                          onClick={() => handleDeleteRule(rule.id)}
                           className="text-red-600 hover:text-red-700"
                         >
-                          <Trash2 size={14} />
+                          Löschen
                         </Button>
                       </div>
                     </div>
                   </div>
                 ))}
               </div>
-            </div>
-          )}
-        </div>
-      )}
+            )}
 
-      {/* Shifts View */}
-      {!showRulesManager && (
-        <>
-          {!hasShiftModel && rules.length === 0 && (
-            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
-              <p className="text-sm text-yellow-900">
-                ⚠️ <strong>Hinweis:</strong> Für diesen Auftrag sind noch keine Schichtregeln definiert. Klicken Sie auf "Regeln verwalten" um Regeln zu erstellen.
-              </p>
-            </div>
-          )}
-
-          {shiftsLoading ? (
-            <div className="space-y-3">
-              {[1, 2, 3].map((i) => (
-                <div key={i} className="bg-gray-100 animate-pulse h-20 rounded-lg" />
-              ))}
-            </div>
-          ) : shifts.length === 0 ? (
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 text-center">
-              <Calendar size={48} className="text-blue-400 mx-auto mb-3" />
-              <p className="text-gray-600 mb-2">Noch keine Schichten vorhanden</p>
-              <p className="text-sm text-gray-500 mb-4">
-                {rules.length > 0
-                  ? 'Klicken Sie auf "Regeln verwalten" und dann "Schichten generieren".'
-                  : 'Erstellen Sie zuerst Schichtregeln unter "Regeln verwalten".'}
-              </p>
-            </div>
-          ) : view === 'calendar' ? (
-            <ShiftCalendar
-              shifts={shifts}
-              onShiftClick={(shift) => nav(`/shifts/${shift.id}`)}
-            />
-          ) : (
-            <div className="space-y-3">
-              {shifts.slice(0, 10).map((shift) => {
-                const startDate = new Date(shift.startTime)
-                const endDate = new Date(shift.endTime)
-                const isToday = new Date().toDateString() === startDate.toDateString()
-
-                return (
-                  <div
-                    key={shift.id}
-                    className={cn(
-                      'border rounded-lg p-4 hover:shadow-md transition-all duration-200',
-                      isToday && 'border-blue-500 bg-blue-50',
-                      !isToday && 'border-gray-200 bg-white'
-                    )}
-                  >
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-2">
-                          <h4 className="font-semibold text-gray-900">{shift.title}</h4>
-                          {isToday && (
-                            <span className="px-2 py-0.5 text-xs font-medium bg-blue-500 text-white rounded">
-                              Heute
-                            </span>
-                          )}
-                          {shift.status === 'PLANNED' && (
-                            <span className="px-2 py-0.5 text-xs font-medium bg-gray-200 text-gray-700 rounded">
-                              Geplant
-                            </span>
-                          )}
-                          {shift.status === 'CONFIRMED' && (
-                            <span className="px-2 py-0.5 text-xs font-medium bg-green-100 text-green-700 rounded">
-                              Bestätigt
-                            </span>
-                          )}
-                        </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm text-gray-600">
-                          <div className="flex items-center gap-1">
-                            <Clock size={14} />
-                            <span>
-                              {startDate.toLocaleDateString('de-DE', {
-                                weekday: 'short',
-                                day: '2-digit',
-                                month: '2-digit',
-                              })}
-                              , {startDate.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })} -{' '}
-                              {endDate.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <UserCheck size={14} />
-                            <span>
-                              {shift.assignedEmployees || 0} / {shift.requiredEmployees} Mitarbeiter
-                            </span>
-                          </div>
-                        </div>
-                        {shift.description && (
-                          <p className="text-sm text-gray-500 mt-2">{shift.description}</p>
-                        )}
-                      </div>
-                      <div className="ml-4">
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => nav(`/shifts/${shift.id}`)}
-                        >
-                          Details →
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-          )}
-        </>
-      )}
+            {/* Generate Button */}
+            {rules.length > 0 && (
+              <div className="border-t pt-6">
+                <Button
+                  size="lg"
+                  onClick={() => setShowGenerateDialog(true)}
+                  className="gap-2 w-full sm:w-auto"
+                >
+                  <Calendar size={20} />
+                  Schichten aus Regeln generieren
+                </Button>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
 
       {/* Modals */}
-      {showCreateRuleModal && (
-        <Modal
-          isOpen={showCreateRuleModal}
-          onClose={() => setShowCreateRuleModal(false)}
-          title="Neue Schichtregel erstellen"
-          size="lg"
-        >
-          <ShiftRuleForm
-            siteId={siteId}
-            onSubmit={(input) => createRuleMutation.mutate(input)}
-            onCancel={() => setShowCreateRuleModal(false)}
-            isSubmitting={createRuleMutation.isPending}
-          />
-        </Modal>
+      <CreateShiftModal
+        isOpen={showCreateShift}
+        onClose={() => setShowCreateShift(false)}
+        siteId={siteId}
+        siteName={site.name}
+        initialDate={currentWeek}
+      />
+
+      {selectedShift && (
+        <ShiftDetailModal
+          shift={selectedShift}
+          isOpen={!!selectedShift}
+          onClose={() => setSelectedShift(null)}
+        />
       )}
 
-      {showEditRuleModal && editingRule && (
-        <Modal
-          isOpen={showEditRuleModal}
-          onClose={() => {
-            setShowEditRuleModal(false)
-            setEditingRule(null)
-          }}
-          title="Schichtregel bearbeiten"
-          size="lg"
-        >
+      <AutoFillModal
+        isOpen={showAutoFill}
+        onClose={() => setShowAutoFill(false)}
+        startDate={currentWeek}
+        endDate={endOfWeek(currentWeek, { weekStartsOn: 1 })}
+        siteId={siteId}
+      />
+
+      {/* Rules Modals */}
+      <Modal
+        isOpen={showCreateRule}
+        onClose={() => setShowCreateRule(false)}
+        title="Neue Schicht-Regel erstellen"
+        maxWidth="3xl"
+      >
+        <ShiftRuleForm
+          onSubmit={(data) => createRuleMutation.mutate(data)}
+          onCancel={() => setShowCreateRule(false)}
+          isLoading={createRuleMutation.isPending}
+        />
+      </Modal>
+
+      <Modal
+        isOpen={showEditRule}
+        onClose={() => {
+          setShowEditRule(false);
+          setEditingRule(null);
+        }}
+        title="Schicht-Regel bearbeiten"
+        maxWidth="3xl"
+      >
+        {editingRule && (
           <ShiftRuleForm
-            siteId={siteId}
             initialData={editingRule}
-            onSubmit={(input) => updateRuleMutation.mutate({ ruleId: editingRule.id, input })}
+            onSubmit={(data) => updateRuleMutation.mutate({ id: editingRule.id, data })}
             onCancel={() => {
-              setShowEditRuleModal(false)
-              setEditingRule(null)
+              setShowEditRule(false);
+              setEditingRule(null);
             }}
-            isSubmitting={updateRuleMutation.isPending}
+            isLoading={updateRuleMutation.isPending}
           />
-        </Modal>
-      )}
+        )}
+      </Modal>
 
-      {showTemplateSelector && (
-        <TemplateSelector
-          isOpen={showTemplateSelector}
-          onClose={() => setShowTemplateSelector(false)}
-          onSelectTemplate={handleTemplateSelect}
-        />
-      )}
+      <TemplateSelector
+        isOpen={showTemplateSelector}
+        onClose={() => setShowTemplateSelector(false)}
+        onSelect={(template) => {
+          setShowTemplateSelector(false);
+          // TODO: Pre-fill create form with template
+          setShowCreateRule(true);
+        }}
+      />
 
-      {showGenerateDialog && (
-        <GenerateShiftsDialog
-          siteId={siteId}
-          isOpen={showGenerateDialog}
-          onClose={() => setShowGenerateDialog(false)}
-        />
-      )}
+      <GenerateShiftsDialog
+        siteId={siteId}
+        isOpen={showGenerateDialog}
+        onClose={() => setShowGenerateDialog(false)}
+      />
     </div>
-  )
+  );
 }
