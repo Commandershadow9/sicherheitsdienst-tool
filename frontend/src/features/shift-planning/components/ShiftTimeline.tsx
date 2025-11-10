@@ -20,6 +20,8 @@ interface ShiftTimelineProps {
   startDate: Date;
   endDate: Date;
   onShiftClick?: (shift: Shift) => void;
+  siteId?: string; // Optional: Filter auf spezifischen Site
+  siteName?: string; // Optional: Name für Anzeige
 }
 
 interface TimelineRow {
@@ -50,7 +52,15 @@ export default function ShiftTimeline({
   startDate,
   endDate,
   onShiftClick,
+  siteId,
+  siteName,
 }: ShiftTimelineProps) {
+  // Filter Shifts nach siteId (falls angegeben)
+  const filteredShifts = useMemo(() => {
+    if (!siteId) return shifts;
+    return shifts.filter((shift) => shift.siteId === siteId);
+  }, [shifts, siteId]);
+
   // Berechne Timeline-Daten
   const timelineData = useMemo(() => {
     const totalHours = differenceInHours(endDate, startDate);
@@ -59,7 +69,7 @@ export default function ShiftTimeline({
     // Gruppiere Schichten nach Mitarbeiter
     const employeeShifts = new Map<string, Shift[]>();
 
-    shifts.forEach((shift) => {
+    filteredShifts.forEach((shift) => {
       shift.assignments?.forEach((assignment) => {
         const userId = assignment.user.id;
         const existing = employeeShifts.get(userId) || [];
@@ -102,7 +112,7 @@ export default function ShiftTimeline({
 
     // Sortiere nach Namen
     return rows.sort((a, b) => a.employeeName.localeCompare(b.employeeName));
-  }, [shifts, startDate, endDate]);
+  }, [filteredShifts, startDate, endDate]);
 
   // Zeit-Marker (alle 4 Stunden)
   const timeMarkers = useMemo(() => {
@@ -137,7 +147,9 @@ export default function ShiftTimeline({
     <div className="space-y-4">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold">Mitarbeiter-Timeline</h3>
+        <h3 className="text-lg font-semibold">
+          {siteName ? `Mitarbeiter-Timeline - ${siteName}` : 'Mitarbeiter-Timeline'}
+        </h3>
         <div className="text-sm text-gray-600">
           {format(startDate, 'd. MMM', { locale: de })} -{' '}
           {format(endDate, 'd. MMM yyyy', { locale: de })}

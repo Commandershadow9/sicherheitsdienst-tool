@@ -24,6 +24,7 @@ import type { ShiftConflict } from '../api';
 
 interface PlanningDashboardProps {
   siteId?: string;
+  siteName?: string; // Optional: Name für Anzeige
   weekOffset?: number; // 0 = aktuelle Woche, 1 = nächste Woche, etc.
   onViewConflict?: (conflict: ShiftConflict) => void;
   onAutoFill?: () => void;
@@ -31,6 +32,7 @@ interface PlanningDashboardProps {
 
 export default function PlanningDashboard({
   siteId,
+  siteName,
   weekOffset = 0,
   onViewConflict,
   onAutoFill,
@@ -127,7 +129,9 @@ export default function PlanningDashboard({
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-semibold">Schichtplanungs-Zentrale</h2>
+          <h2 className="text-2xl font-semibold">
+            {siteName ? `Schichtplanungs-Dashboard - ${siteName}` : 'Schichtplanungs-Zentrale'}
+          </h2>
           <p className="text-sm text-gray-600 mt-1">{dateRange.label}</p>
         </div>
 

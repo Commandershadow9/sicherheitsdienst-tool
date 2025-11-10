@@ -7,19 +7,9 @@
 import { useQuery } from '@tanstack/react-query'
 import { api } from '@/lib/api'
 import type { Site, TabType } from '../types/site'
-import { fetchSiteShifts } from '../api';
+import { fetchSiteShifts, type Shift } from '../api';
 import { fetchControlPoints, fetchControlRounds } from '../controlApi';
 import { fetchSiteCalculations } from '../calculationApi'
-
-interface Shift {
-  id: string
-  title: string
-  startTime: string
-  endTime: string
-  requiredEmployees: number
-  assignedEmployees: number
-  status: string
-}
 
 interface UseSiteQueriesParams {
   siteId: string | undefined
@@ -55,14 +45,14 @@ export function useSiteQueries({
   const { data: controlPoints = [] } = useQuery({
     queryKey: ['controlPoints', siteId],
     queryFn: () => fetchControlPoints(siteId!),
-    enabled: !!siteId && activeTab === 'control-points',
+    enabled: !!siteId && activeTab === 'controls',
   })
 
   // Control Rounds Query
   const { data: controlRoundsData } = useQuery({
     queryKey: ['controlRounds', siteId],
     queryFn: () => fetchControlRounds(siteId!),
-    enabled: !!siteId && activeTab === 'control-rounds',
+    enabled: !!siteId && activeTab === 'controls',
   })
 
   const controlRounds = controlRoundsData?.data || []
@@ -88,7 +78,7 @@ export function useSiteQueries({
   const { data: shifts = [], isLoading: shiftsLoading } = useQuery<Shift[]>({
     queryKey: ['shifts', siteId],
     queryFn: () => fetchSiteShifts(siteId!),
-    enabled: !!siteId && activeTab === 'shifts',
+    enabled: !!siteId && activeTab === 'planning',
   })
 
   // Users Query (for clearance/assignment creation)

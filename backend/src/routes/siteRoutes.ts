@@ -319,6 +319,14 @@ router.post(
   asyncHandler(securityConceptController.uploadAttachment),
 );
 
+// PATCH /api/sites/:siteId/security-concept/:id/shift-model - ShiftModel Auto-Sync Update
+router.patch(
+  '/:siteId/security-concept/:id/shift-model',
+  authenticate,
+  writeLimiter,
+  asyncHandler(securityConceptController.updateShiftModel),
+);
+
 // ===== Schichtplanungs-Regeln (Shift Rules) =====
 
 // GET /api/sites/:siteId/shift-rules - Alle Schichtregeln abrufen
@@ -406,6 +414,7 @@ router.all('/:siteId/security-concept', authenticate, methodNotAllowed(['GET', '
 router.all('/:siteId/security-concept/:id', authenticate, methodNotAllowed(['GET', 'PUT', 'DELETE']));
 router.all('/:siteId/security-concept/:id/approve', authenticate, methodNotAllowed(['POST']));
 router.all('/:siteId/security-concept/:id/upload-attachment', authenticate, methodNotAllowed(['POST']));
+router.all('/:siteId/security-concept/:id/shift-model', authenticate, methodNotAllowed(['PATCH']));
 router.all('/:siteId/shift-rules', authenticate, methodNotAllowed(['GET', 'POST']));
 router.all('/:siteId/shift-rules/:ruleId', authenticate, methodNotAllowed(['GET', 'PUT', 'DELETE']));
 router.all('/:siteId/shift-rules/check-conflicts', authenticate, methodNotAllowed(['POST']));
