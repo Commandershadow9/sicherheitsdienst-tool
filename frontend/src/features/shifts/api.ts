@@ -27,6 +27,14 @@ export interface Shift {
   };
 }
 
+export interface ObjectClearance {
+  id: string;
+  siteId: string;
+  status: 'ACTIVE' | 'EXPIRED' | 'REVOKED' | 'SUSPENDED';
+  validUntil: string | null;
+  trainedAt: string;
+}
+
 export interface ShiftAssignment {
   id: string;
   userId: string;
@@ -42,6 +50,8 @@ export interface ShiftAssignment {
     lastName: string;
     email: string;
     role: string;
+    qualifications?: string[];
+    objectClearances?: ObjectClearance[];
   };
 }
 

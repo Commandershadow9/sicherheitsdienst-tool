@@ -3,18 +3,19 @@
  * Professionelle Drag & Drop Lösung für langfristige Wartbarkeit
  */
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback, memo } from 'react';
 import { format, addDays, startOfWeek, endOfWeek } from 'date-fns';
 import { de } from 'date-fns/locale';
 import { DndProvider, useDrag, useDrop } from 'react-dnd';
-import { HTML5Backend } from 'react-dnd-html5-backend';
-import { ChevronLeft, ChevronRight, AlertCircle, CheckCircle, Users, Clock, GripVertical } from 'lucide-react';
+import { ChevronLeft, ChevronRight, AlertCircle, CheckCircle, Users, Clock, GripVertical, ShieldAlert, ShieldCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { assignUserToShift } from '../../shifts/api';
 import { toast } from 'sonner';
 import type { Shift, ShiftAssignment } from '../../shifts/api';
+import { checkClearanceForSite, checkCompliance } from '../utils/clearanceUtils';
+import { getDnDBackend } from '../utils/dndBackend';
 
 // Drag Item Type
 const ItemTypes = {
@@ -24,10 +25,11 @@ const ItemTypes = {
 interface EmployeeCardProps {
   assignment: ShiftAssignment;
   shiftId: string;
+  siteId: string;
 }
 
-// Draggable Employee Card
-function EmployeeCard({ assignment, shiftId }: EmployeeCardProps) {
+// Draggable Employee Card (memoized für Performance)
+const EmployeeCard = memo(function EmployeeCard({ assignment, shiftId, siteId }: EmployeeCardProps) {
   const [{ isDragging }, drag] = useDrag({
     type: ItemTypes.EMPLOYEE,
     item: {
@@ -40,21 +42,33 @@ function EmployeeCard({ assignment, shiftId }: EmployeeCardProps) {
     }),
   });
 
+  // Clearance-Check
+  const clearanceCheck = checkClearanceForSite(assignment.user.objectClearances, siteId);
+  const hasWarning = clearanceCheck.status !== 'CLEARED';
+
   return (
     <div
       ref={drag}
       className={cn(
         'flex items-center gap-2 px-2 py-1 bg-white/80 rounded text-xs cursor-move hover:bg-white transition-colors',
-        isDragging && 'opacity-50'
+        isDragging && 'opacity-50',
+        hasWarning && 'border border-orange-300'
       )}
+      title={hasWarning ? clearanceCheck.message : 'Eingearbeitet'}
     >
       <GripVertical size={12} className="text-gray-400 flex-shrink-0" />
       <span className="truncate">
         {assignment.user.firstName} {assignment.user.lastName}
       </span>
+      {/* Clearance-Indikator */}
+      {hasWarning ? (
+        <ShieldAlert size={12} className="text-orange-600 flex-shrink-0 ml-auto" />
+      ) : (
+        <ShieldCheck size={12} className="text-green-600 flex-shrink-0 ml-auto opacity-60" />
+      )}
     </div>
   );
-}
+});
 
 interface ShiftCardProps {
   shift: Shift;
@@ -62,8 +76,8 @@ interface ShiftCardProps {
   onDrop: (userId: string, shiftId: string) => void;
 }
 
-// Droppable Shift Card
-function ShiftCard({ shift, onShiftClick, onDrop }: ShiftCardProps) {
+// Droppable Shift Card (memoized für Performance)
+const ShiftCard = memo(function ShiftCard({ shift, onShiftClick, onDrop }: ShiftCardProps) {
   const [{ isOver, canDrop }, drop] = useDrop({
     accept: ItemTypes.EMPLOYEE,
     canDrop: (item: any) => {
@@ -82,6 +96,34 @@ function ShiftCard({ shift, onShiftClick, onDrop }: ShiftCardProps) {
   // Status
   const assigned = shift.assignments?.length || 0;
   const required = shift.requiredEmployees;
+
+  // Compliance-Checks für alle Assignments
+  const complianceIssues = useMemo(() => {
+    if (!shift.assignments || shift.assignments.length === 0) return [];
+
+    const issues: Array<{ userId: string; userName: string; warnings: string[] }> = [];
+
+    shift.assignments.forEach((assignment) => {
+      const compliance = checkCompliance(
+        assignment.user.objectClearances,
+        assignment.user.qualifications,
+        shift.siteId,
+        shift.requiredQualifications
+      );
+
+      if (!compliance.isCompliant && compliance.warnings.length > 0) {
+        issues.push({
+          userId: assignment.user.id,
+          userName: `${assignment.user.firstName} ${assignment.user.lastName}`,
+          warnings: compliance.warnings.map((w) => w.message),
+        });
+      }
+    });
+
+    return issues;
+  }, [shift.assignments, shift.siteId, shift.requiredQualifications]);
+
+  const hasComplianceIssues = complianceIssues.length > 0;
 
   const getShiftStatus = () => {
     if (assigned === 0) {
@@ -130,14 +172,41 @@ function ShiftCard({ shift, onShiftClick, onDrop }: ShiftCardProps) {
               {assigned}/{required}
             </span>
           </div>
+          {/* Compliance-Warnung Indikator */}
+          {hasComplianceIssues && (
+            <div className="flex items-center gap-1 text-xs text-orange-600">
+              <ShieldAlert size={12} />
+              <span>{complianceIssues.length}</span>
+            </div>
+          )}
         </div>
+
+        {/* Inline Compliance-Warnungen */}
+        {hasComplianceIssues && (
+          <div className="mt-2 space-y-1">
+            {complianceIssues.map((issue, idx) => (
+              <div
+                key={idx}
+                className="text-xs bg-orange-50 border border-orange-200 rounded px-2 py-1 text-orange-800"
+              >
+                <div className="font-medium">{issue.userName}:</div>
+                <div className="text-orange-700">{issue.warnings.join(', ')}</div>
+              </div>
+            ))}
+          </div>
+        )}
       </button>
 
       {/* Mitarbeiter-Liste (Draggable) */}
       {shift.assignments && shift.assignments.length > 0 && (
         <div className="mt-2 space-y-1">
           {shift.assignments.slice(0, 2).map((assignment) => (
-            <EmployeeCard key={assignment.id} assignment={assignment} shiftId={shift.id} />
+            <EmployeeCard
+              key={assignment.id}
+              assignment={assignment}
+              shiftId={shift.id}
+              siteId={shift.siteId}
+            />
           ))}
           {shift.assignments.length > 2 && (
             <div className="text-xs text-gray-600 px-2">
@@ -165,7 +234,7 @@ function ShiftCard({ shift, onShiftClick, onDrop }: ShiftCardProps) {
       )}
     </div>
   );
-}
+});
 
 interface ShiftMatrixDnDProps {
   shifts: Shift[];
@@ -227,18 +296,24 @@ export default function ShiftMatrixDnD({
     return matrix;
   }, [shifts, currentWeek]);
 
-  // Navigation
-  const goToPreviousWeek = () => setCurrentWeek((prev) => addDays(prev, -7));
-  const goToNextWeek = () => setCurrentWeek((prev) => addDays(prev, 7));
-  const goToToday = () => setCurrentWeek(startOfWeek(new Date(), { weekStartsOn: 1 }));
+  // Navigation (memoized)
+  const goToPreviousWeek = useCallback(() => setCurrentWeek((prev) => addDays(prev, -7)), []);
+  const goToNextWeek = useCallback(() => setCurrentWeek((prev) => addDays(prev, 7)), []);
+  const goToToday = useCallback(() => setCurrentWeek(startOfWeek(new Date(), { weekStartsOn: 1 })), []);
 
-  // Drop Handler
-  const handleDrop = (userId: string, shiftId: string) => {
-    assignMutation.mutate({ userId, shiftId });
-  };
+  // Drop Handler (memoized)
+  const handleDrop = useCallback(
+    (userId: string, shiftId: string) => {
+      assignMutation.mutate({ userId, shiftId });
+    },
+    [assignMutation]
+  );
+
+  // DnD Backend (dynamisch für Desktop und Mobile)
+  const dndBackend = useMemo(() => getDnDBackend(), []);
 
   return (
-    <DndProvider backend={HTML5Backend}>
+    <DndProvider backend={dndBackend.backend} options={dndBackend.options}>
       <div className="space-y-4">
         {/* Header mit Navigation */}
         <div className="flex items-center justify-between">
@@ -267,7 +342,8 @@ export default function ShiftMatrixDnD({
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm text-blue-900">
           <p>
             💡 <strong>Tipp:</strong> Ziehen Sie Mitarbeiter aus den Schicht-Karten auf andere
-            Schichten, um sie zuzuweisen.
+            Schichten, um sie zuzuweisen. Auf Touch-Geräten: Halten Sie einen Mitarbeiter gedrückt
+            (200ms), um ihn zu verschieben.
           </p>
         </div>
 

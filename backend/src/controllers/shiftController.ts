@@ -98,8 +98,25 @@ export const getAllShifts = async (req: Request, res: Response, next: NextFuncti
                 employeeId: true,
                 phone: true,
                 qualifications: true,
+                objectClearances: {
+                  select: {
+                    id: true,
+                    siteId: true,
+                    status: true,
+                    validUntil: true,
+                    trainedAt: true,
+                  },
+                },
               },
             },
+          },
+        },
+        site: {
+          select: {
+            id: true,
+            name: true,
+            address: true,
+            city: true,
           },
         },
       },
