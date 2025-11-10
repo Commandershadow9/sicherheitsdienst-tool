@@ -44,7 +44,7 @@ export default function PlanningDashboard({
     return {
       start: format(weekStart, 'yyyy-MM-dd'),
       end: format(weekEnd, 'yyyy-MM-dd'),
-      label: format(weekStart, 'KW w, yyyy', { locale: de }),
+      label: format(weekStart, "'KW' w, yyyy", { locale: de }),
     };
   }, [weekOffset]);
 
