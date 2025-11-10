@@ -22,6 +22,7 @@ import CalculationForm from '@/features/sites/pages/CalculationForm'
 import UsersList from '@/features/users/UsersList'
 import ShiftList from '@/features/shifts/ShiftList'
 import ShiftDetail from '@/features/shifts/pages/ShiftDetail'
+import ShiftPlanningPage from '@/features/shift-planning/pages/ShiftPlanningPage'
 import IncidentsList from '@/features/incidents/IncidentsList'
 import IncidentForm from '@/features/incidents/IncidentForm'
 import RequireRole from '@/features/auth/RequireRole'
@@ -148,6 +149,11 @@ export const router = createBrowserRouter([
           { path: 'shifts/:id', element: (
             <RequireRole roles={['ADMIN','DISPATCHER','EMPLOYEE','MANAGER']}>
               <ShiftDetail />
+            </RequireRole>
+          ) },
+          { path: 'shift-planning', element: (
+            <RequireRole roles={['ADMIN','DISPATCHER','MANAGER']}>
+              <ShiftPlanningPage />
             </RequireRole>
           ) },
           { path: 'absences', element: (
