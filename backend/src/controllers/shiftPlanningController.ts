@@ -76,8 +76,7 @@ export const createTemplate = async (req: Request, res: Response, next: NextFunc
   try {
     const template = await templateService.createShiftTemplate(req.body);
 
-    await submitAuditEvent({
-      actorId: req.user?.id,
+    await submitAuditEvent(req, {
       action: 'CREATE',
       resourceType: 'SHIFT_TEMPLATE',
       resourceId: template.id,
@@ -103,8 +102,7 @@ export const updateTemplate = async (req: Request, res: Response, next: NextFunc
 
     const template = await templateService.updateShiftTemplate(id, req.body);
 
-    await submitAuditEvent({
-      actorId: req.user?.id,
+    await submitAuditEvent(req, {
       action: 'UPDATE',
       resourceType: 'SHIFT_TEMPLATE',
       resourceId: id,
@@ -130,8 +128,7 @@ export const deleteTemplate = async (req: Request, res: Response, next: NextFunc
 
     await templateService.deleteShiftTemplate(id);
 
-    await submitAuditEvent({
-      actorId: req.user?.id,
+    await submitAuditEvent(req, {
       action: 'DELETE',
       resourceType: 'SHIFT_TEMPLATE',
       resourceId: id,
@@ -166,8 +163,7 @@ export const applyTemplate = async (req: Request, res: Response, next: NextFunct
 
     const site = await templateService.applyTemplateToSite(id, siteId);
 
-    await submitAuditEvent({
-      actorId: req.user?.id,
+    await submitAuditEvent(req, {
       action: 'APPLY_TEMPLATE',
       resourceType: 'SITE',
       resourceId: siteId,
@@ -275,8 +271,7 @@ export const autoFillShifts = async (req: Request, res: Response, next: NextFunc
       fairnessWeight: fairnessWeight || 50,
     });
 
-    await submitAuditEvent({
-      actorId: req.user?.id,
+    await submitAuditEvent(req, {
       action: 'AUTO_FILL',
       resourceType: 'SHIFT',
       data: { shiftIds, autoAssign, count: results.length },
@@ -315,8 +310,7 @@ export const autoFillPeriod = async (req: Request, res: Response, next: NextFunc
       autoAssign: autoAssign || false,
     });
 
-    await submitAuditEvent({
-      actorId: req.user?.id,
+    await submitAuditEvent(req, {
       action: 'AUTO_FILL_PERIOD',
       resourceType: 'SHIFT',
       data: { startDate, endDate, siteId, autoAssign, count: results.length },

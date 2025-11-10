@@ -70,7 +70,6 @@ async function seedShiftTemplates(customerId: string) {
       wageMultiplier: 1.0,
       color: '#3B82F6',
       description: 'Standard Frühschicht mit 2 Mitarbeitern',
-      customerId,
     },
     {
       name: 'Spätschicht Standard',
@@ -83,7 +82,6 @@ async function seedShiftTemplates(customerId: string) {
       wageMultiplier: 1.0,
       color: '#10B981',
       description: 'Standard Spätschicht mit 2 Mitarbeitern',
-      customerId,
     },
     {
       name: 'Nachtschicht',
@@ -96,7 +94,6 @@ async function seedShiftTemplates(customerId: string) {
       wageMultiplier: 1.25,
       color: '#1E40AF',
       description: 'Nachtschicht mit erhöhtem Personalaufwand',
-      customerId,
     },
     {
       name: 'Wochenende Tagschicht',
@@ -109,7 +106,6 @@ async function seedShiftTemplates(customerId: string) {
       wageMultiplier: 1.5,
       color: '#F59E0B',
       description: 'Längere Wochenend-Schicht mit Zuschlag',
-      customerId,
     },
     {
       name: 'Feiertag Bewachung',
@@ -122,7 +118,6 @@ async function seedShiftTemplates(customerId: string) {
       wageMultiplier: 2.0,
       color: '#EF4444',
       description: '24h Feiertag-Bewachung mit doppeltem Zuschlag',
-      customerId,
     },
     {
       name: 'Notfall-Einsatz',
@@ -135,7 +130,6 @@ async function seedShiftTemplates(customerId: string) {
       wageMultiplier: 2.5,
       color: '#DC2626',
       description: 'Notfall-Einsatz mit maximaler Besetzung',
-      customerId,
     },
     {
       name: 'Event-Security',
@@ -148,7 +142,6 @@ async function seedShiftTemplates(customerId: string) {
       wageMultiplier: 1.75,
       color: '#8B5CF6',
       description: 'Veranstaltungs-Sicherheit mit speziellen Anforderungen',
-      customerId,
     },
   ];
 
@@ -173,7 +166,7 @@ async function seedTestSites(customerId: string) {
       postalCode: '60549',
       status: 'ACTIVE' as const,
       customerId,
-      buildingType: 'AIRPORT' as const,
+      buildingType: 'OTHER' as const, // Flughafen -> OTHER
       minStaffRequirement: 3,
       defaultShiftDuration: 8,
       requiresClearance: true,
@@ -185,7 +178,7 @@ async function seedTestSites(customerId: string) {
       postalCode: '80331',
       status: 'ACTIVE' as const,
       customerId,
-      buildingType: 'SHOPPING_CENTER' as const,
+      buildingType: 'RETAIL' as const, // Shopping Center -> RETAIL
       minStaffRequirement: 2,
       defaultShiftDuration: 10,
       requiresClearance: true,
@@ -209,7 +202,7 @@ async function seedTestSites(customerId: string) {
       postalCode: '70173',
       status: 'ACTIVE' as const,
       customerId,
-      buildingType: 'OFFICE_BUILDING' as const,
+      buildingType: 'OFFICE' as const, // OFFICE_BUILDING -> OFFICE
       minStaffRequirement: 1,
       defaultShiftDuration: 8,
       requiresClearance: false,
@@ -221,7 +214,7 @@ async function seedTestSites(customerId: string) {
       postalCode: '50667',
       status: 'ACTIVE' as const,
       customerId,
-      buildingType: 'EVENT_VENUE' as const,
+      buildingType: 'EVENT' as const, // EVENT_VENUE -> EVENT
       minStaffRequirement: 6,
       defaultShiftDuration: 8,
       requiresClearance: true,
@@ -230,7 +223,15 @@ async function seedTestSites(customerId: string) {
 
   const createdSites = [];
   for (const site of sites) {
-    const created = await prisma.site.create({ data: site });
+    const { customerId, ...siteData } = site;
+    const created = await prisma.site.create({
+      data: {
+        ...siteData,
+        customer: {
+          connect: { id: customerId }
+        }
+      }
+    });
     createdSites.push(created);
   }
 
@@ -364,12 +365,16 @@ async function seedTestUsers(customerId: string) {
   const createdUsers = [];
   for (const user of users) {
     const created = await createUserWithPassword(
+      prisma,
       {
         ...user,
+        role: user.role as any,
         customerId,
         isActive: true,
-      },
-      'Test1234!'
+        password: 'Test1234!',
+        phone: null,
+        hireDate: new Date(),
+      }
     );
     createdUsers.push(created);
   }
@@ -598,7 +603,7 @@ async function seedEmployeePreferences(users: any[], sites: any[]) {
   ];
 
   for (const pref of preferences) {
-    await prisma.employeeShiftPreference.create({
+    await (prisma as any).employeeShiftPreference.create({
       data: pref as any,
     });
   }
@@ -620,6 +625,7 @@ async function seedTestShifts(sites: any[], users: any[]) {
       startTime: addDays(weekStart, 0).toISOString(),
       endTime: addHours(addDays(weekStart, 0), 8).toISOString(),
       requiredEmployees: 2,
+      location: 'Haupteingang',
       requiredQualifications: ['Erste Hilfe'],
       status: 'PLANNED',
     },
@@ -633,6 +639,7 @@ async function seedTestShifts(sites: any[], users: any[]) {
       startTime: addDays(weekStart, 1).toISOString(),
       endTime: addHours(addDays(weekStart, 1), 8).toISOString(),
       requiredEmployees: 3,
+      location: 'Haupteingang',
       requiredQualifications: ['Erste Hilfe'],
       status: 'PLANNED',
     },
@@ -654,6 +661,7 @@ async function seedTestShifts(sites: any[], users: any[]) {
       startTime: addHours(addDays(weekStart, 1), 8).toISOString(),
       endTime: addHours(addDays(weekStart, 1), 16).toISOString(),
       requiredEmployees: 2,
+      location: 'Haupteingang',
       requiredQualifications: ['Erste Hilfe'],
       status: 'PLANNED',
     },
@@ -675,6 +683,7 @@ async function seedTestShifts(sites: any[], users: any[]) {
       startTime: addHours(addDays(weekStart, 2), 6).toISOString(),
       endTime: addHours(addDays(weekStart, 2), 14).toISOString(),
       requiredEmployees: 2,
+      location: 'Haupteingang',
       requiredQualifications: ['Erste Hilfe', 'Waffenschein'], // Julia hat keinen Waffenschein
       status: 'PLANNED',
     },
@@ -696,6 +705,7 @@ async function seedTestShifts(sites: any[], users: any[]) {
       startTime: addHours(addDays(weekStart, 3), 8).toISOString(),
       endTime: addHours(addDays(weekStart, 3), 16).toISOString(),
       requiredEmployees: 1,
+      location: 'Haupteingang',
       requiredQualifications: ['Erste Hilfe'],
       status: 'PLANNED',
     },
@@ -716,6 +726,7 @@ async function seedTestShifts(sites: any[], users: any[]) {
       startTime: addHours(addDays(weekStart, 3), 12).toISOString(), // 4h Überlappung
       endTime: addHours(addDays(weekStart, 3), 20).toISOString(),
       requiredEmployees: 1,
+      location: 'Haupteingang',
       requiredQualifications: ['Erste Hilfe'],
       status: 'PLANNED',
     },
@@ -737,6 +748,7 @@ async function seedTestShifts(sites: any[], users: any[]) {
       startTime: addHours(addDays(weekStart, 4), 22).toISOString(),
       endTime: addHours(addDays(weekStart, 5), 6).toISOString(),
       requiredEmployees: 1,
+      location: 'Haupteingang',
       requiredQualifications: ['Erste Hilfe', 'Nachtschicht-Tauglichkeit'],
       status: 'PLANNED',
     },
@@ -757,6 +769,7 @@ async function seedTestShifts(sites: any[], users: any[]) {
       startTime: addHours(addDays(weekStart, 5), 8).toISOString(), // Nur 2h nach Nachtschicht-Ende
       endTime: addHours(addDays(weekStart, 5), 16).toISOString(),
       requiredEmployees: 1,
+      location: 'Haupteingang',
       requiredQualifications: ['Erste Hilfe'],
       status: 'PLANNED',
     },
@@ -780,7 +793,8 @@ async function seedTestShifts(sites: any[], users: any[]) {
         startTime: addHours(addDays(weekStart, i), 6).toISOString(),
         endTime: addHours(addDays(weekStart, i), 14).toISOString(),
         requiredEmployees: 2,
-        requiredQualifications: ['Erste Hilfe'],
+        location: 'Haupteingang',
+      requiredQualifications: ['Erste Hilfe'],
         status: 'PLANNED',
       },
     });
@@ -804,7 +818,8 @@ async function seedTestShifts(sites: any[], users: any[]) {
         startTime: addHours(addDays(weekStart, i), 14).toISOString(),
         endTime: addHours(addDays(weekStart, i), 22).toISOString(),
         requiredEmployees: 2,
-        requiredQualifications: ['Erste Hilfe'],
+        location: 'Haupteingang',
+      requiredQualifications: ['Erste Hilfe'],
         status: 'PLANNED',
       },
     });
@@ -826,6 +841,7 @@ async function seedTestShifts(sites: any[], users: any[]) {
       startTime: addHours(addDays(weekStart, 6), 10).toISOString(),
       endTime: addHours(addDays(weekStart, 6), 18).toISOString(),
       requiredEmployees: 2,
+      location: 'Haupteingang',
       requiredQualifications: ['Erste Hilfe'],
       status: 'PLANNED',
     },
@@ -850,7 +866,8 @@ async function seedTestShifts(sites: any[], users: any[]) {
         startTime: addHours(addDays(weekStart, day), 8).toISOString(),
         endTime: addHours(addDays(weekStart, day), 16).toISOString(),
         requiredEmployees: 2,
-        requiredQualifications: ['Erste Hilfe'],
+        location: 'Haupteingang',
+      requiredQualifications: ['Erste Hilfe'],
         status: 'PLANNED',
       },
     });

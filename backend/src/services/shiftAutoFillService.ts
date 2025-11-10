@@ -121,16 +121,12 @@ async function autoFillSingleShift(
     }
 
     // Hole Kandidaten via Smart-Matching
-    const candidatesData = await findReplacementCandidatesForShiftV2(shiftId, {
-      limit: Math.max(required - currentAssigned + 5, 10), // +5 Reserve
-    });
-
-    const candidates = candidatesData.candidates || [];
+    const candidates = await findReplacementCandidatesForShiftV2(shiftId);
 
     // Filtere bereits zugewiesene Mitarbeiter
-    const assignedUserIds = new Set(shift.assignments.map((a) => a.user.id));
+    const assignedUserIds = new Set(shift.assignments.map((a: any) => a.user.id));
     const availableCandidates = candidates.filter(
-      (c) => !assignedUserIds.has(c.id)
+      (c: any) => !assignedUserIds.has(c.id)
     );
 
     // Keine Kandidaten verfügbar?
@@ -148,10 +144,10 @@ async function autoFillSingleShift(
 
     // Sortiere Kandidaten nach Score
     const sortedCandidates = availableCandidates
-      .sort((a, b) => b.score.total - a.score.total)
+      .sort((a: any, b: any) => b.score.total - a.score.total)
       .slice(0, required - currentAssigned); // Nur benötigte Anzahl
 
-    const suggestions = sortedCandidates.map((c) => ({
+    const suggestions = sortedCandidates.map((c: any) => ({
       userId: c.id,
       userName: `${c.firstName} ${c.lastName}`,
       score: c.score.total,
@@ -184,7 +180,7 @@ async function autoFillSingleShift(
           });
 
           assignedCount++;
-          const suggestion = suggestions.find((s) => s.userId === candidate.id);
+          const suggestion = suggestions.find((s: any) => s.userId === candidate.id);
           if (suggestion) {
             suggestion.assigned = true;
           }

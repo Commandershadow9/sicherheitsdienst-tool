@@ -48,24 +48,17 @@ export const getAllSites = async (req: Request, res: Response, next: NextFunctio
       orderBy: { [sortBy]: sortDir as any },
       skip,
       take: pageSize,
-      include: {
-        securityConcepts: {
-          where: { status: { in: ['ACTIVE', 'APPROVED'] } },
-          orderBy: { createdAt: 'desc' },
-          take: 1,
-        },
-      },
     });
 
     // Erweitere Sites mit benötigten MA und Objektleiter-Info
     const data = sites.map((site) => {
-      const securityConcept = site.securityConcepts?.[0];
+      const securityConcept = site.securityConcept as any;
       let requiredStaff = null;
       let requiresLeader = false;
 
       // Extrahiere requiredStaff aus shiftModel
       if (securityConcept?.shiftModel) {
-        const shiftModel = securityConcept.shiftModel as any;
+        const shiftModel = securityConcept.shiftModel;
         if (shiftModel.shifts && Array.isArray(shiftModel.shifts)) {
           // Summiere requiredStaff aus allen Schichten
           requiredStaff = shiftModel.shifts.reduce((sum: number, shift: any) => {
@@ -75,21 +68,17 @@ export const getAllSites = async (req: Request, res: Response, next: NextFunctio
       }
 
       // Prüfe ob Objektleiter/Schichtleiter erforderlich
-      if (securityConcept?.staffRequirements) {
-        const staffReq = securityConcept.staffRequirements as any;
-        if (staffReq.qualifications && Array.isArray(staffReq.qualifications)) {
-          requiresLeader = staffReq.qualifications.some(
-            (qual: string) =>
-              qual.includes('Objektleiter') ||
-              qual.includes('Schichtleiter') ||
-              qual.includes('Schichtführer')
-          );
-        }
+      if (securityConcept?.requiredQualifications && Array.isArray(securityConcept.requiredQualifications)) {
+        requiresLeader = securityConcept.requiredQualifications.some(
+          (qual: string) =>
+            qual.includes('Objektleiter') ||
+            qual.includes('Schichtleiter') ||
+            qual.includes('Schichtführer')
+        );
       }
 
-      const { securityConcepts: _, ...siteData } = site;
       return {
-        ...siteData,
+        ...site,
         requiredStaff,
         requiresLeader,
       };
@@ -219,11 +208,6 @@ export const getSiteById = async (req: Request, res: Response, next: NextFunctio
               where: { status: 'ACTIVE' },
               include: { user: { select: { id: true, firstName: true, lastName: true } } },
               orderBy: { createdAt: 'desc' },
-            },
-            securityConcepts: {
-              where: { status: 'ACTIVE' },
-              orderBy: { createdAt: 'desc' },
-              take: 1,
             },
           }
         : undefined,

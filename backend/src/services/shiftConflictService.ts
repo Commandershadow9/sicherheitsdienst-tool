@@ -138,7 +138,7 @@ export async function analyzeShiftConflicts(options: {
         for (const assignment of shift.assignments) {
           const clearance = await prisma.objectClearance.findUnique({
             where: {
-              userId_siteId: {
+              object_clearances_user_site_key: {
                 userId: assignment.user.id,
                 siteId: shift.siteId,
               },
