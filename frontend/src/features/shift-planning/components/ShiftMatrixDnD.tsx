@@ -74,10 +74,11 @@ interface ShiftCardProps {
   shift: Shift;
   onShiftClick?: (shift: Shift) => void;
   onDrop: (userId: string, shiftId: string) => void;
+  isHighlighted?: boolean;
 }
 
 // Droppable Shift Card (memoized für Performance)
-const ShiftCard = memo(function ShiftCard({ shift, onShiftClick, onDrop }: ShiftCardProps) {
+const ShiftCard = memo(function ShiftCard({ shift, onShiftClick, onDrop, isHighlighted = false }: ShiftCardProps) {
   const [{ isOver, canDrop }, drop] = useDrop({
     accept: ItemTypes.EMPLOYEE,
     canDrop: (item: any) => {
@@ -149,7 +150,8 @@ const ShiftCard = memo(function ShiftCard({ shift, onShiftClick, onDrop }: Shift
         'bg-white',
         status.color,
         isOver && canDrop && 'ring-2 ring-blue-500 scale-105 shadow-lg',
-        isOver && !canDrop && 'ring-2 ring-gray-400'
+        isOver && !canDrop && 'ring-2 ring-gray-400',
+        isHighlighted && 'ring-4 ring-yellow-400 ring-offset-2 shadow-2xl animate-pulse'
       )}
     >
       <button onClick={() => onShiftClick?.(shift)} className="w-full text-left">
@@ -242,6 +244,7 @@ interface ShiftMatrixDnDProps {
   initialDate?: Date;
   siteId?: string; // Optional: Filter auf spezifischen Site
   siteName?: string; // Optional: Name für Anzeige
+  highlightedShiftIds?: string[]; // Optional: Highlighted Schichten (für Konflikt-Navigation)
 }
 
 interface MatrixCell {
@@ -256,6 +259,7 @@ export default function ShiftMatrixDnD({
   initialDate = new Date(),
   siteId,
   siteName,
+  highlightedShiftIds = [],
 }: ShiftMatrixDnDProps) {
   const queryClient = useQueryClient();
   const [currentWeek, setCurrentWeek] = useState(startOfWeek(initialDate, { weekStartsOn: 1 }));
@@ -412,6 +416,7 @@ export default function ShiftMatrixDnD({
                       shift={shift}
                       onShiftClick={onShiftClick}
                       onDrop={handleDrop}
+                      isHighlighted={highlightedShiftIds.includes(shift.id)}
                     />
                   ))
                 )}

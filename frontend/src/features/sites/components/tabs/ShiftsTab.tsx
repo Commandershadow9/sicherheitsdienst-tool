@@ -15,6 +15,7 @@ import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Modal } from '@/components/ui/modal';
 import { cn } from '@/lib/utils';
+import { useSecurityConceptShiftModelSync } from '../../hooks/useSecurityConceptShiftModelSync';
 import {
   Calendar,
   Clock,
@@ -54,6 +55,7 @@ import {
 import type { ShiftRule, CreateShiftRuleInput, UpdateShiftRuleInput } from '../../types/shiftRule';
 import type { Shift } from '@/features/shifts/api';
 import type { ShiftModel } from '@/types/securityConcept';
+import type { ShiftConflict } from '@/features/shift-planning/api';
 
 type Site = {
   id: string;
@@ -81,6 +83,7 @@ export default function ShiftsTab({ site, siteId }: ShiftsTabProps) {
   // View State
   const [viewMode, setViewMode] = useState<ViewMode>('dashboard');
   const [weekOffset, setWeekOffset] = useState(0);
+  const [highlightedShiftIds, setHighlightedShiftIds] = useState<string[]>([]);
 
   // Modal States
   const [showCreateShift, setShowCreateShift] = useState(false);
@@ -149,6 +152,14 @@ export default function ShiftsTab({ site, siteId }: ShiftsTabProps) {
     return null;
   }, [site]);
 
+  // Auto-Sync: ShiftModel ↔ ShiftRules (automatisch, kein manueller Import)
+  useSecurityConceptShiftModelSync({
+    siteId,
+    shiftModel,
+    existingRules: rules,
+    enabled: true,
+  });
+
   // Create Rule Mutation
   const createRuleMutation = useMutation({
     mutationFn: (input: CreateShiftRuleInput) => createShiftRule(siteId, input),
@@ -200,20 +211,16 @@ export default function ShiftsTab({ site, siteId }: ShiftsTabProps) {
     }
   };
 
-  // Bulk import from SecurityConcept ShiftModel
-  const handleBulkImport = async (rulesToImport: CreateShiftRuleInput[]) => {
-    try {
-      let successCount = 0;
-      for (const ruleInput of rulesToImport) {
-        await createShiftRule(siteId, { ...ruleInput, siteId });
-        successCount++;
-      }
-      queryClient.invalidateQueries({ queryKey: ['shift-rules', siteId] });
-      toast.success(`${successCount} Schicht-Regeln aus Sicherheitskonzept importiert`);
-    } catch (error: any) {
-      toast.error(error?.response?.data?.message || 'Fehler beim Importieren');
-    }
+  // Handle Conflict Navigation: Dashboard → Matrix mit Highlight
+  const handleViewConflict = (conflict: ShiftConflict) => {
+    // Highlight die betroffene Schicht
+    setHighlightedShiftIds([conflict.shiftId]);
+    // Wechsel zur Matrix-Ansicht
+    setViewMode('matrix');
+    // Clear highlight nach 5 Sekunden
+    setTimeout(() => setHighlightedShiftIds([]), 5000);
   };
+
 
   const viewTabs = [
     { id: 'dashboard' as ViewMode, label: 'Dashboard', icon: BarChart3 },
@@ -296,10 +303,7 @@ export default function ShiftsTab({ site, siteId }: ShiftsTabProps) {
             siteId={siteId}
             siteName={site.name}
             weekOffset={weekOffset}
-            onViewConflict={(conflict) => {
-              // TODO: Highlight in Matrix
-              setViewMode('matrix');
-            }}
+            onViewConflict={handleViewConflict}
             onAutoFill={() => setShowAutoFill(true)}
           />
         )}
@@ -310,6 +314,7 @@ export default function ShiftsTab({ site, siteId }: ShiftsTabProps) {
             siteId={siteId}
             siteName={site.name}
             initialDate={currentWeek}
+            highlightedShiftIds={highlightedShiftIds}
             onShiftClick={(shift) => setSelectedShift(shift)}
           />
         )}
@@ -347,12 +352,11 @@ export default function ShiftsTab({ site, siteId }: ShiftsTabProps) {
               </div>
             </div>
 
-            {/* SecurityConcept ShiftModel Sync */}
+            {/* SecurityConcept ShiftModel Sync (Info-Only, Auto-Sync aktiv) */}
             {shiftModel && (
               <SecurityConceptShiftModelSync
                 shiftModel={shiftModel}
                 existingRules={rules}
-                onImport={handleBulkImport}
               />
             )}
 
