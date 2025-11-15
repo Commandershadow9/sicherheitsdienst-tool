@@ -9,8 +9,9 @@ services:
       POSTGRES_DB: ${POSTGRES_DB:-sicherheitsdienst_db}
       POSTGRES_USER: ${POSTGRES_USER:-admin}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-admin123}
-    ports:
-      - '5432:5432'
+    # SECURITY: Port nicht öffentlich exponieren - nur intern im Docker-Netzwerk
+    # ports:
+    #   - '5432:5432'
     volumes:
       - db-data:/var/lib/postgresql/data
     networks:
@@ -83,8 +84,9 @@ services:
     image: redis:7-alpine
     container_name: sicherheitsdienst-redis
     restart: unless-stopped
-    ports:
-      - '6379:6379'
+    # SECURITY: Port nicht öffentlich exponieren - nur intern im Docker-Netzwerk
+    # ports:
+    #   - '6379:6379'
     networks:
       - sicherheitsdienst-network
 
@@ -96,8 +98,10 @@ services:
     environment:
       PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL:-admin@admin.com}
       PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD:-admin123}
-    ports:
-      - '8080:80'
+    # SECURITY: Port nicht öffentlich exponieren - nur intern im Docker-Netzwerk
+    # Zugriff via: docker exec -it sicherheitsdienst-db psql -U admin -d sicherheitsdienst_db
+    # ports:
+    #   - '8080:80'
     depends_on:
       db:
         condition: service_healthy
