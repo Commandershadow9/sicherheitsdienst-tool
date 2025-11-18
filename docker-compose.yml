@@ -9,9 +9,9 @@ services:
       POSTGRES_DB: ${POSTGRES_DB:-sicherheitsdienst_db}
       POSTGRES_USER: ${POSTGRES_USER:-admin}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-admin123}
-    # SECURITY: Port nicht öffentlich exponieren - nur intern im Docker-Netzwerk
-    # ports:
-    #   - '5432:5432'
+    # SECURITY: Port für lokale Entwicklung exponiert
+    ports:
+      - '5432:5432'
     volumes:
       - db-data:/var/lib/postgresql/data
     networks:
