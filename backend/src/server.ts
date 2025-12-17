@@ -3,8 +3,9 @@ import logger from './utils/logger';
 import prisma from './utils/prisma';
 import { startIntelligentReplacementSchedulers } from './jobs/intelligentReplacementJobs';
 import { registerMultiTenancyMiddleware } from './middleware/multiTenancy';
+import { config } from './config/env';
 
-const PORT = parseInt(process.env.PORT || '3000', 10); // Default: 3000 (konsistent mit Docker)
+const PORT = config.PORT;
 
 // 🔐 MULTI-TENANCY: Registriere Prisma-Middleware (KRITISCH!)
 registerMultiTenancyMiddleware();
@@ -16,7 +17,7 @@ const server = app.listen(PORT, '0.0.0.0', () => {
   logger.info('🛡️  Sicherheitsdienst-Tool Backend');
   logger.info('🚀 ================================');
   logger.info(`📡 Server running on port ${PORT} (listening on all interfaces)`);
-  logger.info(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
+  logger.info(`🌍 Environment: ${config.NODE_ENV}`);
   logger.info('');
   logger.info('📍 Available Endpoints:');
   logger.info(`   ├─ Welcome:        http://localhost:${PORT}/`);

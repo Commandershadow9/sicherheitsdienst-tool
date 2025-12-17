@@ -8,7 +8,7 @@ services:
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-sicherheitsdienst_db}
       POSTGRES_USER: ${POSTGRES_USER:-admin}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-admin123}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD required}
     # SECURITY: Port für lokale Entwicklung exponiert
     # ports:
     #   - '5432:5432'
@@ -35,10 +35,10 @@ services:
       NODE_ENV: production
       PORT: 3001
       # Adjust to your DB credentials or override via environment
-      DATABASE_URL: ${DATABASE_URL:-postgresql://${POSTGRES_USER:-admin}:${POSTGRES_PASSWORD:-admin123}@db:5432/${POSTGRES_DB:-sicherheitsdienst_db}?schema=public}
-      JWT_SECRET: ${JWT_SECRET:-changeme-in-env}
+      DATABASE_URL: ${DATABASE_URL:-postgresql://${POSTGRES_USER:-admin}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD required}@db:5432/${POSTGRES_DB:-sicherheitsdienst_db}?schema=public}
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET required}
       # Optional Refresh/SMTP envs are passed if defined host-side
-      REFRESH_SECRET: ${REFRESH_SECRET:-}
+      REFRESH_SECRET: ${REFRESH_SECRET:?REFRESH_SECRET required}
       JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-}
       REFRESH_EXPIRES_IN: ${REFRESH_EXPIRES_IN:-}
       SMTP_HOST: ${SMTP_HOST:-}
@@ -106,7 +106,7 @@ services:
       # Let's Encrypt / ACME
       - "--certificatesresolvers.myresolver.acme.httpchallenge=true"
       - "--certificatesresolvers.myresolver.acme.httpchallenge.entrypoint=web"
-      - "--certificatesresolvers.myresolver.acme.email=${ACME_EMAIL:-admin@example.com}"
+      - "--certificatesresolvers.myresolver.acme.email=${ACME_EMAIL:?ACME_EMAIL required}"
       - "--certificatesresolvers.myresolver.acme.storage=/letsencrypt/acme.json"
     ports:
       - "80:80"
@@ -135,7 +135,7 @@ services:
     restart: always
     environment:
       PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL:-admin@admin.com}
-      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD:-admin123}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD:?PGADMIN_DEFAULT_PASSWORD required}
     # SECURITY: Port nicht öffentlich exponieren - nur intern im Docker-Netzwerk
     # Zugriff via: docker exec -it sicherheitsdienst-db psql -U admin -d sicherheitsdienst_db
     # ports:
