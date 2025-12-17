@@ -102,7 +102,13 @@ export const login = async (req: Request, res: Response): Promise<Response> => {
     };
     if (process.env.JWT_ISSUER) refreshSignOpts.issuer = process.env.JWT_ISSUER;
     if (process.env.JWT_AUDIENCE) refreshSignOpts.audience = process.env.JWT_AUDIENCE;
-    const refreshPayload = { userId: user.id, email: user.email, role: user.role };
+    // 🔐 MULTI-TENANCY: customerId im Refresh-Token für Tenant-Binding
+    const refreshPayload = { 
+      userId: user.id, 
+      email: user.email, 
+      role: user.role,
+      customerId: user.customerId 
+    };
     const refreshToken = jwt.sign(refreshPayload, refreshSecret, refreshSignOpts);
 
     // Set HttpOnly Cookies
@@ -171,7 +177,7 @@ export const refresh = async (req: Request, res: Response): Promise<Response> =>
   const { refreshToken: bodyToken } = req.body as { refreshToken?: string };
   const refreshToken = req.cookies?.refreshToken || bodyToken;
 
-  let tokenClaims: { userId?: string; role?: string } | null = null;
+  let tokenClaims: { userId?: string; role?: string; customerId?: string } | null = null;
   try {
     const refreshSecret = process.env.REFRESH_SECRET;
     const accessSecret = process.env.JWT_SECRET;
@@ -200,7 +206,10 @@ export const refresh = async (req: Request, res: Response): Promise<Response> =>
     const verifyOptions: jwt.VerifyOptions = {};
     if (process.env.JWT_ISSUER) verifyOptions.issuer = process.env.JWT_ISSUER;
     if (process.env.JWT_AUDIENCE) verifyOptions.audience = process.env.JWT_AUDIENCE;
-    tokenClaims = jwt.verify(refreshToken, refreshSecret, verifyOptions) as { userId: string; role?: string; iat?: number; exp?: number };
+    
+    // 🔐 MULTI-TENANCY: Verify customerId binding
+    tokenClaims = jwt.verify(refreshToken, refreshSecret, verifyOptions) as { userId: string; role?: string; customerId?: string; iat?: number; exp?: number };
+    
     const user = await prisma.user.findUnique({ where: { id: tokenClaims.userId } });
     if (!user || !user.isActive) {
       await submitAuditEvent(req, {
@@ -215,6 +224,22 @@ export const refresh = async (req: Request, res: Response): Promise<Response> =>
       return res.status(401).json({ success: false, code: 'UNAUTHORIZED', message: 'Ungültiger oder inaktiver Benutzer.' });
     }
 
+    // 🔐 MULTI-TENANCY: Strict Tenant Check
+    // Prevent Cross-Tenant Access via potentially manipulated or stale tokens
+    if (tokenClaims.customerId && user.customerId !== tokenClaims.customerId) {
+        console.error(`Security Alert: Tenant Mismatch during Refresh. Token: ${tokenClaims.customerId}, User: ${user.customerId}`);
+        await submitAuditEvent(req, {
+            action: 'AUTH.REFRESH.DENIED',
+            resourceType: 'AUTH',
+            resourceId: user.id,
+            actorId: user.id,
+            actorRole: user.role,
+            outcome: 'DENIED',
+            data: { reason: 'TENANT_MISMATCH', expected: user.customerId, received: tokenClaims.customerId },
+        });
+        return res.status(401).json({ success: false, code: 'UNAUTHORIZED', message: 'Sicherheitsverstoß: Ungültige Mandanten-Zuordnung.' });
+    }
+
     // Access-Token Gültigkeit
     const accessExpRaw = process.env.JWT_EXPIRES_IN;
     const accessSignOpts: SignOptions = {
@@ -222,7 +247,13 @@ export const refresh = async (req: Request, res: Response): Promise<Response> =>
     };
     if (process.env.JWT_ISSUER) accessSignOpts.issuer = process.env.JWT_ISSUER;
     if (process.env.JWT_AUDIENCE) accessSignOpts.audience = process.env.JWT_AUDIENCE;
-    const accessPayload = { userId: user.id, role: user.role };
+    
+    // 🔐 MULTI-TENANCY: Include customerId in new tokens
+    const accessPayload = { 
+      userId: user.id, 
+      role: user.role,
+      customerId: user.customerId 
+    };
     const newAccessToken = jwt.sign(accessPayload, accessSecret, accessSignOpts);
 
     // Refresh-Token Gültigkeit
@@ -232,7 +263,12 @@ export const refresh = async (req: Request, res: Response): Promise<Response> =>
     };
     if (process.env.JWT_ISSUER) refreshSignOpts.issuer = process.env.JWT_ISSUER;
     if (process.env.JWT_AUDIENCE) refreshSignOpts.audience = process.env.JWT_AUDIENCE;
-    const refreshPayload = { userId: user.id, role: user.role };
+    
+    const refreshPayload = { 
+      userId: user.id, 
+      role: user.role,
+      customerId: user.customerId 
+    };
     const newRefreshToken = jwt.sign(refreshPayload, refreshSecret, refreshSignOpts);
 
     // expiresIn Zahl schätzen (Sekunden), sofern numeric, sonst generischer Default
