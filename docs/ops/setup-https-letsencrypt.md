@@ -1,337 +1,101 @@
-# HTTPS mit Let's Encrypt einrichten
+# HTTPS mit Let's Encrypt (Traefik) einrichten
 
-**Status**: Vorbereitet, wartet auf Domain-Namen
-**Aktuell**: Temporär auf HTTP (Self-Signed Zertifikat blockiert von Browsern)
+**Status**: Integriert in Docker Compose (Traefik v3)
+**Voraussetzung**: Eine Domain (z.B. `sicherheitsdienst-tool.de`) und ein DNS A-Record, der auf die Server-IP zeigt.
 
-## Voraussetzungen
+## Funktionsweise
 
-### 1. Domain-Namen registrieren
-
-Du benötigst eine eigene Domain (z.B. `sicherheitsdienst-tool.de`).
-
-**Empfohlene Registrare:**
-- INWX.de (Deutschland, DSGVO-konform)
-- Namecheap.com
-- Cloudflare Registrar
-
-**Kosten**: ca. 5-15€/Jahr
-
-### 2. DNS A-Record einrichten
-
-Nachdem du die Domain registriert hast, erstelle einen DNS A-Record:
-
-```
-A    @    37.114.53.56    (oder deine aktuelle IP)
-```
-
-Optional für www:
-```
-A    www  37.114.53.56
-```
-
-**Propagationszeit**: 5 Minuten bis 24 Stunden (meist < 1 Stunde)
-
-**DNS prüfen:**
-```bash
-# Warte bis der A-Record aufgelöst wird
-dig deine-domain.de +short
-# Sollte zurückgeben: 37.114.53.56
-```
+Das Projekt nutzt [Traefik](https://traefik.io/) als Reverse Proxy direkt im Docker-Stack.
+- **Automatische SSL-Zertifikate**: Traefik holt und erneuert Zertifikate von Let's Encrypt automatisch (via HTTP-Challenge).
+- **HTTPS-Redirect**: HTTP-Anfragen (Port 80) werden automatisch auf HTTPS (Port 443) umgeleitet.
+- **Keine Host-Konfiguration**: Es ist keine Nginx-Installation auf dem Host notwendig.
 
 ---
 
-## Installation und Konfiguration
+## Einrichtung
 
-### Schritt 1: Certbot installieren
+### 1. DNS A-Record setzen
+
+Stelle sicher, dass deine Domain auf die IP des Servers zeigt.
+```bash
+# DNS prüfen
+dig +short deine-domain.de
+# Sollte Server-IP zurückgeben
+```
+
+### 2. Environment-Variablen setzen
+
+Bearbeite die `.env` Datei im Projekt-Root:
 
 ```bash
-sudo apt-get update
-sudo apt-get install -y certbot python3-certbot-nginx
+nano .env
 ```
 
-### Schritt 2: Nginx-Konfiguration anpassen
+Füge hinzu oder passe an:
+```ini
+# Traefik / HTTPS Konfiguration
+DOMAIN=deine-domain.de
+ACME_EMAIL=admin@deine-domain.de
+```
 
-Die Nginx-Konfiguration ist bereits vorhanden unter `/etc/nginx/sites-available/sicherheitsdienst`.
+### 3. Stack neu starten
 
-Passe `server_name` an:
+Starte den Docker-Stack neu, um Traefik zu aktivieren:
 
 ```bash
-sudo nano /etc/nginx/sites-available/sicherheitsdienst
+docker compose up -d --remove-orphans
 ```
 
-Ändere:
-```nginx
-server_name 37.114.53.56;
-```
+Traefik wird nun:
+1. Starten und Port 80/443 binden.
+2. Ein Zertifikat für `deine-domain.de` bei Let's Encrypt anfordern.
+3. Die Datei `letsencrypt/acme.json` anlegen, um Zertifikate zu speichern.
 
-Zu:
-```nginx
-server_name deine-domain.de www.deine-domain.de;
-```
+### 4. Verifizierung
 
-**Wichtig**: Kommentiere erst die SSL-Zeilen aus (wird von Certbot automatisch hinzugefügt):
-
-```nginx
-# HTTP Server (Let's Encrypt Challenge)
-server {
-    listen 80;
-    listen [::]:80;
-    server_name deine-domain.de www.deine-domain.de;
-
-    # Let's Encrypt Challenge
-    location /.well-known/acme-challenge/ {
-        root /var/www/html;
-    }
-
-    # Frontend (temporär für Let's Encrypt Setup)
-    location / {
-        proxy_pass http://127.0.0.1:5173;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection 'upgrade';
-        proxy_set_header Host $host;
-        proxy_cache_bypass $http_upgrade;
-    }
-
-    # Backend API
-    location /api {
-        proxy_pass http://127.0.0.1:3001;
-        proxy_http_version 1.1;
-        proxy_set_header Host $host;
-        client_max_body_size 50M;
-    }
-}
-```
-
-Nginx neu laden:
+Prüfe die Logs von Traefik:
 ```bash
-sudo nginx -t
-sudo systemctl reload nginx
+docker compose logs -f traefik
 ```
+Achte auf Meldungen wie `Configuration loaded from flags` und keine Fehler bei der Zertifikats-Ausstellung.
 
-### Schritt 3: SSL-Zertifikat mit Certbot generieren
-
-```bash
-sudo certbot --nginx -d deine-domain.de -d www.deine-domain.de
-```
-
-**Interaktive Fragen:**
-1. E-Mail-Adresse eingeben (für Zertifikat-Ablauf-Warnungen)
-2. Terms akzeptieren (Y)
-3. Optional: E-Mail an EFF (N)
-4. **Wichtig**: "Redirect HTTP to HTTPS?" → **2** (Yes)
-
-Certbot wird automatisch:
-- SSL-Zertifikate von Let's Encrypt abrufen
-- Nginx-Konfiguration aktualisieren (SSL-Zeilen hinzufügen)
-- HTTP → HTTPS Redirect einrichten
-- Auto-Renewal Cronjob einrichten
-
-### Schritt 4: Frontend und Backend für HTTPS konfigurieren
-
-#### Frontend (.env)
-```bash
-nano /home/cmdshadow/project/frontend/.env
-```
-
-Ändere:
-```
-VITE_API_BASE_URL=https://deine-domain.de
-```
-
-#### Backend (.env)
-```bash
-nano /home/cmdshadow/project/backend/.env
-```
-
-Ändere:
-```
-CORS_ORIGIN=https://deine-domain.de
-```
-
-#### Projekt-Root (.env)
-```bash
-nano /home/cmdshadow/project/.env
-```
-
-Ändere:
-```
-CORS_ORIGIN=https://deine-domain.de
-```
-
-### Schritt 5: Services neu starten
-
-```bash
-cd /home/cmdshadow/project
-docker compose up -d api
-docker restart vite-frontend
-sudo systemctl enable nginx
-sudo systemctl restart nginx
-```
-
-### Schritt 6: Firewall prüfen
-
-```bash
-sudo ufw status
-```
-
-Stelle sicher dass Port 80 und 443 offen sind:
-```bash
-sudo ufw allow 80/tcp
-sudo ufw allow 443/tcp
-```
-
----
-
-## Testen
-
-### 1. SSL-Zertifikat prüfen
-
+Test via Curl:
 ```bash
 curl -I https://deine-domain.de
 ```
+Erwartet: `HTTP/2 200` (oder ähnlich) und valide SSL-Handshake.
 
-Sollte zurückgeben:
-```
-HTTP/2 200
-server: nginx/1.22.1
-strict-transport-security: max-age=63072000
-...
-```
-
-### 2. SSL Labs Test (empfohlen)
-
-Gehe zu: https://www.ssllabs.com/ssltest/
-
-Gib deine Domain ein und prüfe das Rating (sollte A oder A+ sein).
-
-### 3. Browser-Test
-
-Öffne: https://deine-domain.de
-
-- ✅ Kein Zertifikatsfehler
-- ✅ Grünes Schloss in der Adresszeile
-- ✅ Login funktioniert
-- ✅ Dokument-Upload funktioniert
-
----
-
-## Auto-Renewal
-
-Let's Encrypt Zertifikate sind 90 Tage gültig. Certbot richtet automatisch einen Cronjob ein:
-
-```bash
-# Prüfen ob Auto-Renewal funktioniert
-sudo certbot renew --dry-run
-```
-
-Sollte ausgeben:
-```
-Congratulations, all simulated renewals succeeded
-```
-
-Der Cronjob läuft automatisch 2x täglich:
-```bash
-sudo systemctl status certbot.timer
-```
+Test im Browser:
+- Öffne `http://deine-domain.de` -> Sollte auf `https://...` weiterleiten.
+- Das Schloss-Symbol sollte aktiv sein.
 
 ---
 
 ## Troubleshooting
 
-### Problem: "Unable to find a virtual host"
+### Zertifikat wird nicht ausgestellt
 
-**Lösung**: Stelle sicher dass `server_name` in Nginx-Config mit deiner Domain übereinstimmt.
+1. **DNS-Check**: Zeigt die Domain wirklich auf die IP?
+2. **Ports**: Sind Port 80 und 443 in der Firewall offen?
+   ```bash
+   sudo ufw status
+   sudo ufw allow 80/tcp
+   sudo ufw allow 443/tcp
+   ```
+3. **Logs**: `docker compose logs traefik` zeigt oft detaillierte ACME-Fehler (z.B. Rate Limits, Connection Refused).
+4. **Acme Storage**: Prüfe ob `letsencrypt/acme.json` existiert und nicht leer ist (nach erstem Erfolg).
 
-### Problem: "DNS resolution failed"
-
-**Lösung**: Warte bis DNS propagiert ist (bis zu 24h, meist < 1h).
-
-```bash
-# DNS Propagation prüfen
-dig deine-domain.de +short
-# oder online:
-# https://dnschecker.org
-```
-
-### Problem: "Connection refused" bei Certbot
-
-**Lösung**: Nginx muss laufen und Port 80 muss erreichbar sein.
-
-```bash
-sudo systemctl status nginx
-sudo ufw allow 80/tcp
-curl http://deine-domain.de
-```
-
-### Problem: Rate Limit von Let's Encrypt
-
-**Limits:**
-- 5 fehlgeschlagene Validierungen pro Stunde
-- 50 Zertifikate pro Domain pro Woche
-
-**Lösung**: Warte 1 Stunde oder verwende Staging-Server für Tests:
-
-```bash
-sudo certbot --nginx --staging -d deine-domain.de
+### Rate Limits
+Let's Encrypt hat Limits (z.B. 5 Zertifikate pro Woche für dieselbe Domain).
+Zum Testen kann im `docker-compose.yml` der Staging-Server einkommentiert werden:
+```yaml
+# - "--certificatesresolvers.myresolver.acme.caserver=https://acme-staging-v02.api.letsencrypt.org/directory"
 ```
 
 ---
 
-## Nach erfolgreicher Einrichtung
+## Sicherheitshinweise
 
-### 1. DSGVO-Compliance aktualisieren
-
-```bash
-nano /home/cmdshadow/project/docs/ops/dsgvo-compliance.md
-```
-
-Ändere in Abschnitt 2.6:
-```markdown
-#### Verschlüsselung in transit (Übertragung)
-- ✅ **HTTPS/TLS mit Let's Encrypt**
-- ✅ TLS 1.2 und TLS 1.3 aktiv
-- ✅ HSTS aktiviert (max-age=63072000)
-```
-
-### 2. ROADMAP abhaken
-
-```bash
-nano /home/cmdshadow/project/ROADMAP.md
-```
-
-Ändere:
-```markdown
-- [x] **HTTPS mit Let's Encrypt einrichten** ✅ 2025-XX-XX
-```
-
-### 3. CHANGELOG aktualisieren
-
-```bash
-nano /home/cmdshadow/project/CHANGELOG.md
-```
-
-Füge hinzu:
-```markdown
-### Security
-- ✅ HTTPS mit Let's Encrypt eingerichtet
-- ✅ TLS 1.2/1.3 mit modernen Ciphers
-- ✅ HSTS Header (max-age=2 Jahre)
-- ✅ HTTP → HTTPS Redirect
-- ✅ Alle Daten verschlüsselt in Transit
-```
-
----
-
-## Referenzen
-
-- Let's Encrypt: https://letsencrypt.org/
-- Certbot Dokumentation: https://certbot.eff.org/
-- SSL Best Practices: https://ssl-config.mozilla.org/
-- Nginx SSL Config Generator: https://mozilla.github.io/server-side-tls/ssl-config-generator/
-
----
-
-**Stand**: 2025-10-03
-**Erstellt von**: Claude Code
-**Aktualisiert**: Bei Domain-Registrierung
+- Die Zertifikate liegen in `./letsencrypt/acme.json`. Diese Datei enthält Private Keys!
+- Der Ordner `letsencrypt/` ist in `.gitignore` eingetragen und darf **nicht** ins Git committed werden.
+- Backups: Sichern Sie den Inhalt von `letsencrypt/` vor Server-Umzügen, um Rate-Limit-Probleme bei Neu-Ausstellung zu vermeiden.
