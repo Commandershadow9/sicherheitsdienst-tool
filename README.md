@@ -129,6 +129,7 @@ API (Backend)
   - Schicht-Zuweisung: `SHIFT_ASSIGN_RATE_LIMIT_PER_MIN`, `SHIFT_ASSIGN_RATE_LIMIT_WINDOW_MS`, `SHIFT_ASSIGN_RATE_LIMIT_ENABLED`
   - Clock-in/out: `SHIFT_CLOCK_RATE_LIMIT_PER_MIN`, `SHIFT_CLOCK_RATE_LIMIT_WINDOW_MS`, `SHIFT_CLOCK_RATE_LIMIT_ENABLED`
 - Trusted Proxies: `TRUSTED_PROXIES` (kommagetrennte IP/CIDR, Default: private Netze + Loopback). `X-Forwarded-For` wird nur ausgewertet, wenn die Remote-IP in dieser Liste liegt; sonst wird `remoteAddress` verwendet.
+- Audit-Log: asynchron mit Queue (Default max 1000 Einträge, älteste werden gedroppt), Batch-Flush alle 2 s mit exponentiellem Backoff (max 60 s) bei DB-Ausfall; Fehler-Logs sind gedrosselt.
 - Logging: `LOG_LEVEL` (Default `debug` in Dev, sonst `info`), `LOG_FORMAT=json` erzwingt strukturierte Console-Logs.
 - Audit-Log (Phase E): `AUDIT_LOG_FLUSH_INTERVAL_MS` (Default 2000 ms), `AUDIT_LOG_BATCH_SIZE` (Default 25), `AUDIT_LOG_MAX_QUEUE` (Default 1000 Einträge vor Drop ältester Events), `AUDIT_RETENTION_DAYS` (Default 400, Minimum 1 Tag).
 - Compose: `PUBLIC_HOST` steuert, welche Origin (`http://PUBLIC_HOST:5173`) automatisch freigegeben wird.

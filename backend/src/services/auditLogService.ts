@@ -38,6 +38,8 @@ type AuditLogPayload = {
 const DEFAULT_FLUSH_INTERVAL_MS = 2000;
 const DEFAULT_BATCH_SIZE = 25;
 const DEFAULT_MAX_QUEUE = 1000;
+const MAX_BACKOFF_MS = 60_000;
+const ERROR_LOG_INTERVAL_MS = 60_000;
 
 const flushIntervalMs = normalizeNumber(process.env.AUDIT_LOG_FLUSH_INTERVAL_MS, DEFAULT_FLUSH_INTERVAL_MS, 100);
 const batchSize = normalizeNumber(process.env.AUDIT_LOG_BATCH_SIZE, DEFAULT_BATCH_SIZE, 1);
@@ -47,6 +49,8 @@ const pendingQueue: AuditLogPayload[] = [];
 let flushTimer: NodeJS.Timeout | null = null;
 let isFlushing = false;
 let auditModelMissingWarned = false;
+let currentBackoffMs = flushIntervalMs;
+const lastErrorLoggedAt: Record<string, number> = {};
 
 function normalizeNumber(raw: string | undefined, fallback: number, min: number): number {
   const parsed = raw ? parseInt(raw, 10) : NaN;
@@ -87,9 +91,9 @@ function scheduleFlush() {
     try {
       await flushAuditLogQueue();
     } catch (error) {
-      logger.error('Scheduled audit log flush failed: %o', error);
+      maybeLogError('flush_schedule', 'Scheduled audit log flush failed; will retry', error);
     }
-  }, flushIntervalMs);
+  }, currentBackoffMs);
 
   if (typeof flushTimer.unref === 'function') {
     flushTimer.unref();
@@ -134,17 +138,10 @@ export async function logAuditEvent(event: AuditLogEventInput): Promise<boolean>
     auditLogEventCounter.inc({ result: 'dropped_no_model' });
     return false;
   }
-  try {
-    await auditModel.create({ data: payload });
-    auditLogEventCounter.inc({ result: 'direct_success' });
-    return true;
-  } catch (error) {
-    logger.error('Immediate audit log write failed, queueing for retry: %o', error);
-    enqueue(payload);
-    auditLogEventCounter.inc({ result: 'direct_failure' });
-    auditLogFailureCounter.inc({ stage: 'direct' });
-    return false;
-  }
+
+  enqueue(payload);
+  auditLogEventCounter.inc({ result: 'queued' });
+  return true;
 }
 
 export async function flushAuditLogQueue(): Promise<number> {
@@ -163,6 +160,7 @@ export async function flushAuditLogQueue(): Promise<number> {
   try {
     const result = await auditModel.createMany({ data: batch });
     isFlushing = false;
+    currentBackoffMs = flushIntervalMs;
     auditLogEventCounter.inc({ result: 'flush_success' }, result.count);
     if (pendingQueue.length > 0) {
       scheduleFlush();
@@ -172,8 +170,9 @@ export async function flushAuditLogQueue(): Promise<number> {
   } catch (error) {
     pendingQueue.unshift(...batch);
     isFlushing = false;
+    currentBackoffMs = Math.min(currentBackoffMs * 2, MAX_BACKOFF_MS);
     scheduleFlush();
-    logger.error('Batch audit log write failed; will retry later: %o', error);
+    maybeLogError('flush_failure', 'Batch audit log write failed; backing off', error);
     auditLogEventCounter.inc({ result: 'flush_failure' });
     auditLogFailureCounter.inc({ stage: 'flush' });
     setQueueSize(pendingQueue.length);
@@ -197,6 +196,7 @@ export function __resetAuditLogService(): void {
   pendingQueue.length = 0;
   isFlushing = false;
   auditModelMissingWarned = false;
+  currentBackoffMs = flushIntervalMs;
   setQueueSize(0);
 }
 
@@ -209,4 +209,13 @@ export function getAuditLogState() {
     isFlushing,
     hasScheduledFlush: Boolean(flushTimer),
   };
+}
+
+function maybeLogError(key: string, message: string, error: unknown) {
+  const now = Date.now();
+  const last = lastErrorLoggedAt[key] ?? 0;
+  if (now - last >= ERROR_LOG_INTERVAL_MS) {
+    lastErrorLoggedAt[key] = now;
+    logger.error('%s: %o', message, error);
+  }
 }
