@@ -7,6 +7,7 @@
 Kurzer Überblick, klare Quickstarts und schnelles Troubleshooting für Devs/Ops.
 
 > **🔧 Login-Probleme?** Führe `./check-login-health.sh` aus oder siehe [`docs/TROUBLESHOOTING_LOGIN.md`](docs/TROUBLESHOOTING_LOGIN.md)
+> **ℹ️ Projektstatus:** Stabiler Cut dokumentiert in [`docs/PROJECT_STATUS.md`](docs/PROJECT_STATUS.md)
 
 **🔒 Security-Features (v1.4.0+):**
 - ✅ LUKS-Verschlüsselung für Dokumentenspeicher
