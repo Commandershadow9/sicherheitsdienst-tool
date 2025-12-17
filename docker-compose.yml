@@ -70,6 +70,7 @@ services:
       - "traefik.http.routers.api-http.rule=Host(`${DOMAIN:-localhost}`)"
       - "traefik.http.routers.api-http.entrypoints=web"
       - "traefik.http.routers.api-http.middlewares=redirect-to-https"
+      - "traefik.http.routers.api-http.service=api"
     depends_on:
       db:
         condition: service_healthy
