@@ -3,6 +3,7 @@ import helmet from 'helmet';
 import cors, { CorsOptions } from 'cors';
 import rateLimit from 'express-rate-limit';
 import Redis from 'ioredis';
+import { extractClientIp } from '../utils/audit';
 import {
   incrAuthIp429,
   incrAuthUser429,
@@ -65,10 +66,7 @@ export function applySecurity(app: Express): void {
 }
 
 function extractIp(req: Request): string {
-  const xff = (req.headers['x-forwarded-for'] as string) || '';
-  const firstForwarded = xff.split(',')[0]?.trim();
-  const ip = firstForwarded || (req.ip as string) || 'anon';
-  return ip;
+  return extractClientIp(req) || 'anon';
 }
 
 // Redis Store (minimal) für express-rate-limit

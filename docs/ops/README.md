@@ -64,3 +64,9 @@ Dieses Verzeichnis enthält Skripte und Templates für den sicheren Dokumentensp
 - Produktion: `docker compose up -d` nutzt `docker-compose.yml` (Traefik, API, DB, Redis, pgAdmin) – **ohne Mailhog**. SMTP-ENV sind optional; fehlende Werte bremsen den Start nicht.
 - Entwicklung: `docker compose -f docker-compose.dev.yml up -d` zieht zusätzlich Mailhog (SMTP `1025`, UI `http://localhost:8025`) hoch; die API ist mit `SMTP_HOST=mailhog` verdrahtet.
 - SMTP-Readiness-Checks sind per Default aus. Für produktive SMTP-Server einfach `SMTP_HOST`/`SMTP_PORT` in der Umgebung setzen.
+
+### Trusted Proxies / X-Forwarded-For
+
+- ENV `TRUSTED_PROXIES` (kommagetrennte IP/CIDR, Default: `10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,127.0.0.1/32,::1/128,fc00::/7`).
+- `X-Forwarded-For` und `X-Real-IP` werden **nur** genutzt, wenn die Remote-IP des Requests in diesem Set liegt (z. B. Traefik im Docker-Netz).
+- Direkte Requests an die API (ohne Proxy) ignorieren gespoofte Header; es wird `socket.remoteAddress` genutzt.

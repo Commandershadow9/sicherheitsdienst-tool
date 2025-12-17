@@ -128,6 +128,7 @@ API (Backend)
   - Notifications-Test: `NOTIFICATIONS_TEST_RATE_LIMIT_PER_MIN`, `NOTIFICATIONS_TEST_RATE_LIMIT_WINDOW_MS`, `NOTIFICATIONS_TEST_RATE_LIMIT_ENABLED`
   - Schicht-Zuweisung: `SHIFT_ASSIGN_RATE_LIMIT_PER_MIN`, `SHIFT_ASSIGN_RATE_LIMIT_WINDOW_MS`, `SHIFT_ASSIGN_RATE_LIMIT_ENABLED`
   - Clock-in/out: `SHIFT_CLOCK_RATE_LIMIT_PER_MIN`, `SHIFT_CLOCK_RATE_LIMIT_WINDOW_MS`, `SHIFT_CLOCK_RATE_LIMIT_ENABLED`
+- Trusted Proxies: `TRUSTED_PROXIES` (kommagetrennte IP/CIDR, Default: private Netze + Loopback). `X-Forwarded-For` wird nur ausgewertet, wenn die Remote-IP in dieser Liste liegt; sonst wird `remoteAddress` verwendet.
 - Logging: `LOG_LEVEL` (Default `debug` in Dev, sonst `info`), `LOG_FORMAT=json` erzwingt strukturierte Console-Logs.
 - Audit-Log (Phase E): `AUDIT_LOG_FLUSH_INTERVAL_MS` (Default 2000 ms), `AUDIT_LOG_BATCH_SIZE` (Default 25), `AUDIT_LOG_MAX_QUEUE` (Default 1000 Einträge vor Drop ältester Events), `AUDIT_RETENTION_DAYS` (Default 400, Minimum 1 Tag).
 - Compose: `PUBLIC_HOST` steuert, welche Origin (`http://PUBLIC_HOST:5173`) automatisch freigegeben wird.

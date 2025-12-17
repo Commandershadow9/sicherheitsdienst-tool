@@ -1,5 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import type { Request } from 'express';
+import { extractClientIp } from '../utils/audit';
 
 const prisma = new PrismaClient();
 
@@ -110,15 +111,6 @@ export async function createAuditLog(params: AuditLogParams) {
 }
 
 /**
- * Extrahiert IP-Adresse aus Request
- */
-function extractIp(req: Request): string {
-  const xff = (req.headers['x-forwarded-for'] as string) || '';
-  const firstForwarded = xff.split(',')[0]?.trim();
-  return firstForwarded || (req.ip as string) || 'unknown';
-}
-
-/**
  * Erstellt Audit-Log aus Express Request
  */
 export async function logFromRequest(params: AuditLogFromRequestParams) {
@@ -133,7 +125,7 @@ export async function logFromRequest(params: AuditLogFromRequestParams) {
     resourceId,
     actorId: user?.userId,
     actorRole: user?.role,
-    actorIp: extractIp(req),
+    actorIp: extractClientIp(req) || 'unknown',
     data,
     outcome,
     requestId: (req as any).id, // Falls request-ID-Middleware vorhanden

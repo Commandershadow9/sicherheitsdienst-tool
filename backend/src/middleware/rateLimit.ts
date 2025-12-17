@@ -1,4 +1,5 @@
 import type { Request, Response, NextFunction } from 'express';
+import { extractClientIp } from '../utils/audit';
 
 type Key = string;
 type Bucket = { count: number; resetAt: number };
@@ -23,9 +24,7 @@ function isEnabled(): boolean {
 
 function getClientKey(req: Request): string {
   const userId = req.user?.id;
-  const xff = (req.headers['x-forwarded-for'] as string) || '';
-  const firstForwarded = xff.split(',')[0]?.trim();
-  const ip = firstForwarded || req.ip || 'anon';
+  const ip = extractClientIp(req) || 'anon';
   return `${userId || ip}:notifications:test`;
 }
 
@@ -100,9 +99,7 @@ export function createRateLimit(options?: {
   };
   const keyFor = (req: any): string => {
     const userId = req.user?.id;
-    const xff = (req.headers['x-forwarded-for'] as string) || '';
-    const firstForwarded = xff.split(',')[0]?.trim();
-    const ip = firstForwarded || req.ip || 'anon';
+    const ip = extractClientIp(req) || 'anon';
     return `${userId || ip}:${cfg.keyName}`;
   };
 

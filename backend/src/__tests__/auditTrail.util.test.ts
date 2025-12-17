@@ -19,8 +19,15 @@ jest.mock('../utils/logger', () => ({
 const { logAuditEvent } = require('../services/auditLogService');
 
 describe('auditTrail utilities', () => {
+  const originalTrusted = process.env.TRUSTED_PROXIES;
+
   beforeEach(() => {
     jest.clearAllMocks();
+    delete process.env.TRUSTED_PROXIES;
+  });
+
+  afterAll(() => {
+    process.env.TRUSTED_PROXIES = originalTrusted;
   });
 
   it('records audit event with request metadata', async () => {
@@ -31,6 +38,7 @@ describe('auditTrail utilities', () => {
       },
       user: { id: 'user-1', role: 'ADMIN' },
       id: 'req-123',
+      socket: { remoteAddress: '172.18.0.2' },
     } as unknown as Request;
 
     await recordAuditEvent(req, {
@@ -58,6 +66,7 @@ describe('auditTrail utilities', () => {
       headers: {},
       user: { id: 'user-2', role: 'DISPATCHER' },
       ip: '10.10.10.10',
+      socket: { remoteAddress: '10.10.10.10' },
     } as unknown as Request;
 
     await recordAuditEvent(
@@ -92,7 +101,28 @@ describe('auditTrail utilities', () => {
     const req = {
       headers: {},
       ip: '192.0.2.12',
+      socket: { remoteAddress: '192.0.2.12' },
     } as unknown as Request;
     expect(getAuditActorIp(req)).toBe('192.0.2.12');
+  });
+
+  it('ignores spoofed X-Forwarded-For when proxy is not trusted', () => {
+    process.env.TRUSTED_PROXIES = '10.0.0.0/8';
+    const req = {
+      headers: { 'x-forwarded-for': '1.2.3.4' },
+      socket: { remoteAddress: '198.51.100.20' },
+    } as unknown as Request;
+
+    expect(getAuditActorIp(req)).toBe('198.51.100.20');
+  });
+
+  it('uses X-Forwarded-For when proxy is trusted', () => {
+    process.env.TRUSTED_PROXIES = '10.0.0.0/8';
+    const req = {
+      headers: { 'x-forwarded-for': '1.2.3.4' },
+      socket: { remoteAddress: '10.0.0.5' },
+    } as unknown as Request;
+
+    expect(getAuditActorIp(req)).toBe('1.2.3.4');
   });
 });
