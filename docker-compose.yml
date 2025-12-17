@@ -10,8 +10,8 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-admin}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-admin123}
     # SECURITY: Port für lokale Entwicklung exponiert
-    ports:
-      - '5432:5432'
+    # ports:
+    #   - '5432:5432'
     volumes:
       - db-data:/var/lib/postgresql/data
     networks:
