@@ -11,6 +11,12 @@ docker compose -f docker-compose.monitoring.yml up -d
 - Grafana: `http://<SERVER_IP>:3300` (admin/admin)
 - Alertmanager: `http://<SERVER_IP>:9093`
 
+## ShadowOps Bot – Auto-Remediation (Prod-Stack)
+- Health- und Log-Monitoring liegen im ShadowOps Bot (`/home/cmdshadow/shadowops-bot/config/config.yaml`).
+- Für `sicherheitsdiensttool` aktiv: `/readyz` alle 15 s, Remediation-Schwelle 1, Log-Tail-Scan (80 KB) auf `PrismaClientKnownRequestError`; Remediation-Command: `docker compose up -d api db redis traefik pgadmin`.
+- Testablauf: `docker compose stop api`, ~30–60 s warten → Bot sollte Alarm/Remediation auslösen und API wieder hochziehen.
+- Parser-Warnungen wurden mit `npm install esprima` im Bot-Verzeichnis behoben; falls erneut auftauchen, erneut installieren.
+
 ## Operations Checklist
 1. **ENV prüfen:** `.env` im Repo-Root mit `ALERTMANAGER_SLACK_WEBHOOK` (optional `ALERTMANAGER_SLACK_CHANNEL` und `ALERTMANAGER_SLACK_AUDIT_CHANNEL`) sowie optional `ALERTMANAGER_WEBHOOK_URL`/`ALERTMANAGER_WEBHOOK_BEARER` ergänzen.
 2. **Stack starten:** `docker compose -f monitoring/docker-compose.monitoring.yml up -d`.
