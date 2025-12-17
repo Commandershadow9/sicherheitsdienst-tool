@@ -4,6 +4,10 @@
 
 ## Kurzfristig (P1, 1–2 Tage)
 
+### 🆕 Offen
+- [ ] **Backend Test-Infra stabilisieren (ENV/Prisma mocks)**  
+  DoD: Jest läuft ohne echte DB/Secrets; ENV-Defaults oder Test-Mocks verhindern `Invalid environment variables`; Prisma-Client im Test-Setup gemockt bzw. Engine-Dependency gekapselt (kein OpenSSL/so.node Fehler in CI).
+
 ### ✅ Aktuell abgeschlossen (v1.16.1 - 2025-10-23)
 - [x] **v1.16.1** Template-System aktiviert: 6 Sicherheitskonzept-Templates erstellt ✅
 - [x] **v1.16.1** CustomerDetail-Route implementiert (fehlte im Router) ✅

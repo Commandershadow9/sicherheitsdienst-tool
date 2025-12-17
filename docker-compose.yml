@@ -9,9 +9,9 @@ services:
       POSTGRES_DB: ${POSTGRES_DB:-sicherheitsdienst_db}
       POSTGRES_USER: ${POSTGRES_USER:-admin}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD required}
-    # SECURITY: Port für lokale Entwicklung exponiert
-    # ports:
-    #   - '5432:5432'
+    # SECURITY: Port nur lokal exponieren, damit der Host-API-Prozess zugreifen kann
+    ports:
+      - '127.0.0.1:5432:5432'
     volumes:
       - db-data:/var/lib/postgresql/data
     networks:
@@ -31,6 +31,7 @@ services:
     build:
       context: ./backend
     container_name: sicherheitsdienst-api
+    restart: unless-stopped
     environment:
       NODE_ENV: production
       PORT: 3001
@@ -53,11 +54,16 @@ services:
       # Auth-Rate-Limits (IP-basiert)
       RATE_LIMIT_MAX: ${RATE_LIMIT_MAX:-10}
       RATE_LIMIT_WINDOW_MS: ${RATE_LIMIT_WINDOW_MS:-60000}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      LOG_FORMAT: ${LOG_FORMAT:-}
       DOCUMENT_STORAGE_ROOT: ${DOCUMENT_STORAGE_ROOT:-/srv/documents}
       # CORS
       CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:5173}
+      # Trusted Proxies für X-Forwarded-For (kommaseparierte IP/CIDR)
+      TRUSTED_PROXIES: ${TRUSTED_PROXIES:-}
     # ports:
-    #   - '3001:3001' # Via Proxy
+    ports:
+      - '3001:3001' # Direktzugriff (z. B. Frontend .env zeigt auf :3001)
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.api.rule=Host(`${DOMAIN:-localhost}`)"

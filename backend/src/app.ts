@@ -11,6 +11,7 @@ import { applySecurity } from './middleware/security';
 import { httpRequestDurationSeconds, httpRequestsTotal } from './utils/metrics';
 import { setCustomerContext } from './middleware/multiTenancy'; // 🔐 Multi-Tenancy
 import { config } from './config/env';
+import { extractClientIp } from './utils/audit';
 
 // Import all routes
 import {
@@ -70,7 +71,8 @@ app.use((req, res, next) => {
 
 // Add morgan token for request id and use custom format including it
 morgan.token('id', (req: any) => req.id || '-');
-const morganFormat = ':id :remote-addr :method :url :status :res[content-length] - :response-time ms';
+morgan.token('client-ip', (req) => extractClientIp(req as any) || '-');
+const morganFormat = ':id :remote-addr (client=:client-ip) :method :url :status :res[content-length] - :response-time ms';
 app.use(
   morgan(morganFormat, {
     stream: {
