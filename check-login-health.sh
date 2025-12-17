@@ -110,8 +110,8 @@ LOGIN_RESPONSE=$(curl -s -X POST http://localhost:3000/api/auth/login \
   -H "Content-Type: application/json" \
   -d '{"email":"admin@sicherheitsdienst.de","password":"password123"}' 2>/dev/null || echo "error")
 
-if [[ "$LOGIN_RESPONSE" == *"token"* ]]; then
-  echo "   ✅ Login API funktioniert (Token erhalten)"
+if [[ "$LOGIN_RESPONSE" == *"success\":true"* ]]; then
+  echo "   ✅ Login API funktioniert (User erhalten, Tokens in Cookies)"
 else
   echo "   ❌ Login API funktioniert NICHT"
   echo "      Response: $LOGIN_RESPONSE"

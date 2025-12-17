@@ -1,10 +1,5 @@
 import { describe, expect, it, beforeEach, vi } from 'vitest'
 import { installAuthInterceptors } from './interceptors'
-import { AxiosHeaders } from '@/lib/api'
-
-type Tokens = { accessToken: string; refreshToken?: string }
-
-type FakeAxios = ReturnType<typeof createFakeAxios>
 
 const createFakeAxios = () => {
   const requestHandlers: Array<(config: any) => any> = []
@@ -25,119 +20,85 @@ const createFakeAxios = () => {
         },
       },
     },
-    async request(config: any) {
-      let nextConfig = config
-      for (const handler of requestHandlers) {
-        nextConfig = await handler(nextConfig)
-      }
-      return { status: 200, statusText: 'OK', data: { ok: true }, headers: {}, config: nextConfig }
-    },
+    // Mock the recursive call (api.request)
+    request: vi.fn(),
   }
 
   return { api: api as any, requestHandlers, responseHandlers }
 }
 
-const memoryStorage = () => {
-  let store: Record<string, string> = {}
-  return {
-    getItem: vi.fn((key: string) => store[key] ?? null),
-    setItem: vi.fn((key: string, value: string) => {
-      store[key] = value
-    }),
-    removeItem: vi.fn((key: string) => {
-      delete store[key]
-    }),
-    reset: () => {
-      store = {}
-    },
-  }
-}
-
-const storage = memoryStorage()
-
-Object.defineProperty(globalThis, 'localStorage', {
-  value: storage,
-  configurable: true,
-})
-
 describe('installAuthInterceptors', () => {
   beforeEach(() => {
-    storage.reset()
     vi.clearAllMocks()
   })
 
-  it('setzt Authorization-Header aus Tokens', async () => {
-    const tokens: Tokens = { accessToken: 'abc', refreshToken: 'rt' }
-    const { api, requestHandlers } = createFakeAxios()
+  it('refresh session after 401 and retry original request', async () => {
+    const { api, responseHandlers } = createFakeAxios()
+    const refresh = vi.fn().mockResolvedValue(undefined)
+    const onLogout = vi.fn()
 
     installAuthInterceptors(api, {
-      getTokens: () => tokens,
-      setTokens: vi.fn(),
-      refresh: vi.fn(),
-      onLogout: vi.fn(),
-    })
-
-    let config: any = { headers: new AxiosHeaders() }
-    for (const handler of requestHandlers) {
-      config = handler(config)
-    }
-
-    expect(config.headers.get('Authorization')).toBe('Bearer abc')
-  })
-
-  it('liest Tokens aus localStorage wenn Provider nichts liefert', async () => {
-    storage.setItem('auth', JSON.stringify({ tokens: { accessToken: 'stored-token' } }))
-    const { api, requestHandlers } = createFakeAxios()
-
-    installAuthInterceptors(api, {
-      getTokens: () => null,
-      setTokens: vi.fn(),
-      refresh: vi.fn(),
-      onLogout: vi.fn(),
-    })
-
-    let config: any = { headers: new AxiosHeaders() }
-    for (const handler of requestHandlers) {
-      config = handler(config)
-    }
-
-    expect(config.headers.get('Authorization')).toBe('Bearer stored-token')
-  })
-
-  it('refresh Token nach 401 und wiederholt Request', async () => {
-    const fake = createFakeAxios()
-    const api = fake.api
-    const refresh = vi.fn(async () => ({ accessToken: 'new-access', refreshToken: 'new-refresh' }))
-    let currentTokens: Tokens | null = { accessToken: 'expired', refreshToken: 'refresh-token' }
-    const setTokens = vi.fn((next: Tokens | null) => {
-      currentTokens = next
-    })
-    const requestSpy = vi.spyOn(api, 'request')
-
-    installAuthInterceptors(api, {
-      getTokens: () => currentTokens,
-      setTokens,
       refresh,
-      onLogout: vi.fn(),
+      onLogout,
     })
 
-    const lastHandler = fake.responseHandlers[fake.responseHandlers.length - 1]
-    const responseHandler = lastHandler?.rejected
-    expect(responseHandler).toBeTypeOf('function')
+    const errorHandler = responseHandlers[0].rejected
+    expect(errorHandler).toBeDefined()
 
+    // 401 Error on a normal endpoint
     const error = {
-      config: { url: '/incidents', headers: new AxiosHeaders() },
+      config: { url: '/api/data', _retry: false },
       response: { status: 401 },
     }
 
-    const result = await responseHandler!(error)
+    // Mock the retry to succeed
+    vi.mocked(api.request).mockResolvedValueOnce({ data: 'ok' })
+
+    const result = await errorHandler!(error)
 
     expect(refresh).toHaveBeenCalledTimes(1)
-    expect(setTokens).toHaveBeenCalledWith({ accessToken: 'new-access', refreshToken: 'new-refresh' })
-    expect(requestSpy).toHaveBeenCalledTimes(1)
-    const retriedConfig = requestSpy.mock.calls[0][0] as { headers: AxiosHeaders }
-    const authHeader = retriedConfig.headers.get('Authorization')
-    expect(authHeader).toBe('Bearer new-access')
-    expect(result.data).toEqual({ ok: true })
+    expect(api.request).toHaveBeenCalledWith(expect.objectContaining({ _retry: true }))
+    expect(result).toEqual({ data: 'ok' })
+    expect(onLogout).not.toHaveBeenCalled()
+  })
+
+  it('should logout if refresh fails', async () => {
+    const { api, responseHandlers } = createFakeAxios()
+    const refresh = vi.fn().mockRejectedValue(new Error('Refresh failed'))
+    const onLogout = vi.fn()
+
+    installAuthInterceptors(api, {
+      refresh,
+      onLogout,
+    })
+
+    const errorHandler = responseHandlers[0].rejected
+
+    const error = {
+      config: { url: '/api/data', _retry: false },
+      response: { status: 401 },
+    }
+
+    await expect(errorHandler!(error)).rejects.toThrow('Refresh failed')
+
+    expect(refresh).toHaveBeenCalledTimes(1)
+    expect(onLogout).toHaveBeenCalledTimes(1)
+  })
+
+  it('should NOT refresh on 401 from login/refresh/me endpoints', async () => {
+    const { api, responseHandlers } = createFakeAxios()
+    const refresh = vi.fn()
+    const onLogout = vi.fn()
+
+    installAuthInterceptors(api, { refresh, onLogout })
+
+    const errorHandler = responseHandlers[0].rejected
+    const error = {
+      config: { url: '/api/auth/login', _retry: false },
+      response: { status: 401 },
+    }
+
+    await expect(errorHandler!(error)).rejects.toBe(error)
+    expect(refresh).not.toHaveBeenCalled()
   })
 })

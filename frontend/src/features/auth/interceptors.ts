@@ -1,44 +1,23 @@
-import { AxiosHeaders, type AxiosInstance, type AxiosResponse, type InternalAxiosRequestConfig } from '@/lib/api'
-
-type Tokens = { accessToken: string; refreshToken?: string }
+import { type AxiosInstance, type AxiosResponse, type InternalAxiosRequestConfig } from '@/lib/api'
 
 export function installAuthInterceptors(
   api: AxiosInstance,
   opts: {
-    getTokens: () => Tokens | null
-    setTokens: (t: Tokens | null) => void
-    refresh: (refreshToken: string) => Promise<Tokens>
+    refresh: () => Promise<void>
     onLogout: () => void
   }
 ) {
   let isRefreshing = false
-  let queue: { resolve: (t: string) => void; reject: (e: any) => void }[] = []
+  let queue: { resolve: () => void; reject: (e: any) => void }[] = []
 
-  const processQueue = (error: any, token: string | null) => {
-    queue.forEach((p) => (error ? p.reject(error) : p.resolve(token!)))
+  const processQueue = (error: any) => {
+    queue.forEach((p) => (error ? p.reject(error) : p.resolve()))
     queue = []
   }
 
-  api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
-    let tokens = opts.getTokens()
-    if (!tokens?.accessToken) {
-      try {
-        const raw = localStorage.getItem('auth')
-        if (raw) {
-          const parsed = JSON.parse(raw)
-          if (parsed?.tokens?.accessToken) tokens = parsed.tokens
-        }
-      } catch {}
-    }
-    if (tokens?.accessToken) {
-      const headers = config.headers instanceof AxiosHeaders
-        ? config.headers
-        : AxiosHeaders.from(config.headers ?? {})
-      headers.set('Authorization', `Bearer ${tokens.accessToken}`)
-      config.headers = headers
-    }
-    return config
-  })
+  // Request interceptor: No longer needed to attach tokens (Cookies handles it)
+  // But we might want to ensure we don't attach old headers if any logic tries to.
+  // api.interceptors.request.use((config) => config); 
 
   api.interceptors.response.use(
     (res: AxiosResponse) => res,
@@ -46,44 +25,37 @@ export function installAuthInterceptors(
       const original = (error.config || {}) as (InternalAxiosRequestConfig & { _retry?: boolean })
       const status = error?.response?.status
       const urlPath = String(original.url || '')
-      if (status === 401 && !original._retry && !/\/auth\/(login|refresh)/.test(urlPath)) {
+      
+      // Ignore 401 on login/refresh endpoints to prevent loops
+      if (status === 401 && !original._retry && !/\/auth\/(login|refresh|me)/.test(urlPath)) {
         original._retry = true
         try {
-          let accessToken: string
           if (!isRefreshing) {
             isRefreshing = true
-            const rt = opts.getTokens()?.refreshToken
-            if (!rt) throw error
-            const newTokens = await opts.refresh(rt)
-            opts.setTokens(newTokens)
-            accessToken = newTokens.accessToken
+            await opts.refresh() // Call refresh API (uses cookies)
             isRefreshing = false
-            processQueue(null, newTokens.accessToken)
+            processQueue(null)
           } else {
-            // wait until refresh resolves wenn bereits ein Refresh-Lauf aktiv ist
-            accessToken = await new Promise<string>((resolve, reject) => {
+            // Wait for existing refresh
+            await new Promise<void>((resolve, reject) => {
               queue.push({ resolve, reject })
             })
           }
-          const headers = original.headers instanceof AxiosHeaders
-            ? original.headers
-            : AxiosHeaders.from(original.headers ?? {})
-          headers.set('Authorization', `Bearer ${accessToken}`)
-          original.headers = headers
+          // Retry original request (cookies will be sent automatically)
           return api.request(original)
         } catch (e) {
           isRefreshing = false
-          processQueue(e, null)
-          opts.setTokens(null)
+          processQueue(e)
           opts.onLogout()
           return Promise.reject(e)
         }
       }
-      // Bei wiederholtem 401 nach bereits erfolgtem Retry -> zum Login führen
+      
+      // If refresh failed or 401 persists
       if (status === 401 && original._retry) {
-        try { opts.setTokens(null); opts.onLogout() } catch {}
+        opts.onLogout()
       }
-      // 403: Kein Refresh-Mechanismus, UI soll die 403-Karte anzeigen. Kein Toast-Spam hier.
+      
       return Promise.reject(error)
     }
   )

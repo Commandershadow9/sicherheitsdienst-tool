@@ -12,11 +12,14 @@ export const authenticate = async (
   next: NextFunction,
 ): Promise<void> => {
   const authHeader = req.headers.authorization;
-  // Korrigierte Token-Extraktion
-  const token = authHeader && authHeader.startsWith('Bearer ') ? authHeader.split(' ')[1] : null;
+  // Fallback: Read from Cookie
+  const token = authHeader && authHeader.startsWith('Bearer ') 
+    ? authHeader.split(' ')[1] 
+    : req.cookies?.accessToken;
 
   if (!token) {
-    return next(createError(401, 'Kein Authentifizierungstoken vorhanden. Zugriff verweigert.'));
+    next(createError(401, 'Kein Authentifizierungstoken vorhanden. Zugriff verweigert.'));
+    return;
   }
 
   try {
@@ -24,35 +27,32 @@ export const authenticate = async (
     const jwtSecret = process.env.JWT_SECRET;
     if (!jwtSecret) {
       console.error('JWT_SECRET ist nicht definiert in den Umgebungsvariablen für authenticate.');
-      return next(createError(500, 'Server-Konfigurationsfehler: JWT Secret fehlt.'));
+      next(createError(500, 'Server-Konfigurationsfehler: JWT Secret fehlt.'));
+      return;
     }
 
     const verifyOptions: jwt.VerifyOptions = {};
     if (process.env.JWT_ISSUER) verifyOptions.issuer = process.env.JWT_ISSUER;
     if (process.env.JWT_AUDIENCE) verifyOptions.audience = process.env.JWT_AUDIENCE;
-    // 🔐 MULTI-TENANCY: Token enthält jetzt customerId
-    const decoded = jwt.verify(token, jwtSecret, verifyOptions) as {
-      userId: string;
-      role: string;
-      customerId: string; // 🔐 Multi-Tenancy
-    };
+
+    const decoded = jwt.verify(token, jwtSecret, verifyOptions) as { userId: string; role: string; customerId?: string }; // customerId für Multi-Tenancy
 
     const user = await prisma.user.findUnique({
       where: { id: decoded.userId },
     });
 
     if (!user || !user.isActive) {
-      return next(createError(401, 'Ungültiger Token oder Benutzer nicht aktiv.'));
+      next(createError(401, 'Ungültiger Token oder Benutzer nicht aktiv.'));
+      return;
     }
 
-    req.user = user; // Hier wird die 'user'-Eigenschaft gesetzt
+    (req as any).user = user;
+    (req as any).customerId = decoded.customerId || user.customerId; // 🔐 Multi-Tenancy Kontext setzen
+
     next();
   } catch (error) {
-    if (error instanceof jwt.JsonWebTokenError || error instanceof jwt.TokenExpiredError) {
-      return next(createError(401, 'Ungültiger oder abgelaufener Token.'));
-    }
-    console.error('Authentication error (unhandled in middleware):', error);
-    return next(createError(500, 'Interner Serverfehler während der Authentifizierung.'));
+    next(createError(401, 'Ungültiger Token.'));
+    return;
   }
 };
 

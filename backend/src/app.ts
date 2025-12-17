@@ -2,6 +2,7 @@ import express, { Request, Response, ErrorRequestHandler } from 'express'; // Er
 import morgan from 'morgan';
 // dotenv.config() removed, handled in config/env.ts
 import jwt from 'jsonwebtoken';
+import cookieParser from 'cookie-parser';
 import swaggerUi from 'swagger-ui-express';
 import logger from './utils/logger';
 import requestId from './middleware/requestId';
@@ -79,6 +80,7 @@ app.use(
 );
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+app.use(cookieParser());
 
 // 🔐 MULTI-TENANCY: Setze customerId in AsyncLocalStorage (wirkt auf alle authentifizierten Requests)
 // WICHTIG: Muss VOR den Routes kommen, aber wirkt nur wenn req.user (durch authenticate) gesetzt ist

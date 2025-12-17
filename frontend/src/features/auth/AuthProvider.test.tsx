@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor, act } from '@testing-library/react'
 import { AuthProvider, useAuth } from './AuthProvider'
 import { api } from '@/lib/api'
 
@@ -12,6 +12,7 @@ vi.mock('@/lib/api', () => ({
       request: { use: vi.fn() },
       response: { use: vi.fn() },
     },
+    request: vi.fn(),
   },
 }))
 
@@ -26,7 +27,7 @@ function TestComponent() {
   return (
     <div>
       <div data-testid="authenticated">{String(isAuthenticated)}</div>
-      <div data-testid="user">{user ? JSON.stringify(user) : 'null'}</div>
+      <div data-testid="user">{user ? user.email : 'null'}</div>
       <div data-testid="hydrated">{String(hydrated)}</div>
     </div>
   )
@@ -34,27 +35,39 @@ function TestComponent() {
 
 describe('AuthProvider', () => {
   beforeEach(() => {
-    localStorage.clear()
     vi.clearAllMocks()
   })
 
-  it('should initialize with no authentication', () => {
+  it('should initialize and check session via /auth/me', async () => {
+    // Mock successful session check
+    vi.mocked(api.get).mockResolvedValueOnce({
+      data: {
+        success: true,
+        data: { id: '123', email: 'session@example.com', role: 'EMPLOYEE' }
+      }
+    })
+
     render(
       <AuthProvider>
         <TestComponent />
       </AuthProvider>
     )
 
-    expect(screen.getByTestId('authenticated')).toHaveTextContent('false')
-    expect(screen.getByTestId('user')).toHaveTextContent('null')
+    // Initial state might be unhydrated, but wait for hydration
+    await waitFor(() => {
+      expect(screen.getByTestId('hydrated')).toHaveTextContent('true')
+    })
+
+    expect(api.get).toHaveBeenCalledWith('/auth/me')
+    expect(screen.getByTestId('authenticated')).toHaveTextContent('true')
+    expect(screen.getByTestId('user')).toHaveTextContent('session@example.com')
   })
 
-  it('should hydrate from localStorage', async () => {
-    const storedAuth = {
-      tokens: { accessToken: 'test-token', refreshToken: 'test-refresh' },
-      user: { id: '1', email: 'test@example.com', role: 'EMPLOYEE' as const },
-    }
-    localStorage.setItem('auth', JSON.stringify(storedAuth))
+  it('should handle session check failure (not logged in)', async () => {
+    // Mock 401 response
+    vi.mocked(api.get).mockRejectedValueOnce({
+      response: { status: 401 }
+    })
 
     render(
       <AuthProvider>
@@ -63,29 +76,33 @@ describe('AuthProvider', () => {
     )
 
     await waitFor(() => {
-      expect(screen.getByTestId('authenticated')).toHaveTextContent('true')
+      expect(screen.getByTestId('hydrated')).toHaveTextContent('true')
     })
 
-    const userText = screen.getByTestId('user').textContent
-    expect(userText).toContain('test@example.com')
+    expect(api.get).toHaveBeenCalledWith('/auth/me')
+    expect(screen.getByTestId('authenticated')).toHaveTextContent('false')
+    expect(screen.getByTestId('user')).toHaveTextContent('null')
   })
 
   it('should handle login successfully', async () => {
-    const mockLoginResponse = {
+    // Mock session check to fail first (not logged in initially)
+    vi.mocked(api.get).mockRejectedValueOnce({ response: { status: 401 } })
+    
+    // Mock login response
+    vi.mocked(api.post).mockResolvedValueOnce({
       data: {
-        accessToken: 'new-access-token',
-        refreshToken: 'new-refresh-token',
-        user: { id: '2', email: 'user@example.com', role: 'MANAGER' as const },
-      },
-    }
-
-    vi.mocked(api.post).mockResolvedValueOnce(mockLoginResponse)
+        success: true,
+        data: {
+          user: { id: '2', email: 'login@example.com', role: 'MANAGER' }
+        }
+      }
+    })
 
     function LoginTest() {
       const { login, isAuthenticated } = useAuth()
       return (
         <div>
-          <button onClick={() => login('user@example.com', 'password123')}>Login</button>
+          <button onClick={() => login('login@example.com', 'pw')}>Login</button>
           <div data-testid="authenticated">{String(isAuthenticated)}</div>
         </div>
       )
@@ -97,29 +114,33 @@ describe('AuthProvider', () => {
       </AuthProvider>
     )
 
+    await waitFor(() => {
+      expect(screen.getByTestId('authenticated')).toHaveTextContent('false')
+    })
+
     const loginButton = screen.getByText('Login')
-    loginButton.click()
+    await act(async () => {
+      loginButton.click()
+    })
 
     await waitFor(() => {
       expect(screen.getByTestId('authenticated')).toHaveTextContent('true')
     })
 
-    expect(api.post).toHaveBeenCalledWith('/auth/login', {
-      email: 'user@example.com',
-      password: 'password123',
-    })
-
-    const stored = JSON.parse(localStorage.getItem('auth') || '{}')
-    expect(stored.tokens.accessToken).toBe('new-access-token')
-    expect(stored.user.email).toBe('user@example.com')
+    expect(api.post).toHaveBeenCalledWith('/auth/login', { email: 'login@example.com', password: 'pw' })
   })
 
   it('should handle logout', async () => {
-    const storedAuth = {
-      tokens: { accessToken: 'test-token', refreshToken: 'test-refresh' },
-      user: { id: '1', email: 'test@example.com', role: 'EMPLOYEE' as const },
-    }
-    localStorage.setItem('auth', JSON.stringify(storedAuth))
+     // Mock session check (logged in)
+     vi.mocked(api.get).mockResolvedValueOnce({
+      data: {
+        success: true,
+        data: { id: '123', email: 'session@example.com', role: 'EMPLOYEE' }
+      }
+    })
+    
+    // Mock logout
+    vi.mocked(api.post).mockResolvedValueOnce({ data: { success: true } })
 
     function LogoutTest() {
       const { logout, isAuthenticated } = useAuth()
@@ -142,53 +163,14 @@ describe('AuthProvider', () => {
     })
 
     const logoutButton = screen.getByText('Logout')
-    logoutButton.click()
+    await act(async () => {
+      logoutButton.click()
+    })
 
     await waitFor(() => {
       expect(screen.getByTestId('authenticated')).toHaveTextContent('false')
     })
 
-    expect(localStorage.getItem('auth')).toBeNull()
-  })
-
-  it('should fetch user when tokens exist but no user', async () => {
-    const storedAuth = {
-      tokens: { accessToken: 'test-token', refreshToken: 'test-refresh' },
-      user: null,
-    }
-    localStorage.setItem('auth', JSON.stringify(storedAuth))
-
-    const mockMeResponse = {
-      data: {
-        user: { id: '3', email: 'fetched@example.com', role: 'ADMIN' as const },
-      },
-    }
-
-    vi.mocked(api.get).mockResolvedValueOnce(mockMeResponse)
-
-    render(
-      <AuthProvider>
-        <TestComponent />
-      </AuthProvider>
-    )
-
-    await waitFor(() => {
-      const userText = screen.getByTestId('user').textContent
-      expect(userText).toContain('fetched@example.com')
-    })
-
-    expect(api.get).toHaveBeenCalledWith('/auth/me')
-  })
-
-  it('should handle hydration', async () => {
-    render(
-      <AuthProvider>
-        <TestComponent />
-      </AuthProvider>
-    )
-
-    await waitFor(() => {
-      expect(screen.getByTestId('hydrated')).toHaveTextContent('true')
-    })
+    expect(api.post).toHaveBeenCalledWith('/auth/logout')
   })
 })

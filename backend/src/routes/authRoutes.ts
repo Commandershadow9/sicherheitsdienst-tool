@@ -22,6 +22,9 @@ router.post('/refresh', ipLimiter, validate(refreshSchema), asyncHandler(authCon
 // GET /api/auth/me - Aktuellen Benutzer abrufen
 router.get('/me', authenticate, asyncHandler(authController.me));
 
+// POST /api/auth/logout - Benutzer abmelden (Cookies löschen)
+router.post('/logout', asyncHandler(authController.logout));
+
 // Hier könnten später weitere Auth-Routen hinzukommen (z.B. Registrierung, Passwort vergessen, etc.)
 // router.post('/register', asyncHandler(authController.register));
 // router.post('/forgot-password', asyncHandler(authController.forgotPassword));
