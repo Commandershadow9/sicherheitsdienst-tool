@@ -823,8 +823,8 @@ export default function UserProfile() {
                       <div className="font-medium">{qual.title}</div>
                       {qual.description && <div className="text-xs text-muted-foreground">{qual.description}</div>}
                     </td>
-                    <td className="px-3 py-2">{formatDate(qual.validFrom)}</td>
-                    <td className="px-3 py-2">{formatDate(qual.validUntil)}</td>
+                    <td className="px-3 py-2">{qual.validFrom ? formatDate(qual.validFrom) : '–'}</td>
+                    <td className="px-3 py-2">{qual.validUntil ? formatDate(qual.validUntil) : '–'}</td>
                     <td className="px-3 py-2">
                       {canManageSensitive ? (
                         <Button

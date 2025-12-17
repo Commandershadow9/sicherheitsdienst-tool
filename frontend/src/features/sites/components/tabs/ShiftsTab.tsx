@@ -61,13 +61,16 @@ type Site = {
   id: string;
   name: string;
   securityConcept?: {
-    id: string;
-    shiftModel?: any;
+    tasks?: string[];
+    shiftModel?: string | Record<string, unknown>;
+    hoursPerWeek?: number;
+    templateId?: string;
+    templateName?: string;
   };
   securityConcepts?: Array<{
     id: string;
     status: string;
-    shiftModel?: any;
+    shiftModel?: unknown;
   }>;
 };
 
@@ -145,7 +148,13 @@ export default function ShiftsTab({ site, siteId }: ShiftsTabProps) {
   // Extract ShiftModel from SecurityConcept
   const shiftModel: ShiftModel | null = useMemo(() => {
     if (site.securityConcept?.shiftModel) {
-      return site.securityConcept.shiftModel as ShiftModel;
+      // Das shiftModel kann ein String oder ein Objekt sein
+      const sm = site.securityConcept.shiftModel;
+      if (typeof sm === 'object') {
+        return sm as unknown as ShiftModel;
+      }
+      // Wenn es ein String ist (z.B. "3-SHIFT"), geben wir null zurück
+      return null;
     }
     if (site.securityConcepts && site.securityConcepts.length > 0) {
       return site.securityConcepts[0].shiftModel as ShiftModel;
@@ -153,16 +162,17 @@ export default function ShiftsTab({ site, siteId }: ShiftsTabProps) {
     return null;
   }, [site]);
 
-  // Extract SecurityConcept ID (für Reverse-Sync)
+  // SecurityConcept ID für Reverse-Sync (nutze siteId, da securityConcept jetzt JSON-Feld ist)
   const securityConceptId = useMemo(() => {
-    if (site.securityConcept?.id) {
-      return site.securityConcept.id;
+    // Da securityConcept jetzt ein JSON-Feld ist, verwenden wir die siteId
+    if (site.securityConcept) {
+      return siteId;
     }
     if (site.securityConcepts && site.securityConcepts.length > 0) {
       return site.securityConcepts[0].id;
     }
     return undefined;
-  }, [site]);
+  }, [site, siteId]);
 
   // Auto-Sync: ShiftModel ↔ ShiftRules (automatisch, bidirektional)
   useSecurityConceptShiftModelSync({

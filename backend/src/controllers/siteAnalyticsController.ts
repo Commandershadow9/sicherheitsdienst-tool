@@ -17,11 +17,6 @@ export const getSiteCoverageStats = async (req: Request, res: Response, next: Ne
       include: {
         clearances: { where: { status: 'ACTIVE' } },
         assignments: { include: { user: true } },
-        securityConcepts: {
-          where: { status: 'ACTIVE' },
-          orderBy: { createdAt: 'desc' },
-          take: 1,
-        },
       },
     });
 
@@ -30,14 +25,14 @@ export const getSiteCoverageStats = async (req: Request, res: Response, next: Ne
       return;
     }
 
-    // SINGLE SOURCE OF TRUTH: SecurityConcept
-    const securityConcept = site.securityConcepts?.[0];
+    // SINGLE SOURCE OF TRUTH: securityConcept JSON-Feld
+    const securityConcept = site.securityConcept as Record<string, unknown> | null;
 
     // Personal-Anforderungen aus SecurityConcept (mit Fallback)
     let requiredStaff = site.requiredStaff || 1; // Fallback
     if (securityConcept?.staffRequirements) {
-      const staffReqs = securityConcept.staffRequirements as any;
-      if (staffReqs?.anzahlMA) {
+      const staffReqs = securityConcept.staffRequirements as Record<string, unknown>;
+      if (staffReqs?.anzahlMA && typeof staffReqs.anzahlMA === 'number') {
         requiredStaff = staffReqs.anzahlMA;
       }
     }
@@ -57,18 +52,21 @@ export const getSiteCoverageStats = async (req: Request, res: Response, next: Ne
     }
 
     // Breakdown nach Rollen - nutze taskProfiles aus SecurityConcept falls vorhanden
-    const taskProfiles = securityConcept?.taskProfiles ? (securityConcept.taskProfiles as any) : null;
+    const taskProfiles = securityConcept?.taskProfiles as Record<string, unknown> | null;
     let requiredObjektleiter = 1; // Default
     let requiredSchichtleiter = Math.max(1, Math.ceil(requiredStaff * 0.3)); // Default: ~30%
     let requiredMitarbeiter = Math.max(0, requiredStaff - requiredObjektleiter - requiredSchichtleiter);
 
     // Override mit taskProfiles wenn definiert
     if (taskProfiles) {
-      if (taskProfiles.objektleiter?.required !== undefined) {
-        requiredObjektleiter = taskProfiles.objektleiter.required ? 1 : 0;
+      const objektleiterProfile = taskProfiles.objektleiter as Record<string, unknown> | undefined;
+      const schichtleiterProfile = taskProfiles.schichtleiter as Record<string, unknown> | undefined;
+
+      if (objektleiterProfile?.required !== undefined) {
+        requiredObjektleiter = objektleiterProfile.required ? 1 : 0;
       }
-      if (taskProfiles.schichtleiter?.required !== undefined) {
-        requiredSchichtleiter = taskProfiles.schichtleiter.required ? Math.max(1, Math.ceil(requiredStaff * 0.3)) : 0;
+      if (schichtleiterProfile?.required !== undefined) {
+        requiredSchichtleiter = schichtleiterProfile.required ? Math.max(1, Math.ceil(requiredStaff * 0.3)) : 0;
       }
       requiredMitarbeiter = Math.max(0, requiredStaff - requiredObjektleiter - requiredSchichtleiter);
     }
@@ -234,7 +232,7 @@ export const getAssignmentCandidates = async (req: Request, res: Response, next:
       where: {
         isActive: true,
         id: { notIn: assignedUserIds },
-        ...(role && { role: role as any }),
+        ...(role && { role: role as 'ADMIN' | 'MANAGER' | 'DISPATCHER' | 'EMPLOYEE' }),
       },
       select: {
         id: true,
@@ -321,7 +319,7 @@ export const generateShiftsForSite = async (req: Request, res: Response, next: N
         name: true,
         requiredStaff: true,
         requiredQualifications: true,
-        securityConcept: true, // Legacy JSON-Feld
+        securityConcept: true, // JSON-Feld
       },
     });
 
@@ -330,27 +328,8 @@ export const generateShiftsForSite = async (req: Request, res: Response, next: N
       return;
     }
 
-    // Versuche zuerst das neueste aktive Sicherheitskonzept aus der Tabelle zu laden
-    let securityConceptData: any = null;
-    const activeConceptFromDB = await prisma.securityConcept.findFirst({
-      where: {
-        siteId: id,
-        status: 'ACTIVE',
-      },
-      orderBy: {
-        createdAt: 'desc',
-      },
-    });
-
-    if (activeConceptFromDB && activeConceptFromDB.shiftModel) {
-      // Neues System: Nutze SecurityConcept aus Tabelle
-      securityConceptData = {
-        shiftModel: activeConceptFromDB.shiftModel,
-      };
-    } else if (site.securityConcept) {
-      // Fallback: Legacy JSON-Feld (für Abwärtskompatibilität)
-      securityConceptData = site.securityConcept as any;
-    }
+    // Sicherheitskonzept aus JSON-Feld laden
+    const securityConceptData = site.securityConcept as Record<string, unknown> | null;
 
     // Sicherheitskonzept prüfen
     if (!securityConceptData || !securityConceptData.shiftModel) {
@@ -384,12 +363,12 @@ export const generateShiftsForSite = async (req: Request, res: Response, next: N
 
     // Schichtmodell extrahieren (neues Format: { model: "3-SHIFT", ... } oder legacy: "3-SHIFT")
     let shiftModelId: string;
-    let shiftModelData: any = null;
+    let shiftModelData: Record<string, unknown> | null = null;
 
     if (typeof securityConceptData.shiftModel === 'object' && securityConceptData.shiftModel !== null) {
       // Neues Format: { model: "3-SHIFT", hoursPerWeek: 168, shifts: [...] }
-      shiftModelData = securityConceptData.shiftModel;
-      shiftModelId = shiftModelData.model || '3-SHIFT';
+      shiftModelData = securityConceptData.shiftModel as Record<string, unknown>;
+      shiftModelId = (shiftModelData.model as string) || '3-SHIFT';
     } else if (typeof securityConceptData.shiftModel === 'string') {
       // Legacy Format: "3-SHIFT"
       shiftModelId = securityConceptData.shiftModel;
@@ -403,9 +382,10 @@ export const generateShiftsForSite = async (req: Request, res: Response, next: N
     let requiredQualifications = site.requiredQualifications || [];
 
     if (securityConceptData.staffRequirements) {
+      const staffReqs = securityConceptData.staffRequirements as Record<string, unknown>;
       // staffRequirements: { anzahlMA, qualifikationen }
-      requiredStaffTotal = securityConceptData.staffRequirements.anzahlMA || requiredStaffTotal;
-      requiredQualifications = securityConceptData.staffRequirements.qualifikationen || requiredQualifications;
+      requiredStaffTotal = (staffReqs.anzahlMA as number) || requiredStaffTotal;
+      requiredQualifications = (staffReqs.qualifikationen as string[]) || requiredQualifications;
     }
 
     // Schichten generieren
@@ -417,7 +397,7 @@ export const generateShiftsForSite = async (req: Request, res: Response, next: N
       requiredQualifications: requiredQualifications,
       startDate: start,
       daysAhead: Math.min(Math.max(daysAhead, 1), 90), // Max 90 Tage
-      shiftModelData: shiftModelData, // Übergebe die kompletten Shift-Definitionen
+      shiftModelData: shiftModelData ?? undefined, // Übergebe die kompletten Shift-Definitionen
     });
 
     // Prüfe welche Schichten bereits existieren (manuelle Duplikat-Prüfung)
@@ -469,23 +449,23 @@ export const generateShiftsForSite = async (req: Request, res: Response, next: N
 
     // Intelligente Nachricht basierend auf Ergebnis
     let message: string;
-    let status: number;
+    let responseStatus: number;
 
     if (createdCount === 0 && existingShifts.length > 0) {
       message = `Keine neuen Schichten erstellt. Für diesen Zeitraum existieren bereits ${existingShifts.length} Schichten. Alle ${shiftsData.length} generierten Schichten sind Duplikate.`;
-      status = 200;
+      responseStatus = 200;
     } else if (createdCount === 0) {
       message = 'Keine Schichten erstellt. Bitte überprüfen Sie das Schichtmodell.';
-      status = 200;
+      responseStatus = 200;
     } else if (duplicateCount > 0) {
       message = `${createdCount} neue Schichten erstellt. ${duplicateCount} Duplikate wurden übersprungen (bereits vorhanden).`;
-      status = 201;
+      responseStatus = 201;
     } else {
-      message = `${createdCount} Schichten erfolgreich generiert (basierend auf ${activeConceptFromDB ? 'aktivem Sicherheitskonzept' : 'Legacy-Konzept'})`;
-      status = 201;
+      message = `${createdCount} Schichten erfolgreich generiert (basierend auf Sicherheitskonzept)`;
+      responseStatus = 201;
     }
 
-    res.status(status).json({
+    res.status(responseStatus).json({
       success: true,
       message,
       data: {
@@ -495,12 +475,13 @@ export const generateShiftsForSite = async (req: Request, res: Response, next: N
         attempted: shiftsData.length,
         stats,
         template: securityConceptData.shiftModel,
-        source: activeConceptFromDB ? 'security_concept_table' : 'legacy_json',
+        source: 'security_concept_json',
       },
     });
-  } catch (error: any) {
-    if (error.message?.includes('Unbekanntes Schichtmodell')) {
-      res.status(400).json({ success: false, message: error.message });
+  } catch (error: unknown) {
+    const err = error as Error;
+    if (err.message?.includes('Unbekanntes Schichtmodell')) {
+      res.status(400).json({ success: false, message: err.message });
       return;
     }
     next(error);
@@ -521,9 +502,10 @@ export const getControlRoundSuggestions = async (req: Request, res: Response, ne
       success: true,
       data: suggestions,
     });
-  } catch (error: any) {
-    if (error.message?.includes('nicht gefunden')) {
-      res.status(404).json({ success: false, message: error.message });
+  } catch (error: unknown) {
+    const err = error as Error;
+    if (err.message?.includes('nicht gefunden')) {
+      res.status(404).json({ success: false, message: err.message });
       return;
     }
     logger.error('Error in getControlRoundSuggestions:', error);

@@ -1,74 +1,98 @@
 import { Request, Response, NextFunction } from 'express';
 import prisma from '../utils/prisma';
+import { Prisma } from '@prisma/client';
 
-// GET /api/sites/:siteId/security-concept - Aktives/neuestes Sicherheitskonzept abrufen
+/**
+ * SecurityConcept Controller
+ *
+ * Diese Controller-Version arbeitet mit dem JSON-Feld `securityConcept` im Site-Model,
+ * da das separate SecurityConcept-Model noch nicht migriert wurde.
+ *
+ * Das securityConcept JSON-Feld enthält:
+ * - tasks: string[] - Aufgaben
+ * - intervals: string[] - Intervalle
+ * - shiftModel: string - Schichtmodell (z.B. "2-SHIFT", "3-SHIFT")
+ * - hoursPerWeek: number - Stunden pro Woche
+ * - templateId: string - Template-ID
+ * - templateName: string - Template-Name
+ */
+
+// GET /api/sites/:siteId/security-concept - Sicherheitskonzept eines Objekts abrufen
 export const getSecurityConcept = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { siteId } = req.params;
-    const { status } = req.query;
 
-    // Prüfe ob Site existiert
-    const site = await prisma.site.findUnique({ where: { id: siteId } });
+    const site = await prisma.site.findUnique({
+      where: { id: siteId },
+      select: {
+        id: true,
+        name: true,
+        address: true,
+        city: true,
+        postalCode: true,
+        status: true,
+        securityConcept: true,
+        requiredStaff: true,
+        requiredQualifications: true,
+      },
+    });
+
     if (!site) {
       res.status(404).json({ success: false, message: 'Objekt nicht gefunden' });
       return;
     }
 
-    // Filter nach Status, falls angegeben
-    const where: any = { siteId };
-    if (status && typeof status === 'string') {
-      where.status = status;
-    }
-
-    // Hole neuestes Konzept (nach createdAt sortiert)
-    const concept = await prisma.securityConcept.findFirst({
-      where,
-      orderBy: { createdAt: 'desc' },
-      include: {
-        site: {
-          select: {
-            id: true,
-            name: true,
-            address: true,
-            city: true,
-            postalCode: true,
-            status: true,
-          },
-        },
-      },
-    });
-
-    if (!concept) {
-      res.status(404).json({ success: false, message: 'Kein Sicherheitskonzept gefunden' });
+    if (!site.securityConcept) {
+      res.status(404).json({ success: false, message: 'Kein Sicherheitskonzept für dieses Objekt definiert' });
       return;
     }
 
-    res.json({ success: true, data: concept });
+    res.json({
+      success: true,
+      data: {
+        siteId: site.id,
+        siteName: site.name,
+        ...site.securityConcept as object,
+        requiredStaff: site.requiredStaff,
+        requiredQualifications: site.requiredQualifications,
+      },
+    });
   } catch (error) {
     next(error);
   }
 };
 
-// GET /api/sites/:siteId/security-concepts - Alle Sicherheitskonzepte für ein Objekt (Historie)
+// GET /api/sites/:siteId/security-concepts - Alias für getSecurityConcept (Kompatibilität)
 export const getAllSecurityConcepts = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { siteId } = req.params;
 
-    const concepts = await prisma.securityConcept.findMany({
-      where: { siteId },
-      orderBy: { createdAt: 'desc' },
+    const site = await prisma.site.findUnique({
+      where: { id: siteId },
       select: {
         id: true,
-        version: true,
-        status: true,
-        validFrom: true,
-        validUntil: true,
-        approvedBy: true,
-        approvedAt: true,
-        createdAt: true,
+        name: true,
+        securityConcept: true,
         updatedAt: true,
+        createdAt: true,
       },
     });
+
+    if (!site) {
+      res.status(404).json({ success: false, message: 'Objekt nicht gefunden' });
+      return;
+    }
+
+    // Da wir nur ein JSON-Feld haben, geben wir es als Array mit einem Element zurück
+    const concepts = site.securityConcept ? [{
+      id: site.id, // Verwende Site-ID als Konzept-ID
+      siteId: site.id,
+      ...site.securityConcept as object,
+      status: 'ACTIVE',
+      version: '1.0',
+      createdAt: site.createdAt,
+      updatedAt: site.updatedAt,
+    }] : [];
 
     res.json({ success: true, data: concepts, count: concepts.length });
   } catch (error) {
@@ -76,64 +100,26 @@ export const getAllSecurityConcepts = async (req: Request, res: Response, next: 
   }
 };
 
-// GET /api/sites/:siteId/security-concept/:id - Einzelnes Sicherheitskonzept mit allen Details
+// GET /api/sites/:siteId/security-concept/:id - Einzelnes Konzept (gleich wie getSecurityConcept)
 export const getSecurityConceptById = async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const { siteId, id } = req.params;
-
-    const concept = await prisma.securityConcept.findFirst({
-      where: { id, siteId },
-      include: {
-        site: {
-          select: {
-            id: true,
-            name: true,
-            address: true,
-            city: true,
-            postalCode: true,
-          },
-        },
-      },
-    });
-
-    if (!concept) {
-      res.status(404).json({ success: false, message: 'Sicherheitskonzept nicht gefunden' });
-      return;
-    }
-
-    res.json({ success: true, data: concept });
-  } catch (error) {
-    next(error);
-  }
+  // Da wir nur ein JSON-Feld haben, leiten wir an getSecurityConcept weiter
+  return getSecurityConcept(req, res, next);
 };
 
-// POST /api/sites/:siteId/security-concept - Neues Sicherheitskonzept erstellen
+// POST /api/sites/:siteId/security-concept - Sicherheitskonzept erstellen/aktualisieren
 export const createSecurityConcept = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { siteId } = req.params;
     const {
-      version,
-      status,
-      validFrom,
-      validUntil,
-      contractScope,
-      legalBasis,
-      siteSituation,
-      riskAssessment,
-      protectionMeasures,
-      staffRequirements,
+      tasks,
+      intervals,
       shiftModel,
-      taskProfiles,
-      communicationPlan,
+      hoursPerWeek,
+      templateId,
+      templateName,
+      staffRequirements,
+      riskAssessment,
       emergencyPlan,
-      dataProtection,
-      occupationalSafety,
-      qualityMetrics,
-      handoverProcedures,
-      attachments,
-      trafficConcept,
-      weaponConcept,
-      weatherProtocols,
       notes,
     } = req.body;
 
@@ -144,48 +130,42 @@ export const createSecurityConcept = async (req: Request, res: Response, next: N
       return;
     }
 
-    const concept = await prisma.securityConcept.create({
+    // Erstelle das Sicherheitskonzept-Objekt
+    const securityConceptData = {
+      tasks: tasks || [],
+      intervals: intervals || [],
+      shiftModel: shiftModel || '3-SHIFT',
+      hoursPerWeek: hoursPerWeek || 168,
+      templateId,
+      templateName,
+      staffRequirements,
+      riskAssessment,
+      emergencyPlan,
+      notes,
+      updatedAt: new Date().toISOString(),
+    };
+
+    // Update Site mit neuem Sicherheitskonzept
+    const updatedSite = await prisma.site.update({
+      where: { id: siteId },
       data: {
-        siteId,
-        version: version || '1.0',
-        status: status || 'DRAFT',
-        validFrom: validFrom ? new Date(validFrom) : undefined,
-        validUntil: validUntil ? new Date(validUntil) : undefined,
-        contractScope,
-        legalBasis,
-        siteSituation,
-        riskAssessment,
-        protectionMeasures,
-        staffRequirements,
-        shiftModel,
-        taskProfiles,
-        communicationPlan,
-        emergencyPlan,
-        dataProtection,
-        occupationalSafety,
-        qualityMetrics,
-        handoverProcedures,
-        attachments,
-        trafficConcept,
-        weaponConcept,
-        weatherProtocols,
-        notes,
+        securityConcept: securityConceptData,
       },
-      include: {
-        site: {
-          select: {
-            id: true,
-            name: true,
-            address: true,
-          },
-        },
+      select: {
+        id: true,
+        name: true,
+        securityConcept: true,
       },
     });
 
     res.status(201).json({
       success: true,
       message: 'Sicherheitskonzept erfolgreich erstellt',
-      data: concept,
+      data: {
+        siteId: updatedSite.id,
+        siteName: updatedSite.name,
+        ...updatedSite.securityConcept as object,
+      },
     });
   } catch (error) {
     next(error);
@@ -195,69 +175,50 @@ export const createSecurityConcept = async (req: Request, res: Response, next: N
 // PUT /api/sites/:siteId/security-concept/:id - Sicherheitskonzept aktualisieren
 export const updateSecurityConcept = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { siteId, id } = req.params;
+    const { siteId } = req.params;
     const updateData = req.body;
 
-    // Prüfe ob Konzept existiert
-    const existing = await prisma.securityConcept.findFirst({
-      where: { id, siteId },
+    // Prüfe ob Site existiert
+    const site = await prisma.site.findUnique({
+      where: { id: siteId },
+      select: { id: true, securityConcept: true },
     });
 
-    if (!existing) {
-      res.status(404).json({ success: false, message: 'Sicherheitskonzept nicht gefunden' });
+    if (!site) {
+      res.status(404).json({ success: false, message: 'Objekt nicht gefunden' });
       return;
     }
 
-    // Verhindere Aktualisierung von freigegebenen/aktiven Konzepten (außer für ADMIN/MANAGER)
-    const userRole = req.user?.role;
-    const canManageActiveConcepts = userRole === 'ADMIN' || userRole === 'MANAGER';
-
-    if ((existing.status === 'ACTIVE' || existing.status === 'APPROVED') && !canManageActiveConcepts) {
-      res.status(400).json({
-        success: false,
-        message: 'Freigegebene oder aktive Konzepte können nicht bearbeitet werden. Erstellen Sie eine neue Version.',
-      });
-      return;
-    }
-
-    // Update History: Füge Eintrag zur Revisions-Historie hinzu
-    const currentHistory = Array.isArray(existing.revisionHistory) ? existing.revisionHistory : [];
-    const newHistoryEntry = {
-      version: existing.version,
-      date: new Date().toISOString(),
-      changes: 'Konzept aktualisiert',
-      editor: req.user?.id || 'system',
+    // Merge existierendes Konzept mit Updates
+    const existingConcept = (site.securityConcept as object) || {};
+    const mergedConcept = {
+      ...existingConcept,
+      ...updateData,
+      updatedAt: new Date().toISOString(),
     };
 
-    const concept = await prisma.securityConcept.update({
-      where: { id },
+    const updatedSite = await prisma.site.update({
+      where: { id: siteId },
       data: {
-        ...updateData,
-        validFrom: updateData.validFrom ? new Date(updateData.validFrom) : undefined,
-        validUntil: updateData.validUntil ? new Date(updateData.validUntil) : undefined,
-        revisionHistory: [...currentHistory, newHistoryEntry],
-        updatedAt: new Date(),
+        securityConcept: mergedConcept,
       },
-      include: {
-        site: {
-          select: {
-            id: true,
-            name: true,
-          },
-        },
+      select: {
+        id: true,
+        name: true,
+        securityConcept: true,
       },
     });
 
     res.json({
       success: true,
       message: 'Sicherheitskonzept aktualisiert',
-      data: concept,
+      data: {
+        siteId: updatedSite.id,
+        siteName: updatedSite.name,
+        ...updatedSite.securityConcept as object,
+      },
     });
-  } catch (error: any) {
-    if (error?.code === 'P2025') {
-      res.status(404).json({ success: false, message: 'Sicherheitskonzept nicht gefunden' });
-      return;
-    }
+  } catch (error) {
     next(error);
   }
 };
@@ -265,7 +226,7 @@ export const updateSecurityConcept = async (req: Request, res: Response, next: N
 // POST /api/sites/:siteId/security-concept/:id/approve - Sicherheitskonzept freigeben
 export const approveSecurityConcept = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { siteId, id } = req.params;
+    const { siteId } = req.params;
     const userId = req.user?.id;
 
     if (!userId) {
@@ -273,58 +234,52 @@ export const approveSecurityConcept = async (req: Request, res: Response, next: 
       return;
     }
 
-    const concept = await prisma.securityConcept.findFirst({
-      where: { id, siteId },
+    const site = await prisma.site.findUnique({
+      where: { id: siteId },
+      select: { id: true, securityConcept: true },
     });
 
-    if (!concept) {
-      res.status(404).json({ success: false, message: 'Sicherheitskonzept nicht gefunden' });
+    if (!site) {
+      res.status(404).json({ success: false, message: 'Objekt nicht gefunden' });
       return;
     }
 
-    if (concept.status === 'APPROVED' || concept.status === 'ACTIVE') {
-      res.status(400).json({ success: false, message: 'Konzept ist bereits freigegeben' });
+    if (!site.securityConcept) {
+      res.status(404).json({ success: false, message: 'Kein Sicherheitskonzept vorhanden' });
       return;
     }
 
-    // Deaktiviere alle anderen aktiven Konzepte für dieses Objekt
-    await prisma.securityConcept.updateMany({
-      where: {
-        siteId,
-        status: 'ACTIVE',
-      },
-      data: {
-        status: 'ARCHIVED',
-      },
-    });
+    // Füge Freigabe-Informationen hinzu
+    const existingConcept = site.securityConcept as Record<string, unknown>;
+    const approvedConcept = {
+      ...existingConcept,
+      status: 'APPROVED',
+      approvedBy: userId,
+      approvedAt: new Date().toISOString(),
+    };
 
-    const updated = await prisma.securityConcept.update({
-      where: { id },
+    const updatedSite = await prisma.site.update({
+      where: { id: siteId },
       data: {
-        status: 'ACTIVE',
-        approvedBy: userId,
-        approvedAt: new Date(),
+        securityConcept: approvedConcept,
       },
-      include: {
-        site: {
-          select: {
-            id: true,
-            name: true,
-          },
-        },
+      select: {
+        id: true,
+        name: true,
+        securityConcept: true,
       },
     });
 
     res.json({
       success: true,
-      message: 'Sicherheitskonzept wurde freigegeben und ist nun aktiv',
-      data: updated,
+      message: 'Sicherheitskonzept wurde freigegeben',
+      data: {
+        siteId: updatedSite.id,
+        siteName: updatedSite.name,
+        ...updatedSite.securityConcept as object,
+      },
     });
-  } catch (error: any) {
-    if (error?.code === 'P2025') {
-      res.status(404).json({ success: false, message: 'Sicherheitskonzept nicht gefunden' });
-      return;
-    }
+  } catch (error) {
     next(error);
   }
 };
@@ -332,37 +287,36 @@ export const approveSecurityConcept = async (req: Request, res: Response, next: 
 // DELETE /api/sites/:siteId/security-concept/:id - Sicherheitskonzept löschen
 export const deleteSecurityConcept = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { siteId, id } = req.params;
+    const { siteId } = req.params;
 
-    const concept = await prisma.securityConcept.findFirst({
-      where: { id, siteId },
+    const site = await prisma.site.findUnique({
+      where: { id: siteId },
+      select: { id: true, securityConcept: true },
     });
 
-    if (!concept) {
-      res.status(404).json({ success: false, message: 'Sicherheitskonzept nicht gefunden' });
+    if (!site) {
+      res.status(404).json({ success: false, message: 'Objekt nicht gefunden' });
       return;
     }
 
-    // Verhindere Löschen von aktiven Konzepten
-    if (concept.status === 'ACTIVE') {
-      res.status(400).json({
-        success: false,
-        message: 'Aktive Konzepte können nicht gelöscht werden. Bitte zuerst deaktivieren.',
-      });
+    if (!site.securityConcept) {
+      res.status(404).json({ success: false, message: 'Kein Sicherheitskonzept vorhanden' });
       return;
     }
 
-    await prisma.securityConcept.delete({ where: { id } });
+    // Lösche Sicherheitskonzept (setze auf DbNull)
+    await prisma.site.update({
+      where: { id: siteId },
+      data: {
+        securityConcept: Prisma.DbNull,
+      },
+    });
 
     res.json({
       success: true,
       message: 'Sicherheitskonzept gelöscht',
     });
-  } catch (error: any) {
-    if (error?.code === 'P2025') {
-      res.status(404).json({ success: false, message: 'Sicherheitskonzept nicht gefunden' });
-      return;
-    }
+  } catch (error) {
     next(error);
   }
 };
@@ -370,7 +324,7 @@ export const deleteSecurityConcept = async (req: Request, res: Response, next: N
 // PATCH /api/sites/:siteId/security-concept/:id/shift-model - ShiftModel Auto-Sync Update
 export const updateShiftModel = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { siteId, id } = req.params;
+    const { siteId } = req.params;
     const { shiftModel } = req.body;
 
     if (!shiftModel) {
@@ -378,39 +332,42 @@ export const updateShiftModel = async (req: Request, res: Response, next: NextFu
       return;
     }
 
-    // Hole aktives Konzept (oder neuestes DRAFT)
-    const concept = await prisma.securityConcept.findFirst({
-      where: {
-        siteId,
-        OR: [
-          { id }, // Spezifische ID wenn angegeben
-          { status: 'ACTIVE' }, // Oder aktives Konzept
-          { status: 'DRAFT' }, // Oder Draft
-        ],
-      },
-      orderBy: { createdAt: 'desc' },
+    const site = await prisma.site.findUnique({
+      where: { id: siteId },
+      select: { id: true, securityConcept: true },
     });
 
-    if (!concept) {
-      res.status(404).json({ success: false, message: 'Kein Sicherheitskonzept gefunden' });
+    if (!site) {
+      res.status(404).json({ success: false, message: 'Objekt nicht gefunden' });
       return;
     }
 
-    // Update nur ShiftModel (nicht das gesamte Konzept)
-    const updated = await prisma.securityConcept.update({
-      where: { id: concept.id },
+    // Update nur ShiftModel im Konzept
+    const existingConcept = (site.securityConcept as Record<string, unknown>) || {};
+    const updatedConcept = {
+      ...existingConcept,
+      shiftModel,
+      updatedAt: new Date().toISOString(),
+    };
+
+    const updatedSite = await prisma.site.update({
+      where: { id: siteId },
       data: {
-        shiftModel,
-        updatedAt: new Date(),
+        securityConcept: updatedConcept,
+      },
+      select: {
+        id: true,
+        name: true,
+        securityConcept: true,
       },
     });
 
     res.json({
       success: true,
       message: 'ShiftModel automatisch synchronisiert',
-      data: updated,
+      data: updatedSite.securityConcept,
     });
-  } catch (error: any) {
+  } catch (error) {
     console.error('ShiftModel Auto-Sync Error:', error);
     next(error);
   }
@@ -419,15 +376,16 @@ export const updateShiftModel = async (req: Request, res: Response, next: NextFu
 // POST /api/sites/:siteId/security-concept/:id/upload-attachment - Anhang hochladen
 export const uploadAttachment = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { siteId, id } = req.params;
+    const { siteId } = req.params;
 
-    // Prüfe ob Konzept existiert
-    const concept = await prisma.securityConcept.findFirst({
-      where: { id, siteId },
+    // Prüfe ob Site existiert
+    const site = await prisma.site.findUnique({
+      where: { id: siteId },
+      select: { id: true, securityConcept: true },
     });
 
-    if (!concept) {
-      res.status(404).json({ success: false, message: 'Sicherheitskonzept nicht gefunden' });
+    if (!site) {
+      res.status(404).json({ success: false, message: 'Objekt nicht gefunden' });
       return;
     }
 

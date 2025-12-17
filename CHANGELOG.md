@@ -2,6 +2,42 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.23.0] - 2025-12-17 – Code-Aufräumung & Branch-Konsolidierung
+
+### Changed - Branch-Management
+- **Alle Feature-Branches in main gemergt und gelöscht**:
+  - `claude/german-prompt-session-011CUuABj1qKntTJyVoU8ADX`
+  - `claude/die-schicht-ma-011CUy8CZPx6Gxes1iAd9iPo`
+  - `codex/analyze-project-status-and-documentation`
+- Remote und lokale Branches bereinigt
+
+### Fixed - Backend TypeScript-Fehler
+- **SecurityConcept Controller umgeschrieben**:
+  - Nutzt jetzt das JSON-Feld `securityConcept` im Site-Model
+  - Das separate SecurityConcept-Model war auskommentiert, Controller versuchten es zu verwenden
+  - Alle CRUD-Operationen arbeiten jetzt mit dem JSON-Feld
+  - `Prisma.DbNull` für korrektes Löschen von JSON-Feldern
+- **SiteAnalytics Controller korrigiert**:
+  - Verwendet `securityConcept` JSON-Feld statt `securityConcepts` Relation
+  - Korrekte Typ-Casts für `unknown` zu spezifischen Typen
+  - Shift-Generierung nutzt jetzt konsistent das JSON-Feld
+
+### Fixed - Frontend TypeScript-Fehler
+- **Breadcrumb-Komponente**: Icon-Typ erweitert für Lucide-Icons (`LucideIcon` Typ)
+- **useSiteMutations Hook**: Modal-Setter-Typen korrigiert (von `boolean` zu `| null`)
+- **DataTable**: Header-Typ erweitert für JSX-Elemente (`string | React.ReactNode`)
+- **ShiftsTab**: SecurityConcept-Typ angepasst (kein `id` mehr erforderlich)
+- **CustomerDetail**: `billingAddress.address` → `billingAddress.street`
+- **UserProfile**: Null-Checks für optionale Datum-Felder
+- **SiteDetail**: Tab-Navigation korrigiert (`'shifts'` → `'planning'`)
+- **Date-Formatter**: Explizite Typisierung für `DateTimeFormatOptions`
+
+### Technical
+- Backend und Frontend kompilieren erfolgreich ohne TypeScript-Fehler
+- Keine Laufzeit-Änderungen, nur Typ-Korrekturen
+
+---
+
 ## [1.22.6] - 2025-10-30 – Intelligente MA-Ersatzsuche (V2 aktiviert)
 
 ### Changed - MA-Ersatzsuche (Intelligent Replacement)

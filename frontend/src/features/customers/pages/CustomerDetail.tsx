@@ -226,7 +226,7 @@ export default function CustomerDetail() {
                   Rechnungsadresse
                 </h2>
                 <div className="space-y-2 text-sm text-gray-700">
-                  <div>{customer.billingAddress.address}</div>
+                  <div>{customer.billingAddress.street}</div>
                   <div>
                     {customer.billingAddress.postalCode} {customer.billingAddress.city}
                   </div>

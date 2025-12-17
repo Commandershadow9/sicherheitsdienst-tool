@@ -6,7 +6,7 @@ import { ChevronsUpDown, ArrowUp, ArrowDown } from 'lucide-react'
 
 type Column<T> = {
   key: keyof T | string
-  header: string
+  header: string | React.ReactNode
   sortable?: boolean
   render?: (row: T) => React.ReactNode
 }

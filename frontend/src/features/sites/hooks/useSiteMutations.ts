@@ -31,21 +31,21 @@ interface UseSiteMutationsParams {
   site: Site | undefined
   trainingModal: { clearance: Clearance; hours: number } | null
   setTrainingModal: (modal: { clearance: Clearance; hours: number } | null) => void
-  revokeModal: { clearance: Clearance } | null
-  setRevokeModal: (modal: { clearance: Clearance } | null) => void
-  setUploadModal: (open: boolean) => void
+  revokeModal: { clearance: Clearance; notes: string } | null
+  setRevokeModal: (modal: { clearance: Clearance; notes: string } | null) => void
+  setUploadModal: (modal: { file: File | null; category: string } | null) => void
   setDeleteImageId: (id: string | null) => void
-  setUploadDocumentModal: (open: boolean) => void
+  setUploadDocumentModal: (modal: { title: string; description: string; category: string; file: File | null } | null) => void
   setDeleteDocumentId: (id: string | null) => void
-  setCreateClearanceModal: (open: boolean) => void
-  setCreateAssignmentModal: (open: boolean) => void
+  setCreateClearanceModal: (modal: { userId: string; notes: string } | null) => void
+  setCreateAssignmentModal: (modal: { userId: string; role: string } | null) => void
   setDeleteAssignmentId: (id: string | null) => void
-  setCreateIncidentModal: (open: boolean) => void
-  setEditIncident: (incident: any) => void
-  setResolveIncident: (incident: any) => void
+  setCreateIncidentModal: (modal: { title: string; description: string; category: string; severity: string; occurredAt: string; location: string; involvedPersons: Array<{ name: string; role?: string; isWitness?: boolean }> } | null) => void
+  setEditIncident: (incident: unknown | null) => void
+  setResolveIncident: (incident: { id: string; title: string; resolution?: string } | null) => void
   setDeleteIncidentId: (id: string | null) => void
-  setRejectCalculationModal: (calc: any) => void
-  setEmailCalculationModal: (calc: any) => void
+  setRejectCalculationModal: (modal: { calculationId: string; notes: string } | null) => void
+  setEmailCalculationModal: (modal: { calculationId: string; email: string } | null) => void
 }
 
 export function useSiteMutations({
@@ -121,7 +121,7 @@ export function useSiteMutations({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['site', siteId] })
       toast.success('Clearance erfolgreich angelegt')
-      setCreateClearanceModal(false)
+      setCreateClearanceModal(null)
     },
     onError: (error: any) => {
       toast.error(error?.response?.data?.message || 'Fehler beim Anlegen')
@@ -142,7 +142,7 @@ export function useSiteMutations({
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['site', siteId] })
       toastSuccess.imageUploaded(variables.category)
-      setUploadModal(false)
+      setUploadModal(null)
     },
     onError: (error: any) => {
       toastError.uploadFailed('Bild', error?.response?.data?.message)
@@ -179,7 +179,7 @@ export function useSiteMutations({
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['site', siteId] })
       toastSuccess.documentUploaded(variables.title, variables.category)
-      setUploadDocumentModal(false)
+      setUploadDocumentModal(null)
     },
     onError: (error: any) => {
       toastError.uploadFailed('Dokument', error?.response?.data?.message)
@@ -209,7 +209,7 @@ export function useSiteMutations({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['site', siteId] })
       toast.success('Zuweisung erfolgreich erstellt')
-      setCreateAssignmentModal(false)
+      setCreateAssignmentModal(null)
     },
     onError: (error: any) => {
       toast.error(error?.response?.data?.message || 'Fehler beim Erstellen der Zuweisung')
@@ -262,7 +262,7 @@ export function useSiteMutations({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['site', siteId] })
       toast.success('Vorfall erfolgreich gemeldet')
-      setCreateIncidentModal(false)
+      setCreateIncidentModal(null)
     },
     onError: (error: any) => {
       toast.error(error?.response?.data?.message || 'Fehler beim Melden des Vorfalls')

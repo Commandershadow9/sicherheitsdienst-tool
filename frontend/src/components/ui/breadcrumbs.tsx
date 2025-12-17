@@ -1,11 +1,15 @@
-import { ChevronRight, Home } from 'lucide-react'
+import { ChevronRight, Home, LucideProps } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { cn } from '@/lib/utils'
+import { ForwardRefExoticComponent, RefAttributes, ComponentType } from 'react'
+
+// Typ für Lucide Icons
+type LucideIcon = ForwardRefExoticComponent<Omit<LucideProps, 'ref'> & RefAttributes<SVGSVGElement>>
 
 export interface Breadcrumb {
   label: string
   href?: string
-  icon?: React.ComponentType<{ size?: number; className?: string }>
+  icon?: LucideIcon | ComponentType<{ size?: number | string; className?: string }>
 }
 
 interface BreadcrumbsProps {

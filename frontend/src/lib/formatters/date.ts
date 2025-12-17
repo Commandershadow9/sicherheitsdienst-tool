@@ -21,12 +21,13 @@ export function formatDate(
     return 'Ungültiges Datum'
   }
 
-  const options: Intl.DateTimeFormatOptions = {
+  const formatOptions: Record<string, Intl.DateTimeFormatOptions> = {
     short: { day: '2-digit', month: '2-digit', year: 'numeric' },
     medium: { day: '2-digit', month: 'short', year: 'numeric' },
     long: { day: '2-digit', month: 'long', year: 'numeric' },
     full: { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' },
-  }[format]
+  }
+  const options = formatOptions[format]
 
   return new Intl.DateTimeFormat('de-DE', options).format(dateObj)
 }

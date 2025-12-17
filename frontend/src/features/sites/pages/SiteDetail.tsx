@@ -437,7 +437,7 @@ export default function SiteDetail() {
             {/* Schichten-Übersicht */}
             <ShiftOverviewCard
               siteId={site.id}
-              onShowAll={() => setActiveTab('shifts')}
+              onShowAll={() => setActiveTab('planning')}
             />
 
             {/* Zuweisungen */}
