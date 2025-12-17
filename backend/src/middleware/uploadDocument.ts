@@ -16,22 +16,13 @@ const storage = multer.diskStorage({
   },
 });
 
-// File-Filter: Nur bestimmte Dateitypen erlauben
-const fileFilter = (req: Request, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
-  const allowedMimeTypes = [
-    'application/pdf', // PDF
-    'application/msword', // DOC
-    'application/vnd.openxmlformats-officedocument.wordprocessingml.document', // DOCX
-    'text/plain', // TXT
-    'text/markdown', // MD
-    'application/vnd.ms-excel', // XLS
-    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', // XLSX
-  ];
-
+// File-Filter: Grobe Vorauswahl, finale Prüfung via Magic-Bytes
+const allowedMimeTypes = ['application/pdf', 'image/png', 'image/jpeg'];
+const fileFilter = (_req: Request, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
   if (allowedMimeTypes.includes(file.mimetype)) {
     cb(null, true);
   } else {
-    cb(new Error('Ungültiger Dateityp. Erlaubt: PDF, Word, Excel, Text, Markdown'));
+    cb(new Error('Ungültiger Dateityp. Erlaubt: PDF, JPG, PNG'));
   }
 };
 

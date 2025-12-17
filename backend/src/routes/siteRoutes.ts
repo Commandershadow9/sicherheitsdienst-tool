@@ -17,6 +17,7 @@ import { createWriteRateLimit } from '../middleware/rateLimit';
 import methodNotAllowed from '../middleware/methodNotAllowed';
 import { uploadDocument } from '../middleware/uploadDocument';
 import { uploadAttachment } from '../middleware/uploadAttachment';
+import { validateMagicBytes } from '../middleware/validateMagicBytes';
 
 const writeLimiter = createWriteRateLimit();
 
@@ -179,6 +180,7 @@ router.post(
   authorize('ADMIN', 'MANAGER'),
   writeLimiter,
   uploadDocument.single('document'), // Multer-Middleware: erwartet 'document' als Feldname
+  validateMagicBytes(['pdf', 'png', 'jpg']),
   asyncHandler(documentController.uploadDocument),
 );
 
@@ -316,6 +318,7 @@ router.post(
   authorize('ADMIN', 'MANAGER'),
   writeLimiter,
   uploadAttachment.single('file'),
+  validateMagicBytes(['pdf', 'png', 'jpg']),
   asyncHandler(securityConceptController.uploadAttachment),
 );
 

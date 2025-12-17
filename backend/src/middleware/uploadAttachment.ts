@@ -16,21 +16,13 @@ const storage = multer.diskStorage({
   },
 });
 
-// File-Filter: PDFs und Bilder erlauben
-const fileFilter = (req: Request, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
-  const allowedMimeTypes = [
-    'application/pdf',
-    'image/png',
-    'image/jpeg',
-    'image/jpg',
-    'application/msword',
-    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-  ];
-
+// File-Filter: PDFs und Bilder erlauben (finale Prüfung via Magic-Bytes)
+const allowedMimeTypes = ['application/pdf', 'image/png', 'image/jpeg'];
+const fileFilter = (_req: Request, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
   if (allowedMimeTypes.includes(file.mimetype)) {
     cb(null, true);
   } else {
-    cb(new Error('Ungültiger Dateityp. Erlaubt: PDF, PNG, JPG, DOC, DOCX'));
+    cb(new Error('Ungültiger Dateityp. Erlaubt: PDF, JPG, PNG'));
   }
 };
 
