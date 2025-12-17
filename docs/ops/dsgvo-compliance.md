@@ -69,9 +69,11 @@
 - ✅ Datenbank-Passwörter in .env (nicht versioniert)
 
 #### Verschlüsselung in transit (Übertragung)
-- ❌ **KRITISCH**: Kein HTTPS/TLS!
-- ❌ Alle Daten (Login, Dokumente, Gesundheitsdaten) werden unverschlüsselt über HTTP übertragen
-- 🚨 **SOFORTIGER HANDLUNGSBEDARF**: HTTPS einrichten
+- ✅ **HTTPS/TLS mit Let's Encrypt** (via Traefik Reverse Proxy)
+- ✅ TLS 1.2 und TLS 1.3 aktiv
+- ✅ HSTS aktiviert (max-age=63072000)
+- ✅ HTTP → HTTPS Redirect
+- ✅ Alle Daten verschlüsselt in Transit (sobald Domain konfiguriert)
 
 ### 2.7 Verfügbarkeit und Belastbarkeit
 - ✅ Tägliche Backups (03:00 Uhr)
@@ -238,32 +240,28 @@
 
 ### 🚨 SOFORTIGER HANDLUNGSBEDARF
 
-1. **HTTPS/TLS einrichten**
-   - Gesundheitsdaten dürfen NICHT unverschlüsselt übertragen werden!
-   - Let's Encrypt mit eigenem Domainnamen
-   - Siehe: `/docs/ops/setup-https.md` (noch zu erstellen)
-
-2. **AVV mit Hosting-Provider abschließen**
+1. **AVV mit Hosting-Provider abschließen**
    - Kontakt: IP-Projects GmbH & Co. KG
    - Ohne AVV ist die Nutzung des Hosters DSGVO-widrig!
 
 ### ⚠️ MITTELFRISTIG (1-3 Monate)
 
-3. **Datenschutzdokumentation vervollständigen**
+2. **Datenschutzdokumentation vervollständigen**
    - Verarbeitungsverzeichnis final ausfüllen
    - Datenschutzerklärung erstellen
    - Einwilligungen dokumentieren
 
-4. **Löschkonzept implementieren**
+3. **Löschkonzept implementieren**
    - Automatische Löschung inaktiver User
    - Cronjob einrichten
 
-5. **Monitoring & Alerting**
+4. **Monitoring & Alerting**
    - Bei verdächtigen Zugriffen benachrichtigen
    - Backup-Erfolg überwachen
 
 ### ✅ BEREITS UMGESETZT
 
+- **HTTPS/TLS einrichten** (Traefik + Let's Encrypt vorbereitet)
 - Verschlüsselung at rest (LUKS + Borg)
 - Zugriffskontrolle (RBAC)
 - Tägliche Backups mit Retention

@@ -72,12 +72,11 @@ Hinweis: Dieser Abschnitt fasst die tagesaktuellen Ziele aus der ehemaligen Date
 ### Nächste Schritte (Kurz-Backlog)
 
 #### 🚨 DSGVO-Kritisch (Hohe Priorität)
-- [ ] **HTTPS mit Let's Encrypt einrichten** (benötigt Domain!)
-  - Status: Self-Signed Zertifikat vorbereitet, aber Browser blockiert → Temporär auf HTTP
-  - Wartet auf: Domain-Namen Registrierung
-  - Anleitung: `/docs/ops/setup-https-letsencrypt.md` (zu erstellen)
-  - Nginx-Config bereits vorhanden: `/etc/nginx/sites-available/sicherheitsdienst`
-  - Zertifikat: `/etc/nginx/ssl/selfsigned.{crt,key}` (365 Tage gültig)
+- [x] **HTTPS mit Let's Encrypt einrichten**
+  - Status: Integriert via Traefik Reverse Proxy im Docker-Stack
+  - Zertifikate: Automatisch verwaltet durch Traefik (ACME)
+  - Anleitung: `/docs/ops/setup-https-letsencrypt.md`
+  - Konfiguration: Über `.env` (DOMAIN, ACME_EMAIL)
 - [ ] **AVV mit Hosting-Provider abschließen**
   - Provider: IP-Projects GmbH & Co. KG (hosterapi.de)
   - Kontakt aufnehmen und AVV-Vertrag anfordern
