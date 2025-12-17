@@ -33,6 +33,9 @@ services:
       SEED_ON_START: "false"
       LOGIN_RATE_LIMIT_MAX: 100
       LOGIN_RATE_LIMIT_WINDOW_MS: 60000
+      SMTP_HOST: mailhog
+      SMTP_PORT: 1025
+      SMTP_FROM: Sicherheitsdienst Dev <no-reply@sicherheitsdienst.local>
     volumes:
       - ./backend:/app
     command: >-
@@ -96,6 +99,12 @@ services:
     depends_on:
       prometheus:
         condition: service_started
+
+  mailhog:
+    image: mailhog/mailhog:latest
+    ports:
+      - '1025:1025'
+      - '8025:8025'
 
 volumes:
   db_data:

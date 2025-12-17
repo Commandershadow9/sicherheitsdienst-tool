@@ -427,7 +427,7 @@ GET    /api/sites/:id/incidents/export       # PDF-Report
 - ✅ Metadata: { template, context, reason }
 
 **Docker Integration (v1.13.8):**
-- ✅ Mailhog Container (docker-compose.yml)
+- ✅ Mailhog Container (docker-compose.dev.yml, nur DEV)
 - ✅ SMTP Server: Port 1025
 - ✅ Web UI: http://localhost:8025
 - ✅ Backend .env: SMTP-Konfiguration aktiviert

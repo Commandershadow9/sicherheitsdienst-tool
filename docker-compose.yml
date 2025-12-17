@@ -151,17 +151,6 @@ services:
       timeout: 5s
       retries: 10
 
-  # Mailhog (Email-Testing)
-  mailhog:
-    image: mailhog/mailhog:latest
-    container_name: sicherheitsdienst-mailhog
-    restart: unless-stopped
-    ports:
-      - '1025:1025' # SMTP Server
-      - '8025:8025' # Web UI
-    networks:
-      - sicherheitsdienst-network
-
 volumes:
   db-data:
 

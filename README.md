@@ -100,6 +100,12 @@ Login‑Demo (Seeds)
 - Testdaten zurücksetzen
   - Gleiches Skript (`npm run seed`) lädt die vollständigen Demo-Daten erneut; bestehende Einträge werden zurückgesetzt und frische Accounts/Schichten/Präferenzdaten angelegt.
 
+## Docker Compose Stacks (Prod vs Dev)
+
+- Produktion: `docker compose up -d` verwendet `docker-compose.yml` (Traefik, API, DB, Redis, pgAdmin) und enthält kein Mailhog. SMTP-Variablen bleiben optional; der SMTP-Readiness-Check ist standardmäßig deaktiviert.
+- Entwicklung: `docker compose -f docker-compose.dev.yml up -d` startet die Dev-Umgebung inkl. Mailhog (SMTP `1025`, UI `http://localhost:8025`). Der API-Container ist dafür bereits mit `SMTP_HOST=mailhog` verdrahtet.
+- Trennung: Keine ENV-Validierung zwingt Mailhog; Production läuft auch ohne SMTP-Testserver. Für echte SMTP-Server einfach `SMTP_HOST`/`SMTP_PORT` setzen.
+
 ## Release-Checkliste (Tag & Container)
 
 1. Lokal prüfen: `npm ci && npm run lint && npm run test`.

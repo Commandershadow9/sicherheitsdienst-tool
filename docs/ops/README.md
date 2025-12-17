@@ -58,3 +58,9 @@ Dieses Verzeichnis enthält Skripte und Templates für den sicheren Dokumentensp
 5. **Checkliste führen** – `document-storage-checklist.md` kopieren und pro Inbetriebnahme aktualisieren (z. B. `/var/lib/sicherheitsdienst/checklists/documents-YYYYMMDD.md`).
 
 > **Hinweis:** Skripte sind Vorlagen. Vor dem Einsatz Szenario prüfen, ggf. Pfade/Ports anpassen.
+
+## Docker Compose (Prod vs Dev)
+
+- Produktion: `docker compose up -d` nutzt `docker-compose.yml` (Traefik, API, DB, Redis, pgAdmin) – **ohne Mailhog**. SMTP-ENV sind optional; fehlende Werte bremsen den Start nicht.
+- Entwicklung: `docker compose -f docker-compose.dev.yml up -d` zieht zusätzlich Mailhog (SMTP `1025`, UI `http://localhost:8025`) hoch; die API ist mit `SMTP_HOST=mailhog` verdrahtet.
+- SMTP-Readiness-Checks sind per Default aus. Für produktive SMTP-Server einfach `SMTP_HOST`/`SMTP_PORT` in der Umgebung setzen.
