@@ -23,8 +23,8 @@ services:
     environment:
       NODE_ENV: development
       PORT: 3000
-      JWT_SECRET: dev-secret
-      REFRESH_SECRET: dev-refresh
+      JWT_SECRET: dev-secret-minimum-32-chars-long-value
+      REFRESH_SECRET: dev-refresh-secret-minimum-32-chars-long
       CORS_ORIGIN: http://${PUBLIC_HOST:-localhost}:5173
       CORS_ORIGINS: http://localhost:5173,http://127.0.0.1:5173,http://37.114.53.56:5173
       RATE_LIMIT_MAX: 100

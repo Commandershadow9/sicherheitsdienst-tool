@@ -1,6 +1,6 @@
 import express, { Request, Response, ErrorRequestHandler } from 'express'; // ErrorRequestHandler importiert
 import morgan from 'morgan';
-import dotenv from 'dotenv';
+// dotenv.config() removed, handled in config/env.ts
 import jwt from 'jsonwebtoken';
 import swaggerUi from 'swagger-ui-express';
 import logger from './utils/logger';
@@ -9,9 +9,7 @@ import { onRequestStart, onResponseStatus } from './utils/stats';
 import { applySecurity } from './middleware/security';
 import { httpRequestDurationSeconds, httpRequestsTotal } from './utils/metrics';
 import { setCustomerContext } from './middleware/multiTenancy'; // 🔐 Multi-Tenancy
-
-// Load environment variables
-dotenv.config();
+import { config } from './config/env';
 
 // Import all routes
 import {
@@ -87,7 +85,7 @@ app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 app.use(setCustomerContext);
 
 // Swagger UI (nur Development): zeigt docs/openapi.yaml unter /api-docs
-if (process.env.NODE_ENV !== 'production') {
+if (config.NODE_ENV !== 'production') {
   // Statische Auslieferung der Spezifikation
   app.use('/api-docs-spec', express.static('docs'));
   // Swagger UI mit Verweis auf die YAML-Spezifikation
@@ -102,7 +100,7 @@ app.get('/', (req: Request, res: Response) => {
     message: '🛡️ Sicherheitsdienst-Tool Backend API',
     version: process.env.npm_package_version || '1.0.0',
     status: 'Running',
-    documentation: process.env.NODE_ENV !== 'production' ? '/api-docs' : undefined,
+    documentation: config.NODE_ENV !== 'production' ? '/api-docs' : undefined,
     endpoints: {
       health: '/health',
       healthz: '/healthz',
@@ -230,7 +228,7 @@ const globalErrorHandler: ErrorRequestHandler = (err, req, res, next) => {
     errorResponse.errors = errorsArray;
   }
 
-  if (process.env.NODE_ENV === 'development') {
+  if (config.NODE_ENV === 'development') {
     errorResponse.details = err.message;
     errorResponse.stack = err.stack;
     if (!code && err.code) errorResponse.code = String(err.code);
