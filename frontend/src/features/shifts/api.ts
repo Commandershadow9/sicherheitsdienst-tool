@@ -1,23 +1,12 @@
 import { api } from '@/lib/api';
+import type { ShiftBase, ShiftStatus } from '@/types/shift';
 
 // ============================================================================
 // Shift Types
 // ============================================================================
 
-export interface Shift {
-  id: string;
-  siteId: string;
-  title: string;
-  description?: string;
-  location?: string;
-  startTime: string;
-  endTime: string;
-  requiredEmployees: number;
-  assignedEmployees?: number;
-  requiredQualifications: string[];
-  status: 'PLANNED' | 'CONFIRMED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
-  createdAt?: string;
-  updatedAt?: string;
+export interface Shift extends ShiftBase {
+  status: ShiftStatus;
   assignments?: ShiftAssignment[];
   site?: {
     id: string;
