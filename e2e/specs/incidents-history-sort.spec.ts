@@ -3,15 +3,6 @@ import { test, expect } from '../fixtures'
 const FE = process.env.BASE_URL || 'http://localhost:5173'
 
 test('Incidents: Filter/History und Sortierwechsel', async ({ page }) => {
-  // Login
-  await page.goto(FE + '/login')
-  await page.getByLabel('E-Mail').fill('admin@sicherheitsdienst.de')
-  await page.getByLabel('Passwort').fill('password123')
-  await Promise.all([
-    page.waitForURL('**/dashboard'),
-    page.getByRole('button', { name: 'Anmelden' }).click(),
-  ])
-
   // Incidents
   await page.goto(FE + '/incidents', { waitUntil: 'load' })
   await expect(page.getByRole('heading', { name: 'Vorfälle' })).toBeVisible({ timeout: 15000 })
@@ -40,4 +31,3 @@ test('Incidents: Filter/History und Sortierwechsel', async ({ page }) => {
   await sortStatus.click()
   await expect(page).not.toHaveURL(/sortBy=/)
 })
-

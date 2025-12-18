@@ -6,6 +6,8 @@ const API = process.env.API_URL || 'http://localhost:3001'
 const MANAGER_EMAIL = process.env.E2E_MANAGER_EMAIL || 'test-manager@sicherheitsdienst.de'
 const MANAGER_PASSWORD = process.env.E2E_MANAGER_PASSWORD || 'manager123'
 
+test.use({ storageState: { cookies: [], origins: [] } })
+
 async function apiLogin(request: APIRequestContext, email: string, password: string) {
   await request.post(`${API}/api/auth/login`, {
     data: { email, password },
