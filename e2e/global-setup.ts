@@ -52,9 +52,6 @@ export default async function globalSetup() {
   await page.goto(`${BASE_URL}/dashboard`, { waitUntil: 'load' })
   await page.getByRole('heading', { name: 'Dashboard' }).waitFor({ state: 'visible', timeout: 15000 })
 
-  await page.goto(`${BASE_URL}/sites`, { waitUntil: 'load' })
-  await page.getByRole('heading', { name: 'Standorte' }).waitFor({ state: 'visible', timeout: 15000 })
-
   await context.storageState({ path: ADMIN_STATE })
   await context.close()
   await browser.close()
