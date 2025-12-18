@@ -11,6 +11,7 @@
     "build": "tsc -p tsconfig.json",
     "start": "node dist/server.js",
     "test": "jest",
+    "test:ci": "jest src/__tests__/auth.login.validation.test.ts src/__tests__/auditTrail.util.test.ts src/__tests__/magicBytes.validator.test.ts",
     "test:watch": "jest --watchAll=false",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "db:generate": "prisma generate",

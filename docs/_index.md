@@ -43,6 +43,7 @@ Struktur: `docs/product/`, `docs/dev/`, `docs/ops/`, `docs/security/`.
 | docs/dev/API_EXAMPLES.http | REST-Client Beispiele | Eng | ok |
 | docs/dev/openapi.yaml | OpenAPI Spec | Eng, QA | ok |
 | docs/dev/DB_INDEXES.md | DB-Indizes | Eng | ok |
+| docs/dev/TESTING.md | Golden Test Command & Voraussetzungen | Eng, QA | gut |
 | docs/dev/TESTING_v1.10.0.md | Test-Guide (alt) | Eng | veraltet |
 | docs/dev/CHATGPT_CONTEXT_PROMPT.md | KI-Kontext | Eng | ok |
 | docs/dev/DOCUMENTATION_INDEX.md | Doku-Index (alt) | Eng | ok |
