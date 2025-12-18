@@ -32,9 +32,10 @@ jobs:
           docker compose -f docker-compose.dev.yml up -d api web
           # wait for API/WEB
           for i in $(seq 1 60); do
-            if curl -fsS http://localhost:3000/healthz >/dev/null; then echo api:up; break; fi; sleep 2; done
+            if curl -fsS http://localhost:3000/readyz >/dev/null; then echo api:ready; break; fi; sleep 2; done
           for i in $(seq 1 60); do
             if curl -fsS http://localhost:5173 >/dev/null; then echo web:up; break; fi; sleep 2; done
+          docker compose -f docker-compose.dev.yml exec -T api sh -lc 'npm run -s seed'
 
       - name: Install Playwright
         working-directory: e2e
@@ -80,9 +81,10 @@ jobs:
           done
           docker compose -f docker-compose.dev.yml up -d api web
           for i in $(seq 1 60); do
-            if curl -fsS http://localhost:3000/healthz >/dev/null; then echo api:up; break; fi; sleep 2; done
+            if curl -fsS http://localhost:3000/readyz >/dev/null; then echo api:ready; break; fi; sleep 2; done
           for i in $(seq 1 60); do
             if curl -fsS http://localhost:5173 >/dev/null; then echo web:up; break; fi; sleep 2; done
+          docker compose -f docker-compose.dev.yml exec -T api sh -lc 'npm run -s seed'
 
       - name: Install Playwright
         working-directory: e2e
@@ -132,9 +134,10 @@ jobs:
           done
           docker compose -f docker-compose.dev.yml up -d api web
           for i in $(seq 1 60); do
-            if curl -fsS http://localhost:3000/healthz >/dev/null; then echo api:up; break; fi; sleep 2; done
+            if curl -fsS http://localhost:3000/readyz >/dev/null; then echo api:ready; break; fi; sleep 2; done
           for i in $(seq 1 60); do
             if curl -fsS http://localhost:5173 >/dev/null; then echo web:up; break; fi; sleep 2; done
+          docker compose -f docker-compose.dev.yml exec -T api sh -lc 'npm run -s seed'
 
       - name: Install Playwright
         working-directory: e2e

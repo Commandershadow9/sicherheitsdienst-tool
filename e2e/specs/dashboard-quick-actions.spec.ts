@@ -1,9 +1,12 @@
-import { test, expect, type APIRequestContext } from '@playwright/test'
+import { test, expect } from '../fixtures'
+import type { APIRequestContext } from '@playwright/test'
 
 const FE = process.env.BASE_URL || 'http://localhost:5173'
 const API = process.env.API_URL || 'http://localhost:3001'
 const MANAGER_EMAIL = process.env.E2E_MANAGER_EMAIL || 'test-manager@sicherheitsdienst.de'
 const MANAGER_PASSWORD = process.env.E2E_MANAGER_PASSWORD || 'manager123'
+
+test.use({ storageState: { cookies: [], origins: [] } })
 
 async function apiLogin(request: APIRequestContext, email: string, password: string) {
   await request.post(`${API}/api/auth/login`, {

@@ -1,16 +1,10 @@
-import { test, expect } from '@playwright/test'
+import { test, expect } from '../fixtures'
 
 const FE = process.env.BASE_URL || 'http://localhost:5173'
 
 test('Smoke: Login, Users paging/sort, Incidents filter', async ({ page }) => {
-  // Login (admin)
-  await page.goto(FE + '/login')
-  await page.getByLabel('E-Mail').fill('admin@sicherheitsdienst.de')
-  await page.getByLabel('Passwort').fill('password123')
-  await Promise.all([
-    page.waitForURL('**/dashboard', { timeout: 45000 }),
-    page.getByRole('button', { name: 'Anmelden' }).click(),
-  ])
+  await page.goto(FE + '/dashboard', { waitUntil: 'load' })
+  await expect(page.getByRole('heading', { name: 'Dashboard' })).toBeVisible({ timeout: 15000 })
 
   // Users: paging/sort sichtbar
   await page.goto(FE + '/users', { waitUntil: 'load' })
@@ -37,8 +31,8 @@ test('Smoke: Login, Users paging/sort, Incidents filter', async ({ page }) => {
 
   // Sites: kurz prüfen (List + Sort)
   await page.goto(FE + '/sites', { waitUntil: 'load' })
-  await expect(page.getByRole('heading', { name: 'Standorte' })).toBeVisible({ timeout: 15000 })
+  await expect(page.getByTestId('sites-title')).toBeVisible({ timeout: 15000 })
   const sortName = page.getByRole('button', { name: /Name/ })
   await sortName.click()
-  await expect(page).toHaveURL(/sortBy=name/)
+  await expect(page).toHaveURL(/sortBy=name.*sortDir=desc|sortDir=desc/)
 })

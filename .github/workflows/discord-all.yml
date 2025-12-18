@@ -154,8 +154,8 @@ jobs:
             FIELDS=$(jq -n \
               --arg base "$base" --arg head "$head" --arg repo_url "$repo_url" \
               --arg labels "$labels" --arg assignees "$assignees" \
-              '[{"name":"Basis → Head","value":("`"+$base+"` → `"+$head+"`")},{"name":"Repository","value":$repo_url}] \
-               + (if $labels != "" then [{"name":"Labels","value":$labels}] else [] end) \
+              '[{"name":"Basis → Head","value":("`"+$base+"` → `"+$head+"`")},{"name":"Repository","value":$repo_url}]
+               + (if $labels != "" then [{"name":"Labels","value":$labels}] else [] end)
                + (if $assignees != "" then [{"name":"Assignees","value":$assignees}] else [] end)')
           elif [ "$event" = "workflow_run" ]; then
             name='${{ github.event.workflow_run.name }}'

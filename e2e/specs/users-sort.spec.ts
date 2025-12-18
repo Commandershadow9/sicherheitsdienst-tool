@@ -1,16 +1,8 @@
-import { test, expect } from '@playwright/test'
+import { test, expect } from '../fixtures'
 
 const FE = process.env.BASE_URL || 'http://localhost:5173'
 
 test('Users: Sortierwechsel (Header-Klick) → URL-Update', async ({ page }) => {
-  await page.goto(FE + '/login')
-  await page.getByLabel('E-Mail').fill('admin@sicherheitsdienst.de')
-  await page.getByLabel('Passwort').fill('password123')
-  await Promise.all([
-    page.waitForURL('**/dashboard'),
-    page.getByRole('button', { name: 'Anmelden' }).click(),
-  ])
-
   await page.goto(FE + '/users')
   await expect(page.getByRole('heading', { name: 'Benutzer' })).toBeVisible()
 
@@ -26,4 +18,3 @@ test('Users: Sortierwechsel (Header-Klick) → URL-Update', async ({ page }) => 
   await page.getByRole('button', { name: /E-Mail/ }).click()
   await expect(page).not.toHaveURL(/sortBy=/)
 })
-
