@@ -90,11 +90,9 @@ services:
       interval: 15s
       timeout: 5s
       retries: 10
-    # Run DB migrations before starting the server and exit on failure
+    # Start API without migrations; run deploy separately to avoid restart loops on DB outages
     command: >-
-      sh -lc "set -e; \
-      npx prisma migrate deploy && \
-      node dist/server.js"
+      sh -lc "node dist/server.js"
     volumes:
       - /srv/documents:/srv/documents:rw
 

@@ -7,6 +7,7 @@
 - **Compose-Stacks:** Prod `docker-compose.yml` ohne Mailhog; Dev optional mit Mailhog.
 - **HTTPS:** Zertifikat gültig oder Open Point dokumentiert.
 - **Smoke-Test:** `scripts/smoke.sh` (Health/Ready/Auth).
+- **Migrationen:** Vor Deploy einmalig ausführen: `docker compose run --rm api npx prisma migrate deploy`.
 
 ## Backup/Restore Minimum
 - Backup-Skript: `docs/ops/backup.sh` ausgeführt.
