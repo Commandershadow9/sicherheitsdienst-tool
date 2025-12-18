@@ -1,0 +1,55 @@
+name: QA Gates
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  backend:
+    name: Backend QA
+    runs-on: ubuntu-latest
+    env:
+      NODE_ENV: test
+      DATABASE_URL: postgresql://test:test@localhost:5432/sicherheitsdienst_test?schema=public
+      JWT_SECRET: test-jwt-secret-minimum-32-chars-long-aaaa
+      REFRESH_SECRET: test-refresh-secret-minimum-32-chars-bbbb
+      LOG_LEVEL: warn
+      LOG_FORMAT: simple
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+      - name: Install
+        working-directory: backend
+        run: npm ci
+      - name: Typecheck
+        working-directory: backend
+        run: npm run typecheck
+      - name: Build
+        working-directory: backend
+        run: npm run build
+      - name: Targeted tests
+        working-directory: backend
+        run: npm run test:ci
+
+  frontend:
+    name: Frontend QA
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Install
+        working-directory: frontend
+        run: npm ci
+      - name: Build
+        working-directory: frontend
+        run: npm run build

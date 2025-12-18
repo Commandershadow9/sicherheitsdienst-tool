@@ -15,6 +15,7 @@
 **Targeted Tests (Pflicht)**
 - `backend/src/__tests__/auditTrail.util.test.ts`
 - `backend/src/__tests__/magicBytes.validator.test.ts`
+- CI-Workflow: `.github/workflows/qa.yml` (Backend+Frontend)
 
 **Smoke Tests**
 - `docker compose up -d` startet ohne Crash-Spirale.
