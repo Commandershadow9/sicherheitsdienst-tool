@@ -1,4 +1,5 @@
-import { test, expect, type APIRequestContext } from '@playwright/test'
+import { test, expect } from '../fixtures'
+import type { APIRequestContext } from '@playwright/test'
 
 const FE = process.env.BASE_URL || 'http://localhost:5173'
 const API = process.env.API_URL || 'http://localhost:3001'
