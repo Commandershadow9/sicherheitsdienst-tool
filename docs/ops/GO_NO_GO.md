@@ -6,6 +6,7 @@
 - **Ports:** 80/443 offen für Traefik, DB nicht öffentlich.
 - **Compose-Stacks:** Prod `docker-compose.yml` ohne Mailhog; Dev optional mit Mailhog.
 - **HTTPS:** Zertifikat gültig oder Open Point dokumentiert.
+- **Smoke-Test:** `scripts/smoke.sh` (Health/Ready/Auth).
 
 ## Backup/Restore Minimum
 - Backup-Skript: `docs/ops/backup.sh` ausgeführt.
