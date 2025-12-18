@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
+import type { ShiftBase } from '@/types/shift';
 import { toast } from '@/lib/utils';
 import { WizardData } from '../../types/wizard';
 
@@ -299,21 +300,7 @@ export async function fetchAssignmentCandidates(siteId: string, role?: string) {
 // Shift API Functions
 // ============================================================================
 
-export interface Shift {
-  id: string;
-  siteId: string;
-  title: string;
-  description?: string;
-  location?: string;
-  startTime: string;
-  endTime: string;
-  requiredEmployees: number;
-  assignedEmployees?: number;
-  requiredQualifications: string[];
-  status: 'PLANNED' | 'CONFIRMED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
-  createdAt?: string;
-  updatedAt?: string;
-}
+export type Shift = ShiftBase;
 
 export interface GenerateShiftsPayload {
   startDate: string; // ISO 8601
