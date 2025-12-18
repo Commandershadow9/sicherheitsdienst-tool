@@ -74,6 +74,7 @@ web_modules/
 
 # dotenv environment variable files
 .env
+.env.test
 .env.development.local
 .env.test.local
 .env.production.local
@@ -142,23 +143,11 @@ dist
 # Document storage (runtime)
 storage/
 
+# Uploads (runtime)
+backend/uploads/
+
 # Local backup artifacts
 .backups/
 
 # LetsEncrypt ACME storage
 letsencrypt/
-
-# Docker build cache
-[base
-[build
-[deps
-[internal]
-[runner
-exporting
-naming
-reading
-resolving
-transferring
-writing
-CACHED
-=
