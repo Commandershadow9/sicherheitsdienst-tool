@@ -6,8 +6,8 @@
 
 Kurzer Überblick, klare Quickstarts und schnelles Troubleshooting für Devs/Ops.
 
-> **🔧 Login-Probleme?** Führe `./check-login-health.sh` aus oder siehe [`docs/TROUBLESHOOTING_LOGIN.md`](docs/TROUBLESHOOTING_LOGIN.md)
-> **ℹ️ Projektstatus:** Stabiler Cut dokumentiert in [`docs/PROJECT_STATUS.md`](docs/PROJECT_STATUS.md)
+> **🔧 Login-Probleme?** Führe `./check-login-health.sh` aus oder siehe [`docs/ops/TROUBLESHOOTING_LOGIN.md`](docs/ops/TROUBLESHOOTING_LOGIN.md)
+> **ℹ️ Projektstatus:** Stabiler Cut dokumentiert in [`docs/product/PROJECT_STATUS.md`](docs/product/PROJECT_STATUS.md)
 
 **🔒 Security-Features (v1.4.0+):**
 - ✅ LUKS-Verschlüsselung für Dokumentenspeicher
@@ -44,8 +44,8 @@ Kurzer Überblick, klare Quickstarts und schnelles Troubleshooting für Devs/Ops
   - 50+ Tests (Frontend + Backend)
   - v1.16.1: Bugfixes, CustomerDetail-Route, 6 Templates geseedet
 
-📖 **Vollständiges Konzept:** `docs/FEATURE_OBJEKT_MANAGEMENT.md` (8 Phasen)
-📚 **Session-Logs:** `docs/sessions/` für detaillierte Entwicklungs-Historie
+📖 **Vollständiges Konzept:** `docs/product/FEATURE_OBJEKT_MANAGEMENT.md` (8 Phasen)
+📚 **Session-Logs:** `docs/dev/sessions/` für detaillierte Entwicklungs-Historie
 
 - Komponenten
   - Backend (Node.js/Express, Prisma, PostgreSQL)
@@ -53,13 +53,17 @@ Kurzer Überblick, klare Quickstarts und schnelles Troubleshooting für Devs/Ops
   - Monitoring (optional als separates Compose‑Profil)
 
 Links
-- Projektstruktur: `docs/STRUCTURE.md`
-- OpenAPI: `docs/openapi.yaml` (Swagger UI im Dev: `/api-docs`)
-- API Cheatsheet: `docs/API_CHEATSHEET.md`
-- VS Code REST Client: `docs/API_EXAMPLES.http`
-- Architektur: `docs/ARCHITECTURE.md`
-- RBAC: `docs/RBAC.md`
-- UI Components (Atoms): `docs/UI_COMPONENTS.md`
+- Projektstruktur: `docs/dev/PROJECT_STRUCTURE.md`
+- Dokumentationsindex: `docs/_index.md`
+- MVP “Plan prüfen”: `docs/product/MVP_PLAN_PRUEFEN.md`
+- QA Gates: `docs/dev/QA_GATES.md`
+- Ops Go/No-Go: `docs/ops/GO_NO_GO.md`
+- OpenAPI: `docs/dev/openapi.yaml` (Swagger UI im Dev: `/api-docs`)
+- API Cheatsheet: `docs/dev/API_CHEATSHEET.md`
+- VS Code REST Client: `docs/dev/API_EXAMPLES.http`
+- Architektur: `docs/dev/ARCHITECTURE.md`
+- RBAC: `docs/security/RBAC.md`
+- UI Components (Atoms): `docs/product/UI_COMPONENTS.md`
 - Changelog: `CHANGELOG.md`
 - Roadmap: `ROADMAP.md`
 - Getting Started (Schritt‑für‑Schritt): `GETTING_STARTED.md`
@@ -110,7 +114,7 @@ Login‑Demo (Seeds)
 ## Release-Checkliste (Tag & Container)
 
 1. Lokal prüfen: `npm ci && npm run lint && npm run test`.
-2. Changelog und `docs/releases/vX.Y.Z.md` aktualisieren, Version erhöhen (z. B. `npm version patch --no-git-tag-version`).
+2. Changelog und `docs/product/releases/vX.Y.Z.md` aktualisieren, Version erhöhen (z. B. `npm version patch --no-git-tag-version`).
 3. Commit schreiben (`chore: release vX.Y.Z`), Tag setzen (`git tag vX.Y.Z`) und Push inkl. Tags durchführen.
 4. Container bauen & veröffentlichen: `docker buildx build -t ghcr.io/<org>/sicherheitsdienst-tool:vX.Y.Z -t ghcr.io/<org>/sicherheitsdienst-tool:latest --push .`.
 5. Deployment aktualisieren (`docker compose pull && docker compose up -d`) und `/readyz` sowie `/system` nach dem Rollout kontrollieren.

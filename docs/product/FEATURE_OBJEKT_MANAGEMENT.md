@@ -564,7 +564,7 @@ PUT    /api/sites/:id/control-rounds/:roundId/complete    # Kontrollgang abschli
 - ✅ Email-Modal mit Empfänger-Auswahl
 - ✅ RBAC (ADMIN für Templates, MANAGER für Kalkulationen)
 
-**Detailliertes Konzept:** `docs/planning/phase5-objekt-kalkulation.md`
+**Detailliertes Konzept:** `docs/product/planning/completed/phase5-objekt-kalkulation.md`
 
 ---
 
@@ -687,7 +687,7 @@ POST   /api/sites                        # Neues Objekt aus Wizard erstellen
 - v1.16.0c: Integration (API, Validation, LocalStorage, Navigation)
 - v1.16.0d: Testing & Dokumentation
 
-**Vollständiges Konzept:** `docs/planning/workflow-wizard-objekt-anlegen.md` ⭐ **IMPLEMENTIERT**
+**Vollständiges Konzept:** `docs/product/planning/completed/workflow-wizard-objekt-anlegen.md` ⭐ **IMPLEMENTIERT**
 
 ---
 

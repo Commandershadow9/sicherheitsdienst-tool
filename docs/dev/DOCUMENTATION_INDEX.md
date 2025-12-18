@@ -2,6 +2,7 @@
 
 **Letztes Update:** 2025-11-06
 **Zweck:** Zentrale Übersicht über alle Projekt-Dokumentation
+**Hinweis:** Neuer konsolidierter Index: `docs/_index.md`
 
 ---
 
@@ -9,10 +10,10 @@
 
 Neu im Projekt? Start hier:
 
-1. **[README.md](../README.md)** - Projekt-Übersicht & Quickstart
+1. **[README.md](../../README.md)** - Projekt-Übersicht & Quickstart
 2. **[PROJECT_STRUCTURE.md](PROJECT_STRUCTURE.md)** - Verzeichnisstruktur & Code-Organisation
 3. **[ONBOARDING.md](ONBOARDING.md)** - Entwickler-Onboarding-Guide
-4. **[TODO.md](TODO.md)** - Aktuelle Aufgaben & Roadmap
+4. **[TODO.md](../product/TODO.md)** - Aktuelle Aufgaben & Roadmap
 
 ---
 
@@ -21,16 +22,16 @@ Neu im Projekt? Start hier:
 ### Projekt-Management
 | Dokument | Beschreibung | Aktualisiert |
 |----------|--------------|--------------|
-| [TODO.md](TODO.md) | **Haupt-Backlog** - Aktuelle Tasks, Roadmap, Prioritäten | ⭐ Täglich |
-| [TODO_ARCHIVE.md](TODO_ARCHIVE.md) | Archivierte/abgeschlossene TODOs | Monatlich |
-| [CHANGELOG.md](CHANGELOG.md) | Versions-Historie mit allen Änderungen | Bei Release |
+| [TODO.md](../product/TODO.md) | **Haupt-Backlog** - Aktuelle Tasks, Roadmap, Prioritäten | ⭐ Täglich |
+| [TODO_ARCHIVE.md](../product/TODO_ARCHIVE.md) | Archivierte/abgeschlossene TODOs | Monatlich |
+| [CHANGELOG.md](../product/CHANGELOG.md) | Versions-Historie mit allen Änderungen | Bei Release |
 
 ### Architektur & Code
 | Dokument | Beschreibung | Aktualisiert |
 |----------|--------------|--------------|
 | [PROJECT_STRUCTURE.md](PROJECT_STRUCTURE.md) | **Code-Organisation** - Verzeichnisse, Patterns, Navigation | Wöchentlich |
 | [ARCHITECTURE.md](ARCHITECTURE.md) | System-Architektur & Modul-Übersicht | Bei größeren Änderungen |
-| [RBAC.md](RBAC.md) | Rollen & Berechtigungen | Bei RBAC-Änderungen |
+| [RBAC.md](../security/RBAC.md) | Rollen & Berechtigungen | Bei RBAC-Änderungen |
 | [DB_INDEXES.md](DB_INDEXES.md) | Datenbank-Indizes & Performance | Bei DB-Änderungen |
 
 ### Entwicklung
@@ -39,7 +40,7 @@ Neu im Projekt? Start hier:
 | [ONBOARDING.md](ONBOARDING.md) | **Entwickler-Einstieg** - Setup, Workflows, Best Practices | Quartalsweise |
 | [CONTRIBUTING.md](CONTRIBUTING.md) | Contribution-Guidelines | Bei Prozessänderungen |
 | [API_CHEATSHEET.md](API_CHEATSHEET.md) | Quick-Reference für alle API-Endpoints | Bei API-Änderungen |
-| [UI_COMPONENTS.md](UI_COMPONENTS.md) | Frontend-Komponenten-Übersicht | Bei UI-Änderungen |
+| [UI_COMPONENTS.md](../product/UI_COMPONENTS.md) | Frontend-Komponenten-Übersicht | Bei UI-Änderungen |
 | [MAINTAINERS.md](MAINTAINERS.md) | Projekt-Maintainer & Verantwortlichkeiten | Bei Team-Änderungen |
 
 ---
@@ -50,12 +51,12 @@ Detaillierte Dokumentation für spezifische Features:
 
 | Feature | Dokument | Status | Version |
 |---------|----------|--------|---------|
-| **Dashboard** | [FEATURE_DASHBOARD.md](FEATURE_DASHBOARD.md) | ✅ Complete | v1.7.0+ |
-| **Intelligent Replacement** | [FEATURE_INTELLIGENT_REPLACEMENT.md](FEATURE_INTELLIGENT_REPLACEMENT.md) | ✅ Complete | v1.8.0+ |
-| **Objekt-Management** | [FEATURE_OBJEKT_MANAGEMENT.md](FEATURE_OBJEKT_MANAGEMENT.md) | ✅ Phase 1-6 Complete | v1.11.0 - v1.16.0 |
-| **Intelligent Object Mgmt** | [FEATURE_INTELLIGENT_OBJECT_MANAGEMENT.md](FEATURE_INTELLIGENT_OBJECT_MANAGEMENT.md) | 📋 Planned | Future |
-| **Events** | [FEATURE_EVENTS.md](FEATURE_EVENTS.md) | 📋 Planned | Future |
-| **Implementation Roadmap** | [IMPLEMENTATION_ROADMAP_INTELLIGENT_OBJEKTE.md](IMPLEMENTATION_ROADMAP_INTELLIGENT_OBJEKTE.md) | 🔄 Ongoing | v1.17.0+ |
+| **Dashboard** | [FEATURE_DASHBOARD.md](../product/FEATURE_DASHBOARD.md) | ✅ Complete | v1.7.0+ |
+| **Intelligent Replacement** | [FEATURE_INTELLIGENT_REPLACEMENT.md](../product/FEATURE_INTELLIGENT_REPLACEMENT.md) | ✅ Complete | v1.8.0+ |
+| **Objekt-Management** | [FEATURE_OBJEKT_MANAGEMENT.md](../product/FEATURE_OBJEKT_MANAGEMENT.md) | ✅ Phase 1-6 Complete | v1.11.0 - v1.16.0 |
+| **Intelligent Object Mgmt** | [FEATURE_INTELLIGENT_OBJECT_MANAGEMENT.md](../product/FEATURE_INTELLIGENT_OBJECT_MANAGEMENT.md) | 📋 Planned | Future |
+| **Events** | [FEATURE_EVENTS.md](../product/FEATURE_EVENTS.md) | 📋 Planned | Future |
+| **Implementation Roadmap** | [IMPLEMENTATION_ROADMAP_INTELLIGENT_OBJEKTE.md](../product/IMPLEMENTATION_ROADMAP_INTELLIGENT_OBJEKTE.md) | 🔄 Ongoing | v1.17.0+ |
 
 ---
 
@@ -66,10 +67,10 @@ Dokumentation für Features in Entwicklung oder Planung:
 
 | Dokument | Status | Priorität | Beschreibung |
 |----------|--------|-----------|--------------|
-| [replacement-scoring-improvements.md](planning/replacement-scoring-improvements.md) | 🔄 Ongoing | Hoch | Verbesserungen am Scoring-System |
-| [scoring-objekt-integration.md](planning/scoring-objekt-integration.md) | ⏳ Partial | Mittel | Integration Objekt-Scoring |
-| [security-hardening.md](planning/security-hardening.md) | 📋 Planned | Hoch | Sicherheits-Härtung |
-| [sicherheitskonzept-modul-konzept.md](planning/sicherheitskonzept-modul-konzept.md) | 🚧 Phase 1-2 ✅ | Hoch | Sicherheitskonzept-Modul (38K) |
+| [replacement-scoring-improvements.md](../product/planning/replacement-scoring-improvements.md) | 🔄 Ongoing | Hoch | Verbesserungen am Scoring-System |
+| [scoring-objekt-integration.md](../product/planning/scoring-objekt-integration.md) | ⏳ Partial | Mittel | Integration Objekt-Scoring |
+| [security-hardening.md](../product/planning/security-hardening.md) | 📋 Planned | Hoch | Sicherheits-Härtung |
+| [sicherheitskonzept-modul-konzept.md](../product/planning/sicherheitskonzept-modul-konzept.md) | 🚧 Phase 1-2 ✅ | Hoch | Sicherheitskonzept-Modul (38K) |
 
 ### Abgeschlossene Features
 Siehe [planning/completed/README.md](planning/completed/README.md) für vollständige Liste:
@@ -87,16 +88,16 @@ Siehe [planning/completed/README.md](planning/completed/README.md) für vollstä
 ### Betrieb
 | Dokument | Beschreibung |
 |----------|--------------|
-| [ops/README.md](ops/README.md) | Ops-Übersicht & Runbooks |
-| [ops/document-storage-checklist.md](ops/document-storage-checklist.md) | Dokument-Speicher Setup |
-| [ops/dsgvo-compliance.md](ops/dsgvo-compliance.md) | DSGVO-Compliance-Guide |
-| [ops/setup-https-letsencrypt.md](ops/setup-https-letsencrypt.md) | HTTPS/SSL Setup |
-| [ops/system-health.md](ops/system-health.md) | System-Health Monitoring |
+| [ops/README.md](../ops/README.md) | Ops-Übersicht & Runbooks |
+| [ops/document-storage-checklist.md](../ops/document-storage-checklist.md) | Dokument-Speicher Setup |
+| [ops/dsgvo-compliance.md](../ops/dsgvo-compliance.md) | DSGVO-Compliance-Guide |
+| [ops/setup-https-letsencrypt.md](../ops/setup-https-letsencrypt.md) | HTTPS/SSL Setup |
+| [ops/system-health.md](../ops/system-health.md) | System-Health Monitoring |
 
 ### Deployment
 | Dokument | Beschreibung |
 |----------|--------------|
-| [DEPLOYMENT_CHECKLIST.md](DEPLOYMENT_CHECKLIST.md) | Deployment-Checkliste |
+| [DEPLOYMENT_CHECKLIST.md](../ops/DEPLOYMENT_CHECKLIST.md) | Deployment-Checkliste |
 
 ---
 
@@ -114,9 +115,9 @@ Siehe [planning/completed/README.md](planning/completed/README.md) für vollstä
 
 | Dokument | Beschreibung |
 |----------|--------------|
-| [security/MULTI_TENANCY.md](security/MULTI_TENANCY.md) | Multi-Tenancy-Architektur |
-| [planning/security-hardening.md](planning/security-hardening.md) | Security-Hardening-Plan |
-| [TROUBLESHOOTING_LOGIN.md](TROUBLESHOOTING_LOGIN.md) | Login-Probleme beheben |
+| [security/MULTI_TENANCY.md](../security/MULTI_TENANCY.md) | Multi-Tenancy-Architektur |
+| [planning/security-hardening.md](../product/planning/security-hardening.md) | Security-Hardening-Plan |
+| [TROUBLESHOOTING_LOGIN.md](../ops/TROUBLESHOOTING_LOGIN.md) | Login-Probleme beheben |
 
 ---
 
@@ -124,8 +125,8 @@ Siehe [planning/completed/README.md](planning/completed/README.md) für vollstä
 
 | Dokument | Typ | Datum |
 |----------|-----|-------|
-| [reports/backend-mvp-assessment-2025-09-10.md](reports/backend-mvp-assessment-2025-09-10.md) | Backend Assessment | 2025-09-10 |
-| [analysis/PHASE1-ANALYSE-2025-09-11.md](analysis/PHASE1-ANALYSE-2025-09-11.md) | Phase 1 Analyse | 2025-09-11 |
+| [reports/backend-mvp-assessment-2025-09-10.md](../product/reports/backend-mvp-assessment-2025-09-10.md) | Backend Assessment | 2025-09-10 |
+| [analysis/PHASE1-ANALYSE-2025-09-11.md](../security/analysis/PHASE1-ANALYSE-2025-09-11.md) | Phase 1 Analyse | 2025-09-11 |
 
 ---
 
@@ -135,17 +136,17 @@ Alle Release-Notes und Changelogs:
 
 | Version | Dokument | Datum |
 |---------|----------|-------|
-| v1.16.0 | [releases/v1.16.0.md](releases/v1.16.0.md) | 2025-10 |
-| v1.8.0 | [releases/v1.8.0-summary.md](releases/v1.8.0-summary.md) | 2025-09 |
-| v1.5.1 | [releases/v1.5.1.md](releases/v1.5.1.md) | 2025-09 |
-| v1.5.0 | [releases/v1.5.0.md](releases/v1.5.0.md) | 2025-09 |
-| v1.4.0 | [releases/v1.4.0.md](releases/v1.4.0.md) | 2025-09 |
-| v1.3.1 | [releases/v1.3.1.md](releases/v1.3.1.md) | 2025-09 |
-| v1.3.0 | [releases/v1.3.0.md](releases/v1.3.0.md) | 2025-09 |
-| v1.2.0 RC | [releases/v1.2.0-rc.1.md](releases/v1.2.0-rc.1.md) | 2025-08 |
-| v1.1.1 | [releases/v1.1.1.md](releases/v1.1.1.md) | 2025-08 |
-| Bugfixes | [releases/bugfix-2025-10-04.md](releases/bugfix-2025-10-04.md) | 2025-10-04 |
-| v2025-09-09 | [releases/v2025-09-09.md](releases/v2025-09-09.md) | 2025-09-09 |
+| v1.16.0 | [releases/v1.16.0.md](../product/releases/v1.16.0.md) | 2025-10 |
+| v1.8.0 | [releases/v1.8.0-summary.md](../product/releases/v1.8.0-summary.md) | 2025-09 |
+| v1.5.1 | [releases/v1.5.1.md](../product/releases/v1.5.1.md) | 2025-09 |
+| v1.5.0 | [releases/v1.5.0.md](../product/releases/v1.5.0.md) | 2025-09 |
+| v1.4.0 | [releases/v1.4.0.md](../product/releases/v1.4.0.md) | 2025-09 |
+| v1.3.1 | [releases/v1.3.1.md](../product/releases/v1.3.1.md) | 2025-09 |
+| v1.3.0 | [releases/v1.3.0.md](../product/releases/v1.3.0.md) | 2025-09 |
+| v1.2.0 RC | [releases/v1.2.0-rc.1.md](../product/releases/v1.2.0-rc.1.md) | 2025-08 |
+| v1.1.1 | [releases/v1.1.1.md](../product/releases/v1.1.1.md) | 2025-08 |
+| Bugfixes | [releases/bugfix-2025-10-04.md](../product/releases/bugfix-2025-10-04.md) | 2025-10-04 |
+| v2025-09-09 | [releases/v2025-09-09.md](../product/releases/v2025-09-09.md) | 2025-09-09 |
 
 ---
 
@@ -171,20 +172,20 @@ Veraltete Dokumentation (historische Referenz):
 
 ### Archive-Struktur
 ```
-docs/archive/
+docs/product/archive/
 ├── old-analysis/          # Veraltete Analyse-Dokumente
 ├── old-planning/          # Veraltete Planungsdokumente (inkl. historische Roadmap)
 └── old-sessions/          # Veraltete Session-Notizen
 ```
 
-Siehe [archive/README.md](archive/README.md) für Details.
+Siehe [archive/README.md](../product/archive/README.md) für Details.
 
 ---
 
 ## 🔍 Wie finde ich...?
 
 ### ...aktuelle Aufgaben?
-→ [TODO.md](TODO.md) - Haupt-Backlog mit Prioritäten
+→ [TODO.md](../product/TODO.md) - Haupt-Backlog mit Prioritäten
 
 ### ...wie das Projekt strukturiert ist?
 → [PROJECT_STRUCTURE.md](PROJECT_STRUCTURE.md) - Vollständige Code-Organisation
@@ -213,7 +214,7 @@ Siehe [archive/README.md](archive/README.md) für Details.
 
 Bei Fragen:
 1. **Dokumentation durchsuchen** - Nutze diesen Index
-2. **TODO.md checken** - Aktuelle Tasks und bekannte Issues
+2. **TODO.md checken** - Aktuelle Tasks und bekannte Issues (siehe `docs/product/TODO.md`)
 3. **TROUBLESHOOTING_LOGIN.md** - Bei Login-Problemen
 4. **MAINTAINERS.md** - Kontakt zu Projekt-Maintainern
 
@@ -228,14 +229,14 @@ Bei Fragen:
 4. **Nutze [API_CHEATSHEET.md](API_CHEATSHEET.md)** - Als Quick-Reference
 
 ### Für neue Features
-1. **Check [TODO.md](TODO.md)** - Ist es schon geplant?
+1. **Check [TODO.md](../product/TODO.md)** - Ist es schon geplant?
 2. **Erstelle Planning-Doc in [planning/](planning/)** - Beschreibe Feature
 3. **Referenziere bestehende Features** - Nutze [FEATURE_*.md](#-feature-dokumentation)
 4. **Nach Implementierung** - Move to [planning/completed/](planning/completed/)
 
 ### Für Dokumentation
-1. **Halte [TODO.md](TODO.md) aktuell** - Bei jeder größeren Änderung
-2. **Update [CHANGELOG.md](CHANGELOG.md)** - Bei jedem Release
+1. **Halte [TODO.md](../product/TODO.md) aktuell** - Bei jeder größeren Änderung
+2. **Update [CHANGELOG.md](../product/CHANGELOG.md)** - Bei jedem Release
 3. **Archiviere alte Docs** - Move zu [archive/](archive/)
 4. **Update diesen Index** - Bei neuen Dokumenten
 
