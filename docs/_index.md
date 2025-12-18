@@ -44,9 +44,9 @@ Struktur: `docs/product/`, `docs/dev/`, `docs/ops/`, `docs/security/`.
 | docs/dev/openapi.yaml | OpenAPI Spec | Eng, QA | ok |
 | docs/dev/DB_INDEXES.md | DB-Indizes | Eng | ok |
 | docs/dev/TESTING.md | Golden Test Command & Voraussetzungen | Eng, QA | gut |
-| docs/dev/TESTING_v1.10.0.md | Test-Guide (alt) | Eng | veraltet |
+| docs/archive/TESTING_v1.10.0.md | Test-Guide (alt) | Eng | veraltet |
 | docs/dev/CHATGPT_CONTEXT_PROMPT.md | KI-Kontext | Eng | ok |
-| docs/dev/DOCUMENTATION_INDEX.md | Doku-Index (alt) | Eng | ok |
+| docs/archive/DOCUMENTATION_INDEX.md | Doku-Index (alt) | Eng | ok |
 | docs/dev/MAINTAINERS.md | Verantwortlichkeiten | Eng, PM | ok |
 | docs/dev/testing/contract-tests.md | Contract-Test Guide | Eng | ok |
 | docs/dev/ci/proposed-contract-tests-job.md | CI-Idee (Proposal) | Eng | ok |
@@ -85,13 +85,18 @@ Struktur: `docs/product/`, `docs/dev/`, `docs/ops/`, `docs/security/`.
 | docs/security/analysis/auth-hardening-report.md | Security-Analyse | Security | ok |
 | docs/security/analysis/PHASE1-ANALYSE-2025-09-11.md | Phase-Analyse | Security | ok |
 
+## Archive
+- `docs/archive/HEUTE_ABEND_TESTEN.md` – Release-spezifischer Testplan (v1.8.0).
+- `docs/archive/TESTING_v1.10.0.md` – Test-Guide (alt).
+- `docs/archive/DOCUMENTATION_INDEX.md` – Doku-Index (alt).
+
 ## Doppelte/überlappende Inhalte
 - `CHANGELOG.md` im Repo-Root vs. `docs/product/CHANGELOG.md` (Redundanz, teils unterschiedliche Details).
-- `docs/dev/DOCUMENTATION_INDEX.md` vs. `docs/_index.md` (Index-Doppelung).
+- `docs/archive/DOCUMENTATION_INDEX.md` vs. `docs/_index.md` (Index-Doppelung).
 - Feature-Roadmaps in `docs/product/*` überschneiden sich mit `docs/product/planning/*`.
 
 ## Potenziell veraltet
-- `docs/dev/TESTING_v1.10.0.md` (alt, Test-Infra derzeit instabil).
+- `docs/archive/TESTING_v1.10.0.md` (alt, Test-Infra derzeit instabil).
 - `docs/product/FEATURE_EVENTS.md`, `docs/product/FEATURE_INTELLIGENT_OBJECT_MANAGEMENT.md` (Planung, kein Cut-Status).
 - `docs/dev/pr_descriptions/*`, `docs/product/archive/*` (historisch).
 
