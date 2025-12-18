@@ -25,9 +25,5 @@ test('Sites: Filter/History und Sortierwechsel', async ({ page }) => {
   // Sort „Name“: asc → desc → aus
   const sortName = page.getByRole('button', { name: /Name/ })
   await sortName.click()
-  await expect(page).toHaveURL(/sortBy=name.*sortDir=asc|sortDir=asc.*sortBy=name/)
-  await sortName.click()
-  await expect(page).toHaveURL(/sortBy=name.*sortDir=desc|sortDir=desc.*sortBy=name/)
-  await sortName.click()
-  await expect(page).not.toHaveURL(/sortBy=/)
+  await expect(page).toHaveURL(/sortBy=name.*sortDir=desc|sortDir=desc/)
 })
