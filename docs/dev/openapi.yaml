@@ -566,21 +566,18 @@ components:
           type: string
           format: date-time
         endTime:
-          type:
-            - string
-            - 'null'
+          type: string
           format: date-time
+          nullable: true
         breakTime:
-          type:
-            - integer
-            - 'null'
+          type: integer
           format: int32
+          nullable: true
         startLocation:
           type: string
         endLocation:
-          type:
-            - string
-            - 'null'
+          type: string
+          nullable: true
         notes:
           type: string
         createdAt:
@@ -3905,55 +3902,55 @@ paths:
                         properties:
                           email: { $ref: '#/components/schemas/QueueState' }
                           push: { $ref: '#/components/schemas/QueueState' }
-                    auditTrail:
-                      type: object
-                      properties:
-                        total: { type: integer }
-                        last24h: { type: integer }
-                        outcomes:
-                          type: object
-                          additionalProperties: { type: integer }
-                        latest:
-                          type: object
-                          nullable: true
-                          properties:
-                            id: { type: string }
-                            occurredAt: { type: string, format: date-time }
-                            action: { type: string }
-                            outcome: { type: string, nullable: true }
-                        queue:
-                          type: object
-                          properties:
-                            queueSize: { type: integer }
-                            flushIntervalMs: { type: integer }
-                            batchSize: { type: integer }
-                            maxQueueSize: { type: integer }
-                            isFlushing: { type: boolean }
-                            hasScheduledFlush: { type: boolean }
-                      required: [total, last24h, outcomes, queue]
-                    audit:
-                      type: object
-                      properties:
-                        queueSize: { type: integer }
-                        flushIntervalMs: { type: integer }
-                        batchSize: { type: integer }
-                        maxQueueSize: { type: integer }
-                        isFlushing: { type: boolean }
-                        hasScheduledFlush: { type: boolean }
-                  queues:
-                    type: object
-                    additionalProperties:
-                      $ref: '#/components/schemas/QueueState'
-                  auth:
-                    type: object
-                    properties:
-                      jwtExpiresIn: { type: string }
-                      refreshExpiresIn: { type: string }
-                  env:
-                    type: object
-                    properties:
-                      nodeEnv: { type: string }
-                      version: { type: string }
+                      auditTrail:
+                        type: object
+                        properties:
+                          total: { type: integer }
+                          last24h: { type: integer }
+                          outcomes:
+                            type: object
+                            additionalProperties: { type: integer }
+                          latest:
+                            type: object
+                            nullable: true
+                            properties:
+                              id: { type: string }
+                              occurredAt: { type: string, format: date-time }
+                              action: { type: string }
+                              outcome: { type: string, nullable: true }
+                          queue:
+                            type: object
+                            properties:
+                              queueSize: { type: integer }
+                              flushIntervalMs: { type: integer }
+                              batchSize: { type: integer }
+                              maxQueueSize: { type: integer }
+                              isFlushing: { type: boolean }
+                              hasScheduledFlush: { type: boolean }
+                        required: [total, last24h, outcomes, queue]
+                      audit:
+                        type: object
+                        properties:
+                          queueSize: { type: integer }
+                          flushIntervalMs: { type: integer }
+                          batchSize: { type: integer }
+                          maxQueueSize: { type: integer }
+                          isFlushing: { type: boolean }
+                          hasScheduledFlush: { type: boolean }
+                      queues:
+                        type: object
+                        additionalProperties:
+                          $ref: '#/components/schemas/QueueState'
+                      auth:
+                        type: object
+                        properties:
+                          jwtExpiresIn: { type: string }
+                          refreshExpiresIn: { type: string }
+                      env:
+                        type: object
+                        properties:
+                          nodeEnv: { type: string }
+                          version: { type: string }
                 required: [success, data]
                 example:
                   success: true
