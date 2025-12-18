@@ -8,6 +8,7 @@ Struktur: `docs/product/`, `docs/dev/`, `docs/ops/`, `docs/security/`.
 | --- | --- | --- | --- |
 | docs/product/PROJECT_STATUS.md | Stabiler Cut, Reifegrad, Scope | PM, Tech Lead | gut |
 | docs/product/NEXT_STEPS.md | Schritte nach Pause, Warnungen | PM, Tech Lead | gut |
+| docs/product/MVP_PLAN_PRUEFEN.md | MVP-Definition & Plan-Flow | PM, Ops | gut |
 | docs/product/TODO.md | Aktueller Backlog | PM, Tech Lead | ok |
 | docs/product/TODO_ARCHIVE.md | Historischer Backlog | PM | ok |
 | docs/product/CHANGELOG.md | Doku-Releasehistorie | PM, Ops | ok |
@@ -35,6 +36,7 @@ Struktur: `docs/product/`, `docs/dev/`, `docs/ops/`, `docs/security/`.
 | --- | --- | --- | --- |
 | docs/dev/PROJECT_STRUCTURE.md | Code-/Repo-Navigation | Eng | ok |
 | docs/dev/ARCHITECTURE.md | Architekturübersicht | Eng | ok |
+| docs/dev/QA_GATES.md | QA-Gates für Cut/Release | Eng, QA | gut |
 | docs/dev/ONBOARDING.md | Einstieg & Workflow | Eng | ok |
 | docs/dev/CONTRIBUTING.md | Contribution-Regeln | Eng | ok |
 | docs/dev/API_CHEATSHEET.md | API-Quickref | Eng | ok |
@@ -54,6 +56,7 @@ Struktur: `docs/product/`, `docs/dev/`, `docs/ops/`, `docs/security/`.
 | Datei | Zweck | Zielgruppe | Qualität |
 | --- | --- | --- | --- |
 | docs/ops/README.md | Ops-Runbook & Einstieg | Ops | gut |
+| docs/ops/GO_NO_GO.md | Go/No-Go Checkliste | Ops | gut |
 | docs/ops/CONFIGURATION.md | ENV/Config Overview | Ops | ok |
 | docs/ops/DEPLOYMENT_CHECKLIST.md | Deployment-Checkliste | Ops | ok |
 | docs/ops/TROUBLESHOOTING_LOGIN.md | Login-Troubleshooting | Ops | ok |
@@ -91,7 +94,7 @@ Struktur: `docs/product/`, `docs/dev/`, `docs/ops/`, `docs/security/`.
 - `docs/product/FEATURE_EVENTS.md`, `docs/product/FEATURE_INTELLIGENT_OBJECT_MANAGEMENT.md` (Planung, kein Cut-Status).
 - `docs/dev/pr_descriptions/*`, `docs/product/archive/*` (historisch).
 
-## Fehlende Kern-Doku für MVP (“Plan prüfen”)
-- Klare MVP-Definition mit Abnahmekriterien (Scope vs. Nicht-Scope).
-- Teststrategie/QA-Gates für Release-Cut (welche Tests müssen grün sein).
-- Betriebsrahmen: Mindestanforderungen an Hosting/Backups/Monitoring in einem kurzen “Go/No-Go” Runbook.
+## Offene Punkte (MVP/Cut)
+- Exakte Abnahmekriterien/Regelwerk für „Plan prüfen“ (Arbeitszeitrecht/Policies).
+- Test-Infra stabilisieren (ENV/Prisma-Mocks).
+- Go/No-Go Automatisierung (Backups/Restore testbar per Script).

@@ -55,6 +55,9 @@ Kurzer Überblick, klare Quickstarts und schnelles Troubleshooting für Devs/Ops
 Links
 - Projektstruktur: `docs/dev/PROJECT_STRUCTURE.md`
 - Dokumentationsindex: `docs/_index.md`
+- MVP “Plan prüfen”: `docs/product/MVP_PLAN_PRUEFEN.md`
+- QA Gates: `docs/dev/QA_GATES.md`
+- Ops Go/No-Go: `docs/ops/GO_NO_GO.md`
 - OpenAPI: `docs/dev/openapi.yaml` (Swagger UI im Dev: `/api-docs`)
 - API Cheatsheet: `docs/dev/API_CHEATSHEET.md`
 - VS Code REST Client: `docs/dev/API_EXAMPLES.http`
