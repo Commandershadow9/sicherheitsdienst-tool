@@ -68,7 +68,7 @@ PAYLOAD=$(cat <<EOF
         },
         {
           "name": "📚 Dokumentation",
-          "value": "• [ROADMAP.md](${REPO_URL}/blob/main/docs/ROADMAP.md)\\n• [Feature-Spec](${REPO_URL}/blob/main/docs/FEATURE_INTELLIGENT_REPLACEMENT.md)\\n• [Test-Guide](${REPO_URL}/blob/main/HEUTE_ABEND_TESTEN.md)"
+          "value": "• [ROADMAP.md](${REPO_URL}/blob/main/docs/ROADMAP.md)\\n• [Feature-Spec](${REPO_URL}/blob/main/docs/FEATURE_INTELLIGENT_REPLACEMENT.md)\\n• [Test-Guide](${REPO_URL}/blob/main/docs/archive/HEUTE_ABEND_TESTEN.md)"
         },
         {
           "name": "🔗 Links",
