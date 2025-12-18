@@ -55,7 +55,7 @@ services:
       RATE_LIMIT_MAX: ${RATE_LIMIT_MAX:-10}
       RATE_LIMIT_WINDOW_MS: ${RATE_LIMIT_WINDOW_MS:-60000}
       LOG_LEVEL: ${LOG_LEVEL:-info}
-      LOG_FORMAT: ${LOG_FORMAT:-}
+      LOG_FORMAT: ${LOG_FORMAT:-simple}
       DOCUMENT_STORAGE_ROOT: ${DOCUMENT_STORAGE_ROOT:-/srv/documents}
       # CORS
       CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:5173}
