@@ -5,7 +5,7 @@ const FE = process.env.BASE_URL || 'http://localhost:5173'
 test('Sites: Filter/History und Sortierwechsel', async ({ page }) => {
   // Sites
   await page.goto(FE + '/sites', { waitUntil: 'load' })
-  await expect(page.getByRole('heading', { name: 'Standorte' })).toBeVisible({ timeout: 15000 })
+  await expect(page.getByTestId('sites-title')).toBeVisible({ timeout: 15000 })
 
   // Filter Stadt setzen (Debounce ~300ms)
   const cityGroup = page.locator('label:text("Stadt")').locator('..')

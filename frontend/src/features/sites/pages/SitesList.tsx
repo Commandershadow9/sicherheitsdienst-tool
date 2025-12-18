@@ -133,7 +133,7 @@ export default function SitesList() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-semibold">Aufträge</h1>
+        <h1 className="text-xl font-semibold" data-testid="sites-title">Aufträge</h1>
         <div className="flex gap-2">
           <Button onClick={() => nav('/sites/wizard/new')} className="gap-2">
             <Plus size={16} />

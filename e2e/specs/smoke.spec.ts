@@ -31,7 +31,7 @@ test('Smoke: Login, Users paging/sort, Incidents filter', async ({ page }) => {
 
   // Sites: kurz prüfen (List + Sort)
   await page.goto(FE + '/sites', { waitUntil: 'load' })
-  await expect(page.getByRole('heading', { name: 'Standorte' })).toBeVisible({ timeout: 15000 })
+  await expect(page.getByTestId('sites-title')).toBeVisible({ timeout: 15000 })
   const sortName = page.getByRole('button', { name: /Name/ })
   await sortName.click()
   await expect(page).toHaveURL(/sortBy=name/)
