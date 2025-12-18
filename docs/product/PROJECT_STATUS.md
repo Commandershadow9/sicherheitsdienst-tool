@@ -2,7 +2,7 @@
 
 ## Reifegrad
 - P0/P1-Sicherheits- und Stabilisierungsthemen erledigt (Mailhog nur Dev, Trusted Proxy/XFF, Magic-Bytes-Validierung für Uploads, Audit-Log asynchron mit Backoff).
-- Test-Infra (Jest/ENV/Prisma-Mocks) bewusst offen → siehe `docs/TODO.md` (P1).
+- Test-Infra (Jest/ENV/Prisma-Mocks) bewusst offen → siehe `docs/product/TODO.md` (P1).
 - Geeignet für: Self-Hosted / Pilotbetrieb mit kleiner Nutzerzahl, kein Massen-SaaS.
 
 ## Was stabil ist
@@ -13,7 +13,7 @@
 - Health/Readiness: `/health`, `/readyz` mit optionalem SMTP-Check; Compose-Healthchecks aktiv.
 
 ## Bewusst offen / technische Schulden
-- Test-Infra: fehlende ENV/Prisma-Mocks verursachen fehlschlagende Gesamtsuite; Tracking als P1 in `docs/TODO.md`.
+- Test-Infra: fehlende ENV/Prisma-Mocks verursachen fehlschlagende Gesamtsuite; Tracking als P1 in `docs/product/TODO.md`.
 - Prisma/Libssl Warnungen im Container-Log (OpenSSL-Erkennung) – funktional, aber unschön.
 - Compose-Startkommando führt Prisma-Migration aus; bei abgeschaltetem DB-Service startet der API-Container neu.
 - Monitoring/Alerting nur rudimentär (Prom/Grafana optional), keine produktiven Receiver konfiguriert.

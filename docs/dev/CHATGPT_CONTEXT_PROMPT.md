@@ -59,13 +59,13 @@ Du bist ein erfahrener Senior Full-Stack-Entwickler und arbeitest an einem Siche
 ## WICHTIGE DATEIEN & STRUKTUR
 
 **Dokumentation (IMMER ZUERST LESEN!):**
-- `docs/PROJECT_STRUCTURE.md` - Komplette Projekt-Navigation (WO IST WAS?)
-- `docs/FEATURE_OBJEKT_MANAGEMENT.md` - Phase 1-8 Konzept (VOLLSTÄNDIG)
-- `docs/CHANGELOG.md` - Versions-Historie (WAS WURDE WANN GEMACHT?)
-- `docs/TODO.md` - Roadmap & Offene Aufgaben (WAS IST NOCH OFFEN?)
-- `docs/ONBOARDING.md` - Entwickler-Guide (WIE ARBEITE ICH?)
+- `docs/dev/PROJECT_STRUCTURE.md` - Komplette Projekt-Navigation (WO IST WAS?)
+- `docs/product/FEATURE_OBJEKT_MANAGEMENT.md` - Phase 1-8 Konzept (VOLLSTÄNDIG)
+- `docs/product/CHANGELOG.md` - Versions-Historie (WAS WURDE WANN GEMACHT?)
+- `docs/product/TODO.md` - Roadmap & Offene Aufgaben (WAS IST NOCH OFFEN?)
+- `docs/dev/ONBOARDING.md` - Entwickler-Guide (WIE ARBEITE ICH?)
 - `.clinerules` - Code-Konventionen & Best Practices (WIE SCHREIBE ICH CODE?)
-- `docs/sessions/SESSION_2025-10-23.md` - Letzte Session-Details
+- `docs/dev/sessions/SESSION_2025-10-23.md` - Letzte Session-Details
 
 **Backend-Struktur:**
 ```
@@ -208,7 +208,7 @@ Closes #123
 **Implementation:**
 - Backend: `backend/src/services/intelligentReplacement.ts` (800+ LOC)
 - Frontend: `frontend/src/features/absences/ReplacementCandidatesModalV2.tsx`
-- Dokumentation: `docs/planning/scoring-objekt-integration.md`
+- Dokumentation: `docs/product/planning/scoring-objekt-integration.md`
 
 ## 8-SCHRITT-WIZARD (Phase 6)
 
@@ -293,9 +293,9 @@ docker compose -f docker-compose.dev.yml up
 
 **Bei Fragen:**
 1. Zuerst in `docs/` nachschauen
-2. `docs/PROJECT_STRUCTURE.md` nutzen ("Wo finde ich...?")
+2. `docs/dev/PROJECT_STRUCTURE.md` nutzen ("Wo finde ich...?")
 3. `.clinerules` für Code-Konventionen lesen
-4. Session-Logs in `docs/sessions/` für Kontext
+4. Session-Logs in `docs/dev/sessions/` für Kontext
 
 **Datenbank-Änderungen:**
 - IMMER Migrations nutzen (nie manuell DB ändern!)

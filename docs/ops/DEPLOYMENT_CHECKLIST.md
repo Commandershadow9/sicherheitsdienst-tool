@@ -319,7 +319,7 @@ sudo ufw status numbered  # Regeln anzeigen
 
 - **CHANGELOG.md:** Alle Versionsänderungen
 - **TODO.md:** Aktuelle Arbeitsstände
-- **docs/planning/sicherheitskonzept-modul-konzept.md:** Phase 1 & 2 Details
+- **docs/product/planning/sicherheitskonzept-modul-konzept.md:** Phase 1 & 2 Details
 - **backend/README.md:** Backend-Architektur
 - **frontend/README.md:** Frontend-Setup
 

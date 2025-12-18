@@ -1,10 +1,10 @@
 1. **Kurz-Summary (5–8 Zeilen) + „Backend-MVP fertig?“ → JA**
 
-- OpenAPI v1 mit Kernpfaden, konsistenten Fehlern (400/422) und 201/405 abgedeckt; Server-Alias `/api/v1` vorhanden. Evidenz: `docs/openapi.yaml#L1-L20`, `#L752-L880`, `#L1410-L1478`.
+- OpenAPI v1 mit Kernpfaden, konsistenten Fehlern (400/422) und 201/405 abgedeckt; Server-Alias `/api/v1` vorhanden. Evidenz: `docs/dev/openapi.yaml#L1-L20`, `#L752-L880`, `#L1410-L1478`.
 - Auth/Refresh, RBAC (inkl. Self-Access), einheitliche Validation via Zod mit 422/`VALIDATION_ERROR`. Evidenz: `backend/src/routes/authRoutes.ts#L13-L22`, `backend/src/middleware/validate.ts#L15-L20`, `backend/src/middleware/rbac.ts#L4-L5`.
 - Notifications: E-Mail mit Retry, RBAC nur ADMIN/MANAGER, Rate-Limit konfigurierbar; Push-Token und Feature-Flag für Events. Evidenz: `backend/src/services/emailService.ts#L49-L79`, `backend/src/routes/notificationRoutes.ts#L13-L23`, `backend/src/services/pushService.ts`.
 - Time-Tracking: Clock-in/out inkl. AZG-Warnungen (<11h Ruhe, >10h/>12h Dauer). Evidenz: `backend/src/controllers/shiftController.ts#L615`, `#L658-L659`.
-- Persistenz: Prisma Schema + Migrations, sinnvolle Indizes für Users/Sites/Shifts; Exporte CSV/XLSX für Listen vorhanden. Evidenz: `backend/prisma/schema.prisma`, `docs/DB_INDEXES.md`.
+- Persistenz: Prisma Schema + Migrations, sinnvolle Indizes für Users/Sites/Shifts; Exporte CSV/XLSX für Listen vorhanden. Evidenz: `backend/prisma/schema.prisma`, `docs/dev/DB_INDEXES.md`.
 - Operability/Doku: `/api-docs` (Dev), `/api/stats` mit Counters/Features, `.env.example` umfangreich; CI validiert/lintet OpenAPI + build/test. Evidenz: `backend/src/app.ts#L74-L84`, `backend/src/routes/systemRoutes.ts`, `.github/workflows/ci.yml`.
 
 Fazit: Backend-MVP ist funktional vollständig (JA) mit kleineren Deltas (z. B. OpenAPI 405-Referenzen breiter, optionale Contract-Tests fest etablieren).
@@ -18,7 +18,7 @@ Fazit: Backend-MVP ist funktional vollständig (JA) mit kleineren Deltas (z. B. 
 | Validation/Errors (400/422) | 5.0 | Zod-Validierung, 422 mit VALIDATION_ERROR; globaler Error-Handler mapt Codes | `backend/src/middleware/validate.ts#L15-L20`; `backend/src/app.ts#L165-L176,L200-L229` |
 | Notifications               | 4.5 | E-Mail Retry (ENV), RBAC, Rate-Limit; Push-Token/Opt-In; Event-Push Flag | `backend/src/services/emailService.ts#L49-L79`; `backend/src/routes/notificationRoutes.ts#L13-L23`; `backend/src/services/pushService.ts` |
 | TimeTracking                | 4.0 | Clock-in/out mit Warnungen; Assign-Checks | `backend/src/controllers/shiftController.ts#L615,L658-L659`, `#L520-L566` |
-| Persistenz/Migration        | 4.5 | Prisma Schema + Migrations; Indizes wie geplant | `backend/prisma/schema.prisma`; `docs/DB_INDEXES.md` |
+| Persistenz/Migration        | 4.5 | Prisma Schema + Migrations; Indizes wie geplant | `backend/prisma/schema.prisma`; `docs/dev/DB_INDEXES.md` |
 | Tests/CI                    | 4.0 | Umfangreiche Jest-Tests (RBAC/Validation/Exports/Stats); CI build+coverage; OpenAPI validate/lint | `.github/workflows/ci.yml`; `backend/src/__tests__/*` |
 | Doku/Operability            | 4.5 | README Runbook; .env.example vollständig; /api-docs Dev; /api/stats reichhaltig | `README.md`; `backend/.env.example`; `backend/src/app.ts#L74-L84`; `backend/src/controllers/systemController.ts` |
 
@@ -42,8 +42,8 @@ Fazit: Backend-MVP ist funktional vollständig (JA) mit kleineren Deltas (z. B. 
 
 5. **Tagesplan (3–5 Tasks, je 30–90 Min)**
 
-- Task: Contract-Tests Workflow finalisieren; Ziel: Stabiler Dredd-Lauf; Dateien: `.github/workflows/contract-tests.yml`, `docs/openapi.yaml`; Testplan: Manuell `workflow_dispatch` ausführen, Dredd-Exit 0 prüfen.
-- Task: OpenAPI 405-Responses ergänzen; Ziel: Alle Kernpfade mit 405 referenziert; Dateien: `docs/openapi.yaml`; Testplan: `npx @redocly/cli lint`, Muster-Requests gegen Prism prüfen.
+- Task: Contract-Tests Workflow finalisieren; Ziel: Stabiler Dredd-Lauf; Dateien: `.github/workflows/contract-tests.yml`, `docs/dev/openapi.yaml`; Testplan: Manuell `workflow_dispatch` ausführen, Dredd-Exit 0 prüfen.
+- Task: OpenAPI 405-Responses ergänzen; Ziel: Alle Kernpfade mit 405 referenziert; Dateien: `docs/dev/openapi.yaml`; Testplan: `npx @redocly/cli lint`, Muster-Requests gegen Prism prüfen.
 - Task: CSV-Streaming für große Exporte; Ziel: Memory-schonender Export; Dateien: `backend/src/utils/csv.ts`, Controller-Exporte; Testplan: Generiere >100k Zeilen, beobachte Heap, Response-Stream intakt.
 - Task: RBAC-Matrix konsolidieren; Ziel: README erweitert; Dateien: `README.md`; Testplan: Review gegen `routes/*`, negative Tests vorhanden.
 - Task: Stats erweitern um OpenAPI-/build-Infos; Ziel: `/api/stats` zeigt Spec-Version und Build SHA; Dateien: `backend/src/controllers/systemController.ts`; Testplan: Jest-Erweiterung, Response-Felder prüfen.
@@ -64,12 +64,12 @@ npm run build
 npm test
 
 # OpenAPI Validate/Lint
-npx swagger-cli@latest validate docs/openapi.yaml
-npx @redocly/cli@latest lint docs/openapi.yaml --format=github
+npx swagger-cli@latest validate docs/dev/openapi.yaml
+npx @redocly/cli@latest lint docs/dev/openapi.yaml --format=github
 
 # Contract-Tests (lokal)
-npx @stoplight/prism-cli@latest mock docs/openapi.yaml &
-npx dredd@latest docs/openapi.yaml http://localhost:3001/api/v1
+npx @stoplight/prism-cli@latest mock docs/dev/openapi.yaml &
+npx dredd@latest docs/dev/openapi.yaml http://localhost:3001/api/v1
 
 # Prisma
 npx prisma generate
@@ -78,17 +78,17 @@ npx prisma migrate dev
 
 7. **Findings & Evidenz**
 
-- OpenAPI Grundstruktur + Servers: `docs/openapi.yaml#L1-L9`.
-- Fehler-Responses und ValidationError zentral: `docs/openapi.yaml#L660-L718`, `#L700-L718`.
-- Auth-Endpunkte: `docs/openapi.yaml#L752-L880`; Implementierung: `backend/src/routes/authRoutes.ts#L13-L22`; `backend/src/controllers/authController.ts`.
-- Sites Pfade inkl. 201/400/422/409, Pagination/Filter/Sort: `docs/openapi.yaml#L1410-L1560`; Implementierung: `backend/src/controllers/siteController.ts`.
-- 405 MethodNotAllowed definiert und implementiert: `docs/openapi.yaml#L752-L880` (Definition `L752`), `backend/src/middleware/methodNotAllowed.ts#L5-L9`; Routen `router.all(...)`.
+- OpenAPI Grundstruktur + Servers: `docs/dev/openapi.yaml#L1-L9`.
+- Fehler-Responses und ValidationError zentral: `docs/dev/openapi.yaml#L660-L718`, `#L700-L718`.
+- Auth-Endpunkte: `docs/dev/openapi.yaml#L752-L880`; Implementierung: `backend/src/routes/authRoutes.ts#L13-L22`; `backend/src/controllers/authController.ts`.
+- Sites Pfade inkl. 201/400/422/409, Pagination/Filter/Sort: `docs/dev/openapi.yaml#L1410-L1560`; Implementierung: `backend/src/controllers/siteController.ts`.
+- 405 MethodNotAllowed definiert und implementiert: `docs/dev/openapi.yaml#L752-L880` (Definition `L752`), `backend/src/middleware/methodNotAllowed.ts#L5-L9`; Routen `router.all(...)`.
 - Zod-Validation + 422: `backend/src/middleware/validate.ts#L15-L20`; Schemata in `backend/src/validations/*` (auth/site/time/...).
 - Notifications RBAC + RateLimit: `backend/src/middleware/rbac.ts#L4-L5`; `backend/src/middleware/rateLimit.ts#L1-L45`; Routen: `backend/src/routes/notificationRoutes.ts#L13-L23`; Tests: `backend/src/__tests__/notifications.ratelimit*.test.ts`, `notifications.rbac.test.ts`.
 - E-Mail Retry (ENV-basiert): `backend/src/services/emailService.ts#L49-L79`; Flags in `backend/.env.example` (SMTP_RETRY_*).
 - Push-Service (Tokens/FCM/Disable invalid): `backend/src/services/pushService.ts` (`getActiveTokens`, `sendEachForMulticast` mit Deaktivierung).
 - TimeTracking Warnungen: `backend/src/controllers/shiftController.ts#L615`, `#L658-L659`; Tests: `backend/src/__tests__/timetracking.warnings.test.ts`.
-- Persistenz + Indizes: `backend/prisma/schema.prisma` (Users.email unique; Sites unique name+address; Shifts startTime/status indices); `docs/DB_INDEXES.md`.
+- Persistenz + Indizes: `backend/prisma/schema.prisma` (Users.email unique; Sites unique name+address; Shifts startTime/status indices); `docs/dev/DB_INDEXES.md`.
 - Listen-Exports CSV/XLSX: Users/Sites/Shifts Controller, Accept-Header Switches; z. B. `backend/src/controllers/siteController.ts#L28-L53`, `L54-L78`; Tests: `sites.export.*.test.ts`, `shifts.export.*.test.ts`, `users.export.*.test.ts`.
 - /api-docs (Dev): `backend/src/app.ts#L74-L84` (Swagger UI, /api-docs); `/api/stats`: `backend/src/routes/systemRoutes.ts`, `backend/src/controllers/systemController.ts`.
 - CI-Workflows: Build/Test/Coverage + OpenAPI validate/lint: `.github/workflows/ci.yml`; Contract-Tests (optional, nightly): `.github/workflows/contract-tests*.yml`.
@@ -103,4 +103,3 @@ npx prisma migrate dev
 - Testflakiness möglich durch Prisma/Generate in CI → Gegenmaßnahme: deterministische Test-Seeds/Mocks, `prisma generate` als fester CI-Schritt (vorhanden, aber prüfen).
 
 APPROVAL_NEEDED: EXECUTE
-

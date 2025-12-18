@@ -1,7 +1,7 @@
 # Next Steps nach dem Cut
 
 ## Empfohlene nächste Schritte
-- Test-Infra stabilisieren: ENV/Migrations/Prisma im Test-Modus mocken, damit `npm test` ohne echte DB/Secrets läuft (siehe P1 in `docs/TODO.md`).
+- Test-Infra stabilisieren: ENV/Migrations/Prisma im Test-Modus mocken, damit `npm test` ohne echte DB/Secrets läuft (siehe P1 in `docs/product/TODO.md`).
 - Prisma/OpenSSL-Warnungen bereinigen (Image-Abhängigkeiten prüfen oder Prisma-Version aktualisieren).
 - Compose-Startverhalten prüfen: API soll bei temporär nicht erreichbarer DB nicht neugestartet werden (Migration ggf. in eigenes Kommando auslagern).
 - Monitoring/Alerting finalisieren: Receiver konfigurieren, Basis-Dashboards prüfen.

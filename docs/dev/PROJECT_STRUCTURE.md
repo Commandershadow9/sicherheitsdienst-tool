@@ -175,54 +175,40 @@ features/sites/
 
 ## 📚 Dokumentation (`/docs`)
 
-### Hauptdokumentation
+### Hauptdokumentation (neue Struktur)
 ```
 docs/
-├── FEATURE_OBJEKT_MANAGEMENT.md   # Vollständiges Konzept (Phase 1-8)
-├── CHANGELOG.md                    # Versions-Historie (NEU!)
-├── TODO.md                         # Roadmap & Offene Aufgaben
-├── ARCHITECTURE.md                 # System-Architektur
-├── RBAC.md                        # Rollen & Berechtigungen
-├── API_CHEATSHEET.md              # API-Schnellreferenz
-├── openapi.yaml                   # OpenAPI 3.0 Spezifikation
-└── README.md                      # Dieses Dokument
+├── product/        # Produkt- & Feature-Dokumentation, Releases, Roadmap
+├── dev/            # Entwicklerdoku, API, Architektur, Tests
+├── ops/            # Betrieb, Deployment, Runbooks
+└── security/       # Security, RBAC, Analysen
 ```
 
-### Planning-Dateien
+### Produkt-Dokumente (Auszug)
 ```
-docs/planning/
-├── phase1-objekt-grundlagen.md
-├── phase2-dokument-management.md
-├── phase3-wachbuch-vorfaelle.md
-├── phase4-kontrollgaenge-nfc.md
-├── phase5-objekt-kalkulation.md
-├── phase6-wizard-implementation.md
-├── workflow-wizard-objekt-anlegen.md
-├── scoring-objekt-integration.md
-└── mobile-app-konzept.md
+docs/product/
+├── FEATURE_OBJEKT_MANAGEMENT.md
+├── CHANGELOG.md
+├── TODO.md
+├── releases/
+└── planning/
 ```
 
-### Session-Logs
+### Dev-Dokumente (Auszug)
 ```
-docs/sessions/
-└── SESSION_2025-10-23.md          # Detaillierte Session-Dokumentation
-```
-
-### Release-Notes
-```
-docs/releases/
-├── v1.13.0.md
-├── v1.14.0.md
-├── v1.15.0.md
-└── v1.16.0.md
+docs/dev/
+├── ARCHITECTURE.md
+├── PROJECT_STRUCTURE.md
+├── API_CHEATSHEET.md
+├── openapi.yaml
+└── sessions/
 ```
 
-### Operations
+### Operations (Auszug)
 ```
 docs/ops/
-├── deployment.md
-├── backup-restore.md
-├── monitoring.md
+├── README.md
+├── DEPLOYMENT_CHECKLIST.md
 └── setup-https-letsencrypt.md
 ```
 
@@ -369,16 +355,16 @@ npm test
 ### 4. Dokumentation aktualisieren
 ```bash
 # TODO.md aktualisieren
-vim docs/TODO.md
+vim docs/product/TODO.md
 
 # CHANGELOG.md ergänzen
-vim docs/CHANGELOG.md
+vim docs/product/CHANGELOG.md
 
 # Feature-Dokumentation schreiben
-vim docs/FEATURE_YOUR_FEATURE.md
+vim docs/product/FEATURE_YOUR_FEATURE.md
 
 # Session-Log erstellen (bei größeren Features)
-vim docs/sessions/SESSION_YYYY-MM-DD.md
+vim docs/dev/sessions/SESSION_YYYY-MM-DD.md
 ```
 
 ### 5. Commit & Push
@@ -405,13 +391,13 @@ git push origin feature/your-feature-name
 ### "Wo ist das Replacement-System?"
 - Backend: `backend/src/services/intelligentReplacement.ts`
 - Frontend: `frontend/src/features/absences/ReplacementCandidatesModalV2.tsx`
-- Dokumentation: `docs/planning/scoring-objekt-integration.md`
+- Dokumentation: `docs/product/planning/scoring-objekt-integration.md`
 
 ### "Wo ist der Wizard?"
 - Frontend: `frontend/src/features/wizard/`
 - Wizard-Container: `SiteWizard.tsx`
 - Schritte: `components/steps/`
-- Dokumentation: `docs/planning/workflow-wizard-objekt-anlegen.md`
+- Dokumentation: `docs/product/planning/workflow-wizard-objekt-anlegen.md`
 
 ### "Wo sind die Kalkulationen?"
 - Backend: `backend/src/controllers/calculationController.ts`
@@ -445,20 +431,20 @@ git push origin feature/your-feature-name
 
 **Für neue Entwickler:**
 1. Lesen: `GETTING_STARTED.md` (Step-by-Step Setup)
-2. Lesen: `docs/ARCHITECTURE.md` (System-Übersicht)
-3. Lesen: `docs/FEATURE_OBJEKT_MANAGEMENT.md` (Phase 1-8 Konzept)
-4. Durcharbeiten: `docs/sessions/` (Entwicklungs-Historie)
+2. Lesen: `docs/dev/ARCHITECTURE.md` (System-Übersicht)
+3. Lesen: `docs/product/FEATURE_OBJEKT_MANAGEMENT.md` (Phase 1-8 Konzept)
+4. Durcharbeiten: `docs/dev/sessions/` (Entwicklungs-Historie)
 
 **Für KI-Assistenten:**
 1. Lesen: `.claude/.clinerules` (Projekt-Konventionen)
-2. Lesen: `docs/PROJECT_STRUCTURE.md` (DIESES DOKUMENT)
-3. Lesen: `docs/CHANGELOG.md` (Was wurde wann gemacht?)
-4. Prüfen: `docs/TODO.md` (Was ist offen?)
+2. Lesen: `docs/dev/PROJECT_STRUCTURE.md` (DIESES DOKUMENT)
+3. Lesen: `docs/product/CHANGELOG.md` (Was wurde wann gemacht?)
+4. Prüfen: `docs/product/TODO.md` (Was ist offen?)
 
 **Für Operations:**
-1. Lesen: `docs/ops/deployment.md`
-2. Lesen: `docs/ops/backup-restore.md`
-3. Lesen: `docs/ops/monitoring.md`
+1. Lesen: `docs/ops/README.md`
+2. Lesen: `docs/ops/DEPLOYMENT_CHECKLIST.md`
+3. Lesen: `docs/ops/system-health.md`
 
 ---
 
