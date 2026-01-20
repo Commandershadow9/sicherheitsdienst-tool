@@ -1,0 +1,25 @@
+http:
+  routers:
+    guildscout-http:
+      rule: "Host(`guildscout.zerodox.de`)"
+      entryPoints:
+        - web
+      middlewares:
+        - guildscout-https
+      service: guildscout
+    guildscout:
+      rule: "Host(`guildscout.zerodox.de`)"
+      entryPoints:
+        - websecure
+      tls:
+        certResolver: myresolver
+      service: guildscout
+  middlewares:
+    guildscout-https:
+      redirectScheme:
+        scheme: https
+  services:
+    guildscout:
+      loadBalancer:
+        servers:
+          - url: "http://172.20.0.1:8090"
