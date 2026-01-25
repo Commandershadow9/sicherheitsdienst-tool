@@ -10,13 +10,12 @@ import { de } from 'date-fns/locale';
 import { LayoutGrid, BarChart3, Calendar, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { fetchShifts } from '../../shifts/api';
+import { fetchShifts, type Shift } from '../../shifts/api';
 import ShiftMatrixDnD from '../components/ShiftMatrixDnD';
 import ShiftTimeline from '../components/ShiftTimeline';
 import PlanningDashboard from '../components/PlanningDashboard';
 import ShiftDetailModal from '../components/ShiftDetailModal';
 import AutoFillModal from '../components/AutoFillModal';
-import type { Shift } from '../../shifts/api';
 
 type ViewMode = 'dashboard' | 'matrix' | 'timeline';
 

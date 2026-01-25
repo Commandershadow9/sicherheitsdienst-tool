@@ -29,7 +29,7 @@ import {
   FileText,
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { fetchShifts } from '@/features/shifts/api';
+import { fetchShifts, type Shift } from '@/features/shifts/api';
 import { startOfWeek, endOfWeek, format } from 'date-fns';
 import { de } from 'date-fns/locale';
 
@@ -53,7 +53,6 @@ import {
   deleteShiftRule,
 } from '../../api/shiftRuleApi';
 import type { ShiftRule, CreateShiftRuleInput, UpdateShiftRuleInput } from '../../types/shiftRule';
-import type { Shift } from '@/features/shifts/api';
 import type { ShiftModel } from '@/types/securityConcept';
 import type { ShiftConflict } from '@/features/shift-planning/api';
 

@@ -22,8 +22,7 @@ import {
 import { Modal } from '@/components/ui/modal';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { fetchAssignmentCandidates, assignUserToShift, removeShiftAssignment } from '../../shifts/api';
-import type { Shift } from '../../shifts/api';
+import { fetchAssignmentCandidates, assignUserToShift, removeShiftAssignment, type Shift } from '../../shifts/api';
 import { toast } from 'sonner';
 
 interface ShiftDetailModalProps {

@@ -2,6 +2,41 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.0] - 2026-01-25 – Official Release
+
+### Release Notes
+Dies ist der offizielle erste Release des Zerodox Sicherheitsdienst-Tools.
+
+### Highlights
+- **6 vollständige Feature-Phasen** produktionsreif:
+  - Phase 1: Objekt-Stammdaten (Sites, Clearances, Assignments)
+  - Phase 2: Dokument-Management (7 Kategorien, Viewer)
+  - Phase 3: Wachbuch & Vorfälle (11 Kategorien, Notifications)
+  - Phase 4: Kontrollgänge & NFC (QR-Code-Fallback)
+  - Phase 5: Objekt-Kalkulation & Angebotserstellung
+  - Phase 6: Intelligenter Objekt-Anlage-Wizard
+
+### Security
+- 0 bekannte Vulnerabilities (npm audit clean)
+- RBAC mit 4 Rollen (ADMIN, MANAGER, DISPATCHER, EMPLOYEE)
+- Rate Limiting für alle kritischen Endpoints
+- Audit Logging mit Retention Policies
+- DSGVO-Compliance dokumentiert
+
+### Technical
+- Backend: Node.js 20, Express 5, Prisma 6, PostgreSQL 15
+- Frontend: React 18, Vite 5, TypeScript (strict mode)
+- 87+ Backend Tests, 15+ E2E Tests
+- 14 CI/CD Workflows (GitHub Actions)
+- Docker + Traefik + Let's Encrypt ready
+
+### Documentation
+- CONTRIBUTING.md hinzugefügt
+- SECURITY.md hinzugefügt
+- Vollständige Quickstart-Dokumentation
+
+---
+
 ## [1.23.0] - 2025-12-17 – Code-Aufräumung & Branch-Konsolidierung
 
 ### Changed - Branch-Management

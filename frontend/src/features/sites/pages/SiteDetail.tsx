@@ -603,7 +603,7 @@ export default function SiteDetail() {
         clearance={trainingModal?.clearance || null}
         open={!!trainingModal}
         onClose={() => setTrainingModal(null)}
-        onComplete={(id, hours) => completeTrainingMutation.mutate({ id, hours })}
+        onComplete={(clearanceId, hours) => completeTrainingMutation.mutate({ id: clearanceId, hours })}
         isPending={completeTrainingMutation.isPending}
       />
 
@@ -612,7 +612,7 @@ export default function SiteDetail() {
         clearance={revokeModal?.clearance || null}
         open={!!revokeModal}
         onClose={() => setRevokeModal(null)}
-        onRevoke={(id, notes) => revokeMutation.mutate({ id, notes })}
+        onRevoke={(clearanceId, notes) => revokeMutation.mutate({ id: clearanceId, notes })}
         isPending={revokeMutation.isPending}
       />
 

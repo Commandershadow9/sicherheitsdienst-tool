@@ -42,7 +42,7 @@ async function main() {
     console.log('✅ Default Customer erstellt\n');
 
     // ===== 1. ADMIN & MANAGER =====
-    const admin = await createUserWithPassword(prisma, {
+    const _admin = await createUserWithPassword(prisma, {
       email: 'admin@sicherheitsdienst.de',
       firstName: 'Max',
       lastName: 'Administrator',

@@ -202,7 +202,7 @@ async function findDoubleBookings(shifts: any[]): Promise<ShiftConflict[]> {
   }
 
   // Prüfe Überlappungen pro User
-  for (const [userId, userShiftList] of userShifts.entries()) {
+  for (const [_userId, userShiftList] of userShifts.entries()) {
     for (let i = 0; i < userShiftList.length; i++) {
       for (let j = i + 1; j < userShiftList.length; j++) {
         const shift1 = userShiftList[i].shift;
@@ -252,7 +252,7 @@ async function findRestTimeViolations(shifts: any[]): Promise<ShiftConflict[]> {
   }
 
   // Prüfe Ruhezeiten pro User
-  for (const [userId, userShiftList] of userShifts.entries()) {
+  for (const [_userId, userShiftList] of userShifts.entries()) {
     // Sortiere nach Startzeit
     userShiftList.sort((a, b) =>
       new Date(a.shift.startTime).getTime() - new Date(b.shift.startTime).getTime()

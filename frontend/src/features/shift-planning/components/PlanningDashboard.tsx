@@ -19,8 +19,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { analyzeConflicts } from '../api';
-import type { ShiftConflict } from '../api';
+import { analyzeConflicts, type ShiftConflict } from '../api';
 
 interface PlanningDashboardProps {
   siteId?: string;

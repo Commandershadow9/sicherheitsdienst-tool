@@ -14,7 +14,7 @@
  * - Preference: 30%
  */
 
-import { PrismaClient, Shift, User, EmployeePreferences, EmployeeWorkload } from '@prisma/client';
+import { PrismaClient, Shift, User, EmployeePreferences } from '@prisma/client';
 import {
   calculateWorkloadScore,
   calculateComplianceScore,

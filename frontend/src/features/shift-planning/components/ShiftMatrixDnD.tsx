@@ -11,9 +11,8 @@ import { ChevronLeft, ChevronRight, AlertCircle, CheckCircle, Users, Clock, Grip
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { assignUserToShift } from '../../shifts/api';
+import { assignUserToShift, type Shift, type ShiftAssignment } from '../../shifts/api';
 import { toast } from 'sonner';
-import type { Shift, ShiftAssignment } from '../../shifts/api';
 import { checkClearanceForSite, checkCompliance } from '../utils/clearanceUtils';
 import { getDnDBackend } from '../utils/dndBackend';
 

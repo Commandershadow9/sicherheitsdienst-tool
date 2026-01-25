@@ -124,7 +124,7 @@ export async function findReplacementCandidatesForShift(
     },
   });
 
-  const requiredQuals = shift.requiredQualifications || [];
+  const _requiredQuals = shift.requiredQualifications || [];
 
   return clearances
     .filter((clearance) => !assignedUserIds.has(clearance.userId) && !absentUserIds.has(clearance.userId))

@@ -11,13 +11,14 @@ import { Textarea } from '@/components/ui/textarea'
 import { Select } from '@/components/ui/select'
 import { FormField } from '@/components/ui/form'
 import { AlertCircle } from 'lucide-react'
-import type {
-  ShiftRule,
-  CreateShiftRuleInput,
-  UpdateShiftRuleInput,
-  RulePattern,
+import {
+  RULE_PATTERN_LABELS,
+  WEEKDAY_LABELS_LONG,
+  type ShiftRule,
+  type CreateShiftRuleInput,
+  type UpdateShiftRuleInput,
+  type RulePattern,
 } from '../../types/shiftRule'
-import { RULE_PATTERN_LABELS, WEEKDAY_LABELS_LONG } from '../../types/shiftRule'
 
 type ShiftRuleFormProps = {
   siteId: string

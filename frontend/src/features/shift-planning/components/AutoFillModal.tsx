@@ -11,8 +11,7 @@ import { Zap, Loader2, CheckCircle, AlertCircle, X } from 'lucide-react';
 import { Modal } from '@/components/ui/modal';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { autoFillPeriod } from '../api';
-import type { AutoFillResult } from '../api';
+import { autoFillPeriod, type AutoFillResult } from '../api';
 import { toast } from 'sonner';
 
 interface AutoFillModalProps {

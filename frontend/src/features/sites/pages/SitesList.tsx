@@ -59,8 +59,8 @@ export default function SitesList() {
       queryClient.invalidateQueries({ queryKey: ['sites'] })
       toast.success('Status erfolgreich aktualisiert')
     },
-    onError: (error: any) => {
-      toast.error(error?.response?.data?.message || 'Fehler beim Aktualisieren des Status')
+    onError: (err: any) => {
+      toast.error(err?.response?.data?.message || 'Fehler beim Aktualisieren des Status')
     },
   })
 
@@ -73,8 +73,8 @@ export default function SitesList() {
       toast.success(`${variables.ids.length} Aufträge erfolgreich aktualisiert`)
       setSelectedIds([])
     },
-    onError: (error: any) => {
-      toast.error(error?.response?.data?.message || 'Fehler beim Aktualisieren der Aufträge')
+    onError: (err: any) => {
+      toast.error(err?.response?.data?.message || 'Fehler beim Aktualisieren der Aufträge')
     },
   })
 
@@ -87,8 +87,8 @@ export default function SitesList() {
       toast.success(`${ids.length} Aufträge erfolgreich gelöscht`)
       setSelectedIds([])
     },
-    onError: (error: any) => {
-      toast.error(error?.response?.data?.message || 'Fehler beim Löschen der Aufträge')
+    onError: (err: any) => {
+      toast.error(err?.response?.data?.message || 'Fehler beim Löschen der Aufträge')
     },
   })
 

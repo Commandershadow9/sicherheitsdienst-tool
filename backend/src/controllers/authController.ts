@@ -3,6 +3,7 @@ import prisma from '../utils/prisma';
 import bcrypt from 'bcryptjs';
 import jwt, { SignOptions } from 'jsonwebtoken';
 import { submitAuditEvent } from '../utils/audit';
+import logger from '../utils/logger';
 
 
 export const login = async (req: Request, res: Response): Promise<Response> => {
@@ -227,7 +228,7 @@ export const refresh = async (req: Request, res: Response): Promise<Response> =>
     // 🔐 MULTI-TENANCY: Strict Tenant Check
     // Prevent Cross-Tenant Access via potentially manipulated or stale tokens
     if (tokenClaims.customerId && user.customerId !== tokenClaims.customerId) {
-        console.error(`Security Alert: Tenant Mismatch during Refresh. Token: ${tokenClaims.customerId}, User: ${user.customerId}`);
+        logger.error('Security Alert: Tenant Mismatch during Refresh', { reason: 'TENANT_MISMATCH' });
         await submitAuditEvent(req, {
             action: 'AUTH.REFRESH.DENIED',
             resourceType: 'AUTH',

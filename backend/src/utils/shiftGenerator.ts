@@ -3,8 +3,8 @@
  * Generates shift schedules based on templates and site requirements
  */
 
-import { addDays, setHours, setMinutes, setSeconds, setMilliseconds, format, isBefore } from 'date-fns';
-import { getShiftTemplate, calculateStaffDistribution, type ShiftDefinition } from './shiftTemplates';
+import { addDays, setHours, setMinutes, setSeconds, setMilliseconds, isBefore } from 'date-fns';
+import { getShiftTemplate, calculateStaffDistribution } from './shiftTemplates';
 
 interface ShiftModelData {
   shifts?: Array<{

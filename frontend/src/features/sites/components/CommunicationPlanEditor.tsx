@@ -326,7 +326,7 @@ export default function CommunicationPlanEditor({
                       value={level.examples.join(', ')}
                       onChange={(e) =>
                         updateEscalationLevel(level.id, {
-                          examples: e.target.value.split(',').map((e) => e.trim()).filter(Boolean),
+                          examples: e.target.value.split(',').map((s) => s.trim()).filter(Boolean),
                         })
                       }
                       placeholder="z.B. Beschädigung, Alarm, Brand"

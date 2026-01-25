@@ -57,7 +57,7 @@ export async function seedShiftPlanningV2(customerId: string) {
 /**
  * 1. Shift Templates für alle ShiftTypes
  */
-async function seedShiftTemplates(customerId: string) {
+async function seedShiftTemplates(_customerId: string) {
   const templates = [
     {
       name: 'Frühschicht Standard',
@@ -551,7 +551,7 @@ async function seedObjectClearances(users: any[], sites: any[]) {
 /**
  * 5. Employee Preferences
  */
-async function seedEmployeePreferences(users: any[], sites: any[]) {
+async function seedEmployeePreferences(users: any[], _sites: any[]) {
   const preferences = [
     // Max Optimal: Präferiert Nachtschichten
     {
