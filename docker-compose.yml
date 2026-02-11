@@ -1,10 +1,11 @@
 
 services:
-  # PostgreSQL Database
+  # PostgreSQL Database (AUF EIS - Start mit: docker compose --profile sicherheitsdienst up -d)
   db:
     image: postgres:15
     container_name: sicherheitsdienst-db
-    restart: always
+    restart: unless-stopped
+    profiles: ["sicherheitsdienst"]
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-sicherheitsdienst_db}
       POSTGRES_USER: ${POSTGRES_USER:-admin}
@@ -26,12 +27,13 @@ services:
       timeout: 5s
       retries: 5
 
-  # Backend API (Node.js)
+  # Backend API (Node.js) (AUF EIS - Start mit: docker compose --profile sicherheitsdienst up -d)
   api:
     build:
       context: ./backend
     container_name: sicherheitsdienst-api
     restart: unless-stopped
+    profiles: ["sicherheitsdienst"]
     environment:
       NODE_ENV: production
       PORT: 3001
@@ -96,17 +98,35 @@ services:
     volumes:
       - /srv/documents:/srv/documents:rw
 
-  # GuildScout Web UI
+  # GuildScout v3 API (Go)
   guildscout-web:
-    image: python:3.11-slim
+    image: v3-api
     container_name: guildscout-web
     restart: unless-stopped
-    working_dir: /app
-    command: >-
-      sh -lc "pip install -r web_api/requirements.txt &&
-      uvicorn web_api.app:app --host 0.0.0.0 --port 8090"
+    environment:
+      - DATABASE_URL=postgres://${GS_POSTGRES_USER:-guildscout}:${GS_POSTGRES_PASSWORD:?GS_POSTGRES_PASSWORD required}@guildscout-postgres:5432/${GS_POSTGRES_DB:-guildscout}?sslmode=disable
+      - REDIS_URL=redis://guildscout-redis:6379
+      - DISCORD_CLIENT_ID=${GS_DISCORD_CLIENT_ID:?GS_DISCORD_CLIENT_ID required}
+      - DISCORD_CLIENT_SECRET=${GS_DISCORD_CLIENT_SECRET:?GS_DISCORD_CLIENT_SECRET required}
+      - DISCORD_BOT_TOKEN=${GS_DISCORD_BOT_TOKEN:?GS_DISCORD_BOT_TOKEN required}
+      - DISCORD_REDIRECT_URI=${GS_DISCORD_REDIRECT_URI:-https://guildscout.zerodox.de/api/v2/auth/callback}
+      - JWT_SECRET=${GS_JWT_SECRET:?GS_JWT_SECRET required}
+      - ENVIRONMENT=production
+      - PORT=8090
+      - SESSION_COOKIE_SECURE=true
     volumes:
-      - /home/cmdshadow/GuildScout:/app
+      - /home/cmdshadow/GuildScout/Video:/app/static/video:ro
+    depends_on:
+      guildscout-postgres:
+        condition: service_healthy
+      guildscout-redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8090/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=project_sicherheitsdienst-network"
@@ -122,6 +142,44 @@ services:
       - "traefik.http.routers.guildscout-http.service=guildscout"
     networks:
       - sicherheitsdienst-network
+      - guildscout-network
+
+  # GuildScout PostgreSQL
+  guildscout-postgres:
+    image: postgres:16-alpine
+    container_name: guildscout-postgres
+    restart: always
+    environment:
+      POSTGRES_DB: ${GS_POSTGRES_DB:-guildscout}
+      POSTGRES_USER: ${GS_POSTGRES_USER:-guildscout}
+      POSTGRES_PASSWORD: ${GS_POSTGRES_PASSWORD:?GS_POSTGRES_PASSWORD required}
+    ports:
+      - "127.0.0.1:5433:5432"
+    volumes:
+      - guildscout-postgres-data:/var/lib/postgresql/data
+    networks:
+      - guildscout-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U guildscout -d guildscout"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # GuildScout Redis
+  guildscout-redis:
+    image: redis:7-alpine
+    container_name: guildscout-redis
+    restart: always
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    volumes:
+      - guildscout-redis-data:/data
+    networks:
+      - guildscout-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   # Traefik Reverse Proxy
   traefik:
@@ -129,7 +187,7 @@ services:
     container_name: sicherheitsdienst-traefik
     restart: always
     command:
-      # - "--log.level=DEBUG"
+      - "--log.level=DEBUG"
       - "--providers.docker=true"
       - "--providers.docker.exposedbydefault=false"
       - "--entrypoints.web.address=:80"
@@ -157,22 +215,24 @@ services:
     networks:
       - sicherheitsdienst-network
 
-  # Redis (optional, Rate-Limit Store)
+  # Redis (optional, Rate-Limit Store) (AUF EIS)
   redis:
     image: redis:7-alpine
     container_name: sicherheitsdienst-redis
     restart: unless-stopped
+    profiles: ["sicherheitsdienst"]
     # SECURITY: Port nicht öffentlich exponieren - nur intern im Docker-Netzwerk
     # ports:
     #   - '6379:6379'
     networks:
       - sicherheitsdienst-network
 
-  # pgAdmin (Datenbank-Verwaltung)
+  # pgAdmin (Datenbank-Verwaltung) (AUF EIS)
   pgadmin:
     image: dpage/pgadmin4:latest
     container_name: sicherheitsdienst-pgadmin
-    restart: always
+    restart: unless-stopped
+    profiles: ["sicherheitsdienst"]
     environment:
       PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL:-admin@admin.com}
       PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD:?PGADMIN_DEFAULT_PASSWORD required}
@@ -193,7 +253,11 @@ services:
 
 volumes:
   db-data:
+  guildscout-postgres-data:
+  guildscout-redis-data:
 
 networks:
   sicherheitsdienst-network:
+    driver: bridge
+  guildscout-network:
     driver: bridge
