@@ -12,7 +12,7 @@ jobs:
         with:
           fetch-depth: 0
       - name: Commitlint
-        uses: wagoid/commitlint-github-action@v5
+        uses: wagoid/commitlint-github-action@e399437c83a8cc31c2760f7698154fd084061743 # v5
         with:
           configFile: commitlint.config.js
 
