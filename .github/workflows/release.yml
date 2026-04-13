@@ -40,7 +40,7 @@ jobs:
           fi
 
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@26994186c0ac3ef5cae75ac16aa32e8153525f77 # v1
         with:
           tag_name: ${{ steps.tag.outputs.name }}
           name: Release ${{ steps.tag.outputs.name }}
@@ -59,13 +59,13 @@ jobs:
 
       - name: Generate SBOM for image
         id: sbom
-        uses: anchore/sbom-action@v0
+        uses: anchore/sbom-action@57aae528053a48a3f6235f2d9461b05fbcb7366d # v0
         with:
           image: ghcr.io/${{ github.repository }}:${{ steps.tag.outputs.name }}
           artifact-name: sbom-${{ steps.tag.outputs.name }}
 
       - name: Attach SBOM to release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@26994186c0ac3ef5cae75ac16aa32e8153525f77 # v1
         with:
           tag_name: ${{ steps.tag.outputs.name }}
           files: sbom-${{ steps.tag.outputs.name }}.spdx.json

@@ -65,7 +65,7 @@ services:
       TRUSTED_PROXIES: ${TRUSTED_PROXIES:-}
     # ports:
     ports:
-      - '3001:3001' # Direktzugriff (z. B. Frontend .env zeigt auf :3001)
+      - '127.0.0.1:3001:3001' # Direktzugriff (loopback-only, Security Fix #62/#74/#84) (z. B. Frontend .env zeigt auf :3001)
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.api.rule=Host(`${DOMAIN:-localhost}`)"
@@ -87,8 +87,8 @@ services:
     networks:
       - sicherheitsdienst-network
     healthcheck:
-      # Liveness-Check via /health (alias für /healthz, ohne DB-Abhängigkeit)
-      test: ['CMD-SHELL', 'wget -qO- http://localhost:3001/health || exit 1']
+      # Liveness-Check via /health: prüft HTTP-Erreichbarkeit UND Response-Body (Finding #144)
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3001/health | grep -q '\"status\":\"ok\"' || exit 1"]
       interval: 15s
       timeout: 5s
       retries: 10
@@ -109,13 +109,14 @@ services:
       - DISCORD_CLIENT_ID=${GS_DISCORD_CLIENT_ID:?GS_DISCORD_CLIENT_ID required}
       - DISCORD_CLIENT_SECRET=${GS_DISCORD_CLIENT_SECRET:?GS_DISCORD_CLIENT_SECRET required}
       - DISCORD_BOT_TOKEN=${GS_DISCORD_BOT_TOKEN:?GS_DISCORD_BOT_TOKEN required}
-      - DISCORD_REDIRECT_URI=${GS_DISCORD_REDIRECT_URI:-https://guildscout.zerodox.de/api/v2/auth/callback}
+      - DISCORD_REDIRECT_URI=${GS_DISCORD_REDIRECT_URI:-https://guildscout.eu/api/v2/auth/callback}
       - JWT_SECRET=${GS_JWT_SECRET:?GS_JWT_SECRET required}
       - ENVIRONMENT=production
       - PORT=8090
       - SESSION_COOKIE_SECURE=true
     volumes:
       - /home/cmdshadow/GuildScout/Video:/app/static/video:ro
+      - /home/cmdshadow/GuildScout/api/static/changelogs:/app/static/changelogs
     depends_on:
       guildscout-postgres:
         condition: service_healthy
@@ -130,13 +131,14 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=project_sicherheitsdienst-network"
-      - "traefik.http.routers.guildscout.rule=Host(`guildscout.zerodox.de`)"
+      - "traefik.http.routers.guildscout.rule=Host(`guildscout.eu`)"
       - "traefik.http.routers.guildscout.entrypoints=websecure"
       - "traefik.http.routers.guildscout.tls=true"
       - "traefik.http.routers.guildscout.tls.certresolver=myresolver"
       - "traefik.http.services.guildscout.loadbalancer.server.port=8090"
       - "traefik.http.middlewares.guildscout-https.redirectscheme.scheme=https"
-      - "traefik.http.routers.guildscout-http.rule=Host(`guildscout.zerodox.de`)"
+      - "traefik.http.middlewares.guildscout-https.redirectscheme.permanent=true"
+      - "traefik.http.routers.guildscout-http.rule=Host(`guildscout.eu`)"
       - "traefik.http.routers.guildscout-http.entrypoints=web"
       - "traefik.http.routers.guildscout-http.middlewares=guildscout-https"
       - "traefik.http.routers.guildscout-http.service=guildscout"
@@ -183,13 +185,16 @@ services:
 
   # Traefik Reverse Proxy
   traefik:
-    image: traefik:latest
+    image: traefik:v3.6.12
     container_name: sicherheitsdienst-traefik
     restart: always
     command:
-      - "--log.level=DEBUG"
+      - "--log.level=WARN"
       - "--providers.docker=true"
       - "--providers.docker.exposedbydefault=false"
+      # File-Provider für Domain-Redirects (guildscout.de, guildscout.zerodox.de → guildscout.eu)
+      - "--providers.file.directory=/etc/traefik/dynamic"
+      - "--providers.file.watch=true"
       - "--entrypoints.web.address=:80"
       - "--entrypoints.websecure.address=:443"
       - "--accesslog=true"
@@ -212,6 +217,7 @@ services:
     volumes:
       - "./letsencrypt:/letsencrypt"
       - "/var/run/docker.sock:/var/run/docker.sock:ro"
+      - "./traefik/dynamic:/etc/traefik/dynamic:ro"
     networks:
       - sicherheitsdienst-network
 
