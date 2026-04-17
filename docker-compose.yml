@@ -183,7 +183,11 @@ services:
 
   # Traefik Reverse Proxy
   traefik:
-    image: traefik:latest
+    # Pinned auf v3 statt :latest damit ein Upstream-v4-Release nicht
+    # versehentlich eingespielt wird (config-breaking changes).
+    # Gleichzeitig holen wir v3-Patch-Updates (zuletzt v3.6.13 mit Fixes
+    # fuer CVE-2026-22184 zlib und CVE-2026-40200 musl).
+    image: traefik:v3
     container_name: sicherheitsdienst-traefik
     restart: always
     command:
