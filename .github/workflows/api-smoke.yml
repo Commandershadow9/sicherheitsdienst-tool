@@ -9,6 +9,14 @@ concurrency:
   group: api-smoke
   cancel-in-progress: true
 
+# Test-Secrets fuer fail-closed docker-compose.dev.yml. Gelten fuer alle Jobs
+# und alle Compose-Aufrufe (up, down). Nur im CI-Runner, nicht in Produktion.
+env:
+  DEV_DB_PASSWORD: ci_dev_db_pw_not_for_prod
+  DEV_JWT_SECRET: ci_jwt_secret_minimum_32_chars_for_ci_only
+  DEV_REFRESH_SECRET: ci_refresh_secret_minimum_32_chars_for_ci_only
+  DEV_GRAFANA_PASSWORD: ci_grafana_pw_not_for_prod
+
 jobs:
   smoke:
     runs-on: ubuntu-latest
