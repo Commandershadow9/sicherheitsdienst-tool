@@ -1,16 +1,21 @@
+# Dev-Compose fuer lokale Entwicklung.
+# Alle Secrets MUESSEN via .env gesetzt werden (siehe .env.example) — kein
+# Default-Credential, kein versehentlicher Start auf einem Produktivhost.
+# Alle Ports sind an 127.0.0.1 gebunden, damit ein unbedachtes `up` keine
+# Services auf oeffentlichen Interfaces exponiert.
+
 services:
   db:
     image: postgres:16-alpine
     environment:
-      POSTGRES_USER: admin
-      POSTGRES_PASSWORD: admin123
-      POSTGRES_DB: sicherheitsdienst_db
+      POSTGRES_USER: ${DEV_DB_USER:-admin}
+      POSTGRES_PASSWORD: ${DEV_DB_PASSWORD:?DEV_DB_PASSWORD required in .env}
+      POSTGRES_DB: ${DEV_DB_NAME:-sicherheitsdienst_db}
     volumes:
       - db_data:/var/lib/postgresql/data
-    # ports:
-    #   - '5432:5432'
+    # Port bewusst nicht exposed. Services kommunizieren ueber compose-Netzwerk.
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U admin -d sicherheitsdienst_db"]
+      test: ["CMD-SHELL", "pg_isready -U ${DEV_DB_USER:-admin} -d ${DEV_DB_NAME:-sicherheitsdienst_db}"]
       interval: 5s
       timeout: 5s
       retries: 20
@@ -19,17 +24,17 @@ services:
     image: node:20
     working_dir: /app
     ports:
-      - '3000:3000'
+      - '127.0.0.1:3000:3000'
     environment:
       NODE_ENV: development
       PORT: 3000
-      JWT_SECRET: dev-secret-minimum-32-chars-long-value
-      REFRESH_SECRET: dev-refresh-secret-minimum-32-chars-long
+      JWT_SECRET: ${DEV_JWT_SECRET:?DEV_JWT_SECRET required in .env (min 32 chars)}
+      REFRESH_SECRET: ${DEV_REFRESH_SECRET:?DEV_REFRESH_SECRET required in .env (min 32 chars)}
       CORS_ORIGIN: http://${PUBLIC_HOST:-localhost}:5173
-      CORS_ORIGINS: http://localhost:5173,http://127.0.0.1:5173,http://37.114.53.56:5173
+      CORS_ORIGINS: ${DEV_CORS_ORIGINS:-http://localhost:5173,http://127.0.0.1:5173}
       RATE_LIMIT_MAX: 100
       RATE_LIMIT_WINDOW_MS: 60000
-      DATABASE_URL: postgresql://admin:admin123@db:5432/sicherheitsdienst_db?schema=public
+      DATABASE_URL: postgresql://${DEV_DB_USER:-admin}:${DEV_DB_PASSWORD}@db:5432/${DEV_DB_NAME:-sicherheitsdienst_db}?schema=public
       SEED_ON_START: "false"
       LOGIN_RATE_LIMIT_MAX: 100
       LOGIN_RATE_LIMIT_WINDOW_MS: 60000
@@ -57,7 +62,7 @@ services:
     image: node:20
     working_dir: /web
     ports:
-      - '5173:5173'
+      - '127.0.0.1:5173:5173'
     environment:
       NODE_ENV: development
       VITE_API_BASE_URL: http://${PUBLIC_HOST:-localhost}:3000
@@ -74,7 +79,7 @@ services:
     image: prom/prometheus:latest
     profiles: [ 'monitoring' ]
     ports:
-      - '9090:9090'
+      - '127.0.0.1:9090:9090'
     volumes:
       - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - ./monitoring/alerts/alerts.yml:/etc/prometheus/alerts.yml:ro
@@ -88,10 +93,10 @@ services:
     image: grafana/grafana:latest
     profiles: [ 'monitoring' ]
     ports:
-      - '3002:3000'
+      - '127.0.0.1:3002:3000'
     environment:
-      GF_SECURITY_ADMIN_USER: admin
-      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_SECURITY_ADMIN_USER: ${DEV_GRAFANA_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${DEV_GRAFANA_PASSWORD:?DEV_GRAFANA_PASSWORD required in .env}
     volumes:
       - ./monitoring/grafana/provisioning/datasources:/etc/grafana/provisioning/datasources
       - ./monitoring/grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards
@@ -103,8 +108,8 @@ services:
   mailhog:
     image: mailhog/mailhog:latest
     ports:
-      - '1025:1025'
-      - '8025:8025'
+      - '127.0.0.1:1025:1025'
+      - '127.0.0.1:8025:8025'
 
 volumes:
   db_data:
