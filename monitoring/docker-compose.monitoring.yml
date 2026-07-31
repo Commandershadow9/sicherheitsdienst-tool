@@ -5,7 +5,7 @@ services:
     image: prom/alertmanager:latest
     container_name: sicherheitsdienst-alertmanager
     ports:
-      - '9093:9093'
+      - '127.0.0.1:9093:9093'
     environment:
       ALERTMANAGER_SLACK_WEBHOOK: ${ALERTMANAGER_SLACK_WEBHOOK}
       ALERTMANAGER_SLACK_CHANNEL: ${ALERTMANAGER_SLACK_CHANNEL}
@@ -18,15 +18,21 @@ services:
       - '--config.file=/etc/alertmanager/config.yml'
       - '--web.listen-address=:9093'
     networks: [ 'obs' ]
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    read_only: true
 
   prometheus:
     image: prom/prometheus:latest
     container_name: sicherheitsdienst-prometheus
     ports:
-      - '9090:9090'
+      - '127.0.0.1:9090:9090'
     volumes:
       - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - ./alerts/alerts.yml:/etc/prometheus/alerts.yml:ro
+      - prometheus-data:/prometheus
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
       - '--web.enable-lifecycle'
@@ -36,6 +42,10 @@ services:
     extra_hosts:
       - "host.docker.internal:host-gateway"
     networks: [ 'obs' ]
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
 
   grafana:
     image: grafana/grafana:latest
@@ -49,16 +59,21 @@ services:
       - ./grafana/provisioning/datasources:/etc/grafana/provisioning/datasources
       - ./grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards
       - ./grafana/dashboards:/var/lib/grafana/dashboards
+      - grafana-data:/var/lib/grafana
     networks: [ 'obs' ]
     depends_on:
       - prometheus
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
 
 
   blackbox:
     image: prom/blackbox-exporter:latest
     container_name: sicherheitsdienst-blackbox
     ports:
-      - '9115:9115'
+      - '127.0.0.1:9115:9115'
     command:
       - '--config.file=/etc/blackbox_exporter/config.yml'
     volumes:
@@ -66,7 +81,16 @@ services:
     extra_hosts:
       - "host.docker.internal:host-gateway"
     networks: [ 'obs' ]
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    read_only: true
 
 networks:
   obs:
     driver: bridge
+
+volumes:
+  prometheus-data:
+  grafana-data:
