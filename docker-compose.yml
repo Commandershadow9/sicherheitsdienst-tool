@@ -188,7 +188,8 @@ services:
     # 2026-05-24: v3.6.14 → v3.6.17 (CVE-2026-44774 + Folgefixes,
     # GHSA-96qj-4jj5-wcjc). Vorher: traefik:v3 (moving tag, zuletzt
     # v3.6.13 mit CVE-2026-22184 zlib + CVE-2026-40200 musl).
-    image: traefik:v3.6.17
+    # 2026-07-31: v3.6.17 → v3.6.19 (Compose-Pin an laufende Runtime angleichen)
+    image: traefik:v3.6.19
     container_name: sicherheitsdienst-traefik
     restart: always
     command:
