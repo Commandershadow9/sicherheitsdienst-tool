@@ -206,6 +206,14 @@ services:
       - "--accesslog.fields.headers.defaultmode=drop"
       - "--accesslog.fields.headers.names.X-Forwarded-For=drop"
       - "--accesslog.fields.headers.names.X-Real-Ip=drop"
+      # User-Agent bewusst BEHALTEN (30.08.2026): ohne ihn lässt sich im Zugriffslog
+      # nicht zwischen Besucher und Crawler unterscheiden — eine Frage, die bei der
+      # Analyse des Buchungsrückgangs unbeantwortbar blieb. Der Personenbezug bleibt
+      # dabei draußen: ClientHost/ClientAddr/X-Forwarded-For/X-Real-Ip werden
+      # weiterhin verworfen, und das ist Absicht, kein Versehen. Wer hier eine
+      # IP-Erfassung ergänzt, hebt eine Datenschutz-Entscheidung auf und braucht
+      # dafür einen Eintrag im Löschkonzept.
+      - "--accesslog.fields.headers.names.User-Agent=keep"
       # Let's Encrypt / ACME
       - "--certificatesresolvers.myresolver.acme.httpchallenge=true"
       - "--certificatesresolvers.myresolver.acme.httpchallenge.entrypoint=web"
