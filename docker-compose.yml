@@ -182,43 +182,18 @@ services:
       retries: 5
 
   # Traefik Reverse Proxy
-  traefik:
-    # Pinned auf eine konkrete v3.6-Patch-Version damit weder v4 noch v3.7 (Minor)
-    # versehentlich eingespielt werden (config-breaking changes).
-    # 2026-05-24: v3.6.14 → v3.6.17 (CVE-2026-44774 + Folgefixes,
-    # GHSA-96qj-4jj5-wcjc). Vorher: traefik:v3 (moving tag, zuletzt
-    # v3.6.13 mit CVE-2026-22184 zlib + CVE-2026-40200 musl).
-    image: traefik:v3.6.17
-    container_name: sicherheitsdienst-traefik
-    restart: always
-    command:
-      - "--log.level=DEBUG"
-      - "--providers.docker=true"
-      - "--providers.docker.exposedbydefault=false"
-      - "--entrypoints.web.address=:80"
-      - "--entrypoints.websecure.address=:443"
-      - "--accesslog=true"
-      - "--accesslog.format=json"
-      - "--accesslog.fields.defaultmode=keep"
-      - "--accesslog.fields.names.ClientAddr=drop"
-      - "--accesslog.fields.names.ClientHost=drop"
-      - "--accesslog.fields.names.ClientPort=drop"
-      - "--accesslog.fields.headers.defaultmode=drop"
-      - "--accesslog.fields.headers.names.X-Forwarded-For=drop"
-      - "--accesslog.fields.headers.names.X-Real-Ip=drop"
-      # Let's Encrypt / ACME
-      - "--certificatesresolvers.myresolver.acme.httpchallenge=true"
-      - "--certificatesresolvers.myresolver.acme.httpchallenge.entrypoint=web"
-      - "--certificatesresolvers.myresolver.acme.email=${ACME_EMAIL:?ACME_EMAIL required}"
-      - "--certificatesresolvers.myresolver.acme.storage=/letsencrypt/acme.json"
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - "./letsencrypt:/letsencrypt"
-      - "/var/run/docker.sock:/var/run/docker.sock:ro"
-    networks:
-      - sicherheitsdienst-network
+  # Traefik ist am 08.09.2026 in einen eigenen Stack gezogen (ZERODOX #3029 b):
+  #
+  #   ~/traefik-proxy/docker-compose.yml   (Projektname: traefik-proxy)
+  #
+  # Grund: Dieses Projekt liegt auf Eis — alle Anwendungs-Container stehen
+  # hinter `profiles: ["sicherheitsdienst"]` und laufen nicht. Solange Traefik
+  # hier mit drinstand, hätte ein `docker compose down` in diesem Verzeichnis
+  # zerodox.de, guildscout.eu und maydaysim.de gleichzeitig offline genommen,
+  # ohne dass der Zusammenhang erkennbar gewesen wäre.
+  #
+  # ⚠️ Das Netz unten ist deshalb jetzt `external`: Es gehört keinem Stack mehr
+  # und überlebt ein `down`. Acht Container aus vier Projekten hängen daran.
 
   # Redis (optional, Rate-Limit Store) (AUF EIS)
   redis:
@@ -262,7 +237,16 @@ volumes:
   guildscout-redis-data:
 
 networks:
+  # ⚠️ `external` seit dem 08.09.2026 (ZERODOX #3029 b). Vorher gehörte dieses
+  # Netz diesem Stack — ein `docker compose down` hier hätte es mitgenommen und
+  # damit acht Container aus vier fremden Projekten (ZERODOX, GuildScout,
+  # Leitstelle, Support-Dashboard) vom Reverse-Proxy getrennt.
+  #
+  # Angelegt wurde es einmal von diesem Stack, daher der Name mit dem Präfix.
+  # Es umzubenennen hiesse, alle vier Projekte gleichzeitig anzufassen; das ist
+  # ein eigener Vorgang.
   sicherheitsdienst-network:
-    driver: bridge
+    name: project_sicherheitsdienst-network
+    external: true
   guildscout-network:
     driver: bridge
